@@ -66,6 +66,7 @@ set(SOURCES
     src/sys/KUserSet.cpp
     src/sys/KAccount.cpp
     src/sys/KSystemSet.cpp
+    src/sys/KUpdateConf.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/alg/AlgParaManager.cpp
@@ -123,6 +124,7 @@ add_executable(ui_preview
     src/sys/KUserSet.cpp
     src/sys/KAccount.cpp
     src/sys/KSystemSet.cpp
+    src/sys/KUpdateConf.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/alg/AlgParaManager.cpp

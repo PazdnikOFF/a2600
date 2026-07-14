@@ -27,6 +27,7 @@
 #include "sys/KSystemSet.h"
 #include "sys/KUserSet.h"
 #include "ctrl/KColdLightConfig.h"
+#include "sys/KUpdateConf.h"
 
 #include <QDir>
 #include <QFile>
@@ -468,6 +469,29 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test матрицы совместимости версий (matchedversion.ini).
+    if (screen == "version") {
+        KUpdateConf &uc = KUpdateConf::GetInstance();
+        qInfo() << "matchedversion.ini NUM:" << uc.MatchedNum();
+        const auto hmi = uc.GetMatchedVersion("hmi");      // 2 допустимые версии
+        const auto kernel = uc.GetMatchedVersion("kernel");// 1 версия
+        qInfo() << "hmi допустимые:" << hmi;
+        qInfo() << "kernel:" << kernel << "camera:" << uc.GetMatchedVersion("camera");
+        // Проверка совместимости.
+        const bool m1 = uc.IsVersionMatched("hmi", "56.11.00.00.02.03");  // вторая допустимая
+        const bool m2 = uc.IsVersionMatched("kernel", "56.15.01.00.00.10");
+        const bool m3 = uc.IsVersionMatched("camera", "99.99.99.99.99.99"); // несовместимо
+        qInfo() << "hmi(2-я)=" << m1 << "kernel=" << m2 << "camera(чужая)=" << m3;
+
+        const bool ok = uc.MatchedNum() == 14 && hmi.size() == 2 &&
+                        hmi.contains("56.21.00.00.01.17") &&
+                        hmi.contains("56.11.00.00.02.03") &&
+                        kernel.size() == 1 && kernel.first() == "56.15.01.00.00.10" &&
+                        m1 && m2 && !m3;
+        qInfo() << (ok ? "version: PASS" : "version: FAIL");
+        return ok ? 0 : 16;
     }
 
     // Self-test источника холодного света: VLS-конфиги + LED-параметры.

@@ -68,6 +68,7 @@ ENDO_ROOT=$ER ui_preview thesaurus                    # self-test тезауру
 ENDO_ROOT=<tmp> ui_preview account [system.ini]       # self-test KAccount(вход/MD5/блок.)+KSystemSet
 ENDO_ROOT=$ER ui_preview userset                      # self-test KUserSet (полный парсинг osd.ini)
 ENDO_ROOT=$ER ui_preview coldlight                    # self-test источника света (VLS-режимы + LED-парам.)
+ENDO_ROOT=$ER ui_preview version                      # self-test матрицы совместимости версий
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -100,6 +101,7 @@ app/
     ├── sys/KUserSet (+_KUserConf)      # osd.ini
     ├── sys/KAccount                    # вход/роли/MD5-пароли/блокировка (system.ini)
     ├── sys/KSystemSet                  # системные настройки (Common/*, Account/*)
+    ├── sys/KUpdateConf                 # матрица совместимости версий (matchedversion.ini)
     ├── endo/KSoftEndoParam             # video.ini (per эндоскоп)
     ├── alg/AlgParaManager              # гамма-LUT/CCM/ColEnh из videoconf
     ├── db/KEntityManage                # БД пациент/осмотр (Qt5::Sql/SQLCipher)
@@ -314,6 +316,13 @@ app/
   ColdLight (device-comm: NT_QueryLightTemperature, VLSLightError), KColdlightAdjust (яркость).
 - ВАЖНО QSettings: значения "a,b,c" авто-разбиваются (toStringList), '\' в ключе = разделитель
   групп (childGroups→childKeys). VLS-режим связан с SetVistSwitch/SetVistMatrix (спектр. обработка).
+
+**Совместимость версий (`syspreset/matchedversion.ini`):** матрица версий прошивки.
+- [MatchedVersion] NUM=14 + <компонент>=<верс1>[,<верс2>] (допустимые версии; запятая →
+  альтернативы). Компоненты: kernel, hmi, panel, pap, pas, papp00..80, lcd, camera.
+- Класс KUpdateConf::GetMatchedVersion(component) → toStringList (реф.). KVersionConfig
+  читает установленные версии; апдейт-пайплайн сверяет установленную ∈ matched.
+  Формат версии: 6 полей "56.21.00.00.01.17". Реализован KUpdateConf (IsVersionMatched).
 
 **Сенсоры:** IMX274 (осн., жёсткие), OV2740, OH01A, OV6946, OCHFA_OAH0428.
 **Файлы (снимок/видео):** JPEG `<exam>/<N>.jpeg`, миниатюра `<exam>/thumb/`, видео
