@@ -158,7 +158,7 @@ app/
 | Снимок/запись (VCU) | KSaveVideoFile, KVideoProxy::ImageSavePreset | ⚙️ |
 | Архив снимков | KImgList | ✅ рендер |
 | БД пациент/осмотр | KEntityManage (tb_Patient/tb_Exam) | ✅ self-test |
-| DICOM БД (worklist/очередь) | KEntityDicom (tb_DcmWorklist/tb_DcmStore), KDicomFieldMap | ✅ self-test (`dicom`) |
+| DICOM БД (worklist/очередь/study/series) | KEntityDicom (tb_DcmWorklist/Store/Study/Series), KDicomFieldMap | ✅ self-test (`dicom`) |
 | DICOM сеть (STORE/ECHO/worklist/MPPS) | KDicomInterface + KStore/Worklist/Commit/MppsScu | ⬜ device-only (DCMTK, HAVE_DCMTK) |
 | Отчёты (шаблон→документ) | KReportTemplate, KReportDataSource, KDocumentGenerator, KEntityReport | ✅ self-test (`report`) |
 | Тезаурус диагнозов | KThesaurusOpt (thesaurus/<lang>/<Scope>.xml → автозаполнение отчёта) | ✅ self-test (`thesaurus`) |

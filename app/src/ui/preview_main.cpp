@@ -1031,13 +1031,33 @@ int main(int argc, char **argv)
         qInfo() << "Store: add=" << stAdd << "count=" << stN
                 << "status=" << (stList.isEmpty() ? -1 : stList.first().sendStatus)
                 << "retry=" << (stList.isEmpty() ? -1 : stList.first().retryCount);
-        ed.CloseDb();
+
+        // Study/Series иерархия (Study→Series→SOP).
+        DcmStudyEntity study;
+        study.studyInstanceUID = "1.2.840.113619.2.1.1"; study.studyID = "S1";
+        study.studyDate = "20260714"; study.modality = "ES"; study.patientId = "P001";
+        ed.CreateStudyEntity(study);
+        DcmSeriesEntity ser;
+        ser.seriesInstanceUID = "1.2.840.113619.2.4.1"; ser.studyInstanceUID = study.studyInstanceUID;
+        ser.seriesNumber = 1; ser.modality = "ES"; ser.numberOfInstances = 5;
+        ed.CreateSeriesEntity(ser);
+        DcmStudyEntity gotStudy;
+        const bool studyOk = ed.GetStudyEntity(study.studyInstanceUID, gotStudy) &&
+                             gotStudy.patientId == "P001" && gotStudy.modality == "ES";
+        const auto studies = ed.GetStudiesByPatient("P001");
+        const auto series = ed.GetSeriesByStudy(study.studyInstanceUID);
+        qInfo() << "study: получен=" << studyOk << "у P001:" << studies.size()
+                << "серий в study:" << series.size()
+                << "инстансов в серии:" << (series.isEmpty() ? -1 : series.first().numberOfInstances);
 
         const bool ok = xmlOk && hasKey && wlAdd && wlN == 1 &&
                         got.value("PatientName") == "Ivanov^Ivan" &&
                         got.value("Modality") == "ES" && stAdd && stN == 1 &&
                         !stList.isEmpty() && stList.first().sendStatus == 2 &&
-                        stList.first().retryCount == 1;
+                        stList.first().retryCount == 1 &&
+                        studyOk && studies.size() == 1 && series.size() == 1 &&
+                        series.first().numberOfInstances == 5 && ed.GetStudyNumber() == 1;
+        ed.CloseDb();
         qInfo() << (ok ? "dicom: PASS" : "dicom: FAIL");
         return ok ? 0 : 10;
     }

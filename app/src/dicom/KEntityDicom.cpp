@@ -71,6 +71,17 @@ bool KEntityDicom::createTables()
         "SeriesInstanceUID TEXT, FilePath TEXT, ServerName TEXT, "
         "SendStatus INTEGER, RetryCount INTEGER)") && ok;
 
+    // tb_DcmStudy / tb_DcmSeries — иерархия DICOM (Study→Series→SOP).
+    ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS tb_DcmStudy ("
+        "StudyInstanceUID TEXT PRIMARY KEY, StudyID TEXT, StudyDate TEXT, "
+        "StudyTime TEXT, StudyDescription TEXT, Modality TEXT, PatientID TEXT)") && ok;
+    ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS tb_DcmSeries ("
+        "SeriesInstanceUID TEXT PRIMARY KEY, StudyInstanceUID TEXT, SeriesNumber INTEGER, "
+        "SeriesDate TEXT, SeriesDescription TEXT, Modality TEXT, "
+        "NumberOfSeriesRelatedInstances INTEGER)") && ok;
+
     if (!ok) qWarning() << "KEntityDicom::createTables:" << q.lastError().text();
     return ok;
 }
@@ -215,6 +226,97 @@ int KEntityDicom::GetStoreNumber() const
 {
     QSqlQuery q(QSqlDatabase::database(kConn));
     if (q.exec("SELECT count(*) FROM tb_DcmStore") && q.next())
+        return q.value(0).toInt();
+    return 0;
+}
+
+// --- Study / Series ---
+
+bool KEntityDicom::CreateStudyEntity(const DcmStudyEntity &e)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("INSERT OR REPLACE INTO tb_DcmStudy (StudyInstanceUID, StudyID, StudyDate, "
+              "StudyTime, StudyDescription, Modality, PatientID) VALUES (?,?,?,?,?,?,?)");
+    q.addBindValue(e.studyInstanceUID); q.addBindValue(e.studyID);
+    q.addBindValue(e.studyDate);        q.addBindValue(e.studyTime);
+    q.addBindValue(e.studyDescription); q.addBindValue(e.modality);
+    q.addBindValue(e.patientId);
+    if (!q.exec()) { qWarning() << "CreateStudyEntity:" << q.lastError().text(); return false; }
+    return true;
+}
+
+bool KEntityDicom::GetStudyEntity(const QString &studyInstanceUID, DcmStudyEntity &out) const
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT StudyInstanceUID, StudyID, StudyDate, StudyTime, StudyDescription, "
+              "Modality, PatientID FROM tb_DcmStudy WHERE StudyInstanceUID=?");
+    q.addBindValue(studyInstanceUID);
+    if (!q.exec() || !q.next())
+        return false;
+    out.studyInstanceUID = q.value(0).toString(); out.studyID = q.value(1).toString();
+    out.studyDate = q.value(2).toString();        out.studyTime = q.value(3).toString();
+    out.studyDescription = q.value(4).toString(); out.modality = q.value(5).toString();
+    out.patientId = q.value(6).toString();
+    return true;
+}
+
+QList<DcmStudyEntity> KEntityDicom::GetStudiesByPatient(const QString &patientId) const
+{
+    QList<DcmStudyEntity> list;
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT StudyInstanceUID, StudyID, StudyDate, StudyTime, StudyDescription, "
+              "Modality, PatientID FROM tb_DcmStudy WHERE PatientID=? ORDER BY StudyDate DESC");
+    q.addBindValue(patientId);
+    if (!q.exec()) return list;
+    while (q.next()) {
+        DcmStudyEntity e;
+        e.studyInstanceUID = q.value(0).toString(); e.studyID = q.value(1).toString();
+        e.studyDate = q.value(2).toString();        e.studyTime = q.value(3).toString();
+        e.studyDescription = q.value(4).toString(); e.modality = q.value(5).toString();
+        e.patientId = q.value(6).toString();
+        list.append(e);
+    }
+    return list;
+}
+
+bool KEntityDicom::CreateSeriesEntity(const DcmSeriesEntity &e)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("INSERT OR REPLACE INTO tb_DcmSeries (SeriesInstanceUID, StudyInstanceUID, "
+              "SeriesNumber, SeriesDate, SeriesDescription, Modality, "
+              "NumberOfSeriesRelatedInstances) VALUES (?,?,?,?,?,?,?)");
+    q.addBindValue(e.seriesInstanceUID); q.addBindValue(e.studyInstanceUID);
+    q.addBindValue(e.seriesNumber);      q.addBindValue(e.seriesDate);
+    q.addBindValue(e.seriesDescription); q.addBindValue(e.modality);
+    q.addBindValue(e.numberOfInstances);
+    if (!q.exec()) { qWarning() << "CreateSeriesEntity:" << q.lastError().text(); return false; }
+    return true;
+}
+
+QList<DcmSeriesEntity> KEntityDicom::GetSeriesByStudy(const QString &studyInstanceUID) const
+{
+    QList<DcmSeriesEntity> list;
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT SeriesInstanceUID, StudyInstanceUID, SeriesNumber, SeriesDate, "
+              "SeriesDescription, Modality, NumberOfSeriesRelatedInstances "
+              "FROM tb_DcmSeries WHERE StudyInstanceUID=? ORDER BY SeriesNumber");
+    q.addBindValue(studyInstanceUID);
+    if (!q.exec()) return list;
+    while (q.next()) {
+        DcmSeriesEntity e;
+        e.seriesInstanceUID = q.value(0).toString(); e.studyInstanceUID = q.value(1).toString();
+        e.seriesNumber = q.value(2).toInt();         e.seriesDate = q.value(3).toString();
+        e.seriesDescription = q.value(4).toString(); e.modality = q.value(5).toString();
+        e.numberOfInstances = q.value(6).toInt();
+        list.append(e);
+    }
+    return list;
+}
+
+int KEntityDicom::GetStudyNumber() const
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    if (q.exec("SELECT count(*) FROM tb_DcmStudy") && q.next())
         return q.value(0).toInt();
     return 0;
 }

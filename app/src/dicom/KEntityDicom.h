@@ -16,6 +16,28 @@
 // Запись worklist — динамический набор колонок (QMap dbname→значение), ключ —
 // AccessionNumber (реф. m_strAccessionNumber). Элемент очереди — по ExamId.
 
+// Исследование DICOM (реф. KDcmStudyEntity, tb_DcmStudy). Study содержит Series.
+struct DcmStudyEntity {
+    QString studyInstanceUID;   // ключ (StudyInstanceUID)
+    QString studyID;
+    QString studyDate;
+    QString studyTime;
+    QString studyDescription;
+    QString modality;           // ES (endoscopy)
+    QString patientId;          // связь с пациентом
+};
+
+// Серия DICOM (реф. KDcmSeriesEntity, tb_DcmSeries). Series принадлежит Study.
+struct DcmSeriesEntity {
+    QString seriesInstanceUID;  // ключ (SeriesInstanceUID)
+    QString studyInstanceUID;   // FK → Study
+    int     seriesNumber = 0;
+    QString seriesDate;
+    QString seriesDescription;
+    QString modality;
+    int     numberOfInstances = 0;   // NumberOfSeriesRelatedInstances
+};
+
 // Элемент очереди отправки (реф. поля KEntityDicom для tb_DcmStore).
 struct DcmStoreEntity {
     QString examId;            // m_strExamId — ключ
@@ -47,6 +69,14 @@ public:
     int  GetWorklistNumber() const;                       // select count(*)
     bool DeleteWorklistEntity(const QString &accessionNumber);
     bool ClearWorklist();                                 // при обновлении worklist
+
+    // --- Исследования/серии (tb_DcmStudy / tb_DcmSeries) ---
+    bool CreateStudyEntity(const DcmStudyEntity &e);
+    bool GetStudyEntity(const QString &studyInstanceUID, DcmStudyEntity &out) const;
+    QList<DcmStudyEntity> GetStudiesByPatient(const QString &patientId) const;
+    bool CreateSeriesEntity(const DcmSeriesEntity &e);
+    QList<DcmSeriesEntity> GetSeriesByStudy(const QString &studyInstanceUID) const;
+    int  GetStudyNumber() const;
 
     // --- Очередь отправки (tb_DcmStore) ---
     bool CreateStoreEntity(const DcmStoreEntity &e);
