@@ -29,6 +29,7 @@
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
+#include "report/KRTDataSourceDemo.h"
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
 #include "sys/KUserSet.h"
@@ -920,6 +921,28 @@ int main(int argc, char **argv)
         qInfo() << "add/del roundtrip:" << (addOk && delOk);
         qInfo() << (ok ? "thesaurus: PASS" : "thesaurus: FAIL");
         return ok ? 0 : 13;
+    }
+
+    // Self-test демо-источника отчёта: образцовые данные + DemoImage → превью.
+    if (screen == "dsdemo") {
+        KRTDataSourceDemo dsd;
+        KReportDataSource ds;
+        dsd.Build(ds, 4);
+        KReportTemplateManager mgr;
+        const auto items = mgr.LoadTemplate("NP-2x2");
+        KDocumentGenerator gen;
+        const QString html = gen.Generate(items, ds);
+        const int imgCount = html.count("<img");
+        // Проверить, что демо-снимки указывают на реальные DemoImage-ассеты.
+        const QString img0 = ds.GetValue("RT_DATASOURCE_PERIPHERAL", "RT_TEST_IMAGE0");
+        const bool demoImgExists = QFile::exists(img0);
+        qInfo() << "демо: пациент=" << ds.GetValue("RT_DATASOURCE_PATIENT", "RT_PATIENT_NAME")
+                << "| <img>=" << imgCount << "| Image0:" << img0 << "существует:" << demoImgExists;
+        const bool ok = ds.GetValue("RT_DATASOURCE_PATIENT", "RT_PATIENT_NAME") == "Demo Patient" &&
+                        html.contains("Demo Patient") && html.contains("Sample conclusion") &&
+                        imgCount == 4 && img0.contains("DemoImage/Image0.png") && demoImgExists;
+        qInfo() << (ok ? "dsdemo: PASS" : "dsdemo: FAIL");
+        return ok ? 0 : 29;
     }
 
     // Self-test реального источника данных отчёта: БД → датасорс → генератор.

@@ -89,6 +89,7 @@ set(SOURCES
     src/report/KEntityReport.cpp
     src/report/KThesaurusOpt.cpp
     src/report/KRTDataSourceReal.cpp
+    src/report/KRTDataSourceDemo.cpp
     src/hal/Hal.cpp
     src/hal/KMemDevice.cpp
 )
@@ -161,6 +162,7 @@ add_executable(ui_preview
     src/report/KEntityReport.cpp
     src/report/KThesaurusOpt.cpp
     src/report/KRTDataSourceReal.cpp
+    src/report/KRTDataSourceDemo.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
     src/video/KVideoSet.cpp
