@@ -29,6 +29,7 @@
 #include "sys/KUserSet.h"
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
+#include "sys/KVersionConfig.h"
 #include "sys/KStatisticConfig.h"
 #include "sys/KSystemStatus.h"
 
@@ -582,11 +583,28 @@ int main(int argc, char **argv)
         const bool m3 = uc.IsVersionMatched("camera", "99.99.99.99.99.99"); // несовместимо
         qInfo() << "hmi(2-я)=" << m1 << "kernel=" << m2 << "camera(чужая)=" << m3;
 
+        // Интеграция: установленные версии (KVersionConfig) vs matched (совместимость).
+        const QString vpath = "/tmp/endo_version.ini";
+        QFile::remove(vpath);
+        KVersionConfig &vc = KVersionConfig::GetInstance();
+        vc.SetConfigFile(vpath);
+        vc.SetVersion("kernel", "56.15.01.00.00.10");    // совместимо
+        vc.SetVersion("hmi", "56.11.00.00.02.03");        // совместимо (2-я допустимая)
+        vc.SetVersion("camera", "99.99.99.99.99.99");     // НЕсовместимо
+        const bool compKernel = vc.IsComponentCompatible("kernel");
+        const bool compHmi = vc.IsComponentCompatible("hmi");
+        const bool compCamera = vc.IsComponentCompatible("camera");
+        const bool allOk = vc.IsCompatible({"kernel", "hmi"});
+        qInfo() << "установлено kernel:" << vc.GetVersion("kernel")
+                << "совместимо:" << compKernel << "| hmi:" << compHmi
+                << "| camera:" << compCamera << "| kernel+hmi:" << allOk;
+
         const bool ok = uc.MatchedNum() == 14 && hmi.size() == 2 &&
                         hmi.contains("56.21.00.00.01.17") &&
                         hmi.contains("56.11.00.00.02.03") &&
                         kernel.size() == 1 && kernel.first() == "56.15.01.00.00.10" &&
-                        m1 && m2 && !m3;
+                        m1 && m2 && !m3 &&
+                        compKernel && compHmi && !compCamera && allOk;
         qInfo() << (ok ? "version: PASS" : "version: FAIL");
         return ok ? 0 : 16;
     }

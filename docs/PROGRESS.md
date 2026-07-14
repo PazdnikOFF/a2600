@@ -109,6 +109,7 @@ app/
     ├── sys/KAccount                    # вход/роли/MD5-пароли/блокировка (system.ini)
     ├── sys/KSystemSet                  # системные настройки (Common/*, Account/*)
     ├── sys/KUpdateConf                 # матрица совместимости версий (matchedversion.ini)
+    ├── sys/KVersionConfig              # установленные версии (data/protected/version.ini) + проверка совместимости
     ├── sys/KStatisticConfig            # спека событий лога (statistic.ini: time_/dcnt_/info_)
     ├── sys/KSystemStatus               # центральный синглтон состояния (freeze/VlsMode/… + сигналы)
     ├── endo/KSoftEndoParam             # video.ini (per эндоскоп)
