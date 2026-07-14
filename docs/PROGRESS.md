@@ -81,6 +81,7 @@ ENDO_ROOT=$ER ui_preview style                        # self-test брендов
 ui_preview examcfg                                    # self-test конфига колонок списка осмотров
 ui_preview exam                                       # self-test полного CRUD осмотров (tb_ExamList)
 ui_preview filebackup                                 # self-test файлового слоя (copy/delete/size/USB)
+ENDO_ROOT=$ER ui_preview videoset                     # self-test оркестрации (Set*Level→параметр+регистр)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -104,6 +105,7 @@ app/
     ├── video/KVideoProxy               # камера/FPGA, InitCamera, снимок, RBC, ApplyImageParams
     ├── video/KViewSoftEndo             # вьювер видео
     ├── video/KVideoParam               # держатель видеопараметров
+    ├── video/KVideoSet                 # оркестрация Set*Level → KVideoParam + PL-регистры
     ├── video/KSaveVideoFile            # запись MP4 (VCU), миниатюры, лимит
     ├── ui/KUIDesktop                   # главный экран (конфиг-вёрстка)
     ├── ui/KDisplayOption               # layout из ini по монитору/эндоскопу

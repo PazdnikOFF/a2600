@@ -19,6 +19,7 @@
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
 #include "video/KVideoParam.h"
+#include "video/KVideoSet.h"
 #include "sys/KSystem.h"
 #include "dicom/KDicomFieldMap.h"
 #include "dicom/KEntityDicom.h"
@@ -478,6 +479,51 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test оркестрации KVideoSet: Set*Level → KVideoParam + регистры (по trace).
+    if (screen == "videoset") {
+        AlgParaManager::GetInstance().LoadColEnhLevels("IMX274");   // для резолва ColorEnh
+        KPlControl pl;
+        pl.EnableTrace(true);
+        KVideoSet &vs = KVideoSet::Instance();
+        vs.AttachPl(&pl);
+
+        vs.SetColEnhLevel(5);      // → KVideoParam + ColorEnh регистры (enable+значение)
+        vs.SetDenoiseLevel(2);     // → 0xa1940008
+        vs.SetBrightEQLevel(1);    // → 0xa1950000 (enable)
+        vs.SetColorRValue(0, 0x120);  // → 0xa1870004
+        vs.SetColorBValue(0, 0x40);   // → 0xa1870008
+        vs.SetColorCValue(0, 0x100);  // → 0xa1870000
+        vs.SetZoomLevel(3);        // → 0xa18d0004
+        vs.SetOperationMode(3);    // VIST → SetVistSwitch (0xa18e0000+0xa1840000)
+
+        const auto &tr = pl.Trace();
+        // Проверка держателя (Get*) + ключевых регистров.
+        const bool paramOk = vs.GetColEnhLevel() == 5 && vs.GetDenoiseLevel() == 2 &&
+                             vs.GetBrightEQLevel() == 1 && vs.GetZoomLevel() == 3;
+        bool regOk = false;
+        int denoiseReg = 0, zoomReg = 0, rReg = 0, vistReg = 0;
+        for (const auto &w : tr) {
+            if (w.first == 0xa1940008 && w.second == 2) denoiseReg++;
+            if (w.first == 0xa18d0004 && w.second == 3) zoomReg++;
+            if (w.first == 0xa1870004 && w.second == 0x120) rReg++;
+            if (w.first == 0xa18e0000 && w.second == 1) vistReg++;
+        }
+        regOk = denoiseReg && zoomReg && rReg && vistReg;
+        qInfo() << "держатель ок:" << paramOk << "| регистры (denoise/zoom/R/vist):"
+                << denoiseReg << zoomReg << rReg << vistReg << "| всего записей:" << tr.size();
+
+        // ResetVideoParam → дефолты.
+        vs.ResetVideoParam();
+        const bool resetOk = vs.GetColEnhLevel() == 1 && vs.GetDenoiseLevel() == 0 &&
+                             vs.GetZoomLevel() == 0;
+        qInfo() << "после reset — ColEnh/Denoise/Zoom:" << vs.GetColEnhLevel()
+                << vs.GetDenoiseLevel() << vs.GetZoomLevel();
+
+        const bool ok = paramOk && regOk && resetOk;
+        qInfo() << (ok ? "videoset: PASS" : "videoset: FAIL");
+        return ok ? 0 : 27;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
