@@ -25,6 +25,12 @@ public:
     // Возвращает LUT размера inputmax (значения 0..inputmax-1) для загрузки в PL.
     static QVector<int> CalGammaLut(const GammaParam &p);
 
+    // Текущий размер видео-области (реф. AlgParaManager::resize). Вызывается из
+    // KPlControl::SetVideoArea; downstream-параметры считаются от этих размеров.
+    void resize(int width, int height) { videoW_ = width; videoH_ = height; }
+    int VideoWidth() const { return videoW_; }
+    int VideoHeight() const { return videoH_; }
+
     // Путь конфига параметров для сенсора (реф. GetSensorConfigFile).
     QString GetSensorConfigFile(const QString &category, const QString &sensor) const;
 
@@ -113,4 +119,5 @@ private:
     QVector<int> imgEnhLevels_;    // значения ImageEnh по уровню
     QVector<int> brightEqGauss_;   // гауссов фильтр Bright EQ (36 значений)
     QVector<int> brightEqLuma_[4]; // lumaGainLut: disable/low/middle/high
+    int videoW_ = 0, videoH_ = 0; // текущий размер видео-области (resize)
 };

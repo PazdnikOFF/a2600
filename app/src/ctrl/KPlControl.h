@@ -148,6 +148,23 @@ public:
     // (В оригинале далее применяются гейны из AlgParaManager::getAwbPara — на устройстве.)
     void StartAWB();
 
+    // Текущее значение диафрагмы (реф. ReadIrisValue) — младший байт 0xa18a0004.
+    int ReadIrisValue();
+    // Смещение Aurora-serdes (реф. SetAuroraOffset) → 0xa004a02c = a | (b<<8).
+    void SetAuroraOffset(unsigned char a, unsigned char b);
+    // Область захвата видео (реф. SetVideoCaptureArea) → 0xa18d0008. Точка (x,y)
+    //   кодируется знак-величиной: enc(v)=((|v|*2)|(v<0?0x100:0))&0x1ff; y<<16.
+    void SetVideoCaptureArea(int x, int y);
+    // Тип диафрагмы камеры (реф. SetCameraIrisType) → 0xa18a0000. Кодировка:
+    //   type 0→0x530, 1→0x431, 2→(2|(subtype==5?0x100:0x200)|0x30).
+    void SetCameraIrisType(int type, int subtype);
+    // Видео-область (реф. SetVideoArea(_VideoRect)): передаёт размеры в
+    //   AlgParaManager::resize (downstream-параметры считаются от них).
+    void SetVideoArea(int width, int height);
+    // Гистограмма яркости (реф. ReadBrightnessHistogramValue): триггер 0xa18a0010=1,
+    //   чтение 256 бинов (16-бит) из 0xa18a9000 (по 2 бина на слово). out — минимум 256.
+    void ReadBrightnessHistogramValue(unsigned short *out, int count = 256);
+
     // --- Трассировка записей для off-device self-test (нет /dev/mem на Mac) ---
     using RegWrite = QPair<unsigned long, unsigned int>;
     void EnableTrace(bool on) { traceOn_ = on; }

@@ -430,6 +430,70 @@ void KPlControl::StartAWB()
     WriteValueToPL(0xa18e0000, 0);
 }
 
+int KPlControl::ReadIrisValue()
+{
+    // Реф.: читаем 0xa18a0004, возвращаем младший байт.
+    unsigned int v = 0;
+    ReadValueFromPL(0xa18a0004, v);
+    return static_cast<int>(v & 0xff);
+}
+
+void KPlControl::SetAuroraOffset(unsigned char a, unsigned char b)
+{
+    // Реф.: value = (a & 0xff) | ((b & 0xff) << 8).
+    WriteValueToPL(0xa004a02c, static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 8));
+}
+
+namespace {
+// Знак-величина точки для SetVideoCaptureArea (реф.): ((|v|*2)|(v<0?0x100:0))&0x1ff.
+unsigned int encodeSignMag(int v)
+{
+    unsigned int e = static_cast<unsigned int>(v < 0 ? -v : v) * 2;
+    if (v < 0) e |= 0x100;
+    return e & 0x1ff;
+}
+}
+
+void KPlControl::SetVideoCaptureArea(int x, int y)
+{
+    const unsigned int v = encodeSignMag(x) | (encodeSignMag(y) << 16);
+    WriteValueToPL(0xa18d0008, v);
+}
+
+void KPlControl::SetVideoArea(int width, int height)
+{
+    // Реф.: передать размеры rect в AlgParaManager::resize (без прямой записи в PL).
+    AlgParaManager::GetInstance().resize(width, height);
+}
+
+void KPlControl::SetCameraIrisType(int type, int subtype)
+{
+    // Реф. SetCameraIrisType: кодирование по type/subtype, флаг 0x30, → 0xa18a0000.
+    unsigned int v;
+    if (type == 2) {
+        const unsigned int mode = (subtype == 5) ? 0x100u : 0x200u;
+        v = (2u & 0x3) | mode | 0x30u;
+    } else {
+        const unsigned int hi = (type == 0) ? 0x500u : 0x400u;
+        v = (static_cast<unsigned int>(type) & 0x3) | hi | 0x30u;
+    }
+    WriteValueToPL(0xa18a0000, v);
+}
+
+void KPlControl::ReadBrightnessHistogramValue(unsigned short *out, int count)
+{
+    if (!out || count <= 0) return;
+    // Реф.: триггер захвата гистограммы, затем чтение бинов (по 2 в 32-бит слове).
+    WriteValueToPL(0xa18a0010, 1);
+    const int words = count / 2;
+    for (int i = 0; i < words; ++i) {
+        unsigned int w = 0;
+        ReadValueFromPL(0xa18a9000 + static_cast<unsigned long>(i) * 4, w);
+        out[2 * i]     = static_cast<unsigned short>(w & 0xffff);
+        out[2 * i + 1] = static_cast<unsigned short>((w >> 16) & 0xffff);
+    }
+}
+
 void KPlControl::SetDenoiseLut(const DenoiseData &d)
 {
     // Реф. SetDenoiseLut — карта регистров из дизассемблера:

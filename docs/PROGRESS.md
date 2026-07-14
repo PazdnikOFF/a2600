@@ -155,14 +155,19 @@ app/
   Bt/Wifi/Dvd/Finger/Lcd/принтер/Net/Iot. Для видео есть лишь `Hal_Card*Iris*` (диафрагма) и
   `Hal_*Display*`/`Hal_Change_Video_PN_*` (внешний монитор/PAL-NTSC). Gamma/CCM/AWB/Denoise/VIST —
   библиотеки НЕТ, только PL-регистры. Вывод: реимплементация через KMemDevice/dev/mem — верна.
-- **KPlControl — 72 метода** (полный register-API оригинала). Реализовано ~40: Gamma(LUT/Enable),
+- **KPlControl — 72 метода** (полный register-API оригинала). Реализовано ~47: Gamma(LUT/Enable),
   CCM0/CCM1(+Matrix), ColorEnh, ImageEnh, Tone(R/B/C), BrightEQ(Enable/Lut), AEC/AGC, AWB(+Cut),
-  VIST(Switch/Matrix), Denoise(Level/Lut), Zoom, CHb, SensorR/G/BLut, RbcLut, KneeLut, **IrisTable**,
+  VIST(Switch/Matrix), Denoise(Level/Lut), Zoom, CHb, SensorR/G/BLut, RbcLut, KneeLut, IrisTable,
   FreezeStatus, VideoDisplay, FreezeScaler(In/Out/Ratio), CutPara, RealtimeVideoState, ApmAreaDisplay,
-  VideoTest, GetFpga1/2/3Version, GetFpga2System, ReadAWBValue, **StartAWB**. ОСТАЛОСЬ портировать:
-  Iris (Camera/Endo type — 0xa18a0000 ветвление, ReadIrisValue), Video geometry (Area/Capture/CentorPoint —
-  часть через FPGA-I2C), CornerCutWay (маска 0xa18c8000), Aurora (SetAuroraOffset 0xa004a02c, TxReset),
-  Demoire, GlassType, Lens, VLS, PLInit (tail-call), InitColorEnhPara, ReadBrightnessHistogramValue.
+  VideoTest, GetFpga1/2/3Version, GetFpga2System, ReadAWBValue, StartAWB, ReadIrisValue, SetAuroraOffset,
+  SetVideoCaptureArea, ReadBrightnessHistogramValue, SetCameraIrisType, **SetVideoArea(→resize)**.
+  ГРАНИЦА: остаток (~25) — НЕ чистые PL-регистры, требуют устройства/доп. реверса, не гадать:
+  • Геометрия маски поля зрения: CornerCutWay → AlgParaManager::SetCutCornerPara → SetRoundPara/
+    SetOctagonPara (растеризация круга/октагона с плав. точкой, маска 1080 рег. 0xa18c8000) — off-device не верифицируется.
+  • FPGA-I2C к сенсору: SetVideoCentorPoint (центрирование через 0xa0048010/70 строб-последовательность).
+  • Runtime-зависимые: SetEndoIrisType (GetEndoScope()->GetSensorType/GetEndoType).
+  • Tail-call/неясные: PLInit, GlassType, VLS(→SetVlsMode), Demoire, Lens/SetLensSize, SetEnhanceSize,
+    SetFreezeVideoLoc, AuroraTxReset, InitColorEnhPara.
 
 **Регистры PL (FPGA), через KPlControl → KMemDevice /dev/mem:**
 - Init сенсора (KVideoProxy::InitCamera): регион `0xa004xxxx` (0x8070/0x8074=FPGA-I2C
@@ -191,6 +196,11 @@ app/
   (hex, 1024). Перед записью — ожидание готовности (poll бита 2 в `0xa1930000`).
 - Чтения версий/статуса FPGA: GetFpga2Version `0xa1000000`, GetFpga3Version `0xa0060000`,
   GetFpga2System `0xa1000008`, ReadAWBValue `0xa1840014` (r=(v>>16)&0xffff, b=v&0x1ffff).
+- ReadIrisValue: `0xa18a0004` (младший байт). SetAuroraOffset: `0xa004a02c` = a|(b<<8).
+- SetVideoCaptureArea: `0xa18d0008`, точка знак-величиной enc(v)=((|v|*2)|(v<0?0x100:0))&0x1ff, y<<16.
+- ReadBrightnessHistogramValue: триггер `0xa18a0010=1`, 256 бинов из `0xa18a9000` (2 бина/слово).
+- SetCameraIrisType: `0xa18a0000`, кодировка type 0→0x530/1→0x431/2→(2|(subtype==5?0x100:0x200)|0x30).
+  SetEndoIrisType — то же поле, но индекс зависит от GetEndoScope()->GetSensorType/GetEndoType (device).
 - ColorEnh (SetColorEnhParam): enable `0xa18f0008`, значение `0xa18f0024` (из colenh_level.txt).
 - ImageEnh (SetImageEnhValue): `0xa1850058` (из ImgEnh/level_*.txt).
 - RBC-тон (SetColorC/R/B, SetToneValue): `0xa1870000`=C(тон), `+0x4`=R-гейн, `+0x8`=B-гейн.

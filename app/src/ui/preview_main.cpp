@@ -316,6 +316,43 @@ int main(int argc, char **argv)
                 << (irisOk ? "OK" : "MISMATCH");
         if (!irisOk) ok = false;
 
+        // Aurora offset + VideoCaptureArea (знак-величина) + histogram-триггер.
+        pl.ClearTrace();
+        pl.SetAuroraOffset(0x12, 0x34);
+        pl.SetVideoCaptureArea(10, -20);      // enc(10)=20, enc(-20)=(40|0x100)&0x1ff=0x128
+        unsigned short hist[256] = {0};
+        pl.ReadBrightnessHistogramValue(hist, 256);   // на десктопе: только триггер-запись
+        pl.ReadIrisValue();                            // read → 0 (нет /dev/mem)
+        const auto &tx = pl.Trace();
+        bool auxOk = tx.size() == 3 &&
+                     tx[0].first == 0xa004a02c && tx[0].second == (0x12u | (0x34u<<8)) &&
+                     tx[1].first == 0xa18d0008 && tx[1].second == (20u | (0x128u<<16)) &&
+                     tx[2].first == 0xa18a0010 && tx[2].second == 1;
+        qInfo() << "aux writes:" << tx.size() << "(exp 3, aurora/capture/hist-trig)"
+                << (auxOk ? "OK" : "MISMATCH");
+        if (!auxOk) ok = false;
+
+        // Тип диафрагмы камеры (кодировка type/subtype).
+        pl.ClearTrace();
+        pl.SetCameraIrisType(0, 0);   // → 0x530
+        pl.SetCameraIrisType(1, 0);   // → 0x431
+        pl.SetCameraIrisType(2, 5);   // → 0x132
+        pl.SetCameraIrisType(2, 0);   // → 0x232
+        const auto &tc2 = pl.Trace();
+        bool irisTypeOk = tc2.size() == 4 &&
+                          tc2[0].second == 0x530 && tc2[1].second == 0x431 &&
+                          tc2[2].second == 0x132 && tc2[3].second == 0x232 &&
+                          tc2[0].first == 0xa18a0000;
+        qInfo() << "irisType writes:" << tc2.size() << "(exp 4)" << (irisTypeOk ? "OK" : "MISMATCH");
+        if (!irisTypeOk) ok = false;
+
+        // SetVideoArea → AlgParaManager::resize (без прямой записи в PL).
+        pl.SetVideoArea(1280, 960);
+        const bool areaOk = alg.VideoWidth() == 1280 && alg.VideoHeight() == 960;
+        qInfo() << "VideoArea resize:" << alg.VideoWidth() << "x" << alg.VideoHeight()
+                << (areaOk ? "OK" : "MISMATCH");
+        if (!areaOk) ok = false;
+
         qInfo() << (ok ? "plreg: PASS" : "plreg: FAIL");
         return ok ? 0 : 6;
     }
