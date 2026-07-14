@@ -86,6 +86,7 @@ set(SOURCES
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/report/KReportTemplate.cpp
+    src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KEntityReport.cpp
@@ -160,6 +161,7 @@ add_executable(ui_preview
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/report/KReportTemplate.cpp
+    src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KEntityReport.cpp

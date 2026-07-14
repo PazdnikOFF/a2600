@@ -25,6 +25,7 @@
 #include "dicom/KDicomFieldMap.h"
 #include "dicom/KEntityDicom.h"
 #include "report/KReportTemplate.h"
+#include "report/KSysReportTempletCfg.h"
 #include "report/KReportDataSource.h"
 #include "report/KDocumentGenerator.h"
 #include "report/KEntityReport.h"
@@ -650,6 +651,32 @@ int main(int argc, char **argv)
         const bool ok = itemsOk && decideOk && flagsOk;
         qInfo() << (ok ? "update: PASS" : "update: FAIL");
         return ok ? 0 : 30;
+    }
+
+    // Self-test каталога шаблонов отчёта: TempletInfo.xml → шаблоны + департаменты
+    // (KSysReportTempletCfg поверх KReportTemplateManager).
+    if (screen == "templetcfg") {
+        KSysReportTempletCfg &cfg = KSysReportTempletCfg::GetInstance();
+        const bool loaded = cfg.Reload();
+        const QStringList names = cfg.TempletNames();
+        qInfo() << "загружено:" << loaded << "| шаблоны:" << names;
+
+        bool found = false;
+        const KTempletBaseInfo np22 = cfg.GetTemplateInfoByName("NP-2x2", &found);
+        const QStringList depts = cfg.GetDeptsOfTemplate("NP-2x2");
+        const QStringList byDept = cfg.GetTempletNamesByDept("KW_NP-2x2");
+        const QString def = cfg.GetDefaultTempletByDept("KW_NP-2x2");
+        qInfo() << "NP-2x2 found:" << found << "factory:" << np22.factory
+                << "modifydate:" << np22.modifyDate << "| depts:" << depts
+                << "| by-dept:" << byDept << "| default:" << def;
+
+        const bool ok = loaded && names.contains("NP-2x2") && names.contains("NP-1x4") &&
+                        found && np22.factory && np22.modifyDate == "factory" &&
+                        depts == QStringList{"KW_NP-2x2"} &&
+                        byDept == QStringList{"NP-2x2"} && def == "NP-2x2" &&
+                        cfg.GetTemplateInfoByName("no-such", &found).name.isEmpty();
+        qInfo() << (ok ? "templetcfg: PASS" : "templetcfg: FAIL");
+        return ok ? 0 : 31;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
