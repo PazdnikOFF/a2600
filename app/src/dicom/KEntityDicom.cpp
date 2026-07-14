@@ -82,6 +82,17 @@ bool KEntityDicom::createTables()
         "SeriesDate TEXT, SeriesDescription TEXT, Modality TEXT, "
         "NumberOfSeriesRelatedInstances INTEGER)") && ok;
 
+    // tb_DcmMpps — Modality Performed Procedure Step; tb_DcmCommit — Storage Commitment.
+    ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS tb_DcmMpps ("
+        "MppsUID TEXT PRIMARY KEY, ExamId TEXT, PerformedProcedureStepID TEXT, "
+        "PerformedProcedureStepStatus TEXT, StartDate TEXT, StartTime TEXT, "
+        "EndDate TEXT, EndTime TEXT, Description TEXT)") && ok;
+    ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS tb_DcmCommit ("
+        "TransactionUID TEXT PRIMARY KEY, ExamId TEXT, SopInstanceUID TEXT, "
+        "CommitStatus INTEGER)") && ok;
+
     if (!ok) qWarning() << "KEntityDicom::createTables:" << q.lastError().text();
     return ok;
 }
@@ -319,4 +330,78 @@ int KEntityDicom::GetStudyNumber() const
     if (q.exec("SELECT count(*) FROM tb_DcmStudy") && q.next())
         return q.value(0).toInt();
     return 0;
+}
+
+// --- MPPS / Commit ---
+
+bool KEntityDicom::CreateMppsEntity(const DcmMppsEntity &e)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("INSERT OR REPLACE INTO tb_DcmMpps (MppsUID, ExamId, PerformedProcedureStepID, "
+              "PerformedProcedureStepStatus, StartDate, StartTime, EndDate, EndTime, "
+              "Description) VALUES (?,?,?,?,?,?,?,?,?)");
+    q.addBindValue(e.mppsUID);   q.addBindValue(e.examId);    q.addBindValue(e.stepID);
+    q.addBindValue(e.status);    q.addBindValue(e.startDate); q.addBindValue(e.startTime);
+    q.addBindValue(e.endDate);   q.addBindValue(e.endTime);   q.addBindValue(e.description);
+    if (!q.exec()) { qWarning() << "CreateMppsEntity:" << q.lastError().text(); return false; }
+    return true;
+}
+
+bool KEntityDicom::UpdateMppsStatus(const QString &mppsUID, const QString &status,
+                                    const QString &endDate, const QString &endTime)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("UPDATE tb_DcmMpps SET PerformedProcedureStepStatus=?, EndDate=?, EndTime=? "
+              "WHERE MppsUID=?");
+    q.addBindValue(status); q.addBindValue(endDate); q.addBindValue(endTime);
+    q.addBindValue(mppsUID);
+    return q.exec();
+}
+
+bool KEntityDicom::GetMppsEntity(const QString &mppsUID, DcmMppsEntity &out) const
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT MppsUID, ExamId, PerformedProcedureStepID, PerformedProcedureStepStatus, "
+              "StartDate, StartTime, EndDate, EndTime, Description FROM tb_DcmMpps WHERE MppsUID=?");
+    q.addBindValue(mppsUID);
+    if (!q.exec() || !q.next())
+        return false;
+    out.mppsUID = q.value(0).toString();   out.examId = q.value(1).toString();
+    out.stepID = q.value(2).toString();    out.status = q.value(3).toString();
+    out.startDate = q.value(4).toString(); out.startTime = q.value(5).toString();
+    out.endDate = q.value(6).toString();   out.endTime = q.value(7).toString();
+    out.description = q.value(8).toString();
+    return true;
+}
+
+bool KEntityDicom::CreateCommitEntity(const DcmCommitEntity &e)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("INSERT OR REPLACE INTO tb_DcmCommit (TransactionUID, ExamId, SopInstanceUID, "
+              "CommitStatus) VALUES (?,?,?,?)");
+    q.addBindValue(e.transactionUID); q.addBindValue(e.examId);
+    q.addBindValue(e.sopInstanceUID); q.addBindValue(e.commitStatus);
+    if (!q.exec()) { qWarning() << "CreateCommitEntity:" << q.lastError().text(); return false; }
+    return true;
+}
+
+bool KEntityDicom::UpdateCommitStatus(const QString &transactionUID, int status)
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("UPDATE tb_DcmCommit SET CommitStatus=? WHERE TransactionUID=?");
+    q.addBindValue(status); q.addBindValue(transactionUID);
+    return q.exec();
+}
+
+bool KEntityDicom::GetCommitEntity(const QString &transactionUID, DcmCommitEntity &out) const
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT TransactionUID, ExamId, SopInstanceUID, CommitStatus "
+              "FROM tb_DcmCommit WHERE TransactionUID=?");
+    q.addBindValue(transactionUID);
+    if (!q.exec() || !q.next())
+        return false;
+    out.transactionUID = q.value(0).toString(); out.examId = q.value(1).toString();
+    out.sopInstanceUID = q.value(2).toString(); out.commitStatus = q.value(3).toInt();
+    return true;
 }

@@ -38,6 +38,25 @@ struct DcmSeriesEntity {
     int     numberOfInstances = 0;   // NumberOfSeriesRelatedInstances
 };
 
+// MPPS — Modality Performed Procedure Step (реф. tb_DcmMpps/tb_DcmPerformedProcedureStep).
+struct DcmMppsEntity {
+    QString mppsUID;            // ключ (SOP Instance UID шага)
+    QString examId;
+    QString stepID;            // PerformedProcedureStepID
+    QString status;            // IN PROGRESS / COMPLETED / DISCONTINUED
+    QString startDate, startTime;
+    QString endDate, endTime;
+    QString description;
+};
+
+// Storage Commitment (реф. KDcmCommitEntity, tb_DcmCommit).
+struct DcmCommitEntity {
+    QString transactionUID;    // ключ
+    QString examId;
+    QString sopInstanceUID;
+    int     commitStatus = 0;  // 0=ожидание,1=подтверждён,2=отказ
+};
+
 // Элемент очереди отправки (реф. поля KEntityDicom для tb_DcmStore).
 struct DcmStoreEntity {
     QString examId;            // m_strExamId — ключ
@@ -77,6 +96,15 @@ public:
     bool CreateSeriesEntity(const DcmSeriesEntity &e);
     QList<DcmSeriesEntity> GetSeriesByStudy(const QString &studyInstanceUID) const;
     int  GetStudyNumber() const;
+
+    // --- MPPS / Storage Commitment (tb_DcmMpps / tb_DcmCommit) ---
+    bool CreateMppsEntity(const DcmMppsEntity &e);
+    bool UpdateMppsStatus(const QString &mppsUID, const QString &status,
+                          const QString &endDate = QString(), const QString &endTime = QString());
+    bool GetMppsEntity(const QString &mppsUID, DcmMppsEntity &out) const;
+    bool CreateCommitEntity(const DcmCommitEntity &e);
+    bool UpdateCommitStatus(const QString &transactionUID, int status);
+    bool GetCommitEntity(const QString &transactionUID, DcmCommitEntity &out) const;
 
     // --- Очередь отправки (tb_DcmStore) ---
     bool CreateStoreEntity(const DcmStoreEntity &e);

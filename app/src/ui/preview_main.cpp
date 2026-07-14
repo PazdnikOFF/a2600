@@ -1050,13 +1050,32 @@ int main(int argc, char **argv)
                 << "серий в study:" << series.size()
                 << "инстансов в серии:" << (series.isEmpty() ? -1 : series.first().numberOfInstances);
 
+        // MPPS (жизненный цикл: IN PROGRESS → COMPLETED) + Storage Commitment.
+        DcmMppsEntity mpps;
+        mpps.mppsUID = "1.2.840.113619.2.9.1"; mpps.examId = "ACC12345";
+        mpps.stepID = "PPS1"; mpps.status = "IN PROGRESS";
+        mpps.startDate = "20260714"; mpps.startTime = "120000";
+        ed.CreateMppsEntity(mpps);
+        ed.UpdateMppsStatus(mpps.mppsUID, "COMPLETED", "20260714", "121500");
+        DcmMppsEntity gotMpps; const bool mppsOk = ed.GetMppsEntity(mpps.mppsUID, gotMpps);
+        DcmCommitEntity commit;
+        commit.transactionUID = "1.2.840.113619.2.10.1"; commit.examId = "ACC12345";
+        commit.sopInstanceUID = "1.2.840.113619.2.5.1"; commit.commitStatus = 0;
+        ed.CreateCommitEntity(commit);
+        ed.UpdateCommitStatus(commit.transactionUID, 1);   // подтверждён
+        DcmCommitEntity gotCommit; const bool commitOk = ed.GetCommitEntity(commit.transactionUID, gotCommit);
+        qInfo() << "MPPS статус:" << gotMpps.status << "end:" << gotMpps.endTime
+                << "| Commit статус:" << gotCommit.commitStatus;
+
         const bool ok = xmlOk && hasKey && wlAdd && wlN == 1 &&
                         got.value("PatientName") == "Ivanov^Ivan" &&
                         got.value("Modality") == "ES" && stAdd && stN == 1 &&
                         !stList.isEmpty() && stList.first().sendStatus == 2 &&
                         stList.first().retryCount == 1 &&
                         studyOk && studies.size() == 1 && series.size() == 1 &&
-                        series.first().numberOfInstances == 5 && ed.GetStudyNumber() == 1;
+                        series.first().numberOfInstances == 5 && ed.GetStudyNumber() == 1 &&
+                        mppsOk && gotMpps.status == "COMPLETED" && gotMpps.endTime == "121500" &&
+                        commitOk && gotCommit.commitStatus == 1;
         ed.CloseDb();
         qInfo() << (ok ? "dicom: PASS" : "dicom: FAIL");
         return ok ? 0 : 10;
