@@ -12,6 +12,7 @@
 #include "endo/KSoftEndoParam.h"
 #include "db/KEntityManage.h"
 #include "db/KEntityQuickInput.h"
+#include "db/KExamListConfigHandler.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -475,6 +476,34 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test конфига колонок списка осмотров (видимость + экспорт, персист).
+    if (screen == "examcfg") {
+        const QString ini = "/tmp/endo_examcfg.ini";
+        QFile::remove(ini);
+        KExamListConfigHandler &h = KExamListConfigHandler::GetInstance();
+        h.SetConfigFile(ini);
+        // Дефолты (из реверса: Age/Applicant/EndoScope/ExamDate видимы; Birthday/SN скрыты).
+        const bool defOk = h.IsShowAge() && h.IsShowApplicant() && h.IsShowExamDate() &&
+                           !h.IsShowBirthday() && !h.IsShowEndoScopeSN();
+        // Изменить + сохранить + перечитать (персист).
+        h.SetIsShowBirthday(true);
+        h.SetIsShowExamDate(false);
+        h.SetIsShowTelephone(true);
+        h.SetExportType(2);
+        h.SetExportPath("/data/export");
+        h.SaveConfig();
+        // Проверить персист через свежий QSettings-доступ.
+        const bool persist = h.IsShowBirthday() && !h.IsShowExamDate() &&
+                             h.IsShowTelephone() && h.GetExportType() == 2 &&
+                             h.GetExportPath() == "/data/export" &&
+                             h.GetColumnIsShow("Birthday");
+        qInfo() << "дефолты ок:" << defOk << "| персист ок:" << persist
+                << "| exportType:" << h.GetExportType() << "path:" << h.GetExportPath();
+        const bool ok = defOk && persist;
+        qInfo() << (ok ? "examcfg: PASS" : "examcfg: FAIL");
+        return ok ? 0 : 23;
     }
 
     // Self-test словарей автозаполнения (tb_QuickInput*): частота + предложения.
