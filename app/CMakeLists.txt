@@ -71,6 +71,7 @@ set(SOURCES
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
+    src/db/KEntityQuickInput.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KEntityDicom.cpp
@@ -131,6 +132,7 @@ add_executable(ui_preview
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
+    src/db/KEntityQuickInput.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp

@@ -75,6 +75,7 @@ ENDO_ROOT=$ER ui_preview coldlight                    # self-test источни
 ENDO_ROOT=$ER ui_preview version                      # self-test матрицы совместимости версий
 ENDO_ROOT=$ER ui_preview statistic                    # self-test спеки событий лога
 ENDO_ROOT=$ER ui_preview sysstatus                    # self-test KSystemStatus (состояние + сигналы)
+ui_preview quickinput [out.db]                        # self-test словарей автозаполнения (tb_QuickInput*)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -113,6 +114,7 @@ app/
     ├── endo/KSoftEndoParam             # video.ini (per эндоскоп)
     ├── alg/AlgParaManager              # гамма-LUT/CCM/ColEnh из videoconf
     ├── db/KEntityManage                # БД пациент/осмотр (Qt5::Sql/SQLCipher)
+    ├── db/KEntityQuickInput            # словари автозаполнения (tb_QuickInput*: value/Count/date)
     ├── dicom/KDicomFieldMap            # парсер XML-маппинга датасет→колонки БД
     ├── dicom/KEntityDicom              # БД DICOM (tb_DcmWorklist/tb_DcmStore)
     ├── dicom/KDicomInterface           # сеть DCMTK (device-only HAVE_DCMTK): STORE/ECHO/worklist/MPPS/commit

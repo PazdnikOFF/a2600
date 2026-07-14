@@ -11,6 +11,7 @@
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
 #include "db/KEntityManage.h"
+#include "db/KEntityQuickInput.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -471,6 +472,45 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test словарей автозаполнения (tb_QuickInput*): частота + предложения.
+    if (screen == "quickinput") {
+        const QString dbPath = outFile.isEmpty() ? "/tmp/endo_qi.db" : outFile;
+        QFile::remove(dbPath);
+        KEntityManage &em = KEntityManage::Instance();
+        if (!em.OpenDb(dbPath)) { qWarning() << "OpenDb failed"; return 19; }
+
+        KEntityQuickInput qi(KEntityQuickInput::Doctor);   // соединение endo_main
+        qi.CreateTable();
+        // Ввод: "Dr. Smith" ×3, "Dr. Jones" ×1 → Smith выше по частоте.
+        qi.SaveData("Dr. Smith"); qi.SaveData("Dr. Smith"); qi.SaveData("Dr. Smith");
+        qi.SaveData("Dr. Jones");
+        qi.SaveData("Dr. Adams");
+        const auto all = qi.GetAllEntity();
+        qInfo() << "врачей в словаре:" << qi.GetEntityNumber();
+        for (const auto &e : all) qInfo() << "  " << e.value << "count=" << e.count;
+        // Автодополнение по префиксу "Dr. J".
+        const auto byPref = qi.GetEntity("Dr. J");
+        qInfo() << "по префиксу 'Dr. J':" << byPref.size();
+        // Удаление.
+        qi.DeleteSelf("Dr. Adams");
+
+        // Разные словари независимы (пациент).
+        KEntityQuickInput qp(KEntityQuickInput::Patient);
+        qp.CreateTable();
+        qp.SaveData("Ivanov");
+
+        const bool ok =
+            qi.GetEntityNumber() == 2 &&                       // после удаления Adams
+            !all.isEmpty() && all.first().value == "Dr. Smith" && // ранжирование по частоте
+            all.first().count == 3 &&
+            byPref.size() == 1 && byPref.first().value == "Dr. Jones" &&
+            qp.GetEntityNumber() == 1 &&                       // независимая таблица
+            KEntityQuickInput::TableName(KEntityQuickInput::Applicant) == "tb_QuickInputApplicant";
+        em.CloseDb();
+        qInfo() << (ok ? "quickinput: PASS" : "quickinput: FAIL");
+        return ok ? 0 : 20;
     }
 
     // Self-test центрального статуса (KSystemStatus): состояние + сигналы изменений.
