@@ -1,0 +1,118 @@
+# Endo X-2600 — Аудит полноты и Roadmap реверса/реализации
+
+> Сгенерировано сверкой всех классов референса `update/root/X2000` (SonoScape X-2600)
+> с реализованным в `app/src/`. Методология — см. `docs/PROGRESS.md §1`.
+> Обновлять при закрытии пунктов.
+
+## 1. Итог аудита (факты из бинарника)
+
+- **Классов K\* в референсе:** 491 (≈8360 методов в `.text`).
+- **Реализовано классов (по имени):** 25 + namespace `KSystem` + `KTemplateCfg`(≈`KReportTemplateManager`).
+- **Покрытие по именам классов:** ~13% методов. НО реализованные классы покрыты ЧАСТИЧНО
+  (happy-path ядра обработки изображения), а не целиком:
+
+  | Класс | Методов в референсе | Реализовано | Что есть |
+  |---|---|---|---|
+  | KPlControl | 76 | ~47 | все чистые PL-регистры (гамма/CCM/AWB/VIST/Denoise/LUT…) |
+  | KVideoProxy | 121 | ~30 | init/capture/снимок/ApplyImageParams/AEC-AGC/RBC/Denoise |
+  | KDccuParam | 95 | ~40 | AEC/AGC/AWB/RB/Gamma/Zoom (dccuparam.ini) |
+  | KMainCtrlThread | 122 | ~5 | каркас Init-последовательности |
+  | KSystemSet | 108 | ~10 | Common/Account настройки |
+  | KVideoParam | 49 | ~25 | держатель видеопараметров |
+  | AlgParaManager | — | много | все LUT-загрузчики (config-driven) |
+
+- **Проверяемое off-device ядро (10 self-test-режимов, все PASS):**
+  `plreg, filt, dicom, report, account, thesaurus, userset, coldlight, version, statistic`.
+
+**Вывод:** реализован и протестирован сквозной **config→параметр→PL-регистр** тракт обработки
+изображения + БД-слои + движок отчётов + вспомогательные конфиги. Остальное (87% методов) —
+UI-виджеты, device-HW, полные оркестраторы — не реализовано.
+
+## 2. Пробелы по доменам (466 нереализованных классов)
+
+| Домен | Классов | Методов | Характер | Верифицируется off-device? |
+|---|---|---|---|---|
+| **UI** (Widgets) | 131 | 2831 | Qt5::Widgets: диалоги/списки/меню/редакторы | ⚠️ рендер (offscreen), но нужен UX-реверс |
+| **MISC** | 115 | 1366 | смешанное (утилиты, контексты, хелперы) | частично |
+| **CORE** | 59 | 903 | логика: статусы/калибровка/потоки/оркестрация | ✅ да |
+| **HW** | 25 | 625 | LCD-панель/сенсор/камера/принтер/USB/3A-dimming | ❌ нужен прибор |
+| **REPORT** | 49 | 485 | шаблоны/датасорсы/редактор отчётов | ✅ логика да, редактор — UI |
+| **DICOM** | 45 | 426 | очередь/MPPS/commit/сервис-конфиг | ⚠️ БД да, сеть — DCMTK/device |
+| **DB** | 28 | 344 | сущности/бэкап/экспорт/хранилища | ✅ да |
+| **UPDATE** | 13 | 262 | апдейт-пайплайн/factory/версии | ✅ логика да |
+
+## 3. Roadmap — фазы (по приоритету и верифицируемости)
+
+Каждая фаза — по методологии §1: **реверс → найти конфиги → код с теми же именами → self-test**.
+
+### Фаза A — CORE-логика off-device (высокий приоритет, верифицируемо) ✅ можно сейчас
+Реализуемо и тестируемо на Mac без прибора. Наибольшая отдача.
+
+1. **KSystemStatus** (50) — глобальный статус системы (режимы/флаги), синглтон. Читается всеми
+   (GetSystemStatus). Реверс полей [0x3c]=режим и т.д. → структура состояния. Self-test: смена статуса.
+2. **KVideoSet / KUserOsdSet** (64/38) — применение osd.ini-параметров в видеотракт (мост
+   KUserSet→KVideoParam→KVideoProxy/KPlControl). Уже есть данные — не хватает оркестрации.
+3. **KVideoCal** (40) — калибровка видео (масштаб/центр/геометрия из display-ini). Config-driven.
+4. **KProjectSet** (34) — модель/серия/бренд из display/project.ini (частично в KSystem). Дореверс.
+5. **KExamListConfigHandler / KUserOsdSet** (31/38) — конфиг-хендлеры списков/OSD.
+6. **KEncStyle** (47) — стили кодирования/энкодинг (проверить: возможно строковые утилиты).
+
+### Фаза B — DB-слой и сущности (высокий приоритет, верифицируемо) ✅ можно сейчас
+Паттерн уже отлажен (KEntityManage/KEntityDicom/KEntityReport).
+
+1. **KEntity{Exam,Service,Base}, K{Exam,Patient}ListDBTableHandler** — полные CRUD осмотров/сервиса.
+2. **KEntityQuickInput{Patient,Doctor,Applicant}** (13×3) — словари автозаполнения (tb_QuickInput*).
+3. **KSaveFile / KFileBackup / KExportRecord / KStorageDevice / KUdiskStorageDevice** — файловый
+   слой: сохранение/бэкап/экспорт на USB. Реверс путей и форматов. Self-test: файловые операции.
+
+### Фаза C — Завершение REPORT и DICOM (средний, частично off-device) ✅/⚠️
+1. **REPORT (off-device):** KRTDataSource{Real,Demo}/KRTAbsDataSource (источники данных отчёта),
+   KReportDisplayParam, KReportDBTableHandler, KTemplateLibCfg, KSysReportTempletCfg — расширить
+   движок. KTemplateEditDocument (46) — рендер в QTextDocument (частично off-device).
+2. **DICOM (БД off-device, сеть device):** KEntityDicom-расширение (tb_DcmStudy/Series/Mpps/Commit),
+   KDicomServer/SCU (KStoreScu/KWorklistScu/KCommitScu/KMppsScu — DCMTK, device), генерация
+   Secondary Capture .dcm из JPEG+данные (device-DCMTK).
+
+### Фаза D — UPDATE-пайплайн (средний, логика off-device) ✅ можно сейчас
+KUpdateMng/KUpdateAction/KUpdatePrepare/KProgressTask/KVersion/KVersionConfig/KFactoryOptions —
+логика проверки версий (KUpdateConf уже есть), распаковки, применения патча. Реверс формата
+lcd_upd/образов. Self-test: парсинг манифеста/версий.
+
+### Фаза E — Device-HW (низкий приоритет, НУЖЕН ПРИБОР) ❌
+Не верифицируется off-device; реализовать и отлаживать на устройстве/в sysroot.
+1. **KEndoScope / KEndoScopeControl** (81/22) — эндоскоп: распознавание, CRC, тип/сенсор, EEPROM.
+2. **KCamera** (42) — камера-хендлер (поверх KVideoProxy).
+3. **K3ADimming** (44) — авто-экспозиция/усиление/ББ (дёргает KVideoProxy::SetAEC/AGCValue по
+   статистике яркости; KDccuParam-параметры). Пересекается с ReadBrightnessHistogramValue.
+4. **KLcdProxy** (106) — связь с панелью 8″ (Cortex-M). Требует РЕШЕНИЯ §6 (МК-прошивка vs 2-й Qt).
+5. **KUsbDevice / KPrinterManager / KSysPrinter / KCupsPrinter / KHalPrinterAPI** — принтер/USB
+   (через libhal: Hal_Add_Printer и т.д.).
+6. **KControlProc / KProcessorControl / KComDataReceiveThread** — протокол связи с МК-платой.
+7. **Остаток register-API KPlControl** (~25): геометрия маски (round/octagon), FPGA-I2C
+   (SetVideoCentorPoint), SetEndoIrisType, Aurora-serdes, PLInit — device.
+
+### Фаза F — UI (Qt5::Widgets, большой объём) ⚠️
+131 класс. Реверс раскладки/поведения из style.qss + ресурсов прошивки. Рендер проверяем
+offscreen (как KUIDesktop). Порядок по важности:
+1. **Пациент/осмотр:** KPatientListViewUi, KExamListViewUi, KPatientManagmentUi, KExamDetailInfoUi,
+   KPatientList{Add,Edit,Search}Dlg.
+2. **Отчёты:** KReportEditUi (69), KReportEditAddMarkView, KTempletTreeWidget, KReportPreviewDlg.
+3. **Настройки:** KSystemSetDlg, KGeneralSetDlg, KDICOMServiceEditDlg, KScopeInfoEdit, KCameraInfoEdit.
+4. **Общие виджеты:** KMessageBox, KDialog, KProgressDlg, KCalendarWidget, KMemComboBox,
+   KOptionListButton, KPinyinWidget (ввод), KOsdSubMenu/KOsdMenuBase (экранное меню).
+
+## 4. Рекомендуемый порядок
+
+**Сейчас (off-device, максимальная отдача):** Фаза A → B → D → (off-device части C).
+Это доводит ЛОГИЧЕСКОЕ ядро (статусы, БД, файлы, апдейт, датасорсы отчётов) до полноты,
+всё проверяемо self-test'ами.
+
+**Затем (нужен прибор/решения):** Фаза E (HW, панель 8″ — после решения §6) и device-части C.
+
+**Параллельно/по мере надобности:** Фаза F (UI) — большой, но рендер-верифицируемый объём.
+
+## 5. Метрика прогресса
+
+- Сейчас: **25/491 классов** (частично), **10 self-test-режимов**, сквозное ядро обработки изображения.
+- Цель Фаз A+B+D: +~40 классов CORE/DB/UPDATE (логика), покрытие методов → ~30–35%.
+- Полнота (вкл. UI+HW) достижима только с прибором и реализацией всех 131 UI-классов.
