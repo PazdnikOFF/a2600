@@ -14,6 +14,7 @@
 #include "db/KEntityQuickInput.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
+#include "db/KFileBackup.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -477,6 +478,41 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
+    if (screen == "filebackup") {
+        const QString base = "/tmp/endo_fb";
+        KFileBackup fb;
+        fb.removeDirWithContent(base);   // очистка от прошлых прогонов
+        // Создать дерево: base/exam/{1.jpeg, sub/2.jpeg}.
+        QDir().mkpath(base + "/exam/sub");
+        { QFile f(base + "/exam/1.jpeg"); f.open(QIODevice::WriteOnly); f.write(QByteArray(100, 'a')); }
+        { QFile f(base + "/exam/sub/2.jpeg"); f.open(QIODevice::WriteOnly); f.write(QByteArray(50, 'b')); }
+
+        const qint64 srcSize = fb.getFilesSize(base + "/exam");
+        // Копировать рекурсивно.
+        const bool copyOk = fb.copyDirectoryFiles(base + "/exam", base + "/backup", true);
+        const bool f1 = QFile::exists(base + "/backup/1.jpeg");
+        const bool f2 = QFile::exists(base + "/backup/sub/2.jpeg");
+        const qint64 dstSize = fb.getFilesSize(base + "/backup");
+        const qint64 freeSpace = fb.getDiskFreeSpace(base);
+        const auto devInt = fb.GetDeviceTypeFromTargetPath("/home/root/data");
+        const auto devUsb = fb.GetDeviceTypeFromTargetPath("/media/usb0/export");
+        // Удалить копию.
+        const bool delOk = fb.removeDirWithContent(base + "/backup");
+        const bool gone = !QDir(base + "/backup").exists();
+
+        qInfo() << "размер src:" << srcSize << "dst:" << dstSize << "свободно:" << freeSpace;
+        qInfo() << "copy:" << copyOk << "f1/f2:" << f1 << f2 << "del:" << delOk << "gone:" << gone;
+        qInfo() << "устройство internal/usb:" << devInt << devUsb;
+
+        const bool ok = srcSize == 150 && copyOk && f1 && f2 && dstSize == 150 &&
+                        freeSpace > 0 && delOk && gone &&
+                        devInt == KFileBackup::DevInternal && devUsb == KFileBackup::DevUsb;
+        fb.removeDirWithContent(base);
+        qInfo() << (ok ? "filebackup: PASS" : "filebackup: FAIL");
+        return ok ? 0 : 26;
     }
 
     // Self-test полного CRUD осмотров (tb_ExamList + пагинация).

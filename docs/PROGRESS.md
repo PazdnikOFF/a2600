@@ -80,6 +80,7 @@ ENDO_ROOT=$ER ui_preview project                      # self-test продукт
 ENDO_ROOT=$ER ui_preview style                        # self-test брендов/стилей (stylelist.ini)
 ui_preview examcfg                                    # self-test конфига колонок списка осмотров
 ui_preview exam                                       # self-test полного CRUD осмотров (tb_ExamList)
+ui_preview filebackup                                 # self-test файлового слоя (copy/delete/size/USB)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -123,6 +124,7 @@ app/
     ├── db/KEntityManage                # БД пациент/осмотр (Qt5::Sql/SQLCipher)
     ├── db/KEntityQuickInput            # словари автозаполнения (tb_QuickInput*: value/Count/date)
     ├── db/KEntityExam                  # полный CRUD осмотров (tb_ExamList + пагинация)
+    ├── db/KFileBackup                  # файловый слой: копирование/удаление/размер/USB
     ├── db/KExamListConfigHandler       # видимость колонок списка осмотров + экспорт
     ├── dicom/KDicomFieldMap            # парсер XML-маппинга датасет→колонки БД
     ├── dicom/KEntityDicom              # БД DICOM (tb_DcmWorklist/tb_DcmStore)
