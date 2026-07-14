@@ -28,6 +28,7 @@
 #include "sys/KUserSet.h"
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
+#include "sys/KStatisticConfig.h"
 
 #include <QDir>
 #include <QFile>
@@ -469,6 +470,31 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test спеки событий статистики (statistic.ini).
+    if (screen == "statistic") {
+        KStatisticConfig sc;
+        const bool loaded = sc.Load();
+        const auto times = sc.EventsOfKind(KStatisticConfig::Time);
+        const auto counts = sc.EventsOfKind(KStatisticConfig::Count);
+        const auto infos = sc.EventsOfKind(KStatisticConfig::Info);
+        qInfo() << "событий всего:" << sc.Events().size()
+                << "time:" << times.size() << "count:" << counts.size() << "info:" << infos.size();
+        qInfo() << "time_power_on паттерн:" << sc.PatternFor("time_power_on");
+        qInfo() << "time_examine_start:" << sc.PatternFor("time_examine_start");
+        // dcnt со значением-с-запятой (Fram Lost,Index) — должно собраться обратно.
+        QString frameLost;
+        for (const auto &e : counts) if (e.section == "Video") frameLost = e.pattern;
+        qInfo() << "frameLost паттерн:" << frameLost;
+
+        const bool ok = loaded && sc.Events().size() >= 12 &&
+                        times.size() >= 8 && counts.size() == 1 && infos.size() == 2 &&
+                        sc.PatternFor("time_power_on") == "Power on" &&
+                        sc.PatternFor("time_examine_start") == "Exam: start examination" &&
+                        frameLost == "Fram Lost,Index";
+        qInfo() << (ok ? "statistic: PASS" : "statistic: FAIL");
+        return ok ? 0 : 17;
     }
 
     // Self-test матрицы совместимости версий (matchedversion.ini).
