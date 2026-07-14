@@ -25,6 +25,7 @@
 #include "report/KThesaurusOpt.h"
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
+#include "sys/KUserSet.h"
 
 #include <QDir>
 #include <QFile>
@@ -461,6 +462,32 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test KUserSet: полный парсинг osd.ini (силы усиления/zoom/кнопки).
+    if (screen == "userset") {
+        const QString ini = outFile.isEmpty()
+            ? QDir(KSystem::SystemPath()).absoluteFilePath(
+                  "presetdata/userpreset/X-2600/X-2600B/osd.ini")
+            : outFile;
+        _KUserConf c;
+        KUserSet::Instance().ReadVideoParamConfig(&c, ini);
+        qInfo() << "osd.ini:" << ini;
+        qInfo() << "ImgEnhStrA:" << c.imgEnhStrA[0] << c.imgEnhStrA[1] << c.imgEnhStrA[2];
+        qInfo() << "zoomScale:" << c.zoomScale[0] << c.zoomScale[1] << c.zoomScale[2];
+        qInfo() << "btnA long/short:" << c.btnALong << c.btnAShort
+                << " footSwitch1/2:" << c.footSwitch1 << c.footSwitch2;
+        qInfo() << "contrast:" << c.contrastLevel << "denoise:" << c.imgDenoise
+                << "brightEQ:" << c.brightnessEQ;
+        const bool ok =
+            c.imgEnhStrA[0] == 4 && c.imgEnhStrA[1] == 9 && c.imgEnhStrA[2] == 15 &&
+            c.imgEnhStrB[2] == 15 && c.imgEnhStrEdge[2] == 15 &&
+            qAbs(c.zoomScale[0] - 1.0f) < 1e-4 && qAbs(c.zoomScale[1] - 1.2f) < 1e-4 &&
+            qAbs(c.zoomScale[2] - 1.4f) < 1e-4 &&
+            c.btnALong == 9 && c.btnAShort == 6 && c.btnBLong == 5 && c.btnBShort == 7 &&
+            c.footSwitch2 == 1 && c.contrastLevel == 1 && c.imgDenoise == 1;
+        qInfo() << (ok ? "userset: PASS" : "userset: FAIL");
+        return ok ? 0 : 14;
     }
 
     // Self-test тезауруса: словарь шаблонов диагнозов → автозаполнение отчёта.

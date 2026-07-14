@@ -66,6 +66,7 @@ ENDO_ROOT=$ER ui_preview dicom                        # self-test WorklistFieldM
 ENDO_ROOT=$ER ui_preview report [out.html]            # self-test шаблон→генератор HTML + БД tb_Report
 ENDO_ROOT=$ER ui_preview thesaurus                    # self-test тезауруса (словари диагнозов + отчёт)
 ENDO_ROOT=<tmp> ui_preview account [system.ini]       # self-test KAccount(вход/MD5/блок.)+KSystemSet
+ENDO_ROOT=$ER ui_preview userset                      # self-test KUserSet (полный парсинг osd.ini)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -243,8 +244,11 @@ app/
 - `style/X-2600/PyCkeun/qss/` — LogoTitle.png, фон PyCkeun_*.bmp.
 - `style/X-2600/PyCkeun/scope/video.ini` — per эндоскоп (hex-имена секций,
   "EC-X20"→"45432d583230"): videoSize=@Rect (→IMG-layout), sensorType, endoType.
-- `presetdata/userpreset/osd.ini` — видеопараметры ([Iris]Mode, [Level]Zoom,
-  [Color], [Contrast]Level, [ImgEnhType]Type, [ImEnhGear], [Zoom]Level1-3@Variant).
+- `presetdata/userpreset/[X-2600/X-2600B/]osd.ini` — видеопараметры (полное покрытие KUserSet):
+  [Iris]Mode, [Level]Zoom/ImgDenoise/BrightnessEQ, [Color]Mode/R/B/C (пары "a,b"), [Operation]Mode,
+  [Zoom]Level1-3=@Variant(float 1.0/1.2/1.4), [Contrast]Level, [ButtomA/B/M]LongPress/ShortPress +
+  [FootSwitch]Switch1/2 (коды действий кнопок), [ImgEnhType]Type, [ImEnhGear]EnhType1-3,
+  [ImgEnhStrA/B/Edge]EnhLevel1-3 (силы усиления по гирам), [Dehaze]Switch, [HDR]Switch.
 - `videoconf/<Категория>/` — Gamma/Ccm/ColEnh/Denoise/Awb/Bright_EQ/CHb/Knee/ImgEnh/IRIS.
   - Gamma/`<SENSOR>_GammaParam[_<SCOPE>].ini`: [V01] bp/gamma/inputmax.
   - Ccm/V1/`<SENSOR>_<WxH>_<SCOPE>.txt`: 9 hex = матрица 3×3 (знак 16-бит, Q9 1.0=512).
