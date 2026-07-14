@@ -36,6 +36,7 @@
 #include "sys/KUserSet.h"
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
+#include "sys/KUpdateManifest.h"
 #include "sys/KVersionConfig.h"
 #include "sys/KProjectSet.h"
 #include "sys/KStyleConfig.h"
@@ -44,6 +45,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QSettings>
 #include <QMap>
 
 #include <QApplication>
@@ -590,6 +592,64 @@ int main(int argc, char **argv)
         const bool ok = rangesOk && seeded && layoutOk && readOk && saved && writeOk;
         qInfo() << (ok ? "videocal: PASS" : "videocal: FAIL");
         return ok ? 0 : 29;
+    }
+
+    // Self-test апдейт-пайплайна: манифест update.ini + решение «что обновлять»
+    // (KUpdateManifest поверх KVersionConfig + KUpdateConf matchedversion).
+    if (screen == "update") {
+        const QString root = "/tmp/endo_upd";
+        QDir().mkpath(root);
+        const QString manifest = root + "/update.ini";
+        const QString instFile = root + "/version.ini";
+        const QString matchFile = root + "/matchedversion.ini";
+        for (const QString &f : {manifest, instFile, matchFile}) QFile::remove(f);
+
+        // 1) Версии пакета (манифест update.ini): app обновляется, hmi актуален,
+        //    lcd несовместим, pap отсутствует в пакете.
+        { QSettings pkg(manifest, QSettings::IniFormat);
+          pkg.setValue("app/Version", "2.0.0");
+          pkg.setValue("hmi/Version", "1.5.0");
+          pkg.setValue("lcd/Version", "9.9.9"); }  // не в matched → несовместим
+
+        // 2) Установленные версии (KVersionConfig): app старее, hmi совпадает.
+        KVersionConfig &ver = KVersionConfig::GetInstance();
+        ver.SetConfigFile(instFile);
+        ver.SetVersion("app", "1.0.0");
+        ver.SetVersion("hmi", "1.5.0");
+        ver.SetVersion("lcd", "1.0.0");
+
+        // 3) Матрица совместимости (KUpdateConf): для lcd допустим только 1.0.0/1.1.0.
+        { QSettings mv(matchFile, QSettings::IniFormat);
+          mv.setValue("MatchedVersion/app", QStringList{"1.0.0", "2.0.0"});
+          mv.setValue("MatchedVersion/lcd", QStringList{"1.0.0", "1.1.0"}); }
+        KUpdateConf::GetInstance().SetConfigFile(matchFile);
+
+        // 4) Прогон решения.
+        KUpdateManifest &um = KUpdateManifest::GetInstance();
+        um.SetUpdateRoot(root);
+        const auto st = um.CheckUpdateItems();
+
+        using S = KUpdateManifest;
+        const bool itemsOk = S::UpdateItems().contains("papp00") &&
+                             S::UpdateItems().size() == 12;
+        const bool decideOk =
+            st.value("app") == S::NeedUpdate &&      // 1.0.0 → 2.0.0 (в matched)
+            st.value("hmi") == S::UpToDate &&        // 1.5.0 == 1.5.0
+            st.value("lcd") == S::Incompatible &&    // 9.9.9 не в matched
+            st.value("pap") == S::NoPackage;         // нет в пакете
+        // Флаги IsNeedUpdate записаны в манифест (реф. SetItemNeedUpdate).
+        const bool flagsOk = um.GetItemNeedUpdate("app") &&
+                             !um.GetItemNeedUpdate("hmi") &&
+                             !um.GetItemNeedUpdate("lcd");
+
+        qInfo() << "items:" << itemsOk << "| решение app/hmi/lcd/pap:"
+                << st.value("app") << st.value("hmi") << st.value("lcd") << st.value("pap")
+                << "| флаги (app/hmi):" << um.GetItemNeedUpdate("app") << um.GetItemNeedUpdate("hmi")
+                << "| root:" << um.GetUpdateRoot();
+
+        const bool ok = itemsOk && decideOk && flagsOk;
+        qInfo() << (ok ? "update: PASS" : "update: FAIL");
+        return ok ? 0 : 30;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).

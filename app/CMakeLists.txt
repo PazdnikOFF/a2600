@@ -69,6 +69,7 @@ set(SOURCES
     src/sys/KAccount.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
+    src/sys/KUpdateManifest.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
     src/sys/KStyleConfig.cpp
@@ -138,6 +139,7 @@ add_executable(ui_preview
     src/sys/KAccount.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
+    src/sys/KUpdateManifest.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
     src/sys/KStyleConfig.cpp
