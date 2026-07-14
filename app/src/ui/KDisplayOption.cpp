@@ -42,13 +42,49 @@ QRect KDisplayOption::GetRect(const QString &section, const QString &key) const
     return ini.value(section + "/" + key).toRect();  // @Rect(x y w h) → QRect
 }
 
+void KDisplayOption::SetRect(const QString &section, const QString &key, const QRect &r) const
+{
+    if (layoutFile_.isEmpty())
+        return;
+    QSettings ini(layoutFile_, QSettings::IniFormat);
+    ini.setValue(section + "/" + key, r);  // QRect → @Rect(x y w h)
+    ini.sync();
+}
+
 QRect KDisplayOption::getVideoRectForUI(int mode) const
 {
     return GetRect(mode == 0 ? "UI" : "VIDEO", "IMAGE");
 }
 
+QRect KDisplayOption::getVideoRectForImgPro() const { return GetRect("VIDEO", "IMAGE"); }
+QRect KDisplayOption::getFreezeVideoRect()   const { return GetRect("VIDEO", "IMAGE_PIP"); }
+
+void KDisplayOption::setVideoRectForImgPro(const QRect &r) const { SetRect("VIDEO", "IMAGE", r); }
+void KDisplayOption::setVideoRectForUI(const QRect &r)     const { SetRect("UI", "IMAGE", r); }
+
 QRect KDisplayOption::GetKImgListCellRect() const { return GetRect("KImgList", "tablecell"); }
 QRect KDisplayOption::GetKImgListIconRect() const { return GetRect("KImgList", "tableicon"); }
+
+QMap<QString, QRect> KDisplayOption::GetDesktopViewConf(bool hardEndo) const
+{
+    // Ключи как в реф. GetSoftEndoViewConf/GetHardEndoViewConf ([KUIDesktop]).
+    static const QStringList softKeys = {
+        "logo", "workmode", "status", "time", "imglist", "lefttime", "topmsg",
+        "bottommsg", "connect", "patientinfo", "hospitalinfo", "endobtnguide"};
+    static const QStringList hardKeys = {
+        "osd", "time", "topmsg", "bottommsg", "connect", "lefttime", "endobtnguide"};
+
+    QMap<QString, QRect> out;
+    if (layoutFile_.isEmpty())
+        return out;
+    QSettings ini(layoutFile_, QSettings::IniFormat);
+    for (const QString &k : (hardEndo ? hardKeys : softKeys)) {
+        const QString path = "KUIDesktop/" + k;
+        if (ini.contains(path))
+            out.insert(k, ini.value(path).toRect());
+    }
+    return out;
+}
 
 void KDisplayOption::SetProduct(const QString &model, const QString &brand)
 {

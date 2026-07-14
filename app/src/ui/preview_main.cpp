@@ -20,6 +20,7 @@
 #include "ctrl/KDccuParam.h"
 #include "video/KVideoParam.h"
 #include "video/KVideoSet.h"
+#include "video/KVideoCal.h"
 #include "sys/KSystem.h"
 #include "dicom/KDicomFieldMap.h"
 #include "dicom/KEntityDicom.h"
@@ -526,6 +527,69 @@ int main(int argc, char **argv)
         const bool ok = paramOk && regOk && resetOk;
         qInfo() << (ok ? "videoset: PASS" : "videoset: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test калибровки видео: диапазоны смещения центра по типу прошивки (1:1 X2000)
+    // + roundtrip записи/чтения области отображения (SaveDisplayArea → display-ini).
+    if (screen == "videocal") {
+        // 1) Диапазоны центра (чистая логика, 1:1 с бинарником).
+        auto H = &KVideoCal::GetCenterOffsetHorizontalRange;
+        auto V = &KVideoCal::GetCenterOffsetVerticalRange;
+        const bool rangesOk =
+            H(KVideoCal::FW_OV2740)          == qMakePair(-4, 4)   &&
+            V(KVideoCal::FW_OV2740)          == qMakePair(-4, 4)   &&
+            H(KVideoCal::FW_OH01A_928X768)   == qMakePair(-16, 16) &&
+            V(KVideoCal::FW_OH01A_928X768)   == qMakePair(-10, 10) &&
+            H(KVideoCal::FW_OH01A_768X928)   == qMakePair(-16, 16) &&
+            V(KVideoCal::FW_OH01A_768X928)   == qMakePair(-10, 10) &&
+            H(KVideoCal::FW_OV2740_1280X960) == qMakePair(-16, 16) &&
+            V(KVideoCal::FW_OV2740_1280X960) == qMakePair(-16, 16) &&
+            H(KVideoCal::FW_OV2740_1024X1024)== qMakePair(-16, 16) &&
+            V(KVideoCal::FW_OV2740_1024X1024)== qMakePair(-16, 16) &&
+            H(KVideoCal::FW_IMX274)          == qMakePair(0, 0)    &&
+            V(KVideoCal::FW_IMX274)          == qMakePair(0, 0)    &&
+            H(KVideoCal::FW_OV6946)          == qMakePair(0, 0)    &&
+            H(KVideoCal::FW_OCHFA_720X720)   == qMakePair(0, 0);
+        qInfo() << "диапазоны центра ок:" << rangesOk
+                << "| OH01A H:" << H(KVideoCal::FW_OH01A_928X768)
+                << "V:" << V(KVideoCal::FW_OH01A_928X768);
+
+        // 2) Roundtrip области: сеем реальный display-ini в tmp-root и пишем/читаем.
+        const QString src = QDir(KSystem::DisplayConfigPath())
+                                .absoluteFilePath("IMG19201080-UI19201080.ini");
+        const QString tmpRoot = "/tmp/endo_vcal";
+        const QString tmpDisp = tmpRoot + "/system/display";
+        QDir().mkpath(tmpDisp);
+        const QString dst = tmpDisp + "/IMG19201080-UI19201080.ini";
+        QFile::remove(dst);
+        const bool seeded = QFile::copy(src, dst);
+        qputenv("ENDO_ROOT", tmpRoot.toUtf8());   // переключаем корень на tmp
+
+        KDisplayOption &opt = KDisplayOption::Instance();
+        opt.SelectLayout(QSize(1920, 1080), QSize(1920, 1080));
+        const bool layoutOk = opt.LayoutFile() == dst;
+
+        // Чтение из посева: freeze-rect и раскладка рабочего стола (hard-endo).
+        const QRect freeze = opt.getFreezeVideoRect();
+        const auto view = opt.GetDesktopViewConf(/*hardEndo=*/true);
+        const bool readOk = freeze == QRect(16, 16, 416, 234) &&
+                            view.value("osd") == QRect(6, 330, 290, 960) &&
+                            view.contains("endobtnguide");
+        qInfo() << "layout:" << layoutOk << "| freeze:" << freeze
+                << "| osd:" << view.value("osd") << "| view-ключей:" << view.size();
+
+        // Запись области отображения и обратное чтение.
+        const QRect wImg(10, 20, 1900, 1040), wUi(0, 60, 1920, 1080);
+        const bool saved = KVideoCal::SaveDisplayArea(wImg, wUi);
+        // Свежий инстанс QSettings увидит записанное (SetRect делает sync()).
+        const bool writeOk = opt.getVideoRectForImgPro() == wImg &&
+                             opt.getVideoRectForUI(0) == wUi;
+        qInfo() << "saved:" << saved << "| imgPro:" << opt.getVideoRectForImgPro()
+                << "| ui:" << opt.getVideoRectForUI(0);
+
+        const bool ok = rangesOk && seeded && layoutOk && readOk && saved && writeOk;
+        qInfo() << (ok ? "videocal: PASS" : "videocal: FAIL");
+        return ok ? 0 : 29;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).

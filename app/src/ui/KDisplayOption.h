@@ -5,6 +5,7 @@
 #include <QSize>
 #include <QPixmap>
 #include <QIcon>
+#include <QMap>
 
 // Провайдер отображения (реф. класс KDisplayOption, X-2600).
 // Выбирает layout-файл display/IMG%1%2-UI%3%4.ini по разрешению монитора
@@ -31,11 +32,26 @@ public:
 
     // Универсальное чтение области: [section]/key = @Rect(x y w h)
     QRect GetRect(const QString &section, const QString &key) const;
+    // Запись области в layout-ini (QSettings сериализует QRect как @Rect(x y w h)).
+    void  SetRect(const QString &section, const QString &key, const QRect &r) const;
 
     // Именованные области как в оригинале
     QRect getVideoRectForUI(int mode = 0) const;   // [UI]/IMAGE (0) или [VIDEO]/IMAGE
+    QRect getVideoRectForImgPro() const;           // [VIDEO]/IMAGE
+    QRect getFreezeVideoRect() const;              // [VIDEO]/IMAGE_PIP (freeze/PIP)
     QRect GetKImgListCellRect() const;             // [KImgList]/tablecell
     QRect GetKImgListIconRect() const;             // [KImgList]/tableicon
+
+    // Запись прямоугольников области видео (реф. KDisplayOption::setVideoRectFor*).
+    // Калибровка (KVideoCal::SaveDisplayArea) пишет их в layout-ini.
+    void  setVideoRectForImgPro(const QRect &r) const;  // [VIDEO]/IMAGE
+    void  setVideoRectForUI(const QRect &r) const;      // [UI]/IMAGE
+
+    // Раскладка рабочего стола [KUIDesktop] → карта имя→QRect (реф.
+    // GetSoftEndoViewConf/GetHardEndoViewConf). hardEndo=false — набор для
+    // софт-эндоскопа (logo/workmode/status/patientinfo/…), true — для аппаратного
+    // (osd/time/topmsg/…). Возвращает только присутствующие в ini ключи.
+    QMap<QString, QRect> GetDesktopViewConf(bool hardEndo) const;
 
     // Модель/бренд (стиль). Бренд РуСкейн = PyCkeun (stylelist.ini).
     void    SetProduct(const QString &model, const QString &brand);

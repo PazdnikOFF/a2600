@@ -58,6 +58,7 @@ set(SOURCES
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
     src/video/KVideoSet.cpp
+    src/video/KVideoCal.cpp
     src/video/KSaveVideoFile.cpp
     src/ui/KUIDesktop.cpp
     src/ui/KDisplayOption.cpp
@@ -166,6 +167,7 @@ add_executable(ui_preview
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
     src/video/KVideoSet.cpp
+    src/video/KVideoCal.cpp
 )
 target_include_directories(ui_preview PRIVATE src)
 target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml)

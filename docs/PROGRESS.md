@@ -84,6 +84,7 @@ ui_preview filebackup                                 # self-test файлово
 ENDO_ROOT=$ER ui_preview videoset                     # self-test оркестрации (Set*Level→параметр+регистр)
 ui_preview dsreal                                     # self-test реального датасорса отчёта (БД→документ)
 ENDO_ROOT=$ER ui_preview dsdemo                       # self-test демо-датасорса отчёта (превью+DemoImage)
+ENDO_ROOT=$ER ui_preview videocal                     # self-test калибровки видео (диапазоны центра + rect roundtrip)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -427,8 +428,9 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~40/491 классов, **20 self-test-режимов**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. Репозиторий
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~41/491 классов, **21 self-test-режим**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто (Фаза A закрыта
+полностью — добавлен KVideoCal). Репозиторий
 на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
@@ -441,9 +443,9 @@ Qt5, boost 1.74, libcrypto.
 6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
    `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
 
-**Полный список 20 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+**Полный список 21 self-test-режима** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo.
+filebackup, videoset, dsreal, dsdemo, videocal.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
