@@ -82,6 +82,7 @@ ui_preview examcfg                                    # self-test конфига
 ui_preview exam                                       # self-test полного CRUD осмотров (tb_ExamList)
 ui_preview filebackup                                 # self-test файлового слоя (copy/delete/size/USB)
 ENDO_ROOT=$ER ui_preview videoset                     # self-test оркестрации (Set*Level→параметр+регистр)
+ui_preview dsreal                                     # self-test реального датасорса отчёта (БД→документ)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -136,6 +137,7 @@ app/
     ├── report/KDocumentGenerator       # генерация документа отчёта (HTML) по шаблону+данным
     ├── report/KEntityReport            # БД отчётов (tb_Report)
     ├── report/KThesaurusOpt            # тезаурус шаблонов диагнозов (thesaurus/<lang>/<Scope>.xml)
+    ├── report/KRTDataSourceReal        # реальный источник данных отчёта (БД→датасорс)
     └── hal/Hal                         # фасад libhal
 ```
 

@@ -28,6 +28,7 @@
 #include "report/KDocumentGenerator.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
+#include "report/KRTDataSourceReal.h"
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
 #include "sys/KUserSet.h"
@@ -919,6 +920,53 @@ int main(int argc, char **argv)
         qInfo() << "add/del roundtrip:" << (addOk && delOk);
         qInfo() << (ok ? "thesaurus: PASS" : "thesaurus: FAIL");
         return ok ? 0 : 13;
+    }
+
+    // Self-test реального источника данных отчёта: БД → датасорс → генератор.
+    if (screen == "dsreal") {
+        const QString dbMain = "/tmp/endo_dsr_main.db";
+        const QString dbRep = "/tmp/endo_dsr_rep.db";
+        QFile::remove(dbMain); QFile::remove(dbRep);
+        // Заполнить БД пациента/осмотра (endo_main) и отчёта (endo_report).
+        KEntityManage &em = KEntityManage::Instance();
+        em.OpenDb(dbMain);
+        em.AddPatientEntity({"P001", "Ivanov Ivan", "M", "45", "1980-05-01"});
+        KEntityExam ex; ex.CreateTable();
+        { ExamListEntity e; e.examId = "A0001"; e.accessionNumber = "A0001";
+          e.patientId = "P001"; e.examDate = "2026-07-14"; ex.CreateEntity(e); }
+        KEntityReport &er = KEntityReport::Instance();
+        er.OpenDb(dbRep);
+        { ReportEntity r; r.accessionNumber = "A0001"; r.diseaseName = "Gastritis";
+          r.diagnosis = "Chronic gastritis"; r.surgeryFinding = "Mucosal erythema";
+          r.suggestion = "Recheck 6mo"; r.examView = "Stomach"; er.SaveReport(r); }
+
+        // Собрать датасорс из БД (реф. KRTDataSourceReal).
+        KRTDataSourceReal dsr;
+        KReportDataSource ds;
+        const bool built = dsr.Build("P001", "A0001", ds);
+        // Снимки (peripheral) — 4 для 2x2.
+        for (int i = 0; i < 4; ++i)
+            ds.SetImage(i, QString("/data/exam/A0001/%1.jpeg").arg(i), QString("M%1").arg(i));
+
+        // Генерация отчёта из РЕАЛЬНЫХ данных.
+        KReportTemplateManager mgr;
+        const auto items = mgr.LoadTemplate("NP-2x2");
+        KDocumentGenerator gen;
+        const QString html = gen.Generate(items, ds);
+
+        qInfo() << "датасорс собран:" << built
+                << "| пациент:" << ds.GetValue("RT_DATASOURCE_PATIENT", "RT_PATIENT_NAME")
+                << "| диагноз:" << ds.GetValue("RT_DATASOURCE_PATIENT", "RT_DIAGNOSIS");
+        const bool ok = built &&
+            ds.GetValue("RT_DATASOURCE_PATIENT", "RT_PATIENT_NAME") == "Ivanov Ivan" &&
+            ds.GetValue("RT_DATASOURCE_PATIENT", "RT_DIAGNOSIS") == "Chronic gastritis" &&
+            ds.GetValue("RT_DATASOURCE_PATIENT", "RT_SURGERY_FINDING") == "Mucosal erythema" &&
+            ds.GetValue("RT_DATASOURCE_PATIENT", "RT_EXAMDATE") == "2026-07-14" &&
+            html.contains("Ivanov Ivan") && html.contains("Chronic gastritis") &&
+            html.count("<img") == 4;
+        er.CloseDb(); em.CloseDb();
+        qInfo() << (ok ? "dsreal: PASS" : "dsreal: FAIL");
+        return ok ? 0 : 28;
     }
 
     // Self-test отчётов: шаблон (XML) → генератор HTML + БД tb_Report.
