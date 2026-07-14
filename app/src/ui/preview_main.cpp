@@ -670,11 +670,22 @@ int main(int argc, char **argv)
                 << "modifydate:" << np22.modifyDate << "| depts:" << depts
                 << "| by-dept:" << byDept << "| default:" << def;
 
+        // Библиотека шаблонов (TempletLibInfo.xml — полные имена layout-файлов).
+        const QStringList libNames = cfg.TempletLibNames();
+        bool libFound = false;
+        const KTempletBaseInfo lib = cfg.GetLibTemplateInfoByName("ReportTemplateNP-2x2", &libFound);
+        qInfo() << "библиотека:" << libNames << "| lib NP-2x2 found:" << libFound
+                << "depts:" << lib.deptNames();
+        const bool libOk = libNames.contains("ReportTemplateNP-2x2") &&
+                           libNames.contains("ReportTemplateNP-1x4") &&
+                           libFound && lib.factory && lib.hasDept("KW_NP-2x2");
+
         const bool ok = loaded && names.contains("NP-2x2") && names.contains("NP-1x4") &&
                         found && np22.factory && np22.modifyDate == "factory" &&
                         depts == QStringList{"KW_NP-2x2"} &&
                         byDept == QStringList{"NP-2x2"} && def == "NP-2x2" &&
-                        cfg.GetTemplateInfoByName("no-such", &found).name.isEmpty();
+                        cfg.GetTemplateInfoByName("no-such", &found).name.isEmpty() &&
+                        libOk;
         qInfo() << (ok ? "templetcfg: PASS" : "templetcfg: FAIL");
         return ok ? 0 : 31;
     }

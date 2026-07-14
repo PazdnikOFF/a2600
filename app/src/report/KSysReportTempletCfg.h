@@ -38,12 +38,20 @@ public:
     void SetReportRoot(const QString &dir) { reportRoot_ = dir; }
     QString ReportRoot() const;
 
-    // Перечитать TempletInfo.xml (реф. LoadTempletInfo/Reload). true при успехе.
+    // Перечитать оба каталога (реф. LoadTempletInfo + LoadTempletLibInfo). true при успехе
+    // разбора config/TempletInfo.xml (основной каталог).
     bool Reload();
 
-    // Все шаблоны каталога (реф. GetTempletInfos).
+    // Все шаблоны каталога (реф. GetTempletInfos) — config/TempletInfo.xml,
+    // короткие имена ("NP-2x2").
     const QVector<KTempletBaseInfo> &TempletInfos() const { return infos_; }
     QStringList TempletNames() const;
+
+    // Библиотека шаблонов (реф. GetTempletLibInfos) — config/TempletLibInfo.xml,
+    // полные имена layout-файлов ("ReportTemplateNP-2x2"). Та же схема XML.
+    const QVector<KTempletBaseInfo> &TempletLibInfos() const { return libInfos_; }
+    QStringList TempletLibNames() const;
+    KTempletBaseInfo GetLibTemplateInfoByName(const QString &name, bool *found = nullptr) const;
 
     // Инфо по имени (реф. GetTemplateInfoByName). found=false → пустая структура.
     KTempletBaseInfo GetTemplateInfoByName(const QString &name, bool *found = nullptr) const;
@@ -60,5 +68,8 @@ private:
     bool loaded_ = false;
     QString reportRoot_;
     QVector<KTempletBaseInfo> infos_;
+    QVector<KTempletBaseInfo> libInfos_;
     void ensureLoaded() const;
+    // Разбор одного каталог-файла (config/<file>) в vector<KTempletBaseInfo>.
+    bool parseTempletFile(const QString &file, QVector<KTempletBaseInfo> &out) const;
 };

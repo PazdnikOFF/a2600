@@ -42,11 +42,11 @@ void KSysReportTempletCfg::ensureLoaded() const
         const_cast<KSysReportTempletCfg *>(this)->Reload();
 }
 
-bool KSysReportTempletCfg::Reload()
+bool KSysReportTempletCfg::parseTempletFile(const QString &file,
+                                            QVector<KTempletBaseInfo> &out) const
 {
-    infos_.clear();
-    loaded_ = true;
-    QFile f(QDir(ReportRoot()).absoluteFilePath("config/TempletInfo.xml"));
+    out.clear();
+    QFile f(QDir(ReportRoot()).absoluteFilePath("config/" + file));
     if (!f.open(QIODevice::ReadOnly))
         return false;
     QDomDocument doc;
@@ -67,9 +67,18 @@ bool KSysReportTempletCfg::Reload()
             dept.isDefault = d.attribute("default") == "1";
             info.depts << dept;
         }
-        infos_ << info;
+        out << info;
     }
     return true;
+}
+
+bool KSysReportTempletCfg::Reload()
+{
+    loaded_ = true;
+    // Библиотека шаблонов (TempletLibInfo.xml) — не критична для успеха.
+    parseTempletFile("TempletLibInfo.xml", libInfos_);
+    // Основной каталог (TempletInfo.xml).
+    return parseTempletFile("TempletInfo.xml", infos_);
 }
 
 QStringList KSysReportTempletCfg::TempletNames() const
@@ -117,4 +126,26 @@ QString KSysReportTempletCfg::GetDefaultTempletByDept(const QString &dept) const
             if (d.name == dept && d.isDefault)
                 return i.name;
     return QString();
+}
+
+QStringList KSysReportTempletCfg::TempletLibNames() const
+{
+    ensureLoaded();
+    QStringList out;
+    for (const KTempletBaseInfo &i : libInfos_)
+        out << i.name;
+    return out;
+}
+
+KTempletBaseInfo KSysReportTempletCfg::GetLibTemplateInfoByName(const QString &name,
+                                                                bool *found) const
+{
+    ensureLoaded();
+    for (const KTempletBaseInfo &i : libInfos_)
+        if (i.name == name) {
+            if (found) *found = true;
+            return i;
+        }
+    if (found) *found = false;
+    return KTempletBaseInfo();
 }
