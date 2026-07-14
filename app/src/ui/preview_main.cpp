@@ -31,6 +31,7 @@
 #include "sys/KUpdateConf.h"
 #include "sys/KVersionConfig.h"
 #include "sys/KProjectSet.h"
+#include "sys/KStyleConfig.h"
 #include "sys/KStatisticConfig.h"
 #include "sys/KSystemStatus.h"
 
@@ -568,6 +569,26 @@ int main(int argc, char **argv)
                         frameLost == "Fram Lost,Index";
         qInfo() << (ok ? "statistic: PASS" : "statistic: FAIL");
         return ok ? 0 : 17;
+    }
+
+    // Self-test конфигурации брендов/стилей (stylelist.ini).
+    if (screen == "style") {
+        KStyleConfig &st = KStyleConfig::GetInstance();
+        const bool loaded = st.Load();
+        qInfo() << "бренды:" << st.GetStyleList();
+        qInfo() << "текущий (по умолч.):" << st.GetCurrentStyle();
+        st.SetCurrentStyle("PyCkeun");   // РуСкейн (X-2600)
+        const QString path = st.GetStylePath("X-2600", "PyCkeun");
+        const bool pathExists = QDir(path).exists();
+        qInfo() << "PyCkeun путь:" << path << "существует:" << pathExists;
+
+        const bool ok = loaded && st.GetStyleList().size() == 4 &&
+                        st.GetStyleList().contains("PyCkeun") &&
+                        st.GetStyleList().first() == "SonoScapeCN" &&
+                        st.IsStyleValid("SonoScapeHK") && !st.IsStyleValid("NoSuchBrand") &&
+                        st.GetCurrentStyle() == "PyCkeun" && pathExists;
+        qInfo() << (ok ? "style: PASS" : "style: FAIL");
+        return ok ? 0 : 22;
     }
 
     // Self-test продуктовой конфигурации (project.ini + per-модель product.ini).

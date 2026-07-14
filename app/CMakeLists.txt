@@ -69,6 +69,7 @@ set(SOURCES
     src/sys/KUpdateConf.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
+    src/sys/KStyleConfig.cpp
     src/sys/KStatisticConfig.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
@@ -132,6 +133,7 @@ add_executable(ui_preview
     src/sys/KUpdateConf.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
+    src/sys/KStyleConfig.cpp
     src/sys/KStatisticConfig.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
