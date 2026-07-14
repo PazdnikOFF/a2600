@@ -68,6 +68,7 @@ set(SOURCES
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KStatisticConfig.cpp
+    src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/alg/AlgParaManager.cpp
@@ -127,6 +128,7 @@ add_executable(ui_preview
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KStatisticConfig.cpp
+    src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/alg/AlgParaManager.cpp

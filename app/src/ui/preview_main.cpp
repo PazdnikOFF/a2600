@@ -29,6 +29,7 @@
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
 #include "sys/KStatisticConfig.h"
+#include "sys/KSystemStatus.h"
 
 #include <QDir>
 #include <QFile>
@@ -470,6 +471,36 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test центрального статуса (KSystemStatus): состояние + сигналы изменений.
+    if (screen == "sysstatus") {
+        KSystemStatus &ss = KSystemStatus::GetInstance();
+        // Собрать все оповещения (тип,значение).
+        QVector<QPair<int,int>> events;
+        QObject::connect(&ss, &KSystemStatus::SystemStatusChange,
+                         [&](int t, int v){ events.append({t, v}); });
+
+        ss.SetFreezeStatus(1);
+        ss.SetVlsMode(3);              // VIST (offset 0x3c)
+        ss.SetRecordStatus(1);
+        ss.SetVlsMode(3);             // без изменения → сигнал НЕ шлём
+        ss.SetIrisValue(42);
+        ss.SetImageBrightness(80);
+
+        qInfo() << "оповещений:" << events.size();
+        for (auto &e : events) qInfo() << "  type=" << e.first << "value=" << e.second;
+        qInfo() << "VlsMode:" << ss.VlsMode() << "Freeze:" << ss.FreezeStatus()
+                << "Iris:" << ss.IrisValue() << "Brightness:" << ss.ImageBrightness();
+
+        const bool ok =
+            ss.FreezeStatus() == 1 && ss.VlsMode() == 3 && ss.RecordStatus() == 1 &&
+            ss.IrisValue() == 42 && ss.ImageBrightness() == 80 &&
+            events.size() == 5 &&                        // 6 сеттеров, 1 без изменения
+            events[1] == qMakePair((int)KSystemStatus::ST_VlsMode, 3) &&
+            events[0] == qMakePair((int)KSystemStatus::ST_Freeze, 1);
+        qInfo() << (ok ? "sysstatus: PASS" : "sysstatus: FAIL");
+        return ok ? 0 : 18;
     }
 
     // Self-test спеки событий статистики (statistic.ini).
