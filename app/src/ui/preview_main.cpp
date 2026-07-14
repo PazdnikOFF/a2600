@@ -15,6 +15,7 @@
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
+#include "db/KSaveFile.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -724,6 +725,41 @@ int main(int argc, char **argv)
                         gastrNum == 4 && gastrPage.size() == 4;       // A2,A4,A6 (диагноз) + A3 (disease)
         qInfo() << (ok ? "reportdb: PASS" : "reportdb: FAIL");
         return ok ? 0 : 32;
+    }
+
+    // Self-test нумерации файлов снимков/видео (реф. KSaveFile::FormatFlowNumber +
+    // разбор имён + поиск следующего номера в каталоге).
+    if (screen == "savefile") {
+        // Форматирование: 3 цифры zero-pad, overflow "999^".
+        const bool fmtOk = KSaveFile::FormatFlowNumber(0) == "000" &&
+                           KSaveFile::FormatFlowNumber(1) == "001" &&
+                           KSaveFile::FormatFlowNumber(42) == "042" &&
+                           KSaveFile::FormatFlowNumber(999) == "999" &&
+                           KSaveFile::FormatFlowNumber(1000) == "999^" &&
+                           KSaveFile::MakeFileName(7, false) == "007.jpg" &&
+                           KSaveFile::MakeFileName(12, true) == "012.mp4";
+        // Разбор номера из имени.
+        const bool parseOk = KSaveFile::FlowNumberFromName("003.jpg") == 3 &&
+                             KSaveFile::FlowNumberFromName("012.mp4") == 12 &&
+                             KSaveFile::FlowNumberFromName("999^.jpg") == 999 &&
+                             KSaveFile::FlowNumberFromName("readme.txt") == -1;
+
+        // Поиск следующего номера в каталоге со снимками.
+        const QString dir = "/tmp/endo_savefile";
+        QDir().mkpath(dir);
+        for (const QString &f : QDir(dir).entryList({"*.jpg", "*.mp4"}, QDir::Files))
+            QFile::remove(dir + "/" + f);
+        const bool emptyNext = KSaveFile::NextFlowNumber(dir) == 0;  // пустой каталог → 0
+        for (const QString &n : {"001.jpg", "002.jpg", "005.mp4", "notes.txt"})
+            { QFile ff(dir + "/" + n); ff.open(QIODevice::WriteOnly); ff.close(); }
+        const int mx = KSaveFile::FindMaxFileFlowNumber(dir);
+        const int next = KSaveFile::NextFlowNumber(dir);
+        qInfo() << "fmt:" << fmtOk << "parse:" << parseOk
+                << "| пустой→" << emptyNext << "| max:" << mx << "next:" << next;
+
+        const bool ok = fmtOk && parseOk && emptyNext && mx == 5 && next == 6;
+        qInfo() << (ok ? "savefile: PASS" : "savefile: FAIL");
+        return ok ? 0 : 33;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).

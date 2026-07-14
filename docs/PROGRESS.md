@@ -88,6 +88,7 @@ ENDO_ROOT=$ER ui_preview videocal                     # self-test калибро
 ui_preview update                                     # self-test апдейт-пайплайна (манифест update.ini + решение «что обновлять»)
 ENDO_ROOT=$ER ui_preview templetcfg                   # self-test каталога шаблонов отчёта (TempletInfo.xml + департаменты)
 ui_preview reportdb                                   # self-test постраничного БД-доступа к отчётам (пагинация+LIKE-запрос)
+ui_preview savefile                                   # self-test нумерации файлов снимков/видео (FormatFlowNumber+разбор имён)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -431,10 +432,10 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~43/491 классов, **24 self-test-режима**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто (Фаза A — полностью,
-+KVideoCal; Фаза D — +KUpdateManifest; Фаза C — +KSysReportTempletCfg каталог+библиотека
-шаблонов, +KReportDBTableHandler-пагинация в KEntityReport). Репозиторий
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~45/491 классов, **26 self-test-режимов**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +5 классов:
++KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
++KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B). Репозиторий
 на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
@@ -447,9 +448,9 @@ Qt5, boost 1.74, libcrypto.
 6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
    `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
 
-**Полный список 24 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+**Полный список 26 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
