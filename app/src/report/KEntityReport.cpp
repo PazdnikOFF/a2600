@@ -111,3 +111,88 @@ int KEntityReport::GetReportNumber() const
         return q.value(0).toInt();
     return 0;
 }
+
+namespace {
+const char *kReportCols =
+    "AccessionNumber, TemplateName, ExamView, Diagnosis, DiseaseName, "
+    "SurgicalMethod, SurgeryFinding, Suggestion, Biopsy, HP";
+
+ReportEntity reportFromQuery(const QSqlQuery &q)
+{
+    ReportEntity r;
+    r.accessionNumber = q.value(0).toString();
+    r.templateName    = q.value(1).toString();
+    r.examView        = q.value(2).toString();
+    r.diagnosis       = q.value(3).toString();
+    r.diseaseName     = q.value(4).toString();
+    r.surgicalMethod  = q.value(5).toString();
+    r.surgeryFinding  = q.value(6).toString();
+    r.suggestion      = q.value(7).toString();
+    r.biopsy          = q.value(8).toString();
+    r.hp              = q.value(9).toString();
+    return r;
+}
+} // namespace
+
+QList<ReportEntity> KEntityReport::GetPageRecord(int offset, int limit) const
+{
+    QList<ReportEntity> list;
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT " + QString(kReportCols) +
+              " FROM tb_Report ORDER BY AccessionNumber LIMIT ? OFFSET ?");
+    q.addBindValue(limit);
+    q.addBindValue(offset);
+    if (!q.exec()) {
+        qWarning() << "GetPageRecord:" << q.lastError().text();
+        return list;
+    }
+    while (q.next()) list.append(reportFromQuery(q));
+    return list;
+}
+
+QStringList KEntityReport::GetAllRecordMainKey() const
+{
+    QStringList keys;
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    if (q.exec("SELECT AccessionNumber FROM tb_Report ORDER BY AccessionNumber"))
+        while (q.next()) keys << q.value(0).toString();
+    return keys;
+}
+
+int KEntityReport::GetQueryRecordNum(const QString &keyword) const
+{
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    if (keyword.isEmpty())
+        return GetReportNumber();
+    q.prepare("SELECT count(*) FROM tb_Report "
+              "WHERE Diagnosis LIKE ? OR DiseaseName LIKE ?");
+    const QString like = "%" + keyword + "%";
+    q.addBindValue(like);
+    q.addBindValue(like);
+    if (q.exec() && q.next())
+        return q.value(0).toInt();
+    return 0;
+}
+
+QList<ReportEntity> KEntityReport::QueryPageRecord(const QString &keyword,
+                                                   int offset, int limit) const
+{
+    if (keyword.isEmpty())
+        return GetPageRecord(offset, limit);
+    QList<ReportEntity> list;
+    QSqlQuery q(QSqlDatabase::database(kConn));
+    q.prepare("SELECT " + QString(kReportCols) +
+              " FROM tb_Report WHERE Diagnosis LIKE ? OR DiseaseName LIKE ? "
+              "ORDER BY AccessionNumber LIMIT ? OFFSET ?");
+    const QString like = "%" + keyword + "%";
+    q.addBindValue(like);
+    q.addBindValue(like);
+    q.addBindValue(limit);
+    q.addBindValue(offset);
+    if (!q.exec()) {
+        qWarning() << "QueryPageRecord:" << q.lastError().text();
+        return list;
+    }
+    while (q.next()) list.append(reportFromQuery(q));
+    return list;
+}

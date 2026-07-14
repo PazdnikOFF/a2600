@@ -690,6 +690,42 @@ int main(int argc, char **argv)
         return ok ? 0 : 31;
     }
 
+    // Self-test постраничного БД-доступа к отчётам (реф. KReportDBTableHandler):
+    // пагинация + запрос по ключевому слову + список ключей.
+    if (screen == "reportdb") {
+        const QString db = "/tmp/endo_reportdb.db";
+        QFile::remove(db);
+        KEntityReport &er = KEntityReport::Instance();
+        er.OpenDb(db);
+        // 6 отчётов: 2 с "Gastritis" в диагнозе, 1 с "Gastritis" в disease.
+        for (int i = 1; i <= 6; ++i) {
+            ReportEntity r;
+            r.accessionNumber = QString("A%1").arg(i, 4, 10, QChar('0'));
+            r.templateName = "NP-2x2";
+            r.diagnosis = (i % 2 == 0) ? "Chronic gastritis" : "Normal mucosa";
+            r.diseaseName = (i == 3) ? "Gastritis" : "None";
+            er.SaveReport(r);
+        }
+        const int total = er.GetReportNumber();
+        const auto page1 = er.GetPageRecord(0, 4);     // первые 4 по ключу
+        const auto page2 = er.GetPageRecord(4, 4);     // остаток (2)
+        const QStringList keys = er.GetAllRecordMainKey();
+        const int gastrNum = er.GetQueryRecordNum("astrit");  // Gastritis/gastritis (LIKE)
+        const auto gastrPage = er.QueryPageRecord("astrit", 0, 10);
+        er.CloseDb();
+
+        qInfo() << "всего:" << total << "| стр1:" << page1.size() << "стр2:" << page2.size()
+                << "| ключи:" << keys << "| gastritis num:" << gastrNum;
+        const bool ok = total == 6 &&
+                        page1.size() == 4 && page2.size() == 2 &&
+                        page1.first().accessionNumber == "A0001" &&   // порядок по ключу
+                        page2.last().accessionNumber == "A0006" &&
+                        keys.size() == 6 && keys.first() == "A0001" &&
+                        gastrNum == 4 && gastrPage.size() == 4;       // A2,A4,A6 (диагноз) + A3 (disease)
+        qInfo() << (ok ? "reportdb: PASS" : "reportdb: FAIL");
+        return ok ? 0 : 32;
+    }
+
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
     if (screen == "filebackup") {
         const QString base = "/tmp/endo_fb";

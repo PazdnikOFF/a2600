@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 #include <QList>
 
 // Сущность и БД-слой отчётов (реф. KEntityReport/KReportDBTableHandler, tb_Report).
@@ -32,6 +33,17 @@ public:
     bool GetReport(const QString &accessionNumber, ReportEntity &out) const;
     bool DeleteReport(const QString &accessionNumber);
     int  GetReportNumber() const;
+
+    // Постраничный доступ / запросы (реф. KReportDBTableHandler).
+    // Страница отчётов (реф. GetPageRecordFromDb): offset/limit, порядок по ключу.
+    QList<ReportEntity> GetPageRecord(int offset, int limit) const;
+    // Все ключи отчётов (реф. GetAllRecordMainKey).
+    QStringList GetAllRecordMainKey() const;
+    // Число отчётов, где diagnosis/diseaseName содержат keyword (реф. GetQueryRecordNum).
+    // Пустой keyword → все.
+    int GetQueryRecordNum(const QString &keyword) const;
+    // Постраничная выборка с фильтром по keyword (реф. GetPageRecordFromDb с запросом).
+    QList<ReportEntity> QueryPageRecord(const QString &keyword, int offset, int limit) const;
 
 private:
     KEntityReport() = default;
