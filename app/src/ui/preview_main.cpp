@@ -13,6 +13,7 @@
 #include "db/KEntityManage.h"
 #include "db/KEntityQuickInput.h"
 #include "db/KExamListConfigHandler.h"
+#include "db/KEntityExam.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -476,6 +477,55 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test полного CRUD осмотров (tb_ExamList + пагинация).
+    if (screen == "exam") {
+        const QString dbPath = "/tmp/endo_exam.db";
+        QFile::remove(dbPath);
+        KEntityManage &em = KEntityManage::Instance();
+        if (!em.OpenDb(dbPath)) { qWarning() << "OpenDb failed"; return 24; }
+        KEntityExam ex;   // соединение endo_main
+        ex.CreateTable();
+
+        // Три осмотра одного пациента (разные даты).
+        for (int i = 1; i <= 3; ++i) {
+            ExamListEntity e;
+            e.examId = QString("E%1").arg(i, 3, 10, QChar('0'));
+            e.accessionNumber = QString("ACC%1").arg(i);
+            e.patientId = "P001"; e.examType = "Gastroscopy";
+            e.examDate = QString("2026-07-%1").arg(10 + i);
+            e.examTime = "12:00:00"; e.examStatus = i;
+            e.examDir = QString("/data/exam/E%1").arg(i, 3, 10, QChar('0'));
+            ex.CreateEntity(e);
+        }
+        // Осмотр другого пациента.
+        { ExamListEntity e; e.examId = "E999"; e.patientId = "P002";
+          e.examDate = "2026-07-01"; ex.CreateEntity(e); }
+
+        const int total = ex.GetEntityNumber();
+        const auto forP001 = ex.GetEntityDetailList("P001");
+        const QString latest = ex.GetLatestExamId();     // E999? нет: E003 (2026-07-13 позже 07-01)
+        const auto page = ex.GetPageRecord(0, 2);         // 2 самых свежих
+        ExamListEntity got; const bool gotOk = ex.GetEntityDetail("E002", got);
+        // Обновление статуса.
+        got.examStatus = 9; ex.UpdateEntity(got);
+        ExamListEntity re; ex.GetEntityDetail("E002", re);
+        // Удаление.
+        ex.DeleteSelf("E999");
+
+        qInfo() << "всего осмотров:" << total << "у P001:" << forP001.size()
+                << "последний:" << latest << "страница(0,2):" << page.size();
+        qInfo() << "E002 статус после update:" << re.examStatus << "тип:" << got.examType;
+
+        const bool ok = total == 4 && forP001.size() == 3 &&
+                        latest == "E003" &&                  // самый свежий по дате
+                        page.size() == 2 && page.first().examId == "E003" &&
+                        gotOk && got.accessionNumber == "ACC2" && re.examStatus == 9 &&
+                        ex.GetEntityNumber() == 3;            // после удаления E999
+        em.CloseDb();
+        qInfo() << (ok ? "exam: PASS" : "exam: FAIL");
+        return ok ? 0 : 25;
     }
 
     // Self-test конфига колонок списка осмотров (видимость + экспорт, персист).
