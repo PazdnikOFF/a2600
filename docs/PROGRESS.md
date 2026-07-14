@@ -182,7 +182,9 @@ app/
 - Gamma enable (SetGammaEnable): `0xa1830000`. Zoom (SetZoomValue): `0xa18d0004`.
 - CCM0 (SetCCM0Matrix): регион `0xa1860000`, enable `0xa1860014`=0x14.
 - CCM1 (SetCCM1/Matrix): регион `0xa1880000`, enable `0xa1880000`, коэф. парами `0xa1880004..`.
-- CHb (SetChbStatus): строб enable `0xa1900008` (1→0) вокруг значения `0xa1900018`.
+- CHb (SetChbStatus, усиление гемоглобина): `status==0`→выкл `0xa1900008=0`; иначе→вкл `=1`
+  + запись CHb-значения в `0xa1900018`. Значение = **4-е** из `CHb/<SENSOR>_<res>.txt` (4 hex,
+  реф. LoadCHBPara → AlgParaManager+0x7a3c). (Ранее ошибочно описан как строб — исправлено.)
 - Версии FPGA (GetFpga1Version): чтение `0xa004a044` (Fpga2/3 — соседние).
 - Freeze (SetFreezeStatus): `0xa180002c`. VideoDisplay: `0xa0080028`.
 - Freeze scaler (SetFreezeScalerIn/Out/Ratio): `0xa191000c`/`0010`/`0008` = a|(b<<16).

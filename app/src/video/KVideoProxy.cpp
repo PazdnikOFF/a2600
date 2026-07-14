@@ -362,6 +362,7 @@ void KVideoProxy::ApplyImageParams(const QString &sensor, const QString &res,
     // Таблицы уровней параметров изображения (для Send*/SetBrightEQLut).
     alg.LoadColEnhLevels(sensor);
     alg.LoadBrightEqPara(sensor);
+    alg.LoadChbPara(sensor, res);   // CHb-значение для SetChbStatus
     // LUT линеаризации сенсора → PL (реф. SetSensorLut → SetSensorR/G/BLut).
     const auto sl = alg.LoadSensorLut(sensor, res);
     if (sl.valid) {

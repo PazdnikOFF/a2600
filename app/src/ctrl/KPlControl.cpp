@@ -248,12 +248,17 @@ void KPlControl::SetCCM1Matrix(const unsigned int *data, int count)
         WriteValueToPL(reg, data[i] | (data[i + 1] << 16));
 }
 
-void KPlControl::SetChbStatus(int chbValue)
+void KPlControl::SetChbStatus(int status)
 {
-    // Реф.: строб enable (1) → запись значения → снятие enable (0) для защёлки.
-    WriteValueToPL(kChbEnableReg, 1);
-    WriteValueToPL(kChbValueReg, static_cast<unsigned int>(chbValue));
-    WriteValueToPL(kChbEnableReg, 0);
+    // Реф. SetChbStatus: status==0 → выкл (0xa1900008=0); иначе → вкл (=1) +
+    // запись CHb-значения (4-е из CHb-файла, реф. AlgParaManager+0x7a3c) в 0xa1900018.
+    if (status == 0) {
+        WriteValueToPL(kChbEnableReg, 0);
+    } else {
+        WriteValueToPL(kChbEnableReg, 1);
+        WriteValueToPL(kChbValueReg,
+                       static_cast<unsigned int>(AlgParaManager::GetInstance().ChbValue()));
+    }
 }
 
 bool KPlControl::GetFpga1Version(unsigned int &version)

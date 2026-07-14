@@ -255,6 +255,16 @@ AlgParaManager::RbcLut AlgParaManager::LoadRbcLut(const QString &sensor,
     return lut;
 }
 
+void AlgParaManager::LoadChbPara(const QString &sensor, const QString &res)
+{
+    // CHb/<SENSOR>_<res>.txt — 4 hex-значения (реф. LoadCHBPara → LoadFileParaUInt).
+    // SetChbStatus использует 4-е (индекс 3).
+    const QString file = QDir(KSystem::VideoConfPath())
+        .absoluteFilePath(QString("CHb/%1_%2.txt").arg(sensor, res));
+    const QVector<int> vals = ReadHexLines(file);
+    chbValue_ = (vals.size() >= 4) ? vals[3] : (vals.isEmpty() ? 0 : vals.last());
+}
+
 QVector<int> AlgParaManager::LoadKneeLut(const QString &sensor, const QString &scope) const
 {
     // Knee/<SENSOR>_KneeLut[_<SCOPE>].txt (hex по строке).

@@ -94,9 +94,9 @@ public:
     //   enable → 0xa1880000; коэффициенты парами → 0xa1880004..
     void SetCCM1(int enable);
     void SetCCM1Matrix(const unsigned int *data, int count);
-    // CHb (хром/гемоглобин, реф. SetChbStatus): строб enable 0xa1900008 вокруг
-    //   значения 0xa1900018.
-    void SetChbStatus(int chbValue);
+    // CHb (усиление гемоглобина, реф. SetChbStatus): status==0 → выкл (0xa1900008=0);
+    //   иначе → вкл (=1) + запись CHb-значения (из AlgParaManager) в 0xa1900018.
+    void SetChbStatus(int status);
     // Версии/статус FPGA (реф. GetFpga*Version/GetFpga2System) — чтение регистров.
     bool GetFpga1Version(unsigned int &version);   // 0xa004a044
     bool GetFpga2Version(unsigned int &version);   // 0xa1000000

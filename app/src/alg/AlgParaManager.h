@@ -100,6 +100,11 @@ public:
     // (hex, 1024 значения по 10 бит).
     QVector<int> LoadKneeLut(const QString &sensor, const QString &scope = QString()) const;
 
+    // CHb (усиление гемоглобина, реф. LoadCHBPara): CHb/<SENSOR>_<res>.txt — 4 hex.
+    // SetChbStatus пишет в PL 4-е значение (реф. AlgParaManager+0x7a3c).
+    void LoadChbPara(const QString &sensor, const QString &res);
+    int  ChbValue() const { return chbValue_; }   // 4-е значение (для 0xa1900018)
+
     // Таблица диафрагмы (реф. LoadIrisPara/SetIrisTable): IRIS/<SENSOR>_<res>[_<SCOPE>].txt
     // (8040 значений-масок 1/3/7 — план размеров апертуры).
     QVector<int> LoadIrisTable(const QString &sensor, const QString &res,
@@ -120,4 +125,5 @@ private:
     QVector<int> brightEqGauss_;   // гауссов фильтр Bright EQ (36 значений)
     QVector<int> brightEqLuma_[4]; // lumaGainLut: disable/low/middle/high
     int videoW_ = 0, videoH_ = 0; // текущий размер видео-области (resize)
+    int chbValue_ = 0;            // CHb: 4-е значение для 0xa1900018
 };

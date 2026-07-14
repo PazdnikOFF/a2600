@@ -199,23 +199,28 @@ int main(int argc, char **argv)
         if (!eqOk) { qWarning() << "BrightEQ LUT: карта записей не сошлась"; ok = false; }
 
         // Новые register-методы (батч): SetGammaEnable/SetZoomValue/SetCCM1/CHb.
+        // CHb: config-driven (4-е значение CHb-файла); загружаем перед SetChbStatus.
+        alg.LoadChbPara("OV2740", "EG_1504X1080");   // 4-е значение = 0x34803c0
+        const int chb = alg.ChbValue();
         pl.ClearTrace();
         pl.SetGammaEnable(true);
         pl.SetZoomValue(0x123);
         pl.SetCCM1(1);
         const unsigned ccm1[9] = {0x0100,0,0, 0,0x0100,0, 0,0,0x0100};
         pl.SetCCM1Matrix(ccm1, 9);
-        pl.SetChbStatus(0x55);
+        pl.SetChbStatus(1);   // status!=0 → вкл + запись ChbValue
+        pl.SetChbStatus(0);   // status==0 → выкл
         const auto &tb = pl.Trace();
-        // gamma(1) + zoom(1) + ccm1en(1) + ccm1matrix(4 пары) + chb(3) = 10
-        bool batchOk = tb.size() == 1 + 1 + 1 + 4 + 3 &&
+        // gamma(1)+zoom(1)+ccm1en(1)+ccm1matrix(4)+chb-on(2: en+val)+chb-off(1) = 10
+        bool batchOk = tb.size() == 1 + 1 + 1 + 4 + 2 + 1 && chb == 0x34803c0 &&
                        tb[0].first == 0xa1830000 && tb[1].first == 0xa18d0004 &&
                        tb[1].second == 0x123 && tb[2].first == 0xa1880000 &&
                        tb[3].first == 0xa1880004 && tb[3].second == 0x100 &&
                        tb[7].first == 0xa1900008 && tb[7].second == 1 &&
-                       tb[8].first == 0xa1900018 && tb[8].second == 0x55 &&
+                       tb[8].first == 0xa1900018 && tb[8].second == (unsigned)chb &&
                        tb[9].first == 0xa1900008 && tb[9].second == 0;
-        qInfo() << "batch writes:" << tb.size() << "(exp 10)" << (batchOk ? "OK" : "MISMATCH");
+        qInfo() << "batch writes:" << tb.size() << "(exp 10) chb=0x" + QString::number(chb,16)
+                << (batchOk ? "OK" : "MISMATCH");
         if (!batchOk) ok = false;
 
         // Freeze/scaler/geometry (простые регистры).
