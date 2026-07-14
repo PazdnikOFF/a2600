@@ -22,6 +22,7 @@
 #include "report/KReportDataSource.h"
 #include "report/KDocumentGenerator.h"
 #include "report/KEntityReport.h"
+#include "report/KThesaurusOpt.h"
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
 
@@ -460,6 +461,46 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test тезауруса: словарь шаблонов диагнозов → автозаполнение отчёта.
+    if (screen == "thesaurus") {
+        KThesaurusOpt th;   // lang=ch по умолчанию
+        const bool loaded = th.Load(KThesaurusOpt::Gastroscopy);
+        qInfo() << "Gastroscopy.xml файл:" << th.GetFileNameByEndoscopeType(KThesaurusOpt::Gastroscopy);
+        qInfo() << "загружено записей:" << th.Records().size()
+                << "групп:" << th.Groups().size();
+        // Найти запись по диагнозу и проверить непустые поля.
+        KThesaurusOpt::Record rec;
+        const bool found = th.RecordByDisease(
+            QString::fromUtf8("急性食管炎"), rec);   // "острый эзофагит"
+        qInfo() << "найдено 'острый эзофагит':" << found
+                << "grid:" << rec.grid
+                << "examfinding непустое:" << !rec.examFinding.isEmpty();
+
+        // Интеграция с отчётом: тезаурус → поля ReportEntity.
+        ReportEntity re;
+        if (found) {
+            re.diseaseName = rec.diseaName;         // RT_DISEASE_NAME
+            re.surgeryFinding = rec.examFinding;    // RT_SURGERY_FINDING
+            re.diagnosis = rec.diagResult;          // RT_DIAGNOSIS
+        }
+        qInfo() << "отчёт заполнен: diseaseName непустое=" << !re.diseaseName.isEmpty()
+                << "diagnosis непустое=" << !re.diagnosis.isEmpty();
+
+        // Add/Del роундтрип (в памяти).
+        const int before = th.Records().size();
+        const QString grid = th.AddDiseaseContent("测试", "TestDisease", "finding", "result");
+        KThesaurusOpt::Record added;
+        const bool addOk = th.RecordByGrid(grid, added) && added.diseaName == "TestDisease";
+        const bool delOk = th.DelDiseaseContentByGrid(grid) && th.Records().size() == before;
+
+        const bool ok = loaded && th.Records().size() > 0 && th.Groups().size() > 0 &&
+                        found && !rec.examFinding.isEmpty() && !re.diagnosis.isEmpty() &&
+                        addOk && delOk;
+        qInfo() << "add/del roundtrip:" << (addOk && delOk);
+        qInfo() << (ok ? "thesaurus: PASS" : "thesaurus: FAIL");
+        return ok ? 0 : 13;
     }
 
     // Self-test отчётов: шаблон (XML) → генератор HTML + БД tb_Report.
