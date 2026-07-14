@@ -528,10 +528,15 @@ int main(int argc, char **argv)
         { QFile hf(outHtml); if (hf.open(QIODevice::WriteOnly)) hf.write(html.toUtf8()); }
 
         const int imgCount = html.count("<img");
+        // ItemConfig-раскладка: Image2x2 задаёт ImageWidth=197, AlignH=Center; ExamInfo — Section=Body.
+        const bool cfgOk = html.contains("width:197px") &&
+                           html.contains("text-align:center") &&
+                           html.contains("data-section=\"Body\"");
         const bool genOk = !items.isEmpty() &&
                            html.contains("Ivanov Ivan") &&
                            html.contains("Gastritis") &&
-                           html.contains("/data/exam/A0001/0.jpeg") && imgCount == 4;
+                           html.contains("/data/exam/A0001/0.jpeg") && imgCount == 4 && cfgOk;
+        qInfo() << "ItemConfig применён (width197/center/section):" << cfgOk;
         qInfo() << "HTML:" << html.size() << "bytes, <img>=" << imgCount
                 << "→" << outHtml;
 

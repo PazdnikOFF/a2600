@@ -273,6 +273,10 @@ app/
   (RT_TEST_IMAGE<N>/RT_TEXT_MARK<N>), а также REPORT/MEASURE/LOCAL/SUBITEM и мед. пакеты
   (TIRADS/BIRADS/EFW/GA/…). ItemConfig — раскладка (LineHeight/ImageWidth/AlignH/Section).
 - SubContent-блоки NP-2x2: HospitalTop, PatientInfo, Image2x2, ExamInfo, Signature, Addition.
+- **ItemConfig** (секция в SubContent-XML, ключ = путь "/A/B/C"): раскладка элемента —
+  ImageWidth(px), AlignH(Center/Left/Right), FontType(ThirdTitle), Section(Header/Body),
+  LineHeight1/2, RefColumn, SynColumnID. Применяется в KDocumentGenerator (width/text-align/
+  font-weight/data-section). Реф. KReportEditUIConfig/KReportDisplayParam.
 - Классы: KReportTemplateManager/KTemplateCfg (шаблоны), KReportEditDataSource (данные),
   KDocumentGenerator (документ; оригинал → QTextDocument/PDF), KEntityReport (tb_Report).
 - **measure**: вендоренный pugixml (`measure::pugi::*`) для XML измерительных пакетов.
@@ -348,8 +352,10 @@ Qt5, boost 1.74, libcrypto.
    Проверено self-test `report` (5 шаблонов, NP-2x2 → 6 блоков, HTML с сеткой 2x2, БД-роундтрип).
    ✅ ДОБАВЛЕНО: тезаурус (KThesaurusOpt — словари диагнозов thesaurus/<lang>/<Scope>.xml →
    автозаполнение полей отчёта; парсинг/запросы/add-del, self-test `thesaurus`).
-   ОСТАЛОСЬ: KReportEditUi (редактор — Widgets/UI), рендер в PDF/QTextDocument (device/печать),
-   ItemConfig-раскладка (LineHeight/ImageWidth/AlignH), med/pugixml измерительные пакеты.
+   ✅ ДОБАВЛЕНО: ItemConfig-раскладка (KReportTemplate парсит <ItemConfig> по пути элемента →
+   ImageWidth/AlignH/FontType/Section; KDocumentGenerator применяет в HTML, self-test `report`).
+   ОСТАЛОСЬ: KReportEditUi (редактор — Widgets/UI), рендер в PDF/QTextDocument (device/печать).
+   Measure/pugixml — в эндоскопе отдельной измерительной подсистемы НЕТ (measure::pugi = вендор-lib).
 5. ✅ СДЕЛАНО (логика): KAccount (роли admin/manu, MD5-пароли, дефолт MD5("admin"),
    валидатор пароля, блокировка после 5 неудач, сброс, смена пароля), KSystemSet
    (Common/*, Account/* через QSettings). Проверено self-test `account`.

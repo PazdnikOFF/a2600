@@ -20,6 +20,15 @@ struct ReportItem {
     bool    showTitle = false;
     QVector<ReportItem> children;
 
+    // Раскладка из секции <ItemConfig> (реф. KReportEditUIConfig): сопоставляется
+    // по пути элемента ("/A/B/C"). imageWidth (px), alignH (Center/Left/Right),
+    // fontType (ThirdTitle…), section (Header/Body), lineHeight1.
+    int     imageWidth = 0;
+    QString alignH;
+    QString fontType;
+    QString section;
+    int     lineHeight = 0;
+
     QString dataSource() const;   // часть до запятой
     QString dataField() const;    // часть после запятой
     bool isImage() const { return type == "RT_IMAGE_BLOCK"; }

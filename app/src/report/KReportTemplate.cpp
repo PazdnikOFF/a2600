@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QDomDocument>
+#include <QHash>
 
 QString ReportItem::dataSource() const
 {
@@ -57,6 +58,24 @@ static ReportItem parseItem(const QDomElement &e)
     return it;
 }
 
+// Применить <ItemConfig> к дереву по пути элемента ("/A/B/C").
+static void applyConfig(ReportItem &it, const QString &parentPath,
+                        const QHash<QString, QDomElement> &cfg)
+{
+    const QString path = parentPath + "/" + it.name;
+    auto found = cfg.find(path);
+    if (found != cfg.end()) {
+        const QDomElement &c = found.value();
+        it.imageWidth = c.attribute("ImageWidth", "0").toInt();
+        it.alignH     = c.attribute("AlignH");
+        it.fontType   = c.attribute("FontType");
+        it.section    = c.attribute("Section");
+        it.lineHeight = c.attribute("LineHeight1", "0").toInt();
+    }
+    for (ReportItem &ch : it.children)
+        applyConfig(ch, path, cfg);
+}
+
 QVector<ReportItem> KReportTemplateManager::loadSubContent(const QString &fileName) const
 {
     QVector<ReportItem> items;
@@ -66,11 +85,21 @@ QVector<ReportItem> KReportTemplateManager::loadSubContent(const QString &fileNa
     QDomDocument doc;
     if (!doc.setContent(&f))
         return items;
+    QDomElement rootEl = doc.documentElement();
     // <root><Content><Item>…</Item></Content>…
-    QDomElement content = doc.documentElement().firstChildElement("Content");
+    QDomElement content = rootEl.firstChildElement("Content");
     for (QDomElement e = content.firstChildElement("Item"); !e.isNull();
          e = e.nextSiblingElement("Item"))
         items.append(parseItem(e));
+
+    // <ItemConfig><Item Name="/путь" ImageWidth=.. AlignH=.. FontType=.. Section=../>
+    QHash<QString, QDomElement> cfg;
+    QDomElement icfg = rootEl.firstChildElement("ItemConfig");
+    for (QDomElement e = icfg.firstChildElement("Item"); !e.isNull();
+         e = e.nextSiblingElement("Item"))
+        cfg.insert(e.attribute("Name"), e);
+    for (ReportItem &it : items)
+        applyConfig(it, QString(), cfg);
     return items;
 }
 
