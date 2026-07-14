@@ -76,6 +76,7 @@ ENDO_ROOT=$ER ui_preview version                      # self-test матрицы
 ENDO_ROOT=$ER ui_preview statistic                    # self-test спеки событий лога
 ENDO_ROOT=$ER ui_preview sysstatus                    # self-test KSystemStatus (состояние + сигналы)
 ui_preview quickinput [out.db]                        # self-test словарей автозаполнения (tb_QuickInput*)
+ENDO_ROOT=$ER ui_preview project                      # self-test продуктовой конфигурации (project/product.ini)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -112,6 +113,7 @@ app/
     ├── sys/KVersionConfig              # установленные версии (data/protected/version.ini) + проверка совместимости
     ├── sys/KStatisticConfig            # спека событий лога (statistic.ini: time_/dcnt_/info_)
     ├── sys/KSystemStatus               # центральный синглтон состояния (freeze/VlsMode/… + сигналы)
+    ├── sys/KProjectSet                 # продуктовая конфигурация (project.ini + per-модель product.ini)
     ├── endo/KSoftEndoParam             # video.ini (per эндоскоп)
     ├── alg/AlgParaManager              # гамма-LUT/CCM/ColEnh из videoconf
     ├── db/KEntityManage                # БД пациент/осмотр (Qt5::Sql/SQLCipher)

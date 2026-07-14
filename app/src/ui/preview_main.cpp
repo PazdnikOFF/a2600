@@ -30,6 +30,7 @@
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
 #include "sys/KVersionConfig.h"
+#include "sys/KProjectSet.h"
 #include "sys/KStatisticConfig.h"
 #include "sys/KSystemStatus.h"
 
@@ -567,6 +568,39 @@ int main(int argc, char **argv)
                         frameLost == "Fram Lost,Index";
         qInfo() << (ok ? "statistic: PASS" : "statistic: FAIL");
         return ok ? 0 : 17;
+    }
+
+    // Self-test продуктовой конфигурации (project.ini + per-модель product.ini).
+    if (screen == "project") {
+        const QString sysd = QDir(KSystem::SystemPath()).absoluteFilePath("");
+        KProjectSet &ps = KProjectSet::GetInstance();
+        const bool pOk = ps.LoadProject(QDir(sysd).absoluteFilePath("display/project.ini"));
+        const bool cOk = ps.LoadProductConfig(
+            QDir(sysd).absoluteFilePath("display/X-2600/X-2600B/product.ini"));
+        qInfo() << "проект:" << ps.GetProjectName() << "ID:" << ps.GetProjectID()
+                << "тема:" << ps.GetThemeName() << "langMode:" << ps.LanguageMode();
+        qInfo() << "серии:" << ps.GetProductSeriesList();
+        qInfo() << "модели X-2600:" << ps.GetProductModelList("X-2600");
+        qInfo() << "флаги ZOOM/CHB/RECORD:" << ps.IsZoomEnable() << ps.IsChbEnable()
+                << ps.IsVideoRecordEnable();
+        qInfo() << "лимиты ImgEnh/ColEnh/RBC:" << ps.GetImgEnhLevel() << ps.GetColEnhLevel()
+                << ps.GetColRBCMax() << ps.GetColRBCMin()
+                << "Zoom:" << ps.GetZoomMin() << ".." << ps.GetZoomMax();
+        qInfo() << "PAPP00/06/80:" << ps.IsShowPAPP(0) << ps.IsShowPAPP(6) << ps.IsShowPAPP(80);
+
+        const bool ok = pOk && cOk &&
+            ps.GetProjectName() == "X-2000" && ps.GetProjectID() == 56 &&
+            ps.GetThemeName() == "black" && ps.LanguageMode() == 8 &&
+            ps.GetProductSeriesList().size() == 6 &&
+            ps.GetProductSeriesList().first() == "X-2600" &&
+            ps.GetProductModelList("X-2600").contains("X-2600B") &&
+            !ps.IsZoomEnable() && !ps.IsChbEnable() && !ps.IsVideoRecordEnable() &&
+            ps.GetImgEnhLevel() == 16 && ps.GetColEnhLevel() == 16 &&
+            ps.GetColRBCMax() == 15 && ps.GetColRBCMin() == -15 &&
+            qAbs(ps.GetZoomMax() - 4.0) < 1e-6 &&
+            ps.IsShowPAPP(0) && ps.IsShowPAPP(6) && ps.IsShowPAPP(80);
+        qInfo() << (ok ? "project: PASS" : "project: FAIL");
+        return ok ? 0 : 21;
     }
 
     // Self-test матрицы совместимости версий (matchedversion.ini).
