@@ -1,0 +1,27 @@
+#pragma once
+
+#include <QString>
+#include <QSize>
+
+// Пути и системные параметры (реф. класс KSystem, X-2600).
+// Методы повторяют оригинал: SystemPath, DataPath, AppPath, DisplayConfigPath,
+// ProductDisplayConfigPath/File, GetSystemResolution и т.д.
+// Базой служит корень прошивки (устройство: /home/root; отладка: ENDO_ROOT).
+namespace KSystem {
+
+QString AppPath();               // корень приложения (/home/root)
+QString SystemPath();            // /home/root/system
+QString DataPath();              // /home/root/data
+QString DisplayConfigPath();     // /home/root/system/display
+QString UserPresetPath();        // /home/root/system/presetdata/userpreset
+QString VideoConfPath();         // /home/root/system/videoconf
+QString ProductDisplayConfigPath(const QString &model);  // .../display/<model>/<model>
+QString ProductDisplayConfigFile(const QString &model);  // .../<model>/product.ini
+
+// Разрешение основного монитора (для выбора layout-файла). Мультимонитор — screens().
+QSize GetSystemResolution();
+
+// Текущая модель продукта (из display/.../project.ini). По умолчанию X-2600.
+QString ProductModel();
+
+} // namespace KSystem

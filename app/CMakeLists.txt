@@ -1,0 +1,141 @@
+cmake_minimum_required(VERSION 3.13)
+project(EndoStation VERSION 0.1.0 LANGUAGES CXX)
+
+# --- Реконструкция ПО эндоскопической стойки (см. ../docs/ARCHITECTURE.md) ---
+# Цель: Zynq UltraScale+ EV, PetaLinux, aarch64. На десктопе собирается для отладки
+# (видео от videotestsrc, если /dev/video0 недоступен).
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+# ---- Qt5 ----
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Network Sql Xml)
+
+# ---- GStreamer (через pkg-config) ----
+# Необязателен на этапе конфигурации: без него собирается только Qt-only ui_preview
+# (основное приложение endostation требует GStreamer и включается ниже по GST_FOUND).
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GST IMPORTED_TARGET
+    gstreamer-1.0
+    gstreamer-app-1.0
+    gstreamer-video-1.0)
+if(NOT GST_FOUND)
+    message(WARNING "GStreamer не найден — цель endostation отключена, доступен только ui_preview")
+endif()
+
+# ---- OpenCV (опционально: обработка изображения, M5) ----
+find_package(OpenCV QUIET COMPONENTS core imgproc imgcodecs)
+if(OpenCV_FOUND)
+    message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+else()
+    message(STATUS "OpenCV not found — модуль обработки будет отключён")
+endif()
+
+# ---- libhal (опционально: линкуется на устройстве) ----
+find_library(HAL_LIB NAMES hal)
+if(HAL_LIB)
+    message(STATUS "libhal found: ${HAL_LIB}")
+else()
+    message(STATUS "libhal not found — HAL-фасад в режиме заглушки")
+endif()
+
+# Реконструкция использует имена классов оригинального ПО (X-2600):
+# KUIDesktop, KViewSoftEndo, KVideoProxy, KMainCtrlThread.
+set(SOURCES
+    src/main.cpp
+    src/app/Application.cpp
+    src/ctrl/KMainCtrlThread.cpp
+    src/ctrl/KPlControl.cpp
+    src/ctrl/KDccuParam.cpp
+    src/video/KVideoProxy.cpp
+    src/video/KViewSoftEndo.cpp
+    src/video/KVideoParam.cpp
+    src/video/KSaveVideoFile.cpp
+    src/ui/KUIDesktop.cpp
+    src/ui/KDisplayOption.cpp
+    src/ui/KImgList.cpp
+    src/ui/Theme.cpp
+    src/sys/KSystem.cpp
+    src/sys/KUserSet.cpp
+    src/sys/KAccount.cpp
+    src/sys/KSystemSet.cpp
+    src/endo/KSoftEndoParam.cpp
+    src/db/KEntityManage.cpp
+    src/alg/AlgParaManager.cpp
+    src/dicom/KDicomFieldMap.cpp
+    src/dicom/KEntityDicom.cpp
+    src/dicom/KDicomInterface.cpp
+    src/report/KReportTemplate.cpp
+    src/report/KReportDataSource.cpp
+    src/report/KDocumentGenerator.cpp
+    src/report/KEntityReport.cpp
+    src/hal/Hal.cpp
+    src/hal/KMemDevice.cpp
+)
+
+set(HEADERS
+    src/app/Application.h
+    src/ctrl/KMainCtrlThread.h
+    src/ctrl/KPlControl.h
+    src/video/KVideoProxy.h
+    src/video/KViewSoftEndo.h
+    src/ui/KUIDesktop.h
+    src/ui/KDisplayOption.h
+    src/ui/Theme.h
+    src/sys/KSystem.h
+    src/hal/Hal.h
+)
+
+if(GST_FOUND)
+    add_executable(endostation ${SOURCES} ${HEADERS})
+    target_include_directories(endostation PRIVATE src)
+    target_link_libraries(endostation PRIVATE
+        Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Sql Qt5::Xml
+        PkgConfig::GST)
+
+    if(OpenCV_FOUND)
+        target_link_libraries(endostation PRIVATE ${OpenCV_LIBS})
+        target_compile_definitions(endostation PRIVATE HAVE_OPENCV=1)
+    endif()
+
+    if(HAL_LIB)
+        target_link_libraries(endostation PRIVATE ${HAL_LIB})
+        target_compile_definitions(endostation PRIVATE HAVE_HAL=1)
+    endif()
+endif()
+
+# ---- Qt-only превью UI (без GStreamer): рендер экранов и сверка с оригиналом ----
+add_executable(ui_preview
+    src/ui/preview_main.cpp
+    src/ui/Theme.cpp
+    src/ui/KUIDesktop.cpp
+    src/ui/KDisplayOption.cpp
+    src/ui/KImgList.cpp
+    src/sys/KSystem.cpp
+    src/sys/KUserSet.cpp
+    src/sys/KAccount.cpp
+    src/sys/KSystemSet.cpp
+    src/endo/KSoftEndoParam.cpp
+    src/db/KEntityManage.cpp
+    src/alg/AlgParaManager.cpp
+    src/ctrl/KPlControl.cpp
+    src/ctrl/KDccuParam.cpp
+    src/hal/KMemDevice.cpp
+    src/dicom/KDicomFieldMap.cpp
+    src/dicom/KEntityDicom.cpp
+    src/dicom/KDicomInterface.cpp
+    src/report/KReportTemplate.cpp
+    src/report/KReportDataSource.cpp
+    src/report/KDocumentGenerator.cpp
+    src/report/KEntityReport.cpp
+    src/video/KViewSoftEndo.cpp
+    src/video/KVideoParam.cpp
+)
+target_include_directories(ui_preview PRIVATE src)
+target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml)

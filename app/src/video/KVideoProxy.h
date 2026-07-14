@@ -1,0 +1,120 @@
+#pragma once
+
+#include <QObject>
+#include <QImage>
+#include <QString>
+#include <gst/gst.h>
+
+class KPlControl;
+
+// Прокси видео/камеры/FPGA. Имя и состав методов повторяют оригинальный класс
+// KVideoProxy (реф. X-2000/X-2600): InitCamera, ResetVideo, FreezeVideoSwitch,
+// GetSensorID, ReadWhbResult, RBCValueSet и т.д.
+//
+// В оригинале кадры идут FPGA→shm; здесь (реимплементация) источник — стандартный
+// V4L2 (/dev/video0, NV12) через GStreamer, что эквивалентно на том же железе.
+// Сигнал доставки кадра во вьювер — glue реимплементации.
+class KVideoProxy : public QObject
+{
+    Q_OBJECT
+public:
+    struct Config {
+        QString device        = "/dev/video0";
+        int     width         = 1280;
+        int     height        = 960;
+        bool    useTestSource = false;
+    };
+
+    explicit KVideoProxy(QObject *parent = nullptr);
+    ~KVideoProxy() override;
+
+    void AttachPl(KPlControl *pl) { pl_ = pl; } // доступ к регистрам FPGA
+
+    // --- имена методов из оригинального KVideoProxy ---
+    bool InitCamera(const Config &cfg);   // init сенсора (PL-регистры) + запуск тракта
+    void ResetVideo();                    // остановка/сброс
+    void FreezeVideoSwitch(bool freeze);  // стоп-кадр
+    bool IsSoftEndo() const { return true; } // гибкий эндоскоп (X-2600)
+    int  GetSensorID() const { return sensorId_; }
+
+    // Снимок: имя файла (реф. GenerateVideoFileName — timestamp) и сохранение JPEG
+    // текущего кадра (реф. ImageSavePreset). Путь = <data>/<пациент>_<осмотр>/N.jpeg.
+    QString GenerateVideoFileName() const;   // ГГГГММДДЧЧММСС
+    bool    ImageSavePreset(const QString &dir, int index);
+    QImage  CurrentFrame() const { return lastFrame_; }
+
+    // Загрузка алгопараметров сенсора (гамма/CCM) в FPGA через KPlControl.
+    // AlgParaManager вычисляет LUT/матрицу → KPlControl::SetGammaLut/SetCCM0Matrix.
+    void ApplyImageParams(const QString &sensor, const QString &res,
+                          const QString &scope);
+
+    // Col RBC (реф. RBCValueSet) — режим + усиления R/B/S через KVideoParam,
+    // запись гейнов в PL (SetColorR/B/C, регистры 0xa1870000).
+    void RBCValueSet(int mode, int value);
+
+    // Цветоусиление (реф. SendColorEnhanceValue): 0 — выкл., иначе вкл.+уровень.
+    void SendColorEnhanceValue(int level);
+    // Усиление изображения (реф. SendImageEnhanceValue): уровень → PL.
+    void SendImageEnhanceValue(int level);
+    // Уровень Bright EQ (реф. SetBrightEQLevel/SetBrightnessEQLevel).
+    void SetBrightEQLevel(int level);
+
+    // Экспозиция/усиление (реф. SetAECValue/SetAGCValue). Ветвление по режиму
+    // тракта AE (поле реф. [this+0x24]): ==2 — прямая запись в сенсор по FPGA-I2C
+    // (SetCameraAEC/AGCValue); иначе — через PL-регистр AE-блока (SetEndoAEC/AGCValue).
+    void SetAECValue(unsigned int aec);
+    void SetAGCValue(unsigned int agc);
+    void SetAECAndAGCValue(unsigned int aec, unsigned int agc); // реф. дедуп+запись в PL
+    void SetAecAgcRouteMode(int mode) { aeRouteMode_ = mode; }  // 2=камера(I2C), иначе=PL
+
+    // Шумоподавление (реф. SetImageDenoiseLevel/SetImgDenoiseLevel): уровень→LUT+рег.
+    void SetImageDenoiseLevel(int level);
+    // Режим работы WL/EWL/SFI/VIST (реф. SetOperationMode): выбор конфигов + VIST-тракт.
+    void SetOperationMode(int mode);
+    // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).
+    void ApplyVistMatrix();
+
+private:
+    void SetCameraAECValue(unsigned int aec);  // FPGA-I2C: 0xa0048074/70, cmd 0xc00/0xd00
+    void SetCameraAGCValue(unsigned int agc);  // FPGA-I2C: cmd 0xa00/0xb00
+    void SetEndoAECValue(unsigned int aec);    // → SetAECAndAGCValue(aec, cachedAGC)
+    void SetEndoAGCValue(unsigned int agc);    // → SetAECAndAGCValue(cachedAEC, agc)
+public:
+
+    bool isRunning() const { return pipeline_ != nullptr; }
+    const Config &config() const { return cfg_; }
+
+signals:
+    void VideoFrameReady(const QImage &frame); // доставка кадра во вьювер
+    void VideoError(const QString &message);
+
+private:
+    void InitSensorRegs();   // PL-регистровая init-последовательность (из дизасма)
+    bool StartCapture();     // запуск V4L2/GStreamer тракта
+
+    static GstFlowReturn onNewSample(GstElement *sink, gpointer user);
+    static gboolean      onBusMessage(GstBus *bus, GstMessage *msg, gpointer user);
+    void handleSample(GstSample *sample);
+
+    Config      cfg_;
+    KPlControl *pl_         = nullptr;
+    GstElement *pipeline_   = nullptr;
+    GstElement *appsink_    = nullptr;
+    guint       busWatchId_ = 0;
+    bool        frozen_     = false;
+    int         sensorId_   = 0;
+    QImage      lastFrame_;   // последний кадр (для снимка/стоп-кадра)
+
+    // Кэш последних значений AE (реф. поля KVideoProxy: AEC@+0x30, AGC@+0x2c)
+    // для дедупа записей; режим тракта AE (реф. @+0x24).
+    unsigned int cachedAEC_  = 0;
+    unsigned int cachedAGC_  = 0;
+    int          aeRouteMode_ = 2;   // по умолчанию камера/I2C (сенсоры с рег. экспозиции)
+
+    // Текущий контекст сенсора/эндоскопа/режима (для загрузки конфигов VIST/Denoise/Awb).
+    QString curSensor_ = "IMX274";
+    QString curRes_    = "1920X1080";
+    QString curScope_;
+    int     operationMode_ = 0;      // WL/EWL/SFI/VIST (AlgParaManager::OperationMode)
+    int     denoiseLevel_  = 1;
+};
