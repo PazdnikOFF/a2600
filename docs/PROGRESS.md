@@ -427,8 +427,24 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-1. Прочитать этот файл + при нужде docs/ARCHITECTURE.md / HMI_PANEL.md.
-2. Взять следующий пункт из §9 (или запрос пользователя).
-3. По методологии §1: revcalls.sh → найти конфиги в update/root → написать код.
-4. Проверить: собрать ui_preview, прогнать нужный режим, Read PNG/лог.
-5. Дописать сюда статус (§6) и, если появились, факты (§7).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~40/491 классов, **20 self-test-режимов**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. Репозиторий
+на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
+
+1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
+2. Взять следующий пункт: сначала из ROADMAP (Фазы A→B→D→C off-device), потом §9, или запрос пользователя.
+3. По методологии §1: `tools/revcalls.sh <mangled>` → дизасм регистров → найти конфиги в
+   `update/root` → написать код с ТЕМИ ЖЕ именами классов/методов (не хардкод — читать из файлов).
+4. Проверить: собрать `ui_preview` (см. §4), добавить/прогнать self-test-режим в
+   `src/ui/preview_main.cpp`, убедиться PASS. Прогнать все 20 режимов на регрессии.
+5. Дописать статус (§6), факты (§7), обновить ROADMAP (отметить сделанное) + эту позицию (§10).
+6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
+   `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
+
+**Полный список 20 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
+filebackup, videoset, dsreal, dsdemo.
+
+**Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
+UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
+Требуют физического прибора или архитектурных решений пользователя.
