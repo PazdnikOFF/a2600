@@ -53,6 +53,7 @@ set(SOURCES
     src/ctrl/KMainCtrlThread.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp
+    src/ctrl/KColdLightConfig.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -127,6 +128,7 @@ add_executable(ui_preview
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp
+    src/ctrl/KColdLightConfig.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KEntityDicom.cpp

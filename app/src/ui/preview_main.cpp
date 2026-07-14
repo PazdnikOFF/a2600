@@ -26,6 +26,7 @@
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
 #include "sys/KUserSet.h"
+#include "ctrl/KColdLightConfig.h"
 
 #include <QDir>
 #include <QFile>
@@ -462,6 +463,36 @@ int main(int argc, char **argv)
                         changed && r3 == KAccount::RoleAdmin && ssOk;
         qInfo() << (ok ? "account: PASS" : "account: FAIL");
         return ok ? 0 : 12;
+    }
+
+    // Self-test источника холодного света: VLS-конфиги + LED-параметры.
+    if (screen == "coldlight") {
+        const QString base = QDir(KSystem::SystemPath()).absoluteFilePath("coldlight");
+        KColdLightConfig &cl = KColdLightConfig::GetInstance();
+        // VLS-конфиги (комбо спектральных режимов) из per-продукт coldlight.ini.
+        const bool vlsOk = cl.LoadVLSConfig(
+            QDir(base).absoluteFilePath("X-2600/X-2600B/coldlight.ini"));
+        const auto combos = cl.GetVLSConfigDisplayList();
+        qInfo() << "VLS configs:" << cl.VLSConfigNum();
+        for (int i = 0; i < combos.size(); ++i)
+            qInfo() << "  VLSConfig" << i << "=" << combos[i];
+        cl.SetUserVLSConfig(0, 1);   // combo0=[WL,SFI,VIST], mode index 1 → SFI
+        qInfo() << "выбран режим:" << cl.CurrentMode();
+
+        // LED-параметры (26 float per модель×режим) из coldlightCommPara.ini.
+        const bool cpOk = cl.LoadCommPara(
+            QDir(base).absoluteFilePath("coldlightCommPara.ini"));
+        const auto p = cl.GetLightParam("EB-X20", "WL");
+        qInfo() << "EB-X20/WL параметров:" << p.size()
+                << "первые:" << (p.size() >= 3 ? QString("%1,%2,%3").arg(p[0]).arg(p[1]).arg(p[2]) : "");
+
+        const bool ok = vlsOk && cl.VLSConfigNum() == 4 &&
+                        combos[0] == QStringList{"WL","SFI","VIST"} &&
+                        combos[2] == QStringList{"SFI","VIST"} &&   // "SFI,NULL,VIST" → NULL убран
+                        cl.CurrentMode() == "SFI" &&
+                        cpOk && p.size() == 26 && qAbs(p[1] - 0.2f) < 1e-4;
+        qInfo() << (ok ? "coldlight: PASS" : "coldlight: FAIL");
+        return ok ? 0 : 15;
     }
 
     // Self-test KUserSet: полный парсинг osd.ini (силы усиления/zoom/кнопки).
