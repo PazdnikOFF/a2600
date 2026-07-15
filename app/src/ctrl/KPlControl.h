@@ -165,6 +165,10 @@ public:
 
     // Текущее значение диафрагмы (реф. ReadIrisValue) — младший байт 0xa18a0004.
     int ReadIrisValue();
+    // Обрезка угла (реф. SetCornerCutWay): AlgParaManager вычисляет LUT угла
+    // (way a: 0 круг / 1 восьмиугольник, параметры b/c) → стрим 1080 слов в
+    // регион 0xa18c8000 (0xa18c8000..0xa18c90dc).
+    void SetCornerCutWay(int a, int b, int c);
     // Смещение Aurora-serdes (реф. SetAuroraOffset) → 0xa004a02c = a | (b<<8).
     void SetAuroraOffset(unsigned char a, unsigned char b);
     // Область захвата видео (реф. SetVideoCaptureArea) → 0xa18d0008. Точка (x,y)

@@ -500,6 +500,19 @@ int KPlControl::ReadIrisValue()
     return static_cast<int>(v & 0xff);
 }
 
+void KPlControl::SetCornerCutWay(int a, int b, int c)
+{
+    // Реф. SetCornerCutWay: AlgParaManager::SetCutCornerPara(a,b,c) считает LUT угла,
+    // затем стрим kCutCornerLen(=1080) слов из выбранного банка (a) в 0xa18c8000.
+    auto &alg = AlgParaManager::GetInstance();
+    alg.SetCutCornerPara(a, b, c);
+    const QVector<int> &lut = alg.CutCornerLut(a);
+    const int n = qMin(lut.size(), AlgParaManager::kCutCornerLen);
+    for (int i = 0; i < n; ++i)
+        WriteValueToPL(0xa18c8000 + static_cast<unsigned long>(i) * 4,
+                       static_cast<unsigned int>(lut[i]));
+}
+
 void KPlControl::SetAuroraOffset(unsigned char a, unsigned char b)
 {
     // Реф.: value = (a & 0xff) | ((b & 0xff) << 8).

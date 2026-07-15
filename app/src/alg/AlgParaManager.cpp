@@ -321,3 +321,79 @@ QVector<int> AlgParaManager::LoadColEnhLut(const QString &sensor) const
     }
     return lut;
 }
+
+// --- Обрезка углов (реф. SetCutCornerPara/SetRoundPara/SetOctagonPara) ---
+namespace {
+constexpr int kN = AlgParaManager::kCutCornerLen;   // 1080
+
+// Реф. ResetCutCornerPara: заполнить буфер значением W (поле +0x10).
+void cornerReset(QVector<int> &buf, int w)
+{
+    buf.fill(w, kN);
+}
+
+// Реф. SetRoundPara(buf, b=radius, c): дуга cut = min(W-2c, 2·√(b²−y²)),
+// симметрично сверху/снизу; поля вне дуги обнуляются.
+void cornerRound(QVector<int> &buf, int W, int H, int b, int c)
+{
+    const int top = c + (kN - H) / 2;              // граница обнуления
+    if (top > 0)
+        for (int i = 0; i < top && i < kN; ++i) {
+            buf[i] = 0;
+            if (kN - 1 - i >= 0) buf[kN - 1 - i] = 0;
+        }
+    const int rows = H / 2 - c;
+    for (int i = 0; i < rows; ++i) {
+        const int y = rows - i;                    // реф.: счётчик от rows до 1
+        const double arg = double(b) * b - double(y) * y;
+        const int s = (arg < 0.0) ? 0 : int(std::sqrt(arg));
+        const int val = std::min(W - 2 * c, 2 * s);
+        const int fwd = top + i, bwd = kN - 1 - top - i;
+        if (fwd >= 0 && fwd < kN) buf[fwd] = val;
+        if (bwd >= 0 && bwd < kN) buf[bwd] = val;
+    }
+}
+
+// Реф. SetOctagonPara(buf, p2=b>>16, p3=b&0xffff, c): диагональный пандус
+// cut = (W-2c) − 2·(p2/p3)·y на углах, плоская середина = W-2c.
+void cornerOctagon(QVector<int> &buf, int W, int H, int p2, int p3, int c)
+{
+    const int top = c + (kN - H) / 2;
+    if (top > 0)
+        for (int i = 0; i < top && i < kN; ++i) {
+            buf[i] = 0;
+            if (kN - 1 - i >= 0) buf[kN - 1 - i] = 0;
+        }
+    if (p3 > 0) {
+        const double slope2 = 2.0 * (double(p2) / double(p3));
+        for (int i = 0; i < p3; ++i) {
+            const int y = p3 - i;                  // реф.: счётчик от p3 до 1
+            const double d = double(W - 2 * c) - slope2 * double(y);
+            const int val = (d < 0.0) ? 0 : int(d);   // реф. fcvtzu (беззнак. усечение)
+            const int fwd = top + i, bwd = kN - 1 - top - i;
+            if (fwd >= 0 && fwd < kN) buf[fwd] = val;
+            if (bwd >= 0 && bwd < kN) buf[bwd] = val;
+        }
+    }
+    const int lo = top + p3, hi = (kN - top) - p3;
+    for (int idx = lo; idx < hi; ++idx)
+        if (idx >= 0 && idx < kN) buf[idx] = W - 2 * c;
+}
+}
+
+void AlgParaManager::SetCutCornerPara(int way, int b, int c)
+{
+    if (way < 0 || way > 1) return;
+    QVector<int> &buf = cutLut_[way];
+    cornerReset(buf, cutW_);                        // реф. ResetCutCornerPara(=W)
+    if (way == 0)
+        cornerRound(buf, cutW_, cutH_, b, c);       // круг
+    else
+        cornerOctagon(buf, cutW_, cutH_, b >> 16, b & 0xffff, c);   // восьмиугольник
+}
+
+const QVector<int> &AlgParaManager::CutCornerLut(int way) const
+{
+    static const QVector<int> empty;
+    return (way == 0 || way == 1) ? cutLut_[way] : empty;
+}

@@ -110,6 +110,20 @@ public:
     QVector<int> LoadIrisTable(const QString &sensor, const QString &res,
                                const QString &scope = QString()) const;
 
+    // Обрезка углов (реф. SetCutCornerPara/SetRoundPara/SetOctagonPara). LUT из
+    // 1080 значений (по строке кадра) — горизонтальный вырез угла. way 0 = круг
+    // (радиус b, отступ c), way 1 = восьмиугольник (b=hi<<16|lo, c). Данные пишет
+    // KPlControl::SetCornerCutWay в 0xa18c8000 (1080 слов). Размер выреза W(шир.)/H
+    // задаётся конфигом кадра (реф. поля AlgParaManager+0x10/+0x14).
+    static constexpr int kCutCornerLen = 1080;
+    void SetCutCornerSize(int w, int h) { cutW_ = w; cutH_ = h; }
+    int  CutCornerW() const { return cutW_; }
+    int  CutCornerH() const { return cutH_; }
+    // Вычислить LUT угла (реф. SetCutCornerPara): Reset(=W) → Round/Octagon.
+    void SetCutCornerPara(int way, int b, int c);
+    // Готовый LUT (way 0/1); пусто если не вычислен.
+    const QVector<int> &CutCornerLut(int way) const;
+
     // Bright EQ (реф. LoadBrightEqPara): gaussian_filter_hex.txt (36 значений,
     // 15-бит) + lumaGainLut_<disable/low/middle/high>_hex.txt (~1024, 12-бит).
     // Данные грузятся в KPlControl::SetBrightEQLut (регистры 0xa1950004../8000..).
@@ -126,4 +140,6 @@ private:
     QVector<int> brightEqLuma_[4]; // lumaGainLut: disable/low/middle/high
     int videoW_ = 0, videoH_ = 0; // текущий размер видео-области (resize)
     int chbValue_ = 0;            // CHb: 4-е значение для 0xa1900018
+    int cutW_ = 0, cutH_ = 0;     // corner-cut: ширина/высота выреза (реф. +0x10/+0x14)
+    QVector<int> cutLut_[2];      // corner-cut LUT: way 0 круг / 1 восьмиугольник
 };

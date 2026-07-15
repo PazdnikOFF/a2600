@@ -64,6 +64,7 @@ ENDO_ROOT=$ER ENDO_EXAM=<dir> ... ui_preview desktop out.png                    
 QT_QPA_PLATFORM=offscreen ui_preview db out.db     # self-test БД
 ENDO_ROOT=$ER ui_preview alg                        # self-test гамма+CCM
 ENDO_ROOT=$ER ui_preview plreg [SENSOR]             # self-test PL-регистров парам. изобр. + BrightEQ LUT
+ui_preview cornercut                                 # self-test геометрии обрезки углов (круг/8-угол) + стрим 0xa18c8000
 ENDO_ROOT=<tmp> ui_preview dccu                      # self-test KDccuParam (пишет dccuparam.ini — брать tmp-root!)
 ENDO_ROOT=$ER ui_preview filt                        # self-test VIST-матрицы + Denoise LUT
 ENDO_ROOT=$ER ui_preview dicom                        # self-test WorklistFieldMap.xml + БД tb_Dcm*
@@ -473,9 +474,20 @@ SetKneeLut (банки 0xa1930800/1000/1800, пары &0x3ff, защёлка |=2
 офсетам); у нас data-source вынесен в структурные лоадеры AlgParaManager (архит. выбор),
 аудит сверял РЕГИСТРОВУЮ логику. Реф. также poll-ждёт бит2 в ctrl-регистре (device-timing,
 на десктопе не воспроизводим — опущено).
-**ПРОДОЛЖИТЬ АУДИТ:** SetVistMatrix/SetVistSwitch, SetDenoiseLut,
-ReadIrisValue, SetIrisTable (сложная битовая упаковка ириса из AlgPara[0x7a48]),
-SetCornerCutWay (стрим 1080-элем. LUT round/octagon из AlgPara[0x7a50/0x7a58]).
+ЗАХОД 2 (Vist/Denoise/Iris/Corner): ПОДТВЕРЖДЕНЫ верными без правок —
+SetVistSwitch (0xa18e0000=en, 0xa1840000=!en), SetVistMatrix (пары→0xa18e0004.. +
+16-бит хвост p[last]→0xa18e0014, как CCM), SetDenoiseLevel (0xa1940008),
+SetDenoiseLut (4 dpc→0xa194x010 + kernelG 41×4@0x1600 + kernelRB 25×4@0x1500 +
+LUT 256×4@0x1100, банки=смежные окна), ReadIrisValue (0xa18a0004, младший байт).
+РЕАЛИЗОВАНА новая SetCornerCutWay (была не реализована): декодированы геометрии
+AlgParaManager::SetCutCornerPara→ResetCutCornerPara(=W)/SetRoundPara(круг: cut=
+min(W-2c,2·√(b²−y²)))/SetOctagonPara(8-угол: пандус (W-2c)−2·(p2/p3)·y + плоскость
+W-2c); стрим 1080 слов в 0xa18c8000. W/H (реф. поля +0x10/+0x14) — SetCutCornerSize
+(источник device-config кадра). Self-test `cornercut` (симметрия/обнуление/дуга/
+пандус/стрим). Вызывающий KVideoProxy::SetCornerCutWay device-bound (живой эндоскоп) —
+не реализован. **LUT-аудит KPlControl завершён: все существующие register-методы сверены.**
+**ПРОДОЛЖИТЬ:** SetIrisTable (проверить упаковку 8/регистр против AlgPara[0x7a48]) —
+у нас реализована (0xa18a8000, ниббл-упаковка), но не сверялась с дизасмом побитово.
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 
@@ -494,7 +506,7 @@ SetCornerCutWay (стрим 1080-элем. LUT round/octagon из AlgPara[0x7a50
 
 **Полный список 33 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, cornercut.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).

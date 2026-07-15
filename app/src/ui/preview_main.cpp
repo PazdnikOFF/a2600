@@ -1113,6 +1113,77 @@ int main(int argc, char **argv)
         return ok ? 0 : 40;
     }
 
+    // Self-test обрезки углов (реф. SetCutCornerPara/SetRoundPara/SetOctagonPara +
+    // KPlControl::SetCornerCutWay). Геометрия + стрим 1080 слов в 0xa18c8000.
+    if (screen == "cornercut") {
+        auto &alg = AlgParaManager::GetInstance();
+        const int N = AlgParaManager::kCutCornerLen;   // 1080
+        const int W = 1920, H = 400;
+        alg.SetCutCornerSize(W, H);
+
+        // --- Круг (way 0), радиус 200, отступ 10 ---
+        const int rb = 200, rc = 10;
+        alg.SetCutCornerPara(0, rb, rc);
+        const QVector<int> round = alg.CutCornerLut(0);
+        const int top = rc + (N - H) / 2;              // 350
+        const int rows = H / 2 - rc;                   // 190
+        bool roundOk = round.size() == N;
+        // Симметрия + обнулённые поля.
+        for (int i = 0; roundOk && i < N; ++i)
+            if (round[i] != round[N - 1 - i]) roundOk = false;
+        for (int i = 0; roundOk && i < top; ++i)
+            if (round[i] != 0) roundOk = false;
+        // Пара точек дуги: buf[top+i] = min(W-2c, 2·√(b²−y²)), y=rows−i.
+        auto arcVal = [&](int i){ int y = rows - i;
+            double a = double(rb)*rb - double(y)*y;
+            int s = a < 0 ? 0 : int(std::sqrt(a));
+            return std::min(W - 2*rc, 2*s); };
+        if (roundOk && (round[top] != arcVal(0) || round[top + rows - 1] != arcVal(rows-1)))
+            roundOk = false;
+
+        // --- Восьмиугольник (way 1), p2=100, p3=50, c=10 ---
+        const int p2 = 100, p3 = 50, oc = 10;
+        alg.SetCutCornerPara(1, (p2 << 16) | p3, oc);
+        const QVector<int> oct = alg.CutCornerLut(1);
+        const int otop = oc + (N - H) / 2;             // 350
+        const int lo = otop + p3, hi = (N - otop) - p3;
+        bool octOk = oct.size() == N;
+        for (int i = 0; octOk && i < N; ++i)
+            if (oct[i] != oct[N - 1 - i]) octOk = false;
+        // Плоская середина = W-2c.
+        for (int idx = lo; octOk && idx < hi; ++idx)
+            if (oct[idx] != W - 2*oc) octOk = false;
+        // Диагональ: buf[otop+i] = (W-2c) − 2·(p2/p3)·y, y=p3−i.
+        const double slope2 = 2.0 * (double(p2)/double(p3));
+        auto rampVal = [&](int i){ int y = p3 - i;
+            double d = double(W - 2*oc) - slope2*double(y);
+            return d < 0 ? 0 : int(d); };
+        if (octOk && (oct[otop] != rampVal(0) || oct[otop + p3 - 1] != rampVal(p3-1)))
+            octOk = false;
+
+        // --- Стрим в PL (реф. регион 0xa18c8000, 1080 слов) ---
+        KPlControl pl;
+        pl.EnableTrace(true);
+        pl.ClearTrace();
+        pl.SetCornerCutWay(0, rb, rc);
+        const auto &tc = pl.Trace();
+        bool streamOk = tc.size() == N &&
+                        tc.first().first == 0xa18c8000 &&
+                        tc.last().first == 0xa18c8000 + (unsigned long)(N-1)*4 &&   // 0xa18c90dc
+                        tc.first().second == (unsigned)round[0] &&
+                        tc[top].second == (unsigned)round[top];
+
+        qInfo() << "round size=" << round.size() << "top=" << top << "rows=" << rows
+                << "arc[top]=" << (round.isEmpty()?-1:round[top]) << (roundOk?"OK":"MISMATCH");
+        qInfo() << "octagon flat=" << (oct.isEmpty()?-1:oct[lo]) << "(exp" << W-2*oc << ")"
+                << "ramp[top]=" << (oct.isEmpty()?-1:oct[otop]) << (octOk?"OK":"MISMATCH");
+        qInfo() << "stream writes=" << tc.size() << "(exp" << N << ") last=0x"
+                << QString::number(tc.isEmpty()?0:tc.last().first,16) << (streamOk?"OK":"MISMATCH");
+        const bool ok = roundOk && octOk && streamOk;
+        qInfo() << (ok ? "cornercut: PASS" : "cornercut: FAIL");
+        return ok ? 0 : 40;
+    }
+
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
     if (screen == "filebackup") {
         const QString base = "/tmp/endo_fb";
