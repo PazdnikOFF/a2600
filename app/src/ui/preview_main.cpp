@@ -29,6 +29,7 @@
 #include "report/KReportTemplate.h"
 #include "report/KSysReportTempletCfg.h"
 #include "report/KReportDataSource.h"
+#include "report/KReportDisplayParam.h"
 #include "report/KDocumentGenerator.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
@@ -865,6 +866,51 @@ int main(int argc, char **argv)
         const bool ok = envOk && syncOk && jrnOk && bakOk && recOk && dataOk;
         qInfo() << (ok ? "dbservice: PASS" : "dbservice: FAIL");
         return ok ? 0 : 35;
+    }
+
+    // Self-test валидности элементов отчёта (реф. KReportDisplayParam): элемент
+    // валиден для показа, если у него есть данные в источнике (или валидный потомок).
+    if (screen == "dispparam") {
+        // Дерево шаблона: контейнер с 3 текст-элементами + 1 картинка.
+        QVector<ReportItem> items;
+        ReportItem root; root.name = "block"; root.type = "RT_TABLE_BLOCK";
+        auto mk = [](const QString &n, const QString &src) {
+            ReportItem i; i.name = n; i.type = "RT_TEXT_BLOCK"; i.dataSrc = src; return i; };
+        root.children << mk("diag", "RT_DATASOURCE_PATIENT,RT_DIAGNOSIS");
+        root.children << mk("sugg", "RT_DATASOURCE_PATIENT,RT_SUGGESTION");
+        root.children << mk("empty", "RT_DATASOURCE_PATIENT,RT_BIOPSY");   // без данных
+        items << root;
+        { ReportItem img; img.name = "img0"; img.type = "RT_IMAGE_BLOCK";
+          img.dataSrc = "RT_DATASOURCE_PERIPHERAL,RT_TEST_IMAGE0"; items << img; }
+
+        // Источник: заполнены diag/sugg и картинка; biopsy — пусто.
+        KReportDataSource ds;
+        ds.SetPatient("RT_DIAGNOSIS", "Chronic gastritis");
+        ds.SetPatient("RT_SUGGESTION", "Recheck 6mo");
+        ds.SetImage(0, "/data/exam/A1/0.jpeg", "M0");
+
+        KReportDisplayParam dp;
+        const int n = dp.UpdateTemplateDisplayParam(items, ds);
+        // diag, sugg, img0 валидны; empty — нет; block валиден (есть валидные потомки).
+        const bool markOk = dp.IsItemValid("diag") && dp.IsItemValid("sugg") &&
+                            dp.IsItemValid("img0") && dp.IsItemValid("block") &&
+                            !dp.IsItemValid("empty");
+        qInfo() << "валидных:" << n << "| diag/sugg/img0/block/empty:"
+                << dp.IsItemValid("diag") << dp.IsItemValid("sugg") << dp.IsItemValid("img0")
+                << dp.IsItemValid("block") << dp.IsItemValid("empty");
+
+        // Эталонное множество (реф. SetRefValidItems) ограничивает добавляемые имена.
+        KReportDisplayParam dp2;
+        dp2.SetRefValidItems({"diag", "sugg"});
+        const bool refOk = dp2.AppendValidItem("diag") &&      // в ref → ок
+                           !dp2.AppendValidItem("img0") &&     // вне ref → отклонён
+                           dp2.IsItemValid("diag") && !dp2.IsItemValid("img0");
+        dp2.Reset();
+        const bool resetOk = dp2.ValidCount() == 0;
+
+        const bool ok = n == 4 && markOk && refOk && resetOk;
+        qInfo() << (ok ? "dispparam: PASS" : "dispparam: FAIL");
+        return ok ? 0 : 36;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
