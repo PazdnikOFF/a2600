@@ -520,8 +520,13 @@ KVideoProxy 26→38/116.
 RBCModeSwitch — тянут KVideoParam::Set{R,B,S}Gain (в реф. зовут KVideoSet::SetColor*Value
 → KUserSet/KUserOsdSet::SaveColorConf + сигнал VideoParamChanged; поля 0x58/0x5c с
 неясной семантикой max). Нужен отдельный заход с реверсом KVideoSet color-value + user-persist.
-**ПРОДОЛЖИТЬ:** прочие тонкие/регистровые off-device методы KVideoProxy (SwitchVLSMode,
-SetImageEnhanceType*, SetMonitorCtrl) — тестируемы; либо off-device Фазы ROADMAP (§9).
+Добавлены SetMonitorCtrl (REG_MONITOR_CTRL 0xa0060040=((v·100000)<<4)|3) и
+GetPLRegisterValue (ReadValueFromPL) — self-test `fxpt`. KVideoProxy 26→40/116.
+ОТЛОЖЕНО (глубже): SwitchVLSMode→KPlControl::SetVLSMode тянет AlgParaManager::GetVistValue
+(GetSystemStatus[0x3c] + внутр. состояние + setAwbPara) — реверснуть GetVistValue отдельно.
+SetImageEnhanceType — device (GetEndoScope).
+**ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy (SetFreezeCalResolution,
+SetAECValue/SetAGCValue) — сверять дизасм и тестировать; либо off-device Фазы ROADMAP (§9).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

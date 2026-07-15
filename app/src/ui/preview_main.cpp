@@ -1534,7 +1534,16 @@ int main(int argc, char **argv)
             tm[4].first == 0xa0048010 && tm[4].second == 0x003820b0;
         qInfo() << "mirror/rotate writes:" << tm.size() << "(exp 5)" << (mrOk ? "OK" : "MISMATCH");
 
-        const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk;
+        // SetMonitorCtrl: REG_MONITOR_CTRL = ((v·100000)<<4)|3.
+        pl.ClearTrace();
+        vp.SetMonitorCtrl(2);          // ((200000)<<4)|3 = 0x30d403
+        const auto &tmc = pl.Trace();
+        const bool monOk = tmc.size() == 1 &&
+            tmc[0].first == 0xa0060040 && tmc[0].second == (((2u*100000u)<<4)|3u);
+        qInfo() << "monitorCtrl:" << QString::number(tmc.isEmpty()?0:tmc[0].second,16)
+                << "(exp 30d403)" << (monOk ? "OK" : "MISMATCH");
+
+        const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }

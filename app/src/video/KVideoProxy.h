@@ -87,6 +87,10 @@ public:
     // Зеркало/поворот — команд. последовательности в FPGA-I2C рег. камеры (реф.).
     void SetHorizontalMirror(int mode);  // mode==4: 2 команды в REG_CAM_CMD
     void SetRotateType(int type);        // type==2: 3 команды в REG_CAM_CMD + паузы
+    // Управление монитором (реф. SetMonitorCtrl): REG_MONITOR_CTRL=((v·100000)<<4)|3.
+    void SetMonitorCtrl(unsigned int value);
+    // Чтение произвольного PL-регистра (реф. GetPLRegisterValue) → ReadValueFromPL.
+    unsigned int GetPLRegisterValue(unsigned int addr);
 
     // --- Конвертеры фиксированной точки и клампы (реф., 1:1 с дизасмом) ---
     // Float2FixedPointNumber(f, a, b): Q(a).(b) с насыщением ±(2^(a+b)−1); scale=2^b.

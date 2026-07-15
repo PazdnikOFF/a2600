@@ -25,6 +25,7 @@
 #define REG_VIDEO_TEST       0xa004a040UL   // VideoTest: mode<<2
 #define REG_FPGA1_VERSION    0xa004a044UL   // GetFpga1Version (чтение)
 #define REG_FPGA0_VERSION    0xa0060000UL   // GetFpga3Version (чтение)
+#define REG_MONITOR_CTRL     0xa0060040UL   // SetMonitorCtrl: ((v·100000)<<4)|3
 
 // --- Вывод видео -------------------------------------------------------------
 #define REG_DISPLAY_REALTIME 0xa0080024UL   // SetRealtimeVideoState

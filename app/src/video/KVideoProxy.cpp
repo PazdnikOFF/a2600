@@ -404,6 +404,21 @@ void KVideoProxy::SetRotateType(int type)
     pl_->WriteValueToPL(REG_CAM_CMD, 0x003820b0);
 }
 
+void KVideoProxy::SetMonitorCtrl(unsigned int value)
+{
+    // Реф. SetMonitorCtrl: REG_MONITOR_CTRL = ((value·100000)<<4) | 3 (32-бит).
+    if (!pl_) return;
+    pl_->WriteValueToPL(REG_MONITOR_CTRL, ((value * 100000u) << 4) | 3u);
+}
+
+unsigned int KVideoProxy::GetPLRegisterValue(unsigned int addr)
+{
+    // Реф. GetPLRegisterValue: ReadValueFromPL(addr) → значение (0 если чтение неуспешно).
+    unsigned int v = 0;
+    if (pl_) pl_->ReadValueFromPL(addr, v);
+    return v;
+}
+
 int KVideoProxy::Float2FixedPointNumber(float f, int a, int b)
 {
     // Реф. Float2FixedPointNumber (дизасм X2000): формат Q(a).(b), scale=2^b,
