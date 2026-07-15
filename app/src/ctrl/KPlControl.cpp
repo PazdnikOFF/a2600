@@ -34,12 +34,14 @@ bool KPlControl::ReadValueFromPL(unsigned long physAddr, unsigned int &value)
     return mem_.ReadDevRegister(static_cast<unsigned int>(physAddr), value) == KMemDevice::Ok;
 }
 
-void KPlControl::SetGammaLut(const QVector<int> &lut)
+void KPlControl::SetGammaLut()
 {
-    // Реф. SetGammaLut (дизасм X2000): значения (10 бит) пакуются парами
-    // (v0&0x3ff) | ((v1&0x3ff)<<16) и пишутся в ТРИ банка REG_GAMMA_BANK0/1/2
-    // (по 512 записей на 1024 значения). Затем защёлка REG_GAMMA_CTRL |= LatchBit.
-    // (На устройстве реф. ещё ждёт готовности — poll бита 2 в REG_GAMMA_CTRL.)
+    // Реф. SetGammaLut (дизасм X2000): void — читает LUT из AlgParaManager (массив,
+    // byte 0x1514 / word 0x545, заполнен CalGammaLut). Значения (10 бит) пакуются
+    // парами (v0&0x3ff) | ((v1&0x3ff)<<16) → 3 банка REG_GAMMA_BANK0/1/2 (512 записей
+    // на 1024 значения). Затем защёлка REG_GAMMA_CTRL |= LatchBit. (На устройстве реф.
+    // ещё ждёт готовности — poll бита 2 в REG_GAMMA_CTRL.)
+    const QVector<int> &lut = AlgParaManager::GetInstance().CurGammaLut();
     const unsigned long bank[3] = { REG_GAMMA_BANK0, REG_GAMMA_BANK1, REG_GAMMA_BANK2 };
     const int pairs = lut.size() / 2;
     for (int i = 0; i < pairs; ++i) {
@@ -62,16 +64,16 @@ void KPlControl::SetCCM0(int enable)
     WriteValueToPL(REG_CCM0_ENABLE, static_cast<unsigned int>(enable));
 }
 
-void KPlControl::SetCCM0Matrix(const int m[9])
+void KPlControl::SetCCM0Matrix(const unsigned int *data, int count)
 {
-    // Реф. SetCCM0Matrix (дизасм X2000): 4 пары коэффициентов упаковкой
-    // m[2i]|(m[2i+1]<<16) → REG_CCM0_MATRIX (0x04/08/0c/10); затем 9-й коэффициент
-    // как 16-бит (ldurh) → REG_CCM0_TAIL. Enable — отдельно (SetCCM0).
+    // Реф. SetCCM0Matrix(uint*, int) (дизасм X2000): пары data[2i]|(data[2i+1]<<16)
+    // → REG_CCM0_MATRIX (0x04/08/0c/10); затем последний коэффициент как 16-бит
+    // (ldurh) → REG_CCM0_TAIL. Enable — отдельно (SetCCM0).
+    if (!data || count <= 0) return;
     unsigned long reg = REG_CCM0_MATRIX;
-    for (int i = 0; i + 1 < 9; i += 2, reg += 4)
-        WriteValueToPL(reg, static_cast<unsigned int>(m[i]) |
-                            (static_cast<unsigned int>(m[i + 1]) << 16));
-    WriteValueToPL(REG_CCM0_TAIL, static_cast<unsigned int>(m[8]) & 0xffff);
+    for (int i = 0; i + 1 < count; i += 2, reg += 4)
+        WriteValueToPL(reg, data[i] | (data[i + 1] << 16));
+    WriteValueToPL(REG_CCM0_TAIL, data[count - 1] & 0xffff);
 }
 
 // --- Параметры изображения → PL (карта регистров в ctrl/KPlRegs.h) ---
@@ -376,24 +378,27 @@ void KPlControl::SetSensorBLut(const unsigned int *data, int count)
     writePairedLut(this, REG_SENSOR_LUT_B, data, count);
 }
 
-void KPlControl::SetRbcLut(const unsigned int *hb, const unsigned int *hr,
-                           const unsigned int *s, int count)
+void KPlControl::SetRbcLut()
 {
-    // Реф.: три канала в соседние банки региона REG_RBC_S, по одному слову на i.
-    if (!hb || !hr || !s || count <= 0) return;
+    // Реф. SetRbcLut (void): три канала из AlgParaManager (массив, word 0x4e8/0x507/
+    // 0x526, по 31 значению) в соседние банки региона REG_RBC_S, по слову на i.
+    const AlgParaManager::RbcLut &rb = AlgParaManager::GetInstance().CurRbcLut();
+    const int count = qMin(rb.hb.size(), qMin(rb.hr.size(), rb.s.size()));
     for (int i = 0; i < count; ++i) {
         const unsigned long off = static_cast<unsigned long>(i) * 4;
-        WriteValueToPL(REG_RBC_HB + off, hb[i]);
-        WriteValueToPL(REG_RBC_HR + off, hr[i]);
-        WriteValueToPL(REG_RBC_S  + off, s[i]);
+        WriteValueToPL(REG_RBC_HB + off, rb.hb[i]);
+        WriteValueToPL(REG_RBC_HR + off, rb.hr[i]);
+        WriteValueToPL(REG_RBC_S  + off, rb.s[i]);
     }
 }
 
-void KPlControl::SetKneeLut(const int *data, int count)
+void KPlControl::SetKneeLut()
 {
-    // Реф. SetKneeLut: значения (10 бит) парами → 3 банка; затем защёлка бит1.
-    // Реф. ограничивает число значений сверху 1024 (min(count,0x400)).
-    if (!data || count <= 0) return;
+    // Реф. SetKneeLut (void): значения (10 бит) из AlgParaManager (массив, word 0x94b;
+    // число — word 0xd4b, min с 1024) парами → 3 банка; затем защёлка бит1.
+    const QVector<int> &data = AlgParaManager::GetInstance().CurKneeLut();
+    int count = data.size();
+    if (count <= 0) return;
     if (count > 1024) count = 1024;
     const int pairs = count / 2;
     for (int i = 0; i < pairs; ++i) {
@@ -411,11 +416,14 @@ void KPlControl::SetKneeLut(const int *data, int count)
     WriteValueToPL(REG_KNEE_CTRL, ctrl | KNEE_LATCH_BIT);
 }
 
-void KPlControl::SetIrisTable(const int *data, int count, int shift)
+void KPlControl::SetIrisTable(int shift)
 {
-    // Реф. SetIrisTable: 8 значений на регистр — (data[i]>>shift) в ниббл i*4.
-    // Регион REG_IRIS_TABLE, count/8 записей (8040 → 1005).
-    if (!data || count < 8) return;
+    // Реф. SetIrisTable(int shift): данные из AlgParaManager (массив, указатель 0x7a48,
+    // 8040 значений). 8 значений на регистр — (v>>shift) в ниббл k*4. REG_IRIS_TABLE,
+    // count/8 записей (8040 → 1005).
+    const QVector<int> &data = AlgParaManager::GetInstance().CurIrisTable();
+    const int count = data.size();
+    if (count < 8) return;
     const int regs = count / 8;
     for (int r = 0; r < regs; ++r) {
         unsigned int v = 0;
@@ -528,19 +536,20 @@ void KPlControl::ReadBrightnessHistogramValue(unsigned short *out, int count)
     WriteValueToPL(REG_HIST_TRIGGER, 0);   // реф.: сброс триггера после чтения
 }
 
-void KPlControl::SetDenoiseLut(const DenoiseData &d)
+void KPlControl::SetDenoiseLut()
 {
-    // Реф. SetDenoiseLut — карта регистров (ctrl/KPlRegs.h, namespace Denoise):
-    //   заголовок dpc → REG_DENOISE_DPC (4 банка +BankStep);
-    //   kernelG → REG_DENOISE_KERNEL_G (41×4 банка);
-    //   kernelRB → REG_DENOISE_KERNEL_RB (25×4);
-    //   Lut → REG_DENOISE_LUT (256×4).
+    // Реф. SetDenoiseLut (void) — читает AlgParaManager (массив по офсетам 0x3558.. и
+    // блокам 0x11bc/0x1158/0xd5a). Карта регистров (ctrl/KPlRegs.h):
+    //   заголовок dpc → REG_DENOISE_DPC (4 банка +BANK_STEP);
+    //   kernelG → REG_DENOISE_KERNEL_G (41×4 банка); kernelRB → REG_DENOISE_KERNEL_RB
+    //   (25×4); Lut → REG_DENOISE_LUT (256×4).
     // Банки в оригинале берут смежные окна одного буфера; здесь источник — плоские
     // массивы (kernelG 42 / kernelRB 25 / lut 256), лишние банки добиваются нулём.
+    const AlgParaManager::DenoisePlData &d = AlgParaManager::GetInstance().CurDenoise();
     for (int i = 0; i < 4; ++i)
         WriteValueToPL(REG_DENOISE_DPC + static_cast<unsigned long>(i) * DENOISE_BANK_STEP,
                        static_cast<unsigned int>(d.dpc[i]));
-    writeDenoiseBank(this, REG_DENOISE_KERNEL_G,  d.kernelG,  d.kernelGCount,  41);
-    writeDenoiseBank(this, REG_DENOISE_KERNEL_RB, d.kernelRB, d.kernelRBCount, 25);
-    writeDenoiseBank(this, REG_DENOISE_LUT,      d.lut,      d.lutCount,      256);
+    writeDenoiseBank(this, REG_DENOISE_KERNEL_G,  d.kernelG.constData(),  d.kernelG.size(),  41);
+    writeDenoiseBank(this, REG_DENOISE_KERNEL_RB, d.kernelRB.constData(), d.kernelRB.size(), 25);
+    writeDenoiseBank(this, REG_DENOISE_LUT,       d.lut.constData(),      d.lut.size(),      256);
 }

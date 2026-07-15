@@ -310,13 +310,13 @@ void KVideoProxy::SetImageDenoiseLevel(int level)
     AlgParaManager &alg = AlgParaManager::GetInstance();
     const auto dp = alg.LoadDenoisePara(curSensor_, operationMode_, level, curScope_);
     if (dp.valid) {
-        KPlControl::DenoiseData d;
+        // Реф.: конфиг → «текущий» массив AlgParaManager → void SetDenoiseLut читает его.
+        AlgParaManager::DenoisePlData d;
         d.dpc[0] = d.dpc[1] = dp.dpcT1;
         d.dpc[2] = d.dpc[3] = dp.dpcT2;
-        d.kernelG  = dp.kernelG.constData();  d.kernelGCount  = dp.kernelG.size();
-        d.kernelRB = dp.kernelRB.constData(); d.kernelRBCount = dp.kernelRB.size();
-        d.lut      = dp.lut.constData();      d.lutCount      = dp.lut.size();
-        pl_->SetDenoiseLut(d);
+        d.kernelG = dp.kernelG; d.kernelRB = dp.kernelRB; d.lut = dp.lut;
+        alg.SetCurDenoise(d);
+        pl_->SetDenoiseLut();
     }
     pl_->SetDenoiseLevel(level);
 }
@@ -352,13 +352,15 @@ void KVideoProxy::ApplyImageParams(const QString &sensor, const QString &res,
     curRes_ = res;
     curScope_ = scope;
     AlgParaManager &alg = AlgParaManager::GetInstance();
-    // Гамма: конфиг → LUT → PL (реф. UpdateGammaDownloadLut → SetGammaLut).
+    // Гамма: конфиг → «текущий» LUT AlgParaManager → PL (реф. UpdateGammaDownloadLut →
+    // void SetGammaLut читает массив).
     const auto gp  = alg.LoadGammaPara(sensor, scope);
-    pl_->SetGammaLut(AlgParaManager::CalGammaLut(gp));
-    // CCM: конфиг → матрица → PL (реф. SetCcmParam → SetCCM0Matrix).
+    alg.SetCurGammaLut(AlgParaManager::CalGammaLut(gp));
+    pl_->SetGammaLut();
+    // CCM: конфиг → матрица → PL (реф. SetCcmParam → SetCCM0Matrix(uint*, int)).
     const auto ccm = alg.LoadCcmMatrix(sensor, res, scope);
     if (ccm.valid)
-        pl_->SetCCM0Matrix(ccm.m);
+        pl_->SetCCM0Matrix(reinterpret_cast<const unsigned int *>(ccm.m), 9);
     // Таблицы уровней параметров изображения (для Send*/SetBrightEQLut).
     alg.LoadColEnhLevels(sensor);
     alg.LoadBrightEqPara(sensor);
@@ -370,11 +372,11 @@ void KVideoProxy::ApplyImageParams(const QString &sensor, const QString &res,
         pl_->SetSensorGLut(sl.g.constData(), sl.g.size());
         pl_->SetSensorBLut(sl.b.constData(), sl.b.size());
     }
-    // RBC-LUT сосудистого контраста → PL (реф. SetRbcLut).
+    // RBC-LUT сосудистого контраста → «текущий» AlgParaManager → PL (реф. void SetRbcLut).
     const auto rb = alg.LoadRbcLut(sensor, res);
     if (rb.valid) {
-        const int n = qMin(rb.hb.size(), qMin(rb.hr.size(), rb.s.size()));
-        pl_->SetRbcLut(rb.hb.constData(), rb.hr.constData(), rb.s.constData(), n);
+        alg.SetCurRbcLut(rb);
+        pl_->SetRbcLut();
     }
 }
 

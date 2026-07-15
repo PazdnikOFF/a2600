@@ -132,6 +132,26 @@ public:
     // idx: 0=disable, 1=low, 2=middle, 3=high.
     const QVector<int> &BrightEqLumaLut(int idx) const;
 
+    // --- «Текущие» данные обработки, применяемые в PL ----------------------------
+    // Реф.: KPlControl::SetGammaLut/SetKneeLut/SetRbcLut/SetIrisTable/SetDenoiseLut —
+    // void-функции, читающие массив синглтона AlgParaManager. Здесь массив заменён
+    // типизированными кэшами; оркестрация (KVideoProxy) заполняет их из конфигов
+    // (Load*/CalGammaLut), затем зовёт void KPlControl::Set*, которые читают отсюда.
+    struct DenoisePlData {                       // то, что SetDenoiseLut пишет в PL
+        int dpc[4] = {0,0,0,0};                  // 4 значения → 0xa194x010
+        QVector<int> kernelG, kernelRB, lut;     // банки ×4 (смежные окна)
+    };
+    void SetCurGammaLut(const QVector<int> &v)   { curGamma_ = v; }
+    const QVector<int> &CurGammaLut() const       { return curGamma_; }
+    void SetCurKneeLut(const QVector<int> &v)    { curKnee_ = v; }
+    const QVector<int> &CurKneeLut() const        { return curKnee_; }
+    void SetCurRbcLut(const RbcLut &v)           { curRbc_ = v; }
+    const RbcLut &CurRbcLut() const               { return curRbc_; }
+    void SetCurIrisTable(const QVector<int> &v)  { curIris_ = v; }
+    const QVector<int> &CurIrisTable() const      { return curIris_; }
+    void SetCurDenoise(const DenoisePlData &v)   { curDenoise_ = v; }
+    const DenoisePlData &CurDenoise() const       { return curDenoise_; }
+
 private:
     AlgParaManager() = default;
     QVector<int> colEnhLevels_;    // значения ColorEnh по уровню
@@ -142,4 +162,8 @@ private:
     int chbValue_ = 0;            // CHb: 4-е значение для 0xa1900018
     int cutW_ = 0, cutH_ = 0;     // corner-cut: ширина/высота выреза (реф. +0x10/+0x14)
     QVector<int> cutLut_[2];      // corner-cut LUT: way 0 круг / 1 восьмиугольник
+    // «Текущие» данные для KPlControl::Set* (реф.: массив AlgParaManager).
+    QVector<int> curGamma_, curKnee_, curIris_;
+    RbcLut       curRbc_;
+    DenoisePlData curDenoise_;
 };

@@ -22,13 +22,13 @@ public:
     bool WriteValueToPL(unsigned long physAddr, unsigned int value);
     bool ReadValueFromPL(unsigned long physAddr, unsigned int &value);
 
-    // Загрузка гамма-LUT в PL (реф. KPlControl::SetGammaLut). База 0xa1830000,
-    // три канала R/G/B со смещениями +0x000/+0x800/+0x1000, шаг записи 4 байта.
-    void SetGammaLut(const QVector<int> &lut);
+    // Загрузка гамма-LUT в PL (реф. KPlControl::SetGammaLut — void, читает
+    // AlgParaManager::CurGammaLut). 10-бит пары → 3 банка REG_GAMMA_BANK0/1/2.
+    void SetGammaLut();
 
-    // Загрузка матрицы цветокоррекции CCM0 в PL (реф. KPlControl::SetCCM0Matrix).
-    // Регистры в регионе 0xa1860000; enable по 0xa1860014.
-    void SetCCM0Matrix(const int m[9]);
+    // Загрузка матрицы цветокоррекции CCM0 в PL (реф. SetCCM0Matrix(uint*, int)):
+    // пары data[2i]|(data[2i+1]<<16) → REG_CCM0_MATRIX; последний → REG_CCM0_TAIL.
+    void SetCCM0Matrix(const unsigned int *data, int count);
 
     // --- Параметры изображения → PL (адреса/битовые поля из дизассемблера) ---
 
@@ -75,16 +75,11 @@ public:
 
     // Уровень шумоподавления (реф. SetDenoiseLevel) → 0xa1940008.
     void SetDenoiseLevel(int level);
-    // Загрузка LUT шумоподавления (реф. SetDenoiseLut). Регион 0xa1941000:
-    //   заголовок dpc → 0xa194x010; kernelG → 0xa1941600.. (41×4 банка);
-    //   kernelRB → 0xa1941500.. (25×4); Lut → 0xa1941100.. (256×4).
-    struct DenoiseData {
-        int dpc[4] = {0,0,0,0};
-        const int *kernelG = nullptr;  int kernelGCount = 0;   // 42
-        const int *kernelRB = nullptr; int kernelRBCount = 0;  // 25
-        const int *lut = nullptr;      int lutCount = 0;       // 256
-    };
-    void SetDenoiseLut(const DenoiseData &d);
+    // Загрузка LUT шумоподавления (реф. SetDenoiseLut — void, читает
+    // AlgParaManager::CurDenoise). Регион 0xa1941000: dpc → 0xa194x010;
+    // kernelG → 0xa1941600.. (41×4 банка); kernelRB → 0xa1941500.. (25×4);
+    // Lut → 0xa1941100.. (256×4).
+    void SetDenoiseLut();
 
     // Включение гаммы (реф. SetGammaEnable) → 0xa1830000.
     void SetGammaEnable(bool enable);
@@ -139,19 +134,17 @@ public:
     void SetSensorGLut(const unsigned int *data, int count);
     void SetSensorBLut(const unsigned int *data, int count);
 
-    // RBC-LUT (реф. SetRbcLut) — 3 канала в регион 0xa1878000:
-    //   Hb→0xa1878200, Hr→0xa1878100, S→0xa1878000 (по count значений, шаг 4).
-    void SetRbcLut(const unsigned int *hb, const unsigned int *hr,
-                   const unsigned int *s, int count);
+    // RBC-LUT (реф. SetRbcLut — void, читает AlgParaManager::CurRbcLut) — 3 канала
+    //   в регион 0xa1878000: Hb→0xa1878200, Hr→0xa1878100, S→0xa1878000 (шаг 4).
+    void SetRbcLut();
 
-    // Knee-LUT (реф. SetKneeLut). Значения (10 бит) пакуются парами и пишутся в
-    //   3 банка региона 0xa1930000 (0x800/0x1000/0x1800); финализация 0xa1930000|=2.
-    //   count — число значений (1024), даёт count/2 записей на банк.
-    void SetKneeLut(const int *data, int count);
+    // Knee-LUT (реф. SetKneeLut — void, читает AlgParaManager::CurKneeLut). Значения
+    //   (10 бит) парами → 3 банка региона 0xa1930000; финализация 0xa1930000|=2.
+    void SetKneeLut();
 
-    // Таблица диафрагмы (реф. SetIrisTable). shift — план размера апертуры (0..2).
-    //   Пакует по 8 значений (data[i]>>shift) в нибблы i*4 → 0xa18a8000.. (count/8 записей).
-    void SetIrisTable(const int *data, int count, int shift);
+    // Таблица диафрагмы (реф. SetIrisTable(int shift) — читает CurIrisTable). shift —
+    //   план размера апертуры (0..2). Пакует по 8 значений (v>>shift) в нибблы → 0xa18a8000.
+    void SetIrisTable(int shift);
 
     // Состояние реального видео (реф. SetRealtimeVideoState) → 0xa0080024.
     void SetRealtimeVideoState(int state);

@@ -330,8 +330,8 @@ int main(int argc, char **argv)
         const auto rb = alg.LoadRbcLut("OV2740", "EC_1504X1080");
         pl.ClearTrace();
         if (rb.valid) {
-            const int n = qMin(rb.hb.size(), qMin(rb.hr.size(), rb.s.size()));
-            pl.SetRbcLut(rb.hb.constData(), rb.hr.constData(), rb.s.constData(), n);
+            alg.SetCurRbcLut(rb);   // реф.: данные в массив AlgParaManager → void SetRbcLut
+            pl.SetRbcLut();
         }
         const auto &tr2 = pl.Trace();
         const int rn = rb.valid ? qMin(rb.hb.size(), qMin(rb.hr.size(), rb.s.size())) : 0;
@@ -364,7 +364,8 @@ int main(int argc, char **argv)
         // Knee LUT (config-driven, 10-бит пары → 3 банка + финализация).
         const auto knee = alg.LoadKneeLut("IMX274", "THORACOSCOPE");
         pl.ClearTrace();
-        pl.SetKneeLut(knee.constData(), knee.size());
+        alg.SetCurKneeLut(knee);   // реф.: данные в массив AlgParaManager → void SetKneeLut
+        pl.SetKneeLut();
         const auto &tk = pl.Trace();
         const int kpairs = knee.size() / 2;
         // 3 банка × pairs + 1 финализация.
@@ -382,7 +383,8 @@ int main(int argc, char **argv)
             const auto gp = alg.LoadGammaPara("IMX274", "ARTHROSCOPE");
             const QVector<int> glut = AlgParaManager::CalGammaLut(gp);
             pl.ClearTrace();
-            pl.SetGammaLut(glut);
+            alg.SetCurGammaLut(glut);   // реф.: данные в массив AlgParaManager → void SetGammaLut
+            pl.SetGammaLut();
             const auto &tg = pl.Trace();
             const int gpairs = glut.size() / 2;
             const unsigned gv0 = (unsigned(glut.value(1)) & 0x3ff) << 16 |
@@ -400,7 +402,8 @@ int main(int argc, char **argv)
         // Iris table (config-driven, 8040 значений → 1005 записей, упаковка 8/регистр).
         const auto iris = alg.LoadIrisTable("IMX274", "1920X1080");
         pl.ClearTrace();
-        pl.SetIrisTable(iris.constData(), iris.size(), 0);   // shift 0
+        alg.SetCurIrisTable(iris);   // реф.: данные в массив AlgParaManager → SetIrisTable(shift)
+        pl.SetIrisTable(0);          // shift 0
         const auto &ti = pl.Trace();
         unsigned expFirst = 0;
         if (iris.size() >= 8)
@@ -484,13 +487,12 @@ int main(int argc, char **argv)
         qInfo() << "Denoise L2: valid=" << dp.valid << " kernelG=" << dp.kernelG.size()
                 << "kernelRB=" << dp.kernelRB.size() << "lut=" << dp.lut.size()
                 << "dpc=" << dp.dpcT1 << dp.dpcT2;
-        KPlControl::DenoiseData d;
+        AlgParaManager::DenoisePlData d;   // реф.: данные в массив AlgParaManager
         d.dpc[0] = d.dpc[1] = dp.dpcT1; d.dpc[2] = d.dpc[3] = dp.dpcT2;
-        d.kernelG = dp.kernelG.constData();  d.kernelGCount = dp.kernelG.size();
-        d.kernelRB = dp.kernelRB.constData(); d.kernelRBCount = dp.kernelRB.size();
-        d.lut = dp.lut.constData();          d.lutCount = dp.lut.size();
+        d.kernelG = dp.kernelG; d.kernelRB = dp.kernelRB; d.lut = dp.lut;
+        alg.SetCurDenoise(d);
         pl.ClearTrace();
-        pl.SetDenoiseLut(d);
+        pl.SetDenoiseLut();   // void — читает CurDenoise
         pl.SetDenoiseLevel(2);
         const auto &td = pl.Trace();
         const int expDen = 4 + 41*4 + 25*4 + 256*4 + 1;   // header+kernelG+kernelRB+lut+level

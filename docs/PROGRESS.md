@@ -471,10 +471,13 @@ SetKneeLut — добавлен кламп count≤1024 (реф. min([0x352c],10
 AWBValue/ImageEnh/ColorEnh/FreezeScaler, SetSensorR/G/BLut (базы 0xa1820800/1000/1800, пары),
 SetRbcLut (банки 0xa1878200/8100/8000; реф. void читает AlgPara[word 0x4e8/0x507/0x526]×31),
 SetKneeLut (банки 0xa1930800/1000/1800, пары &0x3ff, защёлка |=2).
-ПРИМЕЧАНИЕ: реф. Gamma/Knee/Rbc — void, читают из AlgParaManager (raw int-массив по word-
-офсетам); у нас data-source вынесен в структурные лоадеры AlgParaManager (архит. выбор),
-аудит сверял РЕГИСТРОВУЮ логику. Реф. также poll-ждёт бит2 в ctrl-регистре (device-timing,
-на десктопе не воспроизводим — опущено).
+СИГНАТУРЫ ВЫРОВНЕНЫ ПОД БИНАРНИК (методология «структура функций = дизасм»): раньше
+Gamma/Knee/Rbc/Iris/Denoise брали данные параметрами (архит. выбор) — теперь как в реф.
+это void-функции (SetIrisTable(int shift)), читающие «текущие» данные из синглтона
+AlgParaManager (SetCur*/Cur* — типизированный аналог его массива; заполняет оркестрация
+KVideoProxy). SetCCM0Matrix(int[9])→SetCCM0Matrix(uint*,int) как в дизасме. plreg/filt —
+адреса и число записей не изменились, PASS. Реф. также poll-ждёт бит2 в ctrl-регистре
+(device-timing, на десктопе не воспроизводим — опущено).
 ЗАХОД 2 (Vist/Denoise/Iris/Corner): ПОДТВЕРЖДЕНЫ верными без правок —
 SetVistSwitch (0xa18e0000=en, 0xa1840000=!en), SetVistMatrix (пары→0xa18e0004.. +
 16-бит хвост p[last]→0xa18e0014, как CCM), SetDenoiseLevel (0xa1940008),
