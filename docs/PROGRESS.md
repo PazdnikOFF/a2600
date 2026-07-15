@@ -444,7 +444,8 @@ Qt5, boost 1.74, libcrypto.
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
 (все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
-KVideoProxy 43/116 (последнее: AEC/AGC keep-alive + getAecValue + SetFreezeCalResolution).
+KVideoProxy 50/116 (последнее: тонкие обёртки SetImgDenoiseLevel/SetContrastLevel/
+SetBrightnessEQLevel/SetLensSize/SetEnhanceSize/SetAwbCut/SendCHbLevel из дизасма).
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
 бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
@@ -549,8 +550,18 @@ Out(rect.w,rect.h)+Ratio(Q5.8 w/rect.w, h/rect.h)+SetFreezeVideoLoc(x,w,y,h).
 формулы getAecValue, keep-alive 16 записей за 191 вызов (1,2,3,191-й),
 байтовые команды камеры AEC (0xc00/0xd00|бит31)/AGC (0xa00/0xb00, 3 бита),
 пара REG_AEC_AGC, freeze-регистры 5 записей. KVideoProxy 40→43/116.
+ЗАХОД тонких обёрток (дизасм-декод отдан субагенту): SetImgDenoiseLevel (→pl SetDenoiseLevel
+0xa1940008 + KVideoParam), SetContrastLevel (0xff-цикл [0..2]; контраст входит в гамму →
+pl SetGammaLut; модуляция гаммы контрастом в CalGammaLut пока НЕ реверснута — освежается
+текущая гамма, структура вызовов=дизасм), SetBrightnessEQLevel (0→выкл; ≠0→enable+SetBrightEQLut),
+SetLensSize/SetEnhanceSize(пустой в прошивке)/SetAwbCut/SendCHbLevel (1:1 к KPlControl).
+Покрыто в `fxpt` (thin/brightnessEQ/contrast). KVideoProxy 43→50/116.
+ОТЛОЖЕНО (deep-chain, не фантазировать): SetColorEnhanceLevel (тянет KSystemStatus::
+IsColorEnable-гейт + KVideoSet::GetColorEnhValue), SetImageEnhanceLevel (KVideoSet::
+GetImgEnhValue) — нужен реверс KVideoSet color/img-value.
 **ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy — искать через
 `comm -23` (§ниже), сверять дизасм и тестировать; либо off-device Фазы ROADMAP (§9).
+Кандидаты (по размеру, не device): SetVideoArea, SendZoomValue, SetDemoire, SetAWBValue.
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

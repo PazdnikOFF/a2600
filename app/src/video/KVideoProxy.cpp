@@ -395,6 +395,63 @@ void KVideoProxy::SetFreezeCalResolution(int width, int height)
     pl_->SetFreezeVideoLoc(rect.x(), rect.width(), rect.y(), rect.height());
 }
 
+void KVideoProxy::SetImgDenoiseLevel(int level)
+{
+    // Реф. SetImgDenoiseLevel (тонкий): рег. уровня + запоминание в KVideoParam.
+    // (Полная перезагрузка LUT — в SetImageDenoiseLevel; здесь только рег. уровня.)
+    if (pl_) pl_->SetDenoiseLevel(level);
+    KVideoParam::Instance().SetDenoise(level);
+}
+
+void KVideoProxy::SetContrastLevel(int level)
+{
+    // Реф. SetContrastLevel(int): 0xff → следующий уровень по кругу [0..2]; контраст
+    // входит в гамма-кривую (реф. AlgParaManager::UpdateGammaDownloadLut) → перезагрузка
+    // гамма-LUT в PL. (Модуляция гаммы контрастом в CalGammaLut пока не реверснута —
+    // здесь освежается текущая гамма, структура вызовов = дизасм.)
+    KVideoParam &vp = KVideoParam::Instance();
+    int lv = level;
+    if (level == 0xff) {
+        lv = vp.ContrastLevel() + 1;
+        if (lv >= 3) lv = 0;
+    }
+    vp.SetContrastLevel(lv);
+    if (pl_) pl_->SetGammaLut();
+}
+
+void KVideoProxy::SetBrightnessEQLevel(int level)
+{
+    // Реф. SetBrightnessEQLevel(int): level==0 → выкл EQ; иначе вкл + загрузка LUT
+    // уровня. Запоминание уровня в KVideoParam. Клампа нет.
+    if (level == 0) {
+        if (pl_) pl_->SetBrightEQEnable(false);
+    } else if (pl_) {
+        pl_->SetBrightEQEnable(true);
+        pl_->SetBrightEQLut(level);
+    }
+    KVideoParam::Instance().SetBrightEQ(level);
+}
+
+void KVideoProxy::SetLensSize(int a, int b)
+{
+    if (pl_) pl_->SetLensSize(a, b);   // реф. 1:1 → 0xa189000c = a|(b<<16)
+}
+
+void KVideoProxy::SetEnhanceSize(int a, int b)
+{
+    if (pl_) pl_->SetEnhanceSize(a, b);  // реф. 1:1 (в прошивке KPlControl-метод пустой)
+}
+
+void KVideoProxy::SetAwbCut(int low, int high)
+{
+    if (pl_) pl_->SetAwbCut(low, high);  // реф. 1:1 → 0xa1840018
+}
+
+void KVideoProxy::SendCHbLevel(int level)
+{
+    if (pl_) pl_->SetChbStatus(level);   // реф. 1:1
+}
+
 void KVideoProxy::SetImageDenoiseLevel(int level)
 {
     // Реф. SetImageDenoiseLevel: загрузить LUT уровня и записать регистр уровня.

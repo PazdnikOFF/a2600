@@ -82,6 +82,19 @@ public:
 
     // Шумоподавление (реф. SetImageDenoiseLevel/SetImgDenoiseLevel): уровень→LUT+рег.
     void SetImageDenoiseLevel(int level);
+    // Тонкий вариант (реф. SetImgDenoiseLevel): уровень→рег. REG_DENOISE_LEVEL + KVideoParam.
+    void SetImgDenoiseLevel(int level);
+
+    // --- Тонкие обёртки-оркестраторы к KPlControl/KVideoParam (реф. 1:1) ---
+    // Контраст (реф. SetContrastLevel): 0xff → следующий по кругу [0..2]; контраст
+    // модулирует гамму → перезагрузка гамма-LUT (реф. AlgParaManager::UpdateGammaDownloadLut).
+    void SetContrastLevel(int level);
+    // Яркостной EQ (реф. SetBrightnessEQLevel): level==0 → выкл; иначе вкл+LUT уровня.
+    void SetBrightnessEQLevel(int level);
+    void SetLensSize(int a, int b);     // → pl_->SetLensSize (0xa189000c=a|(b<<16))
+    void SetEnhanceSize(int a, int b);  // → pl_->SetEnhanceSize (реф.: пустой в прошивке)
+    void SetAwbCut(int low, int high);  // → pl_->SetAwbCut (0xa1840018)
+    void SendCHbLevel(int level);       // → pl_->SetChbStatus
     // Режим работы WL/EWL/SFI/VIST (реф. SetOperationMode): выбор конфигов + VIST-тракт.
     void SetOperationMode(int mode);
     // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).

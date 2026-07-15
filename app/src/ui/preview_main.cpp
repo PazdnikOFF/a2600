@@ -1610,8 +1610,44 @@ int main(int argc, char **argv)
         qInfo() << "freezeCalResolution writes:" << tf.size() << "(exp 5)"
                 << (fzOk ? "OK" : "MISMATCH");
 
+        // Тонкие обёртки к KPlControl/KVideoParam (реф. Set*Level/Size/AwbCut/CHb).
+        pl.ClearTrace();
+        vp.SetImgDenoiseLevel(3);      // → REG_DENOISE_LEVEL 0xa1940008 = 3
+        vp.SetLensSize(0x10, 0x20);    // → REG_LENS_SIZE 0xa189000c = 0x10|(0x20<<16)
+        vp.SetEnhanceSize(1, 2);       // реф. пустой → без записи
+        vp.SetAwbCut(0x40, 0x80);      // → REG_AWB_CUT 0xa1840018 = 0x40|(0x80<<16)
+        vp.SendCHbLevel(0);            // → REG_CHB_ENABLE 0xa1900008 = 0 (выкл)
+        const auto &tt = pl.Trace();
+        const bool thinOk = tt.size() == 4 &&
+            tt[0].first == 0xa1940008 && tt[0].second == 3 &&
+            tt[1].first == 0xa189000c && tt[1].second == (0x10u | (0x20u << 16)) &&
+            tt[2].first == 0xa1840018 && tt[2].second == (0x40u | (0x80u << 16)) &&
+            tt[3].first == 0xa1900008 && tt[3].second == 0;
+        qInfo() << "thin wrappers writes:" << tt.size() << "(exp 4)"
+                << (thinOk ? "OK" : "MISMATCH");
+
+        // SetBrightnessEQLevel: 0 → выкл (enable=0); ≠0 → вкл (enable=1) + LUT.
+        pl.ClearTrace();
+        vp.SetBrightnessEQLevel(0);    // 1 запись: 0xa1950000 = 0
+        const int offWrites = pl.Trace().size();
+        pl.ClearTrace();
+        vp.SetBrightnessEQLevel(2);    // enable=1 (0xa1950000) + LUT-записи
+        const auto &tb = pl.Trace();
+        const bool beqOk = offWrites == 1 &&
+            !tb.isEmpty() && tb[0].first == 0xa1950000 && tb[0].second == 1;
+        qInfo() << "brightnessEQ off/on writes:" << offWrites << "/" << tb.size()
+                << (beqOk ? "OK" : "MISMATCH");
+
+        // SetContrastLevel: 0xff циклит [0..2], пишет гамма-LUT (перезагрузка).
+        vp.SetContrastLevel(0);
+        vp.SetContrastLevel(0xff);
+        const bool ctrOk = KVideoParam::Instance().ContrastLevel() == 1;  // 0→1 по кругу
+        qInfo() << "contrast cycle 0→" << KVideoParam::Instance().ContrastLevel()
+                << (ctrOk ? "OK" : "MISMATCH");
+
         const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk
-                        && aecOk && aecSeqOk && agcOk && pairOk && fzOk;
+                        && aecOk && aecSeqOk && agcOk && pairOk && fzOk
+                        && thinOk && beqOk && ctrOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }
