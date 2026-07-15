@@ -71,6 +71,7 @@ set(SOURCES
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
+    src/sys/KEndoInfoServerConfig.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
     src/sys/KStyleConfig.cpp
@@ -146,6 +147,7 @@ add_executable(ui_preview
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
+    src/sys/KEndoInfoServerConfig.cpp
     src/sys/KVersionConfig.cpp
     src/sys/KProjectSet.cpp
     src/sys/KStyleConfig.cpp

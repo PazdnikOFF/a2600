@@ -92,6 +92,7 @@ ui_preview savefile                                   # self-test нумерац
 ENDO_ROOT=$ER ui_preview osdset                       # self-test OSD-конфига (кнопки→функции osd.ini + режимы)
 ui_preview dbservice                                  # self-test сервиса БД (PRAGMA-окружение + бэкап/восстановление .bak)
 ui_preview dispparam                                  # self-test валидности элементов отчёта (данные→показ, ref-гейт)
+ENDO_ROOT=$ER ui_preview endoinfo                     # self-test конфига сервера выгрузки инфо об эндоскопе (endoinfoserver.ini)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -435,12 +436,12 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~48/491 классов, **29 self-test-режимов**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +8 классов:
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~49/491 классов, **30 self-test-режимов**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +9 классов (+ расширения KDicomFieldMap мульти-record):
 +KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
 +KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
 +KUserOsdSet OSD-конфиг кнопок (A), +KEntityService PRAGMA+бэкап БД (B),
-+KReportDisplayParam валидность элементов (C). Репозиторий
++KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг (MISC). Репозиторий
 на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
@@ -455,7 +456,7 @@ Qt5, boost 1.74, libcrypto.
 
 **Полный список 26 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).

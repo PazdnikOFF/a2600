@@ -42,6 +42,7 @@
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
 #include "sys/KUpdateManifest.h"
+#include "sys/KEndoInfoServerConfig.h"
 #include "sys/KVersionConfig.h"
 #include "sys/KProjectSet.h"
 #include "sys/KStyleConfig.h"
@@ -911,6 +912,24 @@ int main(int argc, char **argv)
         const bool ok = n == 4 && markOk && refOk && resetOk;
         qInfo() << (ok ? "dispparam: PASS" : "dispparam: FAIL");
         return ok ? 0 : 36;
+    }
+
+    // Self-test конфига сервера выгрузки инфо об эндоскопе (реф. endoinfoserver.ini).
+    if (screen == "endoinfo") {
+        KEndoInfoServerConfig &c = KEndoInfoServerConfig::GetInstance();
+        qInfo() << "конфиг:" << c.ConfigFile();
+        qInfo() << "dns1:" << c.Dns1() << "proxy:" << c.Proxy()
+                << "post:" << c.EndoInfoPostUrl();
+        // Сверка с реальным endoinfoserver.ini прошивки.
+        const bool ok = c.IsValid() &&
+                        c.Dns1() == "8.8.8.8" && c.Dns2() == "10.10.102.8" &&
+                        c.Proxy() == "http://mail.sonoscape.net:90" &&
+                        c.LoginUrl() == "http://mail.sonoscape.net:90/auth/onlyLogin" &&
+                        c.EndoInfoPostUrl() ==
+                            "http://mail.sonoscape.net:90/aconfig/opLog/uploadLog" &&
+                        c.PublicKeyFile().endsWith("endoinfoserver/public_key.pem");
+        qInfo() << (ok ? "endoinfo: PASS" : "endoinfo: FAIL");
+        return ok ? 0 : 37;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
