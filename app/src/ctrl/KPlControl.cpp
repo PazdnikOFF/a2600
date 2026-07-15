@@ -532,7 +532,9 @@ void KPlControl::SetCameraIrisType(int type, int subtype)
 void KPlControl::ReadBrightnessHistogramValue(unsigned short *out, int count)
 {
     if (!out || count <= 0) return;
-    // Реф.: триггер захвата гистограммы, затем чтение бинов (по 2 в 32-бит слове).
+    // Реф. ReadBrightnessHistogramValue (дизасм): триггер=1 (0xa18a0010), чтение бинов
+    // (0xa18a9000+, по 2 uint16 в 32-бит слове: low→out[2i], high→out[2i+1]), затем
+    // сброс триггера=0.
     WriteValueToPL(0xa18a0010, 1);
     const int words = count / 2;
     for (int i = 0; i < words; ++i) {
@@ -541,6 +543,7 @@ void KPlControl::ReadBrightnessHistogramValue(unsigned short *out, int count)
         out[2 * i]     = static_cast<unsigned short>(w & 0xffff);
         out[2 * i + 1] = static_cast<unsigned short>((w >> 16) & 0xffff);
     }
+    WriteValueToPL(0xa18a0010, 0);   // реф.: сброс триггера после чтения
 }
 
 void KPlControl::SetDenoiseLut(const DenoiseData &d)
