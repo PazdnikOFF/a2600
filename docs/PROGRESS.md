@@ -98,7 +98,7 @@ ENDO_ROOT=$ER ui_preview endoinfo                     # self-test конфига
 ENDO_ROOT=$ER ui_preview remoteswitch                 # self-test пульта/ножного переключателя + IHb (user.ini)
 ENDO_ROOT=$ER ui_preview dcmfmt                       # self-test структуры DICOM-датасета (Mpps*DatasetFormat.xml)
 ui_preview pattime                                    # self-test конвертеров дат/времени пациента (возраст, DICOM/БД-формат)
-ui_preview fxpt                                       # self-test фикс.-точки KVideoProxy (Float2Fixed/Fixed2Float + клампы)
+ENDO_ROOT=$ER ui_preview fxpt                         # self-test фикс.-точки + AEC/AGC/getAecValue/FreezeCalResolution KVideoProxy
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -443,7 +443,8 @@ Qt5, boost 1.74, libcrypto.
 ## 10. Как продолжать (для новой сессии после /clear)
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
+(все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
+KVideoProxy 43/116 (последнее: AEC/AGC keep-alive + getAecValue + SetFreezeCalResolution).
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
 бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
@@ -535,8 +536,21 @@ GetPLRegisterValue (ReadValueFromPL) — self-test `fxpt`. KVideoProxy 26→40/1
 ОТЛОЖЕНО (глубже): SwitchVLSMode→KPlControl::SetVLSMode тянет AlgParaManager::GetVistValue
 (GetSystemStatus[0x3c] + внутр. состояние + setAwbPara) — реверснуть GetVistValue отдельно.
 SetImageEnhanceType — device (GetEndoScope).
-**ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy (SetFreezeCalResolution,
-SetAECValue/SetAGCValue) — сверять дизасм и тестировать; либо off-device Фазы ROADMAP (§9).
+ЗАХОД AEC/AGC+Freeze (из дизасма 0x6d9c50..0x6da1e4): (1) SetAECValue/SetAGCValue/
+SetAECAndAGCValue выровнены 1:1 — дедуп не «молчащий», а с keep-alive static repeatCnt
+(при том же значении пишет первые 2 повтора и освежается каждый 190-й, prev>0xbc;
+свой счётчик у каждой из трёх функций; поля: AEC@+0x30, AGC@+0x2c, режим тракта @+0x24);
+(2) getAecValue(float): мс→код AEC по режиму — m0: t·72000·16/1080, m1: t·40000/794,
+m2 (double): 2307−(t·72000−112)/520, m3: t·40000/765, неизвестный → лог+10;
+(3) SetFreezeCalResolution(w,h): PIP-окно KDisplayOption::getFreezeVideoRect
+([VIDEO]/IMAGE_PIP layout-ini; пустой rect → лог+выход) → SetFreezeScalerIn(w,h)+
+Out(rect.w,rect.h)+Ratio(Q5.8 w/rect.w, h/rect.h)+SetFreezeVideoLoc(x,w,y,h).
+Всё покрыто в `fxpt` (теперь требует ENDO_ROOT — layout для freeze-теста):
+формулы getAecValue, keep-alive 16 записей за 191 вызов (1,2,3,191-й),
+байтовые команды камеры AEC (0xc00/0xd00|бит31)/AGC (0xa00/0xb00, 3 бита),
+пара REG_AEC_AGC, freeze-регистры 5 записей. KVideoProxy 40→43/116.
+**ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy — искать через
+`comm -23` (§ниже), сверять дизасм и тестировать; либо off-device Фазы ROADMAP (§9).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

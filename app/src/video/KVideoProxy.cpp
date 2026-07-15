@@ -3,6 +3,7 @@
 #include "ctrl/KPlRegs.h"
 #include "alg/AlgParaManager.h"
 #include "video/KVideoParam.h"
+#include "ui/KDisplayOption.h"
 
 #include <QDebug>
 #include <QDateTime>
@@ -274,12 +275,23 @@ void KVideoProxy::SetCameraAGCValue(unsigned int agc)
 
 void KVideoProxy::SetAECAndAGCValue(unsigned int aec, unsigned int agc)
 {
-    // Реф.: писать в PL только при изменении пары (дедуп по кэшу).
-    if (cachedAGC_ == agc && cachedAEC_ == aec)
+    // Реф.: дедуп по кэшу пары + keep-alive: при том же значении запись повторяется
+    // первые 2 вызова (repeatCnt 1..2) и освежается каждый 190-й (repeatCnt>0xbc).
+    static unsigned int repeatCnt = 0;
+    if (cachedAGC_ != agc || cachedAEC_ != aec) {
+        cachedAGC_ = agc;
+        cachedAEC_ = aec;
+        repeatCnt = 0;
+        if (pl_) pl_->SetAECAndAGCValue(aec, agc);
         return;
-    cachedAEC_ = aec;
-    cachedAGC_ = agc;
-    if (pl_) pl_->SetAECAndAGCValue(aec, agc);
+    }
+    const unsigned int prev = repeatCnt++;
+    if (prev > 0xbc) {
+        repeatCnt = 0;
+        if (pl_) pl_->SetAECAndAGCValue(aec, agc);
+    } else if (prev + 1 <= 2) {
+        if (pl_) pl_->SetAECAndAGCValue(aec, agc);
+    }
 }
 
 void KVideoProxy::SetEndoAECValue(unsigned int aec)
@@ -294,26 +306,93 @@ void KVideoProxy::SetEndoAGCValue(unsigned int agc)
 
 void KVideoProxy::SetAECValue(unsigned int aec)
 {
-    // Реф. SetAECValue: aeRouteMode_==2 → камера (I2C); иначе → PL AE-блок.
-    if (aeRouteMode_ == 2) {
-        if (cachedAEC_ == aec) return;    // дедуп
-        cachedAEC_ = aec;
-        SetCameraAECValue(aec);
-    } else {
+    // Реф. SetAECValue: aeRouteMode_==2 → камера (I2C) с дедупом+keep-alive
+    // (свой static repeatCnt); иначе → PL AE-блок (SetEndoAECValue).
+    if (aeRouteMode_ != 2) {
         SetEndoAECValue(aec);
+        return;
+    }
+    static unsigned int repeatCnt = 0;
+    if (cachedAEC_ != aec) {
+        cachedAEC_ = aec;
+        repeatCnt = 0;
+        SetCameraAECValue(aec);
+        return;
+    }
+    const unsigned int prev = repeatCnt++;
+    if (prev > 0xbc) {
+        repeatCnt = 0;
+        SetCameraAECValue(aec);
+    } else if (prev + 1 <= 2) {
+        SetCameraAECValue(aec);
     }
 }
 
 void KVideoProxy::SetAGCValue(unsigned int agc)
 {
-    // Реф. SetAGCValue: aeRouteMode_==2 → камера (I2C); иначе → PL AE-блок.
-    if (aeRouteMode_ == 2) {
-        if (cachedAGC_ == agc) return;    // дедуп
-        cachedAGC_ = agc;
-        SetCameraAGCValue(agc);
-    } else {
+    // Реф. SetAGCValue: зеркально SetAECValue (кэш AGC, свой repeatCnt).
+    if (aeRouteMode_ != 2) {
         SetEndoAGCValue(agc);
+        return;
     }
+    static unsigned int repeatCnt = 0;
+    if (cachedAGC_ != agc) {
+        cachedAGC_ = agc;
+        repeatCnt = 0;
+        SetCameraAGCValue(agc);
+        return;
+    }
+    const unsigned int prev = repeatCnt++;
+    if (prev > 0xbc) {
+        repeatCnt = 0;
+        SetCameraAGCValue(agc);
+    } else if (prev + 1 <= 2) {
+        SetCameraAGCValue(agc);
+    }
+}
+
+unsigned int KVideoProxy::getAecValue(float value)
+{
+    // Реф. getAecValue(float): выдержка (мс) → код AEC сенсора, формула по режиму
+    // тракта AE ([this+0x24]). Константы 1:1 из дизасма (72/40 кГц·1000, делители).
+    switch (aeRouteMode_) {
+    case 0:
+        return static_cast<unsigned int>(value * 72.0f * 1000.0f * 16.0f / 1080.0f);
+    case 1:
+        return static_cast<unsigned int>(value * 40.0f * 1000.0f / 794.0f);
+    case 2:
+        // Инверсная шкала (double-математика в реф.): код = 2307 − (t·72000 − 112)/520.
+        return static_cast<unsigned int>(
+            2307.0 - (static_cast<double>(value) * 72.0 * 1000.0 - 112.0) / 520.0);
+    case 3:
+        return static_cast<unsigned int>(value * 40.0f * 1000.0f / 765.0f);
+    default:
+        qWarning() << "getAecValue: unknown AE route mode" << aeRouteMode_;
+        return 10;   // реф.: LogPrintfEx + return 10
+    }
+}
+
+void KVideoProxy::SetFreezeCalResolution(int width, int height)
+{
+    // Реф. SetFreezeCalResolution(w,h): окно PIP стоп-кадра из layout-ini
+    // (KDisplayOption::getFreezeVideoRect, [VIDEO]/IMAGE_PIP). Пустой rect
+    // (x2−x1==−1 или y2−y1==−1, т.е. нулевая ширина/высота) → лог и выход.
+    const QRect rect = KDisplayOption::Instance().getFreezeVideoRect();
+    if (rect.width() == 0 || rect.height() == 0) {
+        qWarning() << "SetFreezeCalResolution: invalid freeze video rect" << rect;
+        return;
+    }
+    if (!pl_) return;
+    pl_->SetFreezeScalerIn(width, height);
+    pl_->SetFreezeScalerOut(rect.width(), rect.height());
+    // Коэффициенты скейла вход/выход в фикс. точке Q5.8.
+    const int ratioW = Float2FixedPointNumber(
+        static_cast<float>(width) / static_cast<float>(rect.width()), 5, 8);
+    const int ratioH = Float2FixedPointNumber(
+        static_cast<float>(height) / static_cast<float>(rect.height()), 5, 8);
+    pl_->SetFreezeScalerRatio(ratioW, ratioH);
+    // Реф.: FreezeVideoLoc(x1, ширина, y1, высота).
+    pl_->SetFreezeVideoLoc(rect.x(), rect.width(), rect.y(), rect.height());
 }
 
 void KVideoProxy::SetImageDenoiseLevel(int level)

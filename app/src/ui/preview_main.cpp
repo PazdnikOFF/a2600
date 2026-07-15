@@ -1543,7 +1543,75 @@ int main(int argc, char **argv)
         qInfo() << "monitorCtrl:" << QString::number(tmc.isEmpty()?0:tmc[0].second,16)
                 << "(exp 30d403)" << (monOk ? "OK" : "MISMATCH");
 
-        const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk;
+        // getAecValue: выдержка (мс) → код AEC, формула по режиму тракта AE.
+        vp.SetAecAgcRouteMode(0);
+        const bool aec0 = vp.getAecValue(10.0f) == 10666;  // t·72000·16/1080
+        vp.SetAecAgcRouteMode(1);
+        const bool aec1 = vp.getAecValue(10.0f) == 503;    // t·40000/794
+        vp.SetAecAgcRouteMode(2);
+        const bool aec2 = vp.getAecValue(10.0f) == 922;    // 2307−(t·72000−112)/520
+        vp.SetAecAgcRouteMode(3);
+        const bool aec3 = vp.getAecValue(10.0f) == 522;    // t·40000/765
+        vp.SetAecAgcRouteMode(7);
+        const bool aecDef = vp.getAecValue(10.0f) == 10;   // неизвестный режим → 10
+        const bool aecOk = aec0 && aec1 && aec2 && aec3 && aecDef;
+        qInfo() << "getAecValue(10ms) m0..3:" << 10666 << 503 << 922 << 522
+                << (aecOk ? "OK" : "MISMATCH");
+
+        // SetAECValue камера (I2C): команды байтов + keep-alive repeatCnt.
+        // Пишет на вызовах 1,2,3 (смена + первые 2 повтора) и 191-м (repeatCnt>0xbc).
+        vp.SetAecAgcRouteMode(2);
+        pl.ClearTrace();
+        for (int i = 0; i < 191; ++i)
+            vp.SetAECValue(0x123);
+        const auto &ta = pl.Trace();
+        const bool aecSeqOk = ta.size() == 16 &&
+            ta[0].first == 0xa0048074 && ta[0].second == 0xc23 &&
+            ta[1].first == 0xa0048070 && ta[1].second == 0x1014 &&
+            ta[2].first == 0xa0048074 && ta[2].second == 0x80000d01 &&
+            ta[3].first == 0xa0048070 && ta[3].second == 0x1014;
+        qInfo() << "cameraAEC writes over 191 calls:" << ta.size() << "(exp 16)"
+                << (aecSeqOk ? "OK" : "MISMATCH");
+
+        // SetAGCValue камера: младший байт (0xa00), старшие 3 бита (0xb00|бит31).
+        pl.ClearTrace();
+        vp.SetAGCValue(0x7ff);
+        const auto &tg = pl.Trace();
+        const bool agcOk = tg.size() == 4 &&
+            tg[0].first == 0xa0048074 && tg[0].second == 0xaff &&
+            tg[2].first == 0xa0048074 && tg[2].second == 0x80000b07;
+        qInfo() << "cameraAGC:" << tg.size() << "writes" << (agcOk ? "OK" : "MISMATCH");
+
+        // Эндоскопный тракт: пара (AEC,AGC) одним регистром REG_AEC_AGC.
+        vp.SetAecAgcRouteMode(0);
+        pl.ClearTrace();
+        vp.SetAECAndAGCValue(0x111, 0x22);
+        const auto &tp = pl.Trace();
+        const bool pairOk = tp.size() == 1 &&
+            tp[0].first == 0xa0048020 && tp[0].second == (0x111u | (0x22u << 16));
+        qInfo() << "endo AEC+AGC pair:" << (pairOk ? "OK" : "MISMATCH");
+
+        // SetFreezeCalResolution: без layout — ошибка (0 записей); с layout —
+        // ScalerIn/Out/Ratio(Q5.8)+VideoLoc из PIP-окна [VIDEO]/IMAGE_PIP.
+        pl.ClearTrace();
+        vp.SetFreezeCalResolution(1280, 960);   // layout ещё не выбран
+        const bool fzErrOk = pl.Trace().isEmpty();
+        KDisplayOption::Instance().SelectLayout(QSize(1920, 1080), QSize(1280, 960));
+        pl.ClearTrace();
+        vp.SetFreezeCalResolution(1280, 960);   // PIP=@Rect(16 80 288 216)
+        const auto &tf = pl.Trace();
+        // 1280/288 и 960/216 = 4.444 → Q5.8: 4.444·256 = 1137.
+        const bool fzOk = fzErrOk && tf.size() == 5 &&
+            tf[0].first == 0xa191000c && tf[0].second == (1280u | (960u << 16)) &&
+            tf[1].first == 0xa1910010 && tf[1].second == (288u  | (216u << 16)) &&
+            tf[2].first == 0xa1910008 && tf[2].second == (1137u | (1137u << 16)) &&
+            tf[3].first == 0xa1800024 && tf[3].second == (16u   | (288u << 16)) &&
+            tf[4].first == 0xa1800028 && tf[4].second == (80u   | (216u << 16));
+        qInfo() << "freezeCalResolution writes:" << tf.size() << "(exp 5)"
+                << (fzOk ? "OK" : "MISMATCH");
+
+        const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk
+                        && aecOk && aecSeqOk && agcOk && pairOk && fzOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }

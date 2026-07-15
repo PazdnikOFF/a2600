@@ -64,10 +64,21 @@ public:
     // Экспозиция/усиление (реф. SetAECValue/SetAGCValue). Ветвление по режиму
     // тракта AE (поле реф. [this+0x24]): ==2 — прямая запись в сенсор по FPGA-I2C
     // (SetCameraAEC/AGCValue); иначе — через PL-регистр AE-блока (SetEndoAEC/AGCValue).
+    // Дедуп с keep-alive (реф. static repeatCnt): при изменении значения — запись+сброс
+    // счётчика; при том же значении запись повторяется первые 2 вызова и затем
+    // освежается каждый 190-й (repeatCnt>0xbc) — AE-цикл зовёт их периодически.
     void SetAECValue(unsigned int aec);
     void SetAGCValue(unsigned int agc);
     void SetAECAndAGCValue(unsigned int aec, unsigned int agc); // реф. дедуп+запись в PL
     void SetAecAgcRouteMode(int mode) { aeRouteMode_ = mode; }  // 2=камера(I2C), иначе=PL
+    // Конвертер выдержки (мс) → код AEC сенсора (реф. getAecValue, имя со строчной).
+    // Формула зависит от режима тракта ([this+0x24]): 0/1/3 — линейные масштабы,
+    // 2 — инверсная (код = 2307 − (t·72000−112)/520); неизвестный режим → лог + 10.
+    unsigned int getAecValue(float value);
+
+    // Скейлер стоп-кадра (реф. SetFreezeCalResolution): вход (w,h) → окно PIP из
+    // layout-ini (KDisplayOption [VIDEO]/IMAGE_PIP): ScalerIn/Out/Ratio(Q5.8)+VideoLoc.
+    void SetFreezeCalResolution(int width, int height);
 
     // Шумоподавление (реф. SetImageDenoiseLevel/SetImgDenoiseLevel): уровень→LUT+рег.
     void SetImageDenoiseLevel(int level);
