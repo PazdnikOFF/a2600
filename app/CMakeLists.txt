@@ -88,6 +88,7 @@ set(SOURCES
     src/db/KEntityService.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
+    src/dicom/KDicomDatasetFormat.cpp
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/report/KReportTemplate.cpp
@@ -169,6 +170,7 @@ add_executable(ui_preview
     src/ctrl/KColdLightConfig.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
+    src/dicom/KDicomDatasetFormat.cpp
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/report/KReportTemplate.cpp

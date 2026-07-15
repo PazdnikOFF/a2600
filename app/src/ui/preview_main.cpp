@@ -26,6 +26,7 @@
 #include "sys/KSystem.h"
 #include "dicom/KDicomFieldMap.h"
 #include "dicom/KEntityDicom.h"
+#include "dicom/KDicomDatasetFormat.h"
 #include "report/KReportTemplate.h"
 #include "report/KSysReportTempletCfg.h"
 #include "report/KReportDataSource.h"
@@ -958,6 +959,34 @@ int main(int argc, char **argv)
             rs.GetIHbMode(1) == 1 && rs.GetIHbMode(2) == 2 && rs.GetIHbMode(3) == 3;
         qInfo() << (ok ? "remoteswitch: PASS" : "remoteswitch: FAIL");
         return ok ? 0 : 38;
+    }
+
+    // Self-test структуры DICOM-датасета (реф. MppsCreateDatasetFormat.xml):
+    // дерево DcmItem/SequenceItem с вложенностью.
+    if (screen == "dcmfmt") {
+        KDicomDatasetFormat fmt;
+        const QString xml = QDir(KSystem::UserPresetPath())
+            .absoluteFilePath("dicom/MppsCreateDatasetFormat.xml");
+        const bool loaded = fmt.Load(xml);
+        // Последовательность ScheduledStepAttributesSequence с вложенными тегами.
+        bool seqFound = false;
+        const auto seq = fmt.FindItem("DCM_ScheduledStepAttributesSequence", &seqFound);
+        qInfo() << "загружено:" << loaded << "| корневых:" << fmt.RootCount()
+                << "всего узлов:" << fmt.TotalCount()
+                << "| ScheduledStepAttrSeq: seq=" << seq.isSequence
+                << "детей=" << seq.children.size();
+
+        const bool ok = loaded && fmt.RootCount() > 5 && fmt.TotalCount() > fmt.RootCount() &&
+                        seqFound && seq.isSequence && seq.children.size() >= 3 &&
+                        // вложенные теги последовательности
+                        fmt.Contains("DCM_StudyInstanceUID") &&
+                        fmt.Contains("DCM_AccessionNumber") &&
+                        // корневые листья
+                        fmt.Contains("DCM_PatientID") &&
+                        fmt.Contains("DCM_PerformedProcedureStepStatus") &&
+                        !fmt.Contains("DCM_NoSuchTag");
+        qInfo() << (ok ? "dcmfmt: PASS" : "dcmfmt: FAIL");
+        return ok ? 0 : 39;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
