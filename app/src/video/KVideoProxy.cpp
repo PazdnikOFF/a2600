@@ -3,7 +3,9 @@
 #include "ctrl/KPlRegs.h"
 #include "alg/AlgParaManager.h"
 #include "video/KVideoParam.h"
+#include "video/KVideoSet.h"
 #include "ui/KDisplayOption.h"
+#include "sys/KSystemStatus.h"
 
 #include <QDebug>
 #include <QDateTime>
@@ -206,6 +208,33 @@ void KVideoProxy::RBCValueSet(int mode, int value)
     case 1: vp.SetBGain(gain); if (pl_) pl_->SetColorB(gain); break; // ColorBLevel
     case 2: vp.SetSGain(gain); if (pl_) pl_->SetColorC(gain); break; // ColroCLevel
     default: break;
+    }
+}
+
+void KVideoProxy::SendRBCValue(int r, int b, int c)
+{
+    // Реф. SendRBCValue(r,b,c): три тон-гейна одним пакетом в PL (SetToneValue).
+    if (pl_) pl_->SetToneValue(r, b, c);
+}
+
+void KVideoProxy::SwitchCHbStatus(int status)
+{
+    // Реф. SwitchCHbStatus: сначала статус в системный статус, затем оркестрация.
+    //  • статус==0 (выкл) → восстановить цветоусиление (текущий уровень KVideoSet) и
+    //    тон RBC (текущие гейны KVideoParam), затем SendCHbLevel(0).
+    //  • иначе (вкл) → нейтрализовать цвет (0) и тон (8,8,8), затем SendCHbLevel(1).
+    // (Реф. читает значение цветоусиления через KVideoSet::GetColorEnhValue(level);
+    //  в нашей архитектуре SendColorEnhanceValue сам резолвит значение из уровня.)
+    KSystemStatus::GetInstance().SetCHbStatus(status);
+    KVideoParam &vp = KVideoParam::Instance();
+    if (status == 0) {
+        SendColorEnhanceValue(KVideoSet::Instance().GetColEnhLevel());
+        SendRBCValue(vp.RGain(), vp.BGain(), vp.SGain());
+        SendCHbLevel(0);
+    } else {
+        SendColorEnhanceValue(0);
+        SendRBCValue(8, 8, 8);
+        SendCHbLevel(1);
     }
 }
 

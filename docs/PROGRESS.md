@@ -444,7 +444,7 @@ Qt5, boost 1.74, libcrypto.
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
 (все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
-KVideoProxy 55/116 (последнее: Dehaze/HDR тогглы+взаимоисключение; SetDemoire-тоггл;
+KVideoProxy 57/116 (последнее: SendRBCValue+SwitchCHbStatus; Dehaze/HDR тогглы; SetDemoire;
 тонкие обёртки SetImgDenoiseLevel/SetContrastLevel/SetBrightnessEQLevel/Set*Size/AwbCut/CHb).
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
@@ -590,11 +590,30 @@ KVideoProxy 51→55/116.
   KVideoParam::SetColorEnhConfig(int,int).
 • SetImageEnhanceValueByType(type,value): нужны KVideoParam::SendSetImageEnhLevel/SetImageEnhConfig.
 • ResetVideoParam: нужны KVideoParam::InitVideoParam + KVideoProxy::SetVideoParam.
-Эти 4 — отдельный заход с расширением KVideoSet/KVideoParam-аксессоров (см. дизасм-адреса
-в истории субагента). ОТЛОЖЕНЫ device (EEPROM/сенсор): SendZoomValue, SetAWBValue,
-SetVideoCaptureArea, SetVideoArea (формулы сохранены выше).
-**ПРОДОЛЖИТЬ:** либо заход «KVideoSet/KVideoParam-аксессоры + 4 отложенных метода» (off-device),
-либо CORE-фазы ROADMAP §3. Искать нереализованное через `comm -23` (см. историю сессии).
+ЗАХОД SendRBCValue+SwitchCHbStatus (декод зависимостей субагентом): реализованы 2 из 4
+отложенных. (1) SendRBCValue(r,b,c) — тон-пакет через KPlControl::SetToneValue (уже был,
+сверен 1:1: r→0xa1870004, b→0xa1870008, c→0xa1870000); НЕ трогает KVideoParam (в отличие
+от RBCValueSet). (2) SwitchCHbStatus(status): KSystemStatus::SetCHbStatus + оркестрация —
+вкл→нейтраль(цвет 0, тон 8,8,8)+SendCHbLevel(1); выкл→восстановить(цвет=GetColEnhLevel,
+тон=RGain/BGain/SGain)+SendCHbLevel(0). Реф. читает цвет через KVideoSet::GetColorEnhValue
+(3-int массив KUserSetStatus) — в нашей архитектуре SendColorEnhanceValue сам резолвит из
+уровня. Self-test `fxpt` (SendRBCValue 3 записи, CHb on/off). KVideoProxy 55→57/116.
+ОСТАЛИСЬ 2 из четвёрки — крупная многоклассовая инфраструктура (НЕ фантазировать, отдельный
+заход с решением архитектуры): SetColorEnhanceValue/SetImageEnhanceValueByType/ResetVideoParam
+тянут: KUserSetStatus 3-int color-enh массив + osd.ini-персист (KVideoSet::SetColEnhValue/
+GetColorEnhValue), механизм Qt-сигнала KVideoParam::VideoParamChanged (коды image-enh
+0x204-6, color-enh 0x207-9, imgEnh-level 4) для SetColorEnhConfig/SetImageEnhConfig/
+SendSetImageEnhLevel, KVideoParam::InitVideoParam (перечитывает ВСЕ поля + новые:
+imgEnhType 0x24, imgEnhLevelB 0x2c, rbcGroupID 0x44, rbcMax/Min 0x58/0x5c), и device-gated
+KVideoProxy::SetVideoParam (IsEndoReady/IsCameraReady — сенсор). Дизасм-адреса в истории
+субагента (KVideoSet::GetColorEnhValue@0x651b40, SetColEnhValue@0x6531c8, InitVideoParam@
+0x623a00, SetVideoParam@0x6da298 и т.д.).
+ОТЛОЖЕНЫ device (EEPROM/сенсор): SendZoomValue, SetAWBValue, SetVideoCaptureArea,
+SetVideoArea (формулы сохранены выше).
+**ПРОДОЛЖИТЬ:** остаток KVideoProxy — либо крупный заход «VideoParamChanged-сигналы +
+KUserSetStatus-массив + InitVideoParam» (нужно архитектурное решение по сигналам), либо
+CORE-фазы ROADMAP §3. Мелкие чистые методы KVideoProxy в основном исчерпаны — дальше либо
+инфраструктура, либо device. Искать нереализованное через `comm -23` (см. историю сессии).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

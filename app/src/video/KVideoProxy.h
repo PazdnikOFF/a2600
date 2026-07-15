@@ -53,6 +53,13 @@ public:
     // Col RBC (реф. RBCValueSet) — режим + усиления R/B/S через KVideoParam,
     // запись гейнов в PL (SetColorR/B/C, регистры 0xa1870000).
     void RBCValueSet(int mode, int value);
+    // Тон RBC пакетом (реф. SendRBCValue): три гейна R/B/C одним вызовом
+    // pl_->SetToneValue (0xa1870004/8/0). В отличие от RBCValueSet не трогает KVideoParam.
+    void SendRBCValue(int r, int b, int c);
+    // Переключение CHb-усиления (реф. SwitchCHbStatus): статус в KSystemStatus + вкл/выкл;
+    // при включении нейтрализует цвет+тон (0 / 8,8,8), при выключении восстанавливает их
+    // из текущих значений KVideoSet/KVideoParam. Финал — SendCHbLevel(0|1).
+    void SwitchCHbStatus(int status);
 
     // Цветоусиление (реф. SendColorEnhanceValue): 0 — выкл., иначе вкл.+уровень.
     void SendColorEnhanceValue(int level);

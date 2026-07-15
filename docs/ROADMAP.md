@@ -19,7 +19,7 @@
   | Класс | Методов в референсе | Реализовано | Что есть |
   |---|---|---|---|
   | KPlControl | 76 | ~47 | все чистые PL-регистры (гамма/CCM/AWB/VIST/Denoise/LUT…) |
-  | KVideoProxy | 121 | ~55 | init/capture/снимок/AEC-AGC(keep-alive)/getAecValue/FreezeCalResolution/Demoire/Dehaze-HDR(тоггл+взаимоискл)/тонкие Set*Level-Size-AwbCut-CHb/RBC/Denoise |
+  | KVideoProxy | 121 | ~57 | init/capture/снимок/AEC-AGC(keep-alive)/getAecValue/FreezeCalResolution/Demoire/Dehaze-HDR/SendRBCValue-SwitchCHb/тонкие Set*Level-Size-AwbCut/RBC/Denoise |
   | KDccuParam | 95 | ~40 | AEC/AGC/AWB/RB/Gamma/Zoom (dccuparam.ini) |
   | KMainCtrlThread | 122 | ~5 | каркас Init-последовательности |
   | KSystemSet | 108 | ~10 | Common/Account настройки |

@@ -1682,9 +1682,45 @@ int main(int argc, char **argv)
         qInfo() << "dehaze/HDR mutual-excl:" << dh1 << dh2 << dh3 << dh4 << dh5
                 << (dehazeHdrOk ? "OK" : "MISMATCH");
 
+        // SendRBCValue: три тон-гейна пакетом → REG_TONE_R/B/C (0xa1870004/8/0).
+        pl.ClearTrace();
+        vp.SendRBCValue(0x11, 0x22, 0x33);
+        const auto &tr = pl.Trace();
+        const bool rbcOk = tr.size() == 3 &&
+            tr[0].first == 0xa1870004 && tr[0].second == 0x11 &&
+            tr[1].first == 0xa1870008 && tr[1].second == 0x22 &&
+            tr[2].first == 0xa1870000 && tr[2].second == 0x33;
+        qInfo() << "SendRBCValue writes:" << tr.size() << "(exp 3)" << (rbcOk ? "OK" : "MISMATCH");
+
+        // SwitchCHbStatus вкл: цвет=0, тон=(8,8,8), CHb вкл (0xa1900008=1 + значение).
+        KVideoParam::Instance().SetRGain(0x5); KVideoParam::Instance().SetBGain(0x6);
+        KVideoParam::Instance().SetSGain(0x7);
+        pl.ClearTrace();
+        vp.SwitchCHbStatus(1);
+        const auto &tc1 = pl.Trace();
+        // тон (8,8,8) → 3 записи + CHb вкл (2 записи: enable=1 + значение); цвет-энх — 0 записей (SetColorEnhParam(false)?)
+        bool chbTone888 = false, chbOn = false;
+        for (const auto &w : tc1) {
+            if (w.first == 0xa1870004 && w.second == 8) chbTone888 = true;
+            if (w.first == 0xa1900008 && w.second == 1) chbOn = true;
+        }
+        // выкл: восстановить тон из гейнов (5,6,7) + CHb выкл (0xa1900008=0).
+        pl.ClearTrace();
+        vp.SwitchCHbStatus(0);
+        const auto &tc0 = pl.Trace();
+        bool chbRestore = false, chbOff = false;
+        for (const auto &w : tc0) {
+            if (w.first == 0xa1870004 && w.second == 5) chbRestore = true;
+            if (w.first == 0xa1900008 && w.second == 0) chbOff = true;
+        }
+        const bool chbOk = chbTone888 && chbOn && chbRestore && chbOff;
+        qInfo() << "SwitchCHbStatus on/off:" << chbTone888 << chbOn << chbRestore << chbOff
+                << (chbOk ? "OK" : "MISMATCH");
+
         const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk
                         && aecOk && aecSeqOk && agcOk && pairOk && fzOk
-                        && thinOk && beqOk && ctrOk && demoireOk && dehazeHdrOk;
+                        && thinOk && beqOk && ctrOk && demoireOk && dehazeHdrOk
+                        && rbcOk && chbOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }
