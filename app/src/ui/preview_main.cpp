@@ -1499,7 +1499,27 @@ int main(int argc, char **argv)
         qInfo() << "Float2Fixed 1.5/Q2.8=" << vp.Float2FixedPointNumber(1.5f, 2, 8)
                 << "| Fixed2Float 2048=" << vp.FixedPointNumber2Float(2048)
                 << "| f2f" << f2fOk << "p2f" << p2fOk << "clamp" << clampOk;
-        const bool ok = f2fOk && p2fOk && clampOk;
+
+        // Тонкие обёртки-оркестраторы → KPlControl (проверка через trace).
+        KPlControl pl;  pl.EnableTrace(true);  vp.AttachPl(&pl);
+        pl.ClearTrace();
+        vp.SetColorRLevel(0x11);       // → REG_TONE_R 0xa1870004
+        vp.SetColorBLevel(0x22);       // → REG_TONE_B 0xa1870008
+        vp.SetColroCLevel(0x33);       // → REG_TONE_C 0xa1870000
+        vp.SetCutPara(0xa, 0xb);       // → REG_CUT_PARA 0xa1860018 = b|(a<<16)
+        vp.SetRealtimeVideoState(1);   // → 0xa0080024
+        vp.SetVideoDisPlay(2);         // → 0xa0080028
+        const auto &tw = pl.Trace();
+        const bool wrapOk = tw.size() == 6 &&
+            tw[0].first == 0xa1870004 && tw[0].second == 0x11 &&
+            tw[1].first == 0xa1870008 && tw[1].second == 0x22 &&
+            tw[2].first == 0xa1870000 && tw[2].second == 0x33 &&
+            tw[3].first == 0xa1860018 && tw[3].second == (0xbu | (0xau << 16)) &&
+            tw[4].first == 0xa0080024 && tw[4].second == 1 &&
+            tw[5].first == 0xa0080028 && tw[5].second == 2;
+        qInfo() << "wrappers writes:" << tw.size() << "(exp 6)" << (wrapOk ? "OK" : "MISMATCH");
+
+        const bool ok = f2fOk && p2fOk && clampOk && wrapOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }

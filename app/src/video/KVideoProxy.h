@@ -76,6 +76,15 @@ public:
     // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).
     void ApplyVistMatrix();
 
+    // --- Тонкие обёртки-оркестраторы к KPlControl (реф. 1:1, имена как в бинарнике,
+    //     включая оригинальные опечатки SetColroCLevel/SetVideoDisPlay) ---
+    void SetColorRLevel(int level);   // → pl_->SetColorR
+    void SetColorBLevel(int level);   // → pl_->SetColorB
+    void SetColroCLevel(int level);   // → pl_->SetColorC  (реф.: опечатка Colro)
+    void SetCutPara(int a, int b);    // → pl_->SetCutPara
+    void SetRealtimeVideoState(int state);  // → pl_->SetRealtimeVideoState
+    void SetVideoDisPlay(int mode);   // → pl_->SetVideoDisplay (реф.: опечатка DisPlay)
+
     // --- Конвертеры фиксированной точки и клампы (реф., 1:1 с дизасмом) ---
     // Float2FixedPointNumber(f, a, b): Q(a).(b) с насыщением ±(2^(a+b)−1); scale=2^b.
     int    Float2FixedPointNumber(float f, int a, int b);

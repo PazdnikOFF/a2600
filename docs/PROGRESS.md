@@ -511,7 +511,7 @@ KVIDEOPROXY РАЗБЛОКИРОВАН ДЛЯ ui_preview: gst-тракт (pipeli
 на Mac. Это заодно проверило прошлые правки KVideoProxy (выравнивание void-сигнатур).
 Реализованы из дизасма конвертеры фикс.-точки: Float2FixedPointNumber(f,a,b) (Q(a).(b),
 scale=2^b, насыщение 2^(a+b)−1), FixedPointNumber2Float(x)=(x&0xfff)/4096, IncreaseValue/
-DecreaseValue (клампы) — self-test `fxpt`. KVideoProxy: 26→30 методов (из 116; остальные
+DecreaseValue (клампы) — self-test `fxpt`. KVideoProxy: 26→36 методов (+6 тонких обёрток SetColorR/B/CLevel-SetCutPara-SetRealtimeVideoState-SetVideoDisPlay к KPlControl, имена с опечатками как в реф.) (из 116; остальные
 device: camera/gst/endoscope).
 **ПРОДОЛЖИТЬ (новое направление):** off-device методы KVideoProxy (Send*/Set*Level-оркестрация,
 RBCValue*, конвертеры) — теперь тестируемы; либо off-device Фазы ROADMAP (§9).

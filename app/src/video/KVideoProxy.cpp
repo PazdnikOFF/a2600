@@ -349,6 +349,39 @@ void KVideoProxy::ApplyVistMatrix()
         pl_->SetVistMatrix(m.constData(), m.size());
 }
 
+void KVideoProxy::SetColorRLevel(int level)
+{
+    // Реф. SetColorRLevel: pl_->SetColorR(level) (+ debug-лог в оригинале).
+    if (pl_) pl_->SetColorR(level);
+}
+
+void KVideoProxy::SetColorBLevel(int level)
+{
+    if (pl_) pl_->SetColorB(level);
+}
+
+void KVideoProxy::SetColroCLevel(int level)
+{
+    // Реф. имя с опечаткой (Colro) — сохранено.
+    if (pl_) pl_->SetColorC(level);
+}
+
+void KVideoProxy::SetCutPara(int a, int b)
+{
+    if (pl_) pl_->SetCutPara(a, b);
+}
+
+void KVideoProxy::SetRealtimeVideoState(int state)
+{
+    if (pl_) pl_->SetRealtimeVideoState(state);
+}
+
+void KVideoProxy::SetVideoDisPlay(int mode)
+{
+    // Реф. имя с опечаткой (DisPlay) — сохранено; → KPlControl::SetVideoDisplay.
+    if (pl_) pl_->SetVideoDisplay(mode);
+}
+
 int KVideoProxy::Float2FixedPointNumber(float f, int a, int b)
 {
     // Реф. Float2FixedPointNumber (дизасм X2000): формат Q(a).(b), scale=2^b,
