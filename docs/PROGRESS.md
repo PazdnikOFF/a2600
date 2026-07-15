@@ -444,8 +444,8 @@ Qt5, boost 1.74, libcrypto.
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
 (все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
-KVideoProxy 50/116 (последнее: тонкие обёртки SetImgDenoiseLevel/SetContrastLevel/
-SetBrightnessEQLevel/SetLensSize/SetEnhanceSize/SetAwbCut/SendCHbLevel из дизасма).
+KVideoProxy 51/116 (последнее: SetDemoire-тоггл; тонкие обёртки SetImgDenoiseLevel/
+SetContrastLevel/SetBrightnessEQLevel/SetLensSize/SetEnhanceSize/SetAwbCut/SendCHbLevel).
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
 бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
@@ -559,9 +559,27 @@ SetLensSize/SetEnhanceSize(пустой в прошивке)/SetAwbCut/SendCHbLe
 ОТЛОЖЕНО (deep-chain, не фантазировать): SetColorEnhanceLevel (тянет KSystemStatus::
 IsColorEnable-гейт + KVideoSet::GetColorEnhValue), SetImageEnhanceLevel (KVideoSet::
 GetImgEnhValue) — нужен реверс KVideoSet color/img-value.
+ЗАХОД SetDemoire (дизасм-декод субагентом; батч SetVideoArea/SendZoomValue/SetDemoire/
+SetAWBValue/SetVideoCaptureArea): реализован ТОЛЬКО SetDemoire — тоггл статуса муара в
+KVideoParam (добавлено поле demoire_ + SetDemoire/DemoireStatus), pl SetDemoireEN
+(0xa18501cc), переприменение image-enhance (вкл→0, выкл→восстановить текущий уровень;
+в нашей архитектуре SendImageEnhanceValue сам резолвит значение из AlgPara). Self-test
+`fxpt` (demoire toggle on/off, 2+2 записи). KVideoProxy 50→51/116.
+ОТЛОЖЕНЫ с сохранёнными формулами (device/EEPROM — НЕ фантазировать):
+• SendZoomValue: f=(float)v; soft-endo → f*=KEndoScope::GetZoomRatio() (живой скоп);
+  fx=Float2FixedPointNumber(f/10, 4, 16) [Q4.16]; pl SetZoomValue(0xa18d0004).
+• SetAWBValue: temp/tint из EEPROM эндоскопа ([+0x1e]/[+0x20] u16) или CameraParam
+  ([+0xc]/[+0xe]); если temp≤999 → дефолты (1843/1208); иначе gain=temp*1024/1000
+  (magic 0xd1b71759>>45 ≈ ·1.024); pl SetAWBValue(rGain,bGain). AlgPara тут НЕ источник.
+• SetVideoCaptureArea: точка захвата из KVideoSet::GetCaptureAreaPositon + знаковая
+  коррекция по KEndoScope::IsVideoCalReveral/GetEndoInfo/EEPROM ([+0x10]/[+0x14]).
+• SetVideoArea: rect дефолт {0,0,1920,1080}; soft-endo → KVideoSet::GetVideoArea
+  (у нас не смоделирован); кламп height==768→756; pl SetVideoArea→AlgPara::resize
+  (не пишет PL напрямую — нечем проверить через trace). SetVideoCentorPoint — символа НЕТ.
 **ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy — искать через
-`comm -23` (§ниже), сверять дизасм и тестировать; либо off-device Фазы ROADMAP (§9).
-Кандидаты (по размеру, не device): SetVideoArea, SendZoomValue, SetDemoire, SetAWBValue.
+`comm -23` (§ниже); либо off-device Фазы ROADMAP (§9). Замечание из этого захода: остаток
+малых KVideoProxy всё чаще device-bound (EEPROM/GetEndoScope) — возможно, пора вернуться
+к CORE-фазам ROADMAP §3 (Фаза A/B off-device) вместо выжимания KVideoProxy.
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

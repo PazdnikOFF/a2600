@@ -95,6 +95,10 @@ public:
     void SetEnhanceSize(int a, int b);  // → pl_->SetEnhanceSize (реф.: пустой в прошивке)
     void SetAwbCut(int low, int high);  // → pl_->SetAwbCut (0xa1840018)
     void SendCHbLevel(int level);       // → pl_->SetChbStatus
+    // Тоггл подавления муара (реф. SetDemoire): инвертирует статус в KVideoParam,
+    // пишет SetDemoireEN (0xa18501cc) и переприменяет image-enhance
+    // (вкл. муар → image-enh 0; выкл. → восстановить текущий уровень).
+    void SetDemoire();
     // Режим работы WL/EWL/SFI/VIST (реф. SetOperationMode): выбор конфигов + VIST-тракт.
     void SetOperationMode(int mode);
     // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).

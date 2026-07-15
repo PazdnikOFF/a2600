@@ -1645,9 +1645,29 @@ int main(int argc, char **argv)
         qInfo() << "contrast cycle 0→" << KVideoParam::Instance().ContrastLevel()
                 << (ctrOk ? "OK" : "MISMATCH");
 
+        // SetDemoire: тоггл. Из выкл (0) → вкл: SetDemoireEN(0xa18501cc)=1 +
+        // image-enh=0; повторный вызов → выкл: EN=0 + восстановление image-enh уровня.
+        KVideoParam::Instance().SetDemoire(0);
+        pl.ClearTrace();
+        vp.SetDemoire();               // → вкл: EN=1, image-enh уровень 0
+        const auto &td1 = pl.Trace();
+        const bool dm1 = td1.size() == 2 &&
+            td1[0].first == 0xa18501cc && td1[0].second == 1 &&
+            td1[1].first == 0xa1850058 &&
+            KVideoParam::Instance().DemoireStatus() == 1;
+        pl.ClearTrace();
+        vp.SetDemoire();               // → выкл: EN=0
+        const auto &td2 = pl.Trace();
+        const bool dm2 = td2.size() == 2 &&
+            td2[0].first == 0xa18501cc && td2[0].second == 0 &&
+            KVideoParam::Instance().DemoireStatus() == 0;
+        const bool demoireOk = dm1 && dm2;
+        qInfo() << "demoire toggle on/off:" << td1.size() << td2.size()
+                << (demoireOk ? "OK" : "MISMATCH");
+
         const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk
                         && aecOk && aecSeqOk && agcOk && pairOk && fzOk
-                        && thinOk && beqOk && ctrOk;
+                        && thinOk && beqOk && ctrOk && demoireOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }

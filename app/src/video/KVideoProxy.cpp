@@ -452,6 +452,25 @@ void KVideoProxy::SendCHbLevel(int level)
     if (pl_) pl_->SetChbStatus(level);   // реф. 1:1
 }
 
+void KVideoProxy::SetDemoire()
+{
+    // Реф. SetDemoire(): тоггл по текущему статусу в KVideoParam.
+    //  • статус==1 (вкл) → выключить: SetDemoire(0), SetDemoireEN(0), затем
+    //    восстановить image-enhance текущего уровня (реф. GetImgEnhValue(lvl) —
+    //    в нашей архитектуре SendImageEnhanceValue сам резолвит значение из AlgPara).
+    //  • иначе → включить: SetDemoire(1), SetDemoireEN(1), image-enhance = 0.
+    KVideoParam &vp = KVideoParam::Instance();
+    if (vp.DemoireStatus() == 1) {
+        vp.SetDemoire(0);
+        if (pl_) pl_->SetDemoireEN(0);
+        SendImageEnhanceValue(vp.ImageEnhLevel());
+    } else {
+        vp.SetDemoire(1);
+        if (pl_) pl_->SetDemoireEN(1);
+        SendImageEnhanceValue(0);
+    }
+}
+
 void KVideoProxy::SetImageDenoiseLevel(int level)
 {
     // Реф. SetImageDenoiseLevel: загрузить LUT уровня и записать регистр уровня.
