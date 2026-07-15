@@ -443,18 +443,28 @@ Qt5, boost 1.74, libcrypto.
 ## 10. Как продолжать (для новой сессии после /clear)
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +12 классов (+ расширения KDicomFieldMap мульти-record):
-+KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
-+KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
-+KUserOsdSet OSD-конфиг кнопок (A), +KEntityService PRAGMA+бэкап БД (B),
-+KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг +
-KRemoteSwitchConfig пульт (MISC), +KDicomDatasetFormat структура датасета (DICOM),
-+KPatientTimeOperation конвертеры дат (CORE), +MD5-верификация пакета (D).
-**РУБЕЖ 1: у каждого конфига прошивки (presetdata) теперь есть off-device-ридер с self-test
-(unread=0).**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
+**Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
+vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
+бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
+self-test `cornercut`) + scope-info video.ini (`scopecut`); (3) недостающие KPlControl —
+SetLens/SetGlassType/AuroraTxReset; (4) карта регистров PL вынесена в `ctrl/KPlRegs.h`
+(#define REG_*); (5) KVideoProxy разблокирован для ui_preview (gst за HAVE_GST) — 40/116
+методов, конвертеры фикс.-точки + тонкие/командные обёртки, self-test `fxpt`.
+**РУБЕЖ 1: у каждого конфига прошивки (presetdata) есть off-device-ридер с self-test.
+РУБЕЖ 2: register-ядро KPlControl полностью сверено с дизасмом (1:1 сигнатуры+логика).**
 
-**ТЕКУЩАЯ АКТИВНОСТЬ (уточнённая цель пользователя): аудит существующих реализаций
-KPlControl против ДИЗАССЕМБЛЕРА X2000 — «брать логику из бинарника, меньше фантазировать».**
+**ТЕКУЩАЯ АКТИВНОСТЬ (для новой сессии): пополнение off-device-методов KVideoProxy из
+дизасма (40/116), сверка сигнатур/логики 1:1 с бинарником + self-test через trace KPlControl.**
+Инфраструктура: KVideoProxy теперь компилируется в ui_preview (gst-тракт за #ifdef HAVE_GST),
+self-test `fxpt`. Регистровая карта PL — `app/src/ctrl/KPlRegs.h` (#define REG_*).
+СЛЕДУЮЩЕЕ (по порядку, самодостаточные): SetFreezeCalResolution, SetAECValue/SetAGCValue,
+прочие тонкие/командные обёртки к pl_. ОТЛОЖЕНО (глубокие цепочки — НЕ фантазировать):
+RBCValueAdd/Sub/Set (→KVideoParam gain→KVideoSet::SetColor*Value→KUserSet/KUserOsdSet
+SaveColorConf+сигнал; поля 0x58/0x5c), SwitchVLSMode→KPlControl::SetVLSMode (→AlgParaManager::
+GetVistValue: GetSystemStatus[0x3c]+setAwbPara). Device-bound: PLInit(KHalGpio), SetEndoIrisType,
+SetImageEnhanceType (GetEndoScope), ImageSavePreset.
+———— НИЖЕ: история аудита KPlControl (ЗАВЕРШЁН, все Set*/Read* сверены) ————
 Метод: дизасм каждого `KPlControl::Set*/Read*` (`objdump -d --start/--stop`), сверка
 адреса регистра + битовой упаковки; проверка значений через `KPlControl::EnableTrace`
 (на десктопе нет /dev/mem — записи логируются в trace, self-test `plreg` их сверяет).
