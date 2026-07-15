@@ -447,21 +447,42 @@ Qt5, boost 1.74, libcrypto.
 +KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг +
 KRemoteSwitchConfig пульт (MISC), +KDicomDatasetFormat структура датасета (DICOM),
 +KPatientTimeOperation конвертеры дат (CORE), +MD5-верификация пакета (D).
-**РУБЕЖ: у каждого конфига прошивки (presetdata) теперь есть off-device-ридер с self-test
-(unread=0).** Дальнейшее — device-bound (HW/DCMTK-сеть/GStreamer/UI-виджеты). Репозиторий
-на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
+**РУБЕЖ 1: у каждого конфига прошивки (presetdata) теперь есть off-device-ридер с self-test
+(unread=0).**
+
+**ТЕКУЩАЯ АКТИВНОСТЬ (уточнённая цель пользователя): аудит существующих реализаций
+KPlControl против ДИЗАССЕМБЛЕРА X2000 — «брать логику из бинарника, меньше фантазировать».**
+Метод: дизасм каждого `KPlControl::Set*/Read*` (`objdump -d --start/--stop`), сверка
+адреса регистра + битовой упаковки; проверка значений через `KPlControl::EnableTrace`
+(на десктопе нет /dev/mem — записи логируются в trace, self-test `plreg` их сверяет).
+За последний заход НАЙДЕНО+ИСПРАВЛЕНО 4 фантазии: ReadAWBValue (маски 0xffff/0x1ffff →
+14-бит 0x3fff), SetCCM1Matrix (упускал хвост data[8]→0xa1880014), SetCCM0Matrix (писал
+9 распак. регистров + перепутал адрес 0x14 с enable → переписан на пары+хвост, добавлен
+SetCCM0), ReadBrightnessHistogramValue (не сбрасывал триггер 0xa18a0010=0). ДЕКОДИРОВАНЫ:
+SetFreezeVideoLoc/SetLensSize/SetDemoireEN (+ пустые SetEnhanceSize/SetContrastLevel).
+ПОДТВЕРЖДЕНЫ верными: SetCameraIrisType, SetVideoCaptureArea, SetTone/Aurora/Chb/AwbCut/
+AWBValue/ImageEnh/ColorEnh/FreezeScaler.
+**ПРОДОЛЖИТЬ АУДИТ:** LUT-банки (SetGammaLut/SetSensorR/G/BLut/SetKneeLut/SetRbcLut —
+проверить регистровые банки/маску 0x3ff/0xfff), SetVistMatrix/SetVistSwitch, SetDenoiseLut,
+ReadIrisValue, SetIrisTable (сложная битовая упаковка ириса из AlgPara[0x7a48]),
+SetCornerCutWay (стрим 1080-элем. LUT round/octagon из AlgPara[0x7a50/0x7a58]).
+Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
+ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
+
+Репозиторий на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
 2. Взять следующий пункт: сначала из ROADMAP (Фазы A→B→D→C off-device), потом §9, или запрос пользователя.
 3. По методологии §1: `tools/revcalls.sh <mangled>` → дизасм регистров → найти конфиги в
    `update/root` → написать код с ТЕМИ ЖЕ именами классов/методов (не хардкод — читать из файлов).
 4. Проверить: собрать `ui_preview` (см. §4), добавить/прогнать self-test-режим в
-   `src/ui/preview_main.cpp`, убедиться PASS. Прогнать все 20 режимов на регрессии.
+   `src/ui/preview_main.cpp`, убедиться PASS. Прогнать все 33 режима на регрессии
+   (список ниже). Для аудита KPlControl — расширять секции в блоке `plreg`.
 5. Дописать статус (§6), факты (§7), обновить ROADMAP (отметить сделанное) + эту позицию (§10).
 6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
    `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
 
-**Полный список 26 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+**Полный список 33 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
 filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime.
 
