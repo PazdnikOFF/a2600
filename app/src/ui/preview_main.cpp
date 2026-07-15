@@ -290,6 +290,25 @@ int main(int argc, char **argv)
                 << (vlocOk ? "OK" : "MISMATCH");
         if (!vlocOk) ok = false;
 
+        // SetCameraIrisType — точная кодировка из дизасма (0xa18a0000):
+        //   type0→0x530, type1→0x431, type2(sub5)→0x132, type2(др.)→0x232, type3→0x433.
+        pl.ClearTrace();
+        pl.SetCameraIrisType(0, 0);
+        pl.SetCameraIrisType(1, 0);
+        pl.SetCameraIrisType(2, 5);
+        pl.SetCameraIrisType(2, 0);
+        pl.SetCameraIrisType(3, 0);
+        const auto &tci = pl.Trace();
+        const bool camIrisOk = tci.size() == 5 &&
+                            tci[0].first == 0xa18a0000 && tci[0].second == 0x530 &&
+                            tci[1].second == 0x431 && tci[2].second == 0x132 &&
+                            tci[3].second == 0x232 && tci[4].second == 0x433;
+        qInfo() << "cameraIris writes:" << tci.size() << "vals:"
+                << QString::number(tci.size()>0?tci[0].second:0,16)
+                << QString::number(tci.size()>2?tci[2].second:0,16)
+                << (camIrisOk ? "OK" : "MISMATCH");
+        if (!camIrisOk) ok = false;
+
         // Sensor LUT (config-driven, OV2740_EC_1504X1080: по 1024 → 512 пар/канал).
         const auto sl = alg.LoadSensorLut("OV2740", "EC_1504X1080");
         pl.ClearTrace();
