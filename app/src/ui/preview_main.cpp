@@ -51,6 +51,7 @@
 #include "sys/KProjectSet.h"
 #include "sys/KStyleConfig.h"
 #include "sys/KStatisticConfig.h"
+#include "sys/languageConfig.h"
 #include "sys/KSystemStatus.h"
 
 #include <QDir>
@@ -1410,6 +1411,48 @@ int main(int argc, char **argv)
                         frameLost == "Fram Lost,Index";
         qInfo() << (ok ? "statistic: PASS" : "statistic: FAIL");
         return ok ? 0 : 17;
+    }
+
+    // Self-test конфига мультиязычности (mutilanguageinfo.ini + languageConfig).
+    if (screen == "language") {
+        languageConfig &lc = languageConfig::getInstance();
+        lc.Init();  // system/platform/mutilanguageinfo.ini
+        qInfo() << "languageType:" << lc.getLanguageType()
+                << "currentLanguage:" << lc.getCurrentLanguage();
+        qInfo() << "googlePath:" << lc.getGooglePath();
+        qInfo() << "puctPath:" << lc.getPuctPath();
+
+        // Референсный ini: LanguageType=1(Chinese), CurrentLanguage=1, пути в platform.
+        const bool initOk =
+            lc.getLanguageType() == KLangChinese &&
+            lc.getCurrentLanguage() == KLangChinese &&
+            lc.getGooglePath().endsWith("platform") &&
+            lc.getPuctPath().endsWith("kchinesePunct.tab");
+
+        // setLanguageType пишет в ОБА поля.
+        lc.setLanguageType(KLangRussian);
+        const bool setTypeOk =
+            lc.getLanguageType() == KLangRussian &&
+            lc.getCurrentLanguage() == KLangRussian;
+
+        // setCurrentLanguage: t==Chinese(1) всегда проходит; иначе только если ==languageType.
+        lc.setCurrentLanguage(KLangChinese);            // 1 → проходит
+        const bool sc1 = lc.getCurrentLanguage() == KLangChinese;
+        lc.setCurrentLanguage(KLangEnglish);            // ≠1 и ≠languageType(Russian) → no-op
+        const bool sc2 = lc.getCurrentLanguage() == KLangChinese;   // не изменилось
+        lc.setCurrentLanguage(KLangRussian);            // ==languageType → проходит
+        const bool sc3 = lc.getCurrentLanguage() == KLangRussian;
+        const bool setCurOk = sc1 && sc2 && sc3;
+
+        // Сигнал CurrentLanChange существует и коннектится (эмиссию ref из сеттеров не делает).
+        bool sigConnectable = static_cast<bool>(
+            QObject::connect(&lc, &languageConfig::CurrentLanChange, [](){}));
+
+        qInfo() << "init" << initOk << "setType" << setTypeOk
+                << "setCur" << setCurOk << "sig" << sigConnectable;
+        const bool ok = initOk && setTypeOk && setCurOk && sigConnectable;
+        qInfo() << (ok ? "language: PASS" : "language: FAIL");
+        return ok ? 0 : 24;
     }
 
     // Self-test конфигурации брендов/стилей (stylelist.ini).
