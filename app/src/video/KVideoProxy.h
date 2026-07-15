@@ -99,6 +99,15 @@ public:
     // пишет SetDemoireEN (0xa18501cc) и переприменяет image-enhance
     // (вкл. муар → image-enh 0; выкл. → восстановить текущий уровень).
     void SetDemoire();
+
+    // Удаление дымки / HDR (реф. SetDehaze*/SetHDR*). Не выделенный PL-регистр —
+    // модулируют гамму: статус → KVideoParam + перезагрузка гамма-LUT (реф.
+    // AlgParaManager::UpdateGammaDownloadLut → SetGammaLut). Взаимоисключение:
+    // включение Dehaze гасит HDR и наоборот.
+    void SetDehazeStatus(int status);   // прямая установка статуса
+    void SetHDRStatus(int status);
+    void SetDehazeSwitch(int status);   // 0xff → тоггл 0↔1; иначе прямо → SetDehazeStatus
+    void SetHDRSwitch(int status);
     // Режим работы WL/EWL/SFI/VIST (реф. SetOperationMode): выбор конфигов + VIST-тракт.
     void SetOperationMode(int mode);
     // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).

@@ -471,6 +471,51 @@ void KVideoProxy::SetDemoire()
     }
 }
 
+void KVideoProxy::SetDehazeStatus(int status)
+{
+    // Реф. SetDehazeStatus: Dehaze не имеет своего PL-enable — модулирует гамма-кривую.
+    // Взаимоисключение: включение Dehaze (status==1) гасит HDR. Затем статус в KVideoParam
+    // + перезагрузка гамма-LUT (реф. AlgParaManager::UpdateGammaDownloadLut → SetGammaLut).
+    // OSD-сообщение оригинала (KUiMsgProxy::DisplayMsg) здесь опущено (UI/device).
+    KVideoParam &vp = KVideoParam::Instance();
+    if (status == 1 && vp.HDRStatus() != 0)
+        vp.SetHDR(0);
+    vp.SetDehaze(status);
+    if (pl_) pl_->SetGammaLut();
+}
+
+void KVideoProxy::SetHDRStatus(int status)
+{
+    // Реф. SetHDRStatus: зеркально SetDehazeStatus (включение HDR гасит Dehaze).
+    KVideoParam &vp = KVideoParam::Instance();
+    if (status == 1 && vp.DehazeStatus() != 0)
+        vp.SetDehaze(0);
+    vp.SetHDR(status);
+    if (pl_) pl_->SetGammaLut();
+}
+
+void KVideoProxy::SetDehazeSwitch(int status)
+{
+    // Реф. SetDehazeSwitch(uchar): 0xff → следующий по кругу [0..1]; иначе прямо.
+    int next = status;
+    if (status == 0xff) {
+        next = KVideoParam::Instance().DehazeStatus() + 1;
+        if (next >= 2) next = 0;
+    }
+    SetDehazeStatus(next);
+}
+
+void KVideoProxy::SetHDRSwitch(int status)
+{
+    // Реф. SetHDRSwitch(uchar): 0xff → следующий по кругу [0..1]; иначе прямо.
+    int next = status;
+    if (status == 0xff) {
+        next = KVideoParam::Instance().HDRStatus() + 1;
+        if (next >= 2) next = 0;
+    }
+    SetHDRStatus(next);
+}
+
 void KVideoProxy::SetImageDenoiseLevel(int level)
 {
     // Реф. SetImageDenoiseLevel: загрузить LUT уровня и записать регистр уровня.

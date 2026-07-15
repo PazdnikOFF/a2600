@@ -32,6 +32,8 @@ public:
     void SetOperationMode(int v)  { operationMode_ = v; }
     void SetRBCBase(int v)        { rbcBase_ = v; }
     void SetDemoire(int v)        { demoire_ = v; }    // статус подавления муара (0/1)
+    void SetDehaze(int v)         { dehaze_ = v; }     // статус удаления дымки (0/1)
+    void SetHDR(int v)            { hdr_ = v; }        // статус HDR (0/1)
 
     // Геттеры
     int IrisMode()      const { return irisMode_; }
@@ -47,11 +49,13 @@ public:
     int Denoise()       const { return denoise_; }
     int RBCBase()       const { return rbcBase_; }   // базовый уровень тона RBC
     int DemoireStatus() const { return demoire_; }   // статус подавления муара
+    int DehazeStatus()  const { return dehaze_; }    // статус удаления дымки
+    int HDRStatus()     const { return hdr_; }       // статус HDR
 
 private:
     KVideoParam() = default;
     int irisMode_ = 0, zoomLevel_ = 0, imgEnhLevel_ = 0, colorEnhLevel_ = 1;
     int contrastLevel_ = 1, rbcMode_ = 0, rGain_ = 0, bGain_ = 0, sGain_ = 0;
     int brightEQ_ = 0, denoise_ = 0, operationMode_ = 0, rbcBase_ = 0;
-    int demoire_ = 0;
+    int demoire_ = 0, dehaze_ = 0, hdr_ = 0;
 };

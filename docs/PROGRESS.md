@@ -444,8 +444,8 @@ Qt5, boost 1.74, libcrypto.
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **35 self-test-режимов**
 (все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
-KVideoProxy 51/116 (последнее: SetDemoire-тоггл; тонкие обёртки SetImgDenoiseLevel/
-SetContrastLevel/SetBrightnessEQLevel/SetLensSize/SetEnhanceSize/SetAwbCut/SendCHbLevel).
+KVideoProxy 55/116 (последнее: Dehaze/HDR тогглы+взаимоисключение; SetDemoire-тоггл;
+тонкие обёртки SetImgDenoiseLevel/SetContrastLevel/SetBrightnessEQLevel/Set*Size/AwbCut/CHb).
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
 бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
@@ -576,10 +576,25 @@ KVideoParam (добавлено поле demoire_ + SetDemoire/DemoireStatus), p
 • SetVideoArea: rect дефолт {0,0,1920,1080}; soft-endo → KVideoSet::GetVideoArea
   (у нас не смоделирован); кламп height==768→756; pl SetVideoArea→AlgPara::resize
   (не пишет PL напрямую — нечем проверить через trace). SetVideoCentorPoint — символа НЕТ.
-**ПРОДОЛЖИТЬ:** прочие самодостаточные off-device методы KVideoProxy — искать через
-`comm -23` (§ниже); либо off-device Фазы ROADMAP (§9). Замечание из этого захода: остаток
-малых KVideoProxy всё чаще device-bound (EEPROM/GetEndoScope) — возможно, пора вернуться
-к CORE-фазам ROADMAP §3 (Фаза A/B off-device) вместо выжимания KVideoProxy.
+ЗАХОД Dehaze/HDR (дизасм-декод субагентом; батч из 8 тогглов/статусов): реализованы 4 —
+SetDehazeStatus/SetHDRStatus (модулируют ГАММУ, не свой PL-регистр: статус→KVideoParam +
+перезагрузка гамма-LUT реф. UpdateGammaDownloadLut→SetGammaLut; взаимоисключение: включение
+одного гасит другой) + SetDehazeSwitch/SetHDRSwitch (0xff→тоггл [0..1]). Добавлены поля
+KVideoParam dehaze_/hdr_ + Set/StatusGetter (как demoire_). OSD-сообщения оригинала
+(KUiMsgProxy::DisplayMsg) опущены (UI/device). Self-test `fxpt` (dehaze/HDR mutual-excl).
+KVideoProxy 51→55/116.
+ОТЛОЖЕНЫ из того же батча (deep-chain — тянут отсутствующие аксессоры, не device):
+• SwitchCHbStatus: save/restore цвет+RBC вокруг SendCHbLevel — нужны KVideoSet::
+  GetColorEnhValue(int) + KVideoProxy::SendRBCValue(int,int,int) (нет).
+• SetColorEnhanceValue(level,value): нужны KVideoSet::SetColEnhValue(int,int) +
+  KVideoParam::SetColorEnhConfig(int,int).
+• SetImageEnhanceValueByType(type,value): нужны KVideoParam::SendSetImageEnhLevel/SetImageEnhConfig.
+• ResetVideoParam: нужны KVideoParam::InitVideoParam + KVideoProxy::SetVideoParam.
+Эти 4 — отдельный заход с расширением KVideoSet/KVideoParam-аксессоров (см. дизасм-адреса
+в истории субагента). ОТЛОЖЕНЫ device (EEPROM/сенсор): SendZoomValue, SetAWBValue,
+SetVideoCaptureArea, SetVideoArea (формулы сохранены выше).
+**ПРОДОЛЖИТЬ:** либо заход «KVideoSet/KVideoParam-аксессоры + 4 отложенных метода» (off-device),
+либо CORE-фазы ROADMAP §3. Искать нереализованное через `comm -23` (см. историю сессии).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 

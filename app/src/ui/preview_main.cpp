@@ -1665,9 +1665,26 @@ int main(int argc, char **argv)
         qInfo() << "demoire toggle on/off:" << td1.size() << td2.size()
                 << (demoireOk ? "OK" : "MISMATCH");
 
+        // Dehaze/HDR: тогглы + взаимоисключение (включение одного гасит другой).
+        KVideoParam &kvp = KVideoParam::Instance();
+        kvp.SetDehaze(0); kvp.SetHDR(0);
+        vp.SetDehazeSwitch(0xff);      // 0→1 по кругу
+        const bool dh1 = kvp.DehazeStatus() == 1;
+        vp.SetHDRStatus(1);            // включить HDR → Dehaze гаснет
+        const bool dh2 = kvp.HDRStatus() == 1 && kvp.DehazeStatus() == 0;
+        vp.SetDehazeStatus(1);         // включить Dehaze → HDR гаснет
+        const bool dh3 = kvp.DehazeStatus() == 1 && kvp.HDRStatus() == 0;
+        vp.SetHDRSwitch(0xff);         // 0→1 по кругу → Dehaze гаснет
+        const bool dh4 = kvp.HDRStatus() == 1 && kvp.DehazeStatus() == 0;
+        vp.SetDehazeSwitch(0xff); vp.SetDehazeSwitch(0xff);  // 0→1→0 (был 0)
+        const bool dh5 = kvp.DehazeStatus() == 0;
+        const bool dehazeHdrOk = dh1 && dh2 && dh3 && dh4 && dh5;
+        qInfo() << "dehaze/HDR mutual-excl:" << dh1 << dh2 << dh3 << dh4 << dh5
+                << (dehazeHdrOk ? "OK" : "MISMATCH");
+
         const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk && monOk
                         && aecOk && aecSeqOk && agcOk && pairOk && fzOk
-                        && thinOk && beqOk && ctrOk && demoireOk;
+                        && thinOk && beqOk && ctrOk && demoireOk && dehazeHdrOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }
