@@ -32,6 +32,7 @@
 // --- Главный контроль/статус PL ----------------------------------------------
 #define REG_FPGA_VERSION     0xa1000000UL   // GetFpga2Version (чтение)
 #define REG_PL_STATUS        0xa1000008UL   // GetFpga2System — статус PL (чтение)
+#define REG_AURORA_TX_RESET  0xa1000014UL   // AuroraTxReset: строб 1→0
 #define REG_AWB_STROBE       0xa100019cUL   // SetAWBValue: строб 1→0
 
 // --- Геометрия/фриз кадра ----------------------------------------------------
@@ -83,6 +84,8 @@
 #define REG_CCM1_TAIL        0xa1880014UL   // последний коэффициент (16-бит)
 
 // --- Оптика/линза ------------------------------------------------------------
+#define REG_LENS_ENABLE      0xa1890000UL   // SetLens: включение линзы
+#define REG_LENS_PARAM       0xa1890004UL   // SetLens: параметр (AlgPara 0x7a40)
 #define REG_LENS_SIZE        0xa189000cUL   // SetLensSize: a|(b<<16)
 
 // --- Диафрагма/камера/гистограмма яркости ------------------------------------

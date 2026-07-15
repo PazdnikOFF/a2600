@@ -454,6 +454,25 @@ int main(int argc, char **argv)
                 << (areaOk ? "OK" : "MISMATCH");
         if (!areaOk) ok = false;
 
+        // Линза/стекло/Aurora-сброс (реф. SetLens/SetGlassType/AuroraTxReset).
+        alg.SetCurLensParam(0x2ab);   // реф. AlgPara 0x7a40
+        pl.ClearTrace();
+        pl.SetLens(1);                // enable=1: 0xa1890000=1, 0xa1890004=param
+        pl.SetLens(0);                // enable=0: 0xa1890000=0
+        pl.SetGlassType(7);           // игнор тип → SetLens(0): 0xa1890000=0
+        pl.AuroraTxReset();           // 0xa1000014 1→0
+        const auto &tln = pl.Trace();
+        const bool lensOk = tln.size() == 6 &&
+                            tln[0].first == 0xa1890000 && tln[0].second == 1 &&
+                            tln[1].first == 0xa1890004 && tln[1].second == 0x2ab &&
+                            tln[2].first == 0xa1890000 && tln[2].second == 0 &&
+                            tln[3].first == 0xa1890000 && tln[3].second == 0 &&
+                            tln[4].first == 0xa1000014 && tln[4].second == 1 &&
+                            tln[5].first == 0xa1000014 && tln[5].second == 0;
+        qInfo() << "lens/glass/aurora writes:" << tln.size() << "(exp 6)"
+                << (lensOk ? "OK" : "MISMATCH");
+        if (!lensOk) ok = false;
+
         qInfo() << (ok ? "plreg: PASS" : "plreg: FAIL");
         return ok ? 0 : 6;
     }

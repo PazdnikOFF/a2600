@@ -493,6 +493,12 @@ W-2c); стрим 1080 слов в 0xa18c8000. W/H (реф. поля +0x10/+0x14
 1005 регистров, упаковка 8 нибблов (data[k]>>shift)<<(k*4); различие только в источнике
 (arg-указатель vs AlgPara[0x7a48]).
 **АУДИТ register-методов KPlControl ПОЛНОСТЬЮ ЗАВЕРШЁН — все Set*/Read* сверены с дизасмом.**
+ДОРЕАЛИЗОВАНЫ недостающие методы (62/63): SetLens (0xa1890000 en / 0xa1890004 param из
+AlgPara 0x7a40), SetGlassType (игнор тип → SetLens(0)), AuroraTxReset (строб 0xa1000014
+1→usleep→0) — проверка в plreg (lens/glass/aurora, 6 записей). ОСТАЛОСЬ device-bound:
+PLInit (KHalGpio::SetEmio(432,1) — нужен GPIO-HAL), SetEndoIrisType (живой GetEndoScope/
+GetSensorType), InitColorEnhPara (8 значений AlgPara[0x4cb..0x4d2]→0xa18f0008..0x24 —
+нужен источник ColorEnh-init конфига), ImageSavePreset (device/файл).
 CORNER-CUT ЦЕПОЧКА off-device достроена: (1) геометрия AlgParaManager + стрим KPlControl
 (self-test `cornercut`), (2) источник параметров KStyleConfig scope-info из <style>/scope/
 video.ini (defaultRoundCut=радиус, defaultOctangleCut=(p2<<16)|p3, shapeType, videoSize;

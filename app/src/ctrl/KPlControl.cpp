@@ -347,6 +347,33 @@ void KPlControl::SetLensSize(int a, int b)
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
 }
 
+void KPlControl::SetLens(int enable)
+{
+    // Реф. SetLens: REG_LENS_ENABLE = enable?1:0; при enable — REG_LENS_PARAM =
+    // AlgParaManager (массив, byte 0x7a40 — параметр линзы).
+    if (enable == 0) {
+        WriteValueToPL(REG_LENS_ENABLE, 0);
+        return;
+    }
+    WriteValueToPL(REG_LENS_ENABLE, 1);
+    WriteValueToPL(REG_LENS_PARAM,
+                   static_cast<unsigned int>(AlgParaManager::GetInstance().CurLensParam()));
+}
+
+void KPlControl::SetGlassType(int)
+{
+    // Реф. SetGlassType: параметр игнорируется, всегда SetLens(0) (выключить линзу).
+    SetLens(0);
+}
+
+void KPlControl::AuroraTxReset()
+{
+    // Реф. AuroraTxReset: строб REG_AURORA_TX_RESET 1 → usleep(1) → 0.
+    WriteValueToPL(REG_AURORA_TX_RESET, 1);
+    usleep(1);
+    WriteValueToPL(REG_AURORA_TX_RESET, 0);
+}
+
 void KPlControl::SetEnhanceSize(int, int)
 {
     // Реф. SetEnhanceSize — пустая функция (только ret) в этой прошивке.

@@ -120,6 +120,13 @@ public:
     void SetFreezeVideoLoc(int a, int b, int c, int d);
     // Размер линзы/маски (реф. SetLensSize) → 0xa189000c = a|(b<<16).
     void SetLensSize(int a, int b);
+    // Линза (реф. SetLens): 0xa1890000 = enable?1:0; при enable — 0xa1890004 =
+    //   AlgParaManager::CurLensParam (реф. массив 0x7a40).
+    void SetLens(int enable);
+    // Тип стекла (реф. SetGlassType): игнорирует тип, вызывает SetLens(0).
+    void SetGlassType(int type);
+    // Сброс Aurora-TX (реф. AuroraTxReset): строб 0xa1000014 1 → usleep → 0.
+    void AuroraTxReset();
     // Реф. SetEnhanceSize/SetContrastLevel — в этой прошивке ПУСТЫЕ (только ret),
     //   оставлены для совместимости API (не пишут регистры).
     void SetEnhanceSize(int a, int b);

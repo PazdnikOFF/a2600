@@ -151,6 +151,8 @@ public:
     const QVector<int> &CurIrisTable() const      { return curIris_; }
     void SetCurDenoise(const DenoisePlData &v)   { curDenoise_ = v; }
     const DenoisePlData &CurDenoise() const       { return curDenoise_; }
+    void SetCurLensParam(int v)                  { curLensParam_ = v; }   // реф. AlgPara 0x7a40
+    int  CurLensParam() const                     { return curLensParam_; }
 
 private:
     AlgParaManager() = default;
@@ -166,4 +168,5 @@ private:
     QVector<int> curGamma_, curKnee_, curIris_;
     RbcLut       curRbc_;
     DenoisePlData curDenoise_;
+    int          curLensParam_ = 0;   // параметр линзы (реф. AlgPara 0x7a40)
 };
