@@ -1,10 +1,8 @@
 #include "ctrl/KPlControl.h"
-#include "ctrl/KPlRegs.h"       // карта регистров PL (блоки/смещения вместо magic-адресов)
+#include "ctrl/KPlRegs.h"       // карта регистров PL (REG_* макросы вместо magic-адресов)
 #include "alg/AlgParaManager.h"
 
 #include <QDebug>
-
-using namespace plreg;          // Tone::R, Awb::Gain, Ctrl::Status и т.д.
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -39,109 +37,109 @@ bool KPlControl::ReadValueFromPL(unsigned long physAddr, unsigned int &value)
 void KPlControl::SetGammaLut(const QVector<int> &lut)
 {
     // Реф. SetGammaLut (дизасм X2000): значения (10 бит) пакуются парами
-    // (v0&0x3ff) | ((v1&0x3ff)<<16) и пишутся в ТРИ банка Gamma::Bank0/1/2
-    // (по 512 записей на 1024 значения). Затем защёлка Gamma::Ctrl |= LatchBit.
-    // (На устройстве реф. ещё ждёт готовности — poll бита 2 в Gamma::Ctrl.)
-    const addr_t bank[3] = { Gamma::Bank0, Gamma::Bank1, Gamma::Bank2 };
+    // (v0&0x3ff) | ((v1&0x3ff)<<16) и пишутся в ТРИ банка REG_GAMMA_BANK0/1/2
+    // (по 512 записей на 1024 значения). Затем защёлка REG_GAMMA_CTRL |= LatchBit.
+    // (На устройстве реф. ещё ждёт готовности — poll бита 2 в REG_GAMMA_CTRL.)
+    const unsigned long bank[3] = { REG_GAMMA_BANK0, REG_GAMMA_BANK1, REG_GAMMA_BANK2 };
     const int pairs = lut.size() / 2;
     for (int i = 0; i < pairs; ++i) {
         const unsigned lo = static_cast<unsigned>(lut[2*i])     & 0x3ff;
         const unsigned hi = static_cast<unsigned>(lut[2*i + 1]) & 0x3ff;
         const unsigned v  = (hi << 16) | lo;
-        const addr_t off = static_cast<addr_t>(i) * 4;
+        const unsigned long off = static_cast<unsigned long>(i) * 4;
         for (int ch = 0; ch < 3; ++ch)
             WriteValueToPL(bank[ch] + off, v);
     }
-    // Финализация: Gamma::Ctrl |= LatchBit (read-modify-write, защёлка LUT).
+    // Финализация: REG_GAMMA_CTRL |= LatchBit (read-modify-write, защёлка LUT).
     unsigned int ctrl = 0;
-    ReadValueFromPL(Gamma::Ctrl, ctrl);
-    WriteValueToPL(Gamma::Ctrl, ctrl | Gamma::LatchBit);
+    ReadValueFromPL(REG_GAMMA_CTRL, ctrl);
+    WriteValueToPL(REG_GAMMA_CTRL, ctrl | GAMMA_LATCH_BIT);
 }
 
 void KPlControl::SetCCM0(int enable)
 {
-    // Реф. SetCCM0: Ccm0::Enable = enable (passthrough).
-    WriteValueToPL(Ccm0::Enable, static_cast<unsigned int>(enable));
+    // Реф. SetCCM0: REG_CCM0_ENABLE = enable (passthrough).
+    WriteValueToPL(REG_CCM0_ENABLE, static_cast<unsigned int>(enable));
 }
 
 void KPlControl::SetCCM0Matrix(const int m[9])
 {
     // Реф. SetCCM0Matrix (дизасм X2000): 4 пары коэффициентов упаковкой
-    // m[2i]|(m[2i+1]<<16) → Ccm0::Matrix (0x04/08/0c/10); затем 9-й коэффициент
-    // как 16-бит (ldurh) → Ccm0::Tail. Enable — отдельно (SetCCM0).
-    addr_t reg = Ccm0::Matrix;
+    // m[2i]|(m[2i+1]<<16) → REG_CCM0_MATRIX (0x04/08/0c/10); затем 9-й коэффициент
+    // как 16-бит (ldurh) → REG_CCM0_TAIL. Enable — отдельно (SetCCM0).
+    unsigned long reg = REG_CCM0_MATRIX;
     for (int i = 0; i + 1 < 9; i += 2, reg += 4)
         WriteValueToPL(reg, static_cast<unsigned int>(m[i]) |
                             (static_cast<unsigned int>(m[i + 1]) << 16));
-    WriteValueToPL(Ccm0::Tail, static_cast<unsigned int>(m[8]) & 0xffff);
+    WriteValueToPL(REG_CCM0_TAIL, static_cast<unsigned int>(m[8]) & 0xffff);
 }
 
 // --- Параметры изображения → PL (карта регистров в ctrl/KPlRegs.h) ---
 
 void KPlControl::SetColorEnhParam(bool enable, int level)
 {
-    // Реф.: ColorEnh::Enable = enable; значение уровня берётся из AlgParaManager
-    // (массив из colenh_level.txt) → ColorEnh::Param.
-    WriteValueToPL(ColorEnh::Enable, enable ? 1u : 0u);
+    // Реф.: REG_COLOR_ENH_ENABLE = enable; значение уровня берётся из AlgParaManager
+    // (массив из colenh_level.txt) → REG_COLOR_ENH_PARAM.
+    WriteValueToPL(REG_COLOR_ENH_ENABLE, enable ? 1u : 0u);
     const int v = AlgParaManager::GetInstance().ColEnhLevelValue(level);
-    WriteValueToPL(ColorEnh::Param, static_cast<unsigned int>(v));
+    WriteValueToPL(REG_COLOR_ENH_PARAM, static_cast<unsigned int>(v));
 }
 
 void KPlControl::SetImageEnhValue(int level)
 {
-    // Реф.: значение уровня из AlgParaManager (ImgEnh/level_*.txt) → Image::EnhValue.
+    // Реф.: значение уровня из AlgParaManager (ImgEnh/level_*.txt) → REG_IMAGE_ENH.
     const int v = AlgParaManager::GetInstance().ImgEnhLevelValue(level);
-    WriteValueToPL(Image::EnhValue, static_cast<unsigned int>(v));
+    WriteValueToPL(REG_IMAGE_ENH, static_cast<unsigned int>(v));
 }
 
 void KPlControl::SetColorR(int value)
 {
-    WriteValueToPL(Tone::R, static_cast<unsigned int>(value));
+    WriteValueToPL(REG_TONE_R, static_cast<unsigned int>(value));
 }
 
 void KPlControl::SetColorB(int value)
 {
-    WriteValueToPL(Tone::B, static_cast<unsigned int>(value));
+    WriteValueToPL(REG_TONE_B, static_cast<unsigned int>(value));
 }
 
 void KPlControl::SetColorC(int value)
 {
-    WriteValueToPL(Tone::C, static_cast<unsigned int>(value));
+    WriteValueToPL(REG_TONE_C, static_cast<unsigned int>(value));
 }
 
 void KPlControl::SetToneValue(int r, int b, int c)
 {
     // Реф. порядок записи: R, B, C.
-    WriteValueToPL(Tone::R, static_cast<unsigned int>(r));
-    WriteValueToPL(Tone::B, static_cast<unsigned int>(b));
-    WriteValueToPL(Tone::C, static_cast<unsigned int>(c));
+    WriteValueToPL(REG_TONE_R, static_cast<unsigned int>(r));
+    WriteValueToPL(REG_TONE_B, static_cast<unsigned int>(b));
+    WriteValueToPL(REG_TONE_C, static_cast<unsigned int>(c));
 }
 
 void KPlControl::SetBrightEQEnable(bool enable)
 {
-    WriteValueToPL(BrightEq::Enable, enable ? 1u : 0u);
+    WriteValueToPL(REG_BRIGHT_EQ_ENABLE, enable ? 1u : 0u);
 }
 
 void KPlControl::SetBrightEQLut(int level)
 {
     AlgParaManager &alg = AlgParaManager::GetInstance();
 
-    // Блок 1: гауссов фильтр → BrightEq::Gaussian.. (18 записей), каждая пакует
+    // Блок 1: гауссов фильтр → REG_BRIGHT_EQ_GAUSSIAN.. (18 записей), каждая пакует
     // пару значений (реф.: младшее — 0x7fff, старшее — <<16, 15 бит).
     const QVector<int> &g = alg.BrightEqGaussian();
     for (int i = 0; i < 18; ++i) {
         const unsigned lo = (2*i     < g.size()) ? unsigned(g[2*i])     & 0x7fff : 0u;
         const unsigned hi = (2*i + 1 < g.size()) ? unsigned(g[2*i + 1]) & 0x7fff : 0u;
-        WriteValueToPL(BrightEq::Gaussian + unsigned(i) * 4, (hi << 16) | lo);
+        WriteValueToPL(REG_BRIGHT_EQ_GAUSSIAN + unsigned(i) * 4, (hi << 16) | lo);
     }
 
-    // Блок 2: lumaGainLut уровня → BrightEq::LumaLut.. (512 записей, пары 12-бит).
+    // Блок 2: lumaGainLut уровня → REG_BRIGHT_EQ_LUMA_LUT.. (512 записей, пары 12-бит).
     const int idx = qBound(1, level, 3) - 1;          // clamp(level,1,3)-1
     const QVector<int> &l = alg.BrightEqLumaLut(idx);
     for (int i = 0; i < 512; ++i) {
         const unsigned lo = (2*i     < l.size()) ? unsigned(l[2*i])     & 0xfff : 0u;
         const unsigned hi = (2*i + 1 < l.size()) ? unsigned(l[2*i + 1]) & 0xfff : 0u;
-        WriteValueToPL(BrightEq::LumaLut + unsigned(i) * 4, (hi << 16) | lo);
+        WriteValueToPL(REG_BRIGHT_EQ_LUMA_LUT + unsigned(i) * 4, (hi << 16) | lo);
     }
 }
 
@@ -149,17 +147,17 @@ void KPlControl::SetAECAndAGCValue(unsigned int aec, unsigned int agc)
 {
     // Реф.: w2 = (aec & 0xffff) | (agc << 16).
     const unsigned int v = (aec & 0xffff) | (agc << 16);
-    WriteValueToPL(Front::AecAgc, v);
+    WriteValueToPL(REG_AEC_AGC, v);
 }
 
 void KPlControl::SetAWBValue(unsigned int rGain, unsigned int bGain)
 {
-    // Реф.: w2 = (bGain & 0x1ffff) | (rGain << 16); строб Ctrl::AwbStrobe 1→0.
+    // Реф.: w2 = (bGain & 0x1ffff) | (rGain << 16); строб REG_AWB_STROBE 1→0.
     const unsigned int v = (bGain & 0x1ffff) | (rGain << 16);
-    WriteValueToPL(Awb::Gain, v);
-    WriteValueToPL(Ctrl::AwbStrobe, 1);
+    WriteValueToPL(REG_AWB_GAIN, v);
+    WriteValueToPL(REG_AWB_STROBE, 1);
     usleep(10);
-    WriteValueToPL(Ctrl::AwbStrobe, 0);
+    WriteValueToPL(REG_AWB_STROBE, 0);
 }
 
 void KPlControl::SetAwbCut(int low, int high)
@@ -167,40 +165,40 @@ void KPlControl::SetAwbCut(int low, int high)
     // Реф.: w2 = low | (high << 16).
     const unsigned int v = static_cast<unsigned int>(low)
                          | (static_cast<unsigned int>(high) << 16);
-    WriteValueToPL(Awb::Cut, v);
+    WriteValueToPL(REG_AWB_CUT, v);
 }
 
 void KPlControl::SetVistSwitch(bool enable)
 {
-    // Реф.: Vist::Switch = en; Awb::Start = !en (взаимоисключение с AWB-трактом).
-    WriteValueToPL(Vist::Switch, enable ? 1u : 0u);
-    WriteValueToPL(Awb::Start, enable ? 0u : 1u);
+    // Реф.: REG_VIST_SWITCH = en; REG_AWB_START = !en (взаимоисключение с AWB-трактом).
+    WriteValueToPL(REG_VIST_SWITCH, enable ? 1u : 0u);
+    WriteValueToPL(REG_AWB_START, enable ? 0u : 1u);
 }
 
 void KPlControl::SetVistMatrix(const unsigned int *data, int count)
 {
     if (!data || count <= 0) return;
-    // Реф.: пары значений → Vist::Matrix.. ; последний (нечётный) → Vist::Tail (16-бит).
-    addr_t reg = Vist::Matrix;
+    // Реф.: пары значений → REG_VIST_MATRIX.. ; последний (нечётный) → REG_VIST_TAIL (16-бит).
+    unsigned long reg = REG_VIST_MATRIX;
     for (int i = 0; i + 1 < count; i += 2, reg += 4)
         WriteValueToPL(reg, data[i] | (data[i + 1] << 16));
     // хвостовой коэффициент
-    WriteValueToPL(Vist::Tail, data[count - 1] & 0xffff);
+    WriteValueToPL(REG_VIST_TAIL, data[count - 1] & 0xffff);
 }
 
 void KPlControl::SetDenoiseLevel(int level)
 {
-    WriteValueToPL(Denoise::Level, static_cast<unsigned int>(level));
+    WriteValueToPL(REG_DENOISE_LEVEL, static_cast<unsigned int>(level));
 }
 
 namespace {
-// Записать 4 банка по count значений: база + i*4, банки со смещением Denoise::BankStep.
+// Записать 4 банка по count значений: база + i*4, банки со смещением DENOISE_BANK_STEP.
 // Источник — плоский буфер src, окно банка = count (за пределами — 0).
 void writeDenoiseBank(KPlControl *pl, unsigned long base, const int *src,
                       int srcCount, int count)
 {
     for (int bank = 0; bank < 4; ++bank) {
-        const unsigned long bbase = base + static_cast<unsigned long>(bank) * Denoise::BankStep;
+        const unsigned long bbase = base + static_cast<unsigned long>(bank) * DENOISE_BANK_STEP;
         for (int i = 0; i < count; ++i) {
             const int idx = bank * count + i;
             const unsigned v = (idx < srcCount) ? unsigned(src[idx]) : 0u;
@@ -212,39 +210,39 @@ void writeDenoiseBank(KPlControl *pl, unsigned long base, const int *src,
 
 void KPlControl::SetGammaEnable(bool enable)
 {
-    WriteValueToPL(Gamma::Ctrl, enable ? 1u : 0u);
+    WriteValueToPL(REG_GAMMA_CTRL, enable ? 1u : 0u);
 }
 
 void KPlControl::SetZoomValue(unsigned int value)
 {
-    WriteValueToPL(Zoom::Value, value);
+    WriteValueToPL(REG_ZOOM_VALUE, value);
 }
 
 void KPlControl::SetCCM1(int enable)
 {
-    WriteValueToPL(Ccm1::Enable, static_cast<unsigned int>(enable));
+    WriteValueToPL(REG_CCM1_ENABLE, static_cast<unsigned int>(enable));
 }
 
 void KPlControl::SetCCM1Matrix(const unsigned int *data, int count)
 {
-    // Реф. SetCCM1Matrix (дизасм X2000): пары data[2i]|(data[2i+1]<<16) → Ccm1::Matrix..;
-    // затем хвост — последний коэффициент как 16-бит (ldurh) → Ccm1::Tail.
+    // Реф. SetCCM1Matrix (дизасм X2000): пары data[2i]|(data[2i+1]<<16) → REG_CCM1_MATRIX..;
+    // затем хвост — последний коэффициент как 16-бит (ldurh) → REG_CCM1_TAIL.
     if (!data || count <= 0) return;
-    addr_t reg = Ccm1::Matrix;
+    unsigned long reg = REG_CCM1_MATRIX;
     for (int i = 0; i + 1 < count; i += 2, reg += 4)
         WriteValueToPL(reg, data[i] | (data[i + 1] << 16));
-    WriteValueToPL(Ccm1::Tail, data[count - 1] & 0xffff);
+    WriteValueToPL(REG_CCM1_TAIL, data[count - 1] & 0xffff);
 }
 
 void KPlControl::SetChbStatus(int status)
 {
-    // Реф. SetChbStatus: status==0 → выкл (Chb::Enable=0); иначе → вкл (=1) +
-    // запись CHb-значения (4-е из CHb-файла, реф. AlgParaManager+0x7a3c) в Chb::Value.
+    // Реф. SetChbStatus: status==0 → выкл (REG_CHB_ENABLE=0); иначе → вкл (=1) +
+    // запись CHb-значения (4-е из CHb-файла, реф. AlgParaManager+0x7a3c) в REG_CHB_VALUE.
     if (status == 0) {
-        WriteValueToPL(Chb::Enable, 0);
+        WriteValueToPL(REG_CHB_ENABLE, 0);
     } else {
-        WriteValueToPL(Chb::Enable, 1);
-        WriteValueToPL(Chb::Value,
+        WriteValueToPL(REG_CHB_ENABLE, 1);
+        WriteValueToPL(REG_CHB_VALUE,
                        static_cast<unsigned int>(AlgParaManager::GetInstance().ChbValue()));
     }
 }
@@ -252,33 +250,33 @@ void KPlControl::SetChbStatus(int status)
 bool KPlControl::GetFpga1Version(unsigned int &version)
 {
     version = 0;
-    return ReadValueFromPL(Front::Fpga1Version, version);
+    return ReadValueFromPL(REG_FPGA1_VERSION, version);
 }
 
 bool KPlControl::GetFpga2Version(unsigned int &version)
 {
     version = 0;
-    return ReadValueFromPL(Ctrl::Version, version);
+    return ReadValueFromPL(REG_FPGA_VERSION, version);
 }
 
 bool KPlControl::GetFpga3Version(unsigned int &version)
 {
     version = 0;
-    return ReadValueFromPL(Front::Fpga0Version, version);
+    return ReadValueFromPL(REG_FPGA0_VERSION, version);
 }
 
 bool KPlControl::GetFpga2System(unsigned int &value)
 {
     value = 0;
-    return ReadValueFromPL(Ctrl::Status, value);
+    return ReadValueFromPL(REG_PL_STATUS, value);
 }
 
 bool KPlControl::ReadAWBValue(unsigned int &rGain, unsigned int &bGain)
 {
-    // Реф. ReadAWBValue (дизасм X2000, Awb::Value): распаковка — 14 бит на канал:
+    // Реф. ReadAWBValue (дизасм X2000, REG_AWB_VALUE): распаковка — 14 бит на канал:
     //   bGain = v & 0x3fff (and w0,w4,#0x3fff); rGain = (v>>16) & 0x3fff (ubfx #16,#14).
     unsigned int v = 0;
-    if (!ReadValueFromPL(Awb::Value, v))
+    if (!ReadValueFromPL(REG_AWB_VALUE, v))
         return false;
     rGain = (v >> 16) & 0x3fff;
     bGain = v & 0x3fff;
@@ -298,52 +296,52 @@ void writePairedLut(KPlControl *pl, unsigned long base, const unsigned int *data
 
 void KPlControl::SetFreezeStatus(int status)
 {
-    WriteValueToPL(Video::FreezeStatus, static_cast<unsigned int>(status));
+    WriteValueToPL(REG_FREEZE_STATUS, static_cast<unsigned int>(status));
 }
 
 void KPlControl::SetVideoDisplay(int mode)
 {
-    WriteValueToPL(Display::Mode, static_cast<unsigned int>(mode));
+    WriteValueToPL(REG_DISPLAY_MODE, static_cast<unsigned int>(mode));
 }
 
 void KPlControl::SetFreezeScalerIn(int a, int b)
 {
-    WriteValueToPL(FreezeScaler::In,
+    WriteValueToPL(REG_FREEZE_SCALER_IN,
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
 }
 
 void KPlControl::SetFreezeScalerOut(int a, int b)
 {
-    WriteValueToPL(FreezeScaler::Out,
+    WriteValueToPL(REG_FREEZE_SCALER_OUT,
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
 }
 
 void KPlControl::SetFreezeScalerRatio(int a, int b)
 {
-    WriteValueToPL(FreezeScaler::Ratio,
+    WriteValueToPL(REG_FREEZE_SCALER_RATIO,
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
 }
 
 void KPlControl::SetCutPara(int a, int b)
 {
     // Реф.: value = b | (a<<16).
-    WriteValueToPL(Ccm0::CutPara,
+    WriteValueToPL(REG_CUT_PARA,
                    static_cast<unsigned int>(b) | (static_cast<unsigned int>(a) << 16));
 }
 
 void KPlControl::SetFreezeVideoLoc(int a, int b, int c, int d)
 {
-    // Реф. SetFreezeVideoLoc: Video::FreezeLocA = a|(b<<16), FreezeLocB = c|(d<<16).
-    WriteValueToPL(Video::FreezeLocA,
+    // Реф. SetFreezeVideoLoc: REG_FREEZE_LOC_A = a|(b<<16), FreezeLocB = c|(d<<16).
+    WriteValueToPL(REG_FREEZE_LOC_A,
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
-    WriteValueToPL(Video::FreezeLocB,
+    WriteValueToPL(REG_FREEZE_LOC_B,
                    static_cast<unsigned int>(c) | (static_cast<unsigned int>(d) << 16));
 }
 
 void KPlControl::SetLensSize(int a, int b)
 {
-    // Реф. SetLensSize: Lens::Size = a|(b<<16).
-    WriteValueToPL(Lens::Size,
+    // Реф. SetLensSize: REG_LENS_SIZE = a|(b<<16).
+    WriteValueToPL(REG_LENS_SIZE,
                    static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
 }
 
@@ -354,8 +352,8 @@ void KPlControl::SetEnhanceSize(int, int)
 
 void KPlControl::SetDemoireEN(int value)
 {
-    // Реф. SetDemoireEN: Image::DemoireEn = value (passthrough).
-    WriteValueToPL(Image::DemoireEn, static_cast<unsigned int>(value));
+    // Реф. SetDemoireEN: REG_DEMOIRE_EN = value (passthrough).
+    WriteValueToPL(REG_DEMOIRE_EN, static_cast<unsigned int>(value));
 }
 
 void KPlControl::SetContrastLevel(int)
@@ -365,29 +363,29 @@ void KPlControl::SetContrastLevel(int)
 
 void KPlControl::SetSensorRLut(const unsigned int *data, int count)
 {
-    writePairedLut(this, SensorLut::R, data, count);
+    writePairedLut(this, REG_SENSOR_LUT_R, data, count);
 }
 
 void KPlControl::SetSensorGLut(const unsigned int *data, int count)
 {
-    writePairedLut(this, SensorLut::G, data, count);
+    writePairedLut(this, REG_SENSOR_LUT_G, data, count);
 }
 
 void KPlControl::SetSensorBLut(const unsigned int *data, int count)
 {
-    writePairedLut(this, SensorLut::B, data, count);
+    writePairedLut(this, REG_SENSOR_LUT_B, data, count);
 }
 
 void KPlControl::SetRbcLut(const unsigned int *hb, const unsigned int *hr,
                            const unsigned int *s, int count)
 {
-    // Реф.: три канала в соседние банки региона Rbc::Base, по одному слову на i.
+    // Реф.: три канала в соседние банки региона REG_RBC_S, по одному слову на i.
     if (!hb || !hr || !s || count <= 0) return;
     for (int i = 0; i < count; ++i) {
-        const addr_t off = static_cast<addr_t>(i) * 4;
-        WriteValueToPL(Rbc::Hb + off, hb[i]);
-        WriteValueToPL(Rbc::Hr + off, hr[i]);
-        WriteValueToPL(Rbc::S  + off, s[i]);
+        const unsigned long off = static_cast<unsigned long>(i) * 4;
+        WriteValueToPL(REG_RBC_HB + off, hb[i]);
+        WriteValueToPL(REG_RBC_HR + off, hr[i]);
+        WriteValueToPL(REG_RBC_S  + off, s[i]);
     }
 }
 
@@ -402,79 +400,79 @@ void KPlControl::SetKneeLut(const int *data, int count)
         const unsigned lo = static_cast<unsigned>(data[2*i])     & 0x3ff;
         const unsigned hi = static_cast<unsigned>(data[2*i + 1]) & 0x3ff;
         const unsigned v  = (hi << 16) | lo;
-        const addr_t off = static_cast<addr_t>(i) * 4;
-        WriteValueToPL(Knee::Bank0 + off, v);
-        WriteValueToPL(Knee::Bank1 + off, v);
-        WriteValueToPL(Knee::Bank2 + off, v);
+        const unsigned long off = static_cast<unsigned long>(i) * 4;
+        WriteValueToPL(REG_KNEE_BANK0 + off, v);
+        WriteValueToPL(REG_KNEE_BANK1 + off, v);
+        WriteValueToPL(REG_KNEE_BANK2 + off, v);
     }
-    // Финализация: Knee::Ctrl |= LatchBit (read-modify-write, защёлка LUT).
+    // Финализация: REG_KNEE_CTRL |= LatchBit (read-modify-write, защёлка LUT).
     unsigned int ctrl = 0;
-    ReadValueFromPL(Knee::Ctrl, ctrl);
-    WriteValueToPL(Knee::Ctrl, ctrl | Knee::LatchBit);
+    ReadValueFromPL(REG_KNEE_CTRL, ctrl);
+    WriteValueToPL(REG_KNEE_CTRL, ctrl | KNEE_LATCH_BIT);
 }
 
 void KPlControl::SetIrisTable(const int *data, int count, int shift)
 {
     // Реф. SetIrisTable: 8 значений на регистр — (data[i]>>shift) в ниббл i*4.
-    // Регион Iris::Table, count/8 записей (8040 → 1005).
+    // Регион REG_IRIS_TABLE, count/8 записей (8040 → 1005).
     if (!data || count < 8) return;
     const int regs = count / 8;
     for (int r = 0; r < regs; ++r) {
         unsigned int v = 0;
         for (int k = 0; k < 8; ++k)
             v |= (static_cast<unsigned int>(data[r * 8 + k]) >> shift) << (k * 4);
-        WriteValueToPL(Iris::Table + static_cast<addr_t>(r) * 4, v);
+        WriteValueToPL(REG_IRIS_TABLE + static_cast<unsigned long>(r) * 4, v);
     }
 }
 
 void KPlControl::SetRealtimeVideoState(int state)
 {
-    WriteValueToPL(Display::RealtimeState, static_cast<unsigned int>(state));
+    WriteValueToPL(REG_DISPLAY_REALTIME, static_cast<unsigned int>(state));
 }
 
 void KPlControl::SetApmAreaDisplay(bool show)
 {
-    WriteValueToPL(Iris::ApmAreaShow, show ? 1u : 0u);
+    WriteValueToPL(REG_APM_AREA_SHOW, show ? 1u : 0u);
 }
 
 void KPlControl::VideoTest(int mode)
 {
     // Реф.: значение сдвигается влево на 2 (mode<<2).
-    WriteValueToPL(Front::VideoTest, static_cast<unsigned int>(mode) << 2);
+    WriteValueToPL(REG_VIDEO_TEST, static_cast<unsigned int>(mode) << 2);
 }
 
 void KPlControl::StartAWB()
 {
-    // Реф. StartAWB: взвести триггер AWB (Awb::Start) и снять VIST-переключатель.
-    WriteValueToPL(Awb::Start, 1);
-    WriteValueToPL(Vist::Switch, 0);
+    // Реф. StartAWB: взвести триггер AWB (REG_AWB_START) и снять VIST-переключатель.
+    WriteValueToPL(REG_AWB_START, 1);
+    WriteValueToPL(REG_VIST_SWITCH, 0);
 }
 
 int KPlControl::ReadIrisValue()
 {
-    // Реф.: читаем Iris::Value, возвращаем младший байт.
+    // Реф.: читаем REG_IRIS_VALUE, возвращаем младший байт.
     unsigned int v = 0;
-    ReadValueFromPL(Iris::Value, v);
+    ReadValueFromPL(REG_IRIS_VALUE, v);
     return static_cast<int>(v & 0xff);
 }
 
 void KPlControl::SetCornerCutWay(int a, int b, int c)
 {
     // Реф. SetCornerCutWay: AlgParaManager::SetCutCornerPara(a,b,c) считает LUT угла,
-    // затем стрим kCutCornerLen(=1080) слов из выбранного банка (a) в CornerCut::Lut.
+    // затем стрим kCutCornerLen(=1080) слов из выбранного банка (a) в REG_CORNER_CUT_LUT.
     auto &alg = AlgParaManager::GetInstance();
     alg.SetCutCornerPara(a, b, c);
     const QVector<int> &lut = alg.CutCornerLut(a);
     const int n = qMin(lut.size(), AlgParaManager::kCutCornerLen);
     for (int i = 0; i < n; ++i)
-        WriteValueToPL(CornerCut::Lut + static_cast<addr_t>(i) * 4,
+        WriteValueToPL(REG_CORNER_CUT_LUT + static_cast<unsigned long>(i) * 4,
                        static_cast<unsigned int>(lut[i]));
 }
 
 void KPlControl::SetAuroraOffset(unsigned char a, unsigned char b)
 {
     // Реф.: value = (a & 0xff) | ((b & 0xff) << 8).
-    WriteValueToPL(Front::AuroraOffset, static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 8));
+    WriteValueToPL(REG_AURORA_OFFSET, static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 8));
 }
 
 namespace {
@@ -490,7 +488,7 @@ unsigned int encodeSignMag(int v)
 void KPlControl::SetVideoCaptureArea(int x, int y)
 {
     const unsigned int v = encodeSignMag(x) | (encodeSignMag(y) << 16);
-    WriteValueToPL(Zoom::CaptureArea, v);
+    WriteValueToPL(REG_CAPTURE_AREA, v);
 }
 
 void KPlControl::SetVideoArea(int width, int height)
@@ -501,7 +499,7 @@ void KPlControl::SetVideoArea(int width, int height)
 
 void KPlControl::SetCameraIrisType(int type, int subtype)
 {
-    // Реф. SetCameraIrisType: кодирование по type/subtype, флаг 0x30, → Iris::CameraType.
+    // Реф. SetCameraIrisType: кодирование по type/subtype, флаг 0x30, → REG_IRIS_CAMERA_TYPE.
     unsigned int v;
     if (type == 2) {
         const unsigned int mode = (subtype == 5) ? 0x100u : 0x200u;
@@ -510,39 +508,39 @@ void KPlControl::SetCameraIrisType(int type, int subtype)
         const unsigned int hi = (type == 0) ? 0x500u : 0x400u;
         v = (static_cast<unsigned int>(type) & 0x3) | hi | 0x30u;
     }
-    WriteValueToPL(Iris::CameraType, v);
+    WriteValueToPL(REG_IRIS_CAMERA_TYPE, v);
 }
 
 void KPlControl::ReadBrightnessHistogramValue(unsigned short *out, int count)
 {
     if (!out || count <= 0) return;
-    // Реф. ReadBrightnessHistogramValue (дизасм): триггер=1 (Iris::HistTrigger), чтение
-    // бинов (Iris::HistBins+, по 2 uint16 в 32-бит слове: low→out[2i], high→out[2i+1]),
+    // Реф. ReadBrightnessHistogramValue (дизасм): триггер=1 (REG_HIST_TRIGGER), чтение
+    // бинов (REG_HIST_BINS+, по 2 uint16 в 32-бит слове: low→out[2i], high→out[2i+1]),
     // затем сброс триггера=0.
-    WriteValueToPL(Iris::HistTrigger, 1);
+    WriteValueToPL(REG_HIST_TRIGGER, 1);
     const int words = count / 2;
     for (int i = 0; i < words; ++i) {
         unsigned int w = 0;
-        ReadValueFromPL(Iris::HistBins + static_cast<addr_t>(i) * 4, w);
+        ReadValueFromPL(REG_HIST_BINS + static_cast<unsigned long>(i) * 4, w);
         out[2 * i]     = static_cast<unsigned short>(w & 0xffff);
         out[2 * i + 1] = static_cast<unsigned short>((w >> 16) & 0xffff);
     }
-    WriteValueToPL(Iris::HistTrigger, 0);   // реф.: сброс триггера после чтения
+    WriteValueToPL(REG_HIST_TRIGGER, 0);   // реф.: сброс триггера после чтения
 }
 
 void KPlControl::SetDenoiseLut(const DenoiseData &d)
 {
     // Реф. SetDenoiseLut — карта регистров (ctrl/KPlRegs.h, namespace Denoise):
-    //   заголовок dpc → Denoise::Dpc (4 банка +BankStep);
-    //   kernelG → Denoise::KernelG (41×4 банка);
-    //   kernelRB → Denoise::KernelRB (25×4);
-    //   Lut → Denoise::Lut (256×4).
+    //   заголовок dpc → REG_DENOISE_DPC (4 банка +BankStep);
+    //   kernelG → REG_DENOISE_KERNEL_G (41×4 банка);
+    //   kernelRB → REG_DENOISE_KERNEL_RB (25×4);
+    //   Lut → REG_DENOISE_LUT (256×4).
     // Банки в оригинале берут смежные окна одного буфера; здесь источник — плоские
     // массивы (kernelG 42 / kernelRB 25 / lut 256), лишние банки добиваются нулём.
     for (int i = 0; i < 4; ++i)
-        WriteValueToPL(Denoise::Dpc + static_cast<addr_t>(i) * Denoise::BankStep,
+        WriteValueToPL(REG_DENOISE_DPC + static_cast<unsigned long>(i) * DENOISE_BANK_STEP,
                        static_cast<unsigned int>(d.dpc[i]));
-    writeDenoiseBank(this, Denoise::KernelG,  d.kernelG,  d.kernelGCount,  41);
-    writeDenoiseBank(this, Denoise::KernelRB, d.kernelRB, d.kernelRBCount, 25);
-    writeDenoiseBank(this, Denoise::Lut,      d.lut,      d.lutCount,      256);
+    writeDenoiseBank(this, REG_DENOISE_KERNEL_G,  d.kernelG,  d.kernelGCount,  41);
+    writeDenoiseBank(this, REG_DENOISE_KERNEL_RB, d.kernelRB, d.kernelRBCount, 25);
+    writeDenoiseBank(this, REG_DENOISE_LUT,      d.lut,      d.lutCount,      256);
 }
