@@ -125,6 +125,8 @@ public:
     //   оставлены для совместимости API (не пишут регистры).
     void SetEnhanceSize(int a, int b);
     void SetContrastLevel(int level);
+    // Подавление муара (реф. SetDemoireEN) → 0xa18501cc = value (passthrough).
+    void SetDemoireEN(int value);
 
     // LUT линеаризации сенсора по каналам (реф. SetSensorR/G/BLut). Значения из
     // sensor_lut_{r,g,b}.txt (через AlgParaManager). Регион 0xa1820000:

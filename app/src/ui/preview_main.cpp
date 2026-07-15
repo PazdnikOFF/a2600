@@ -277,12 +277,16 @@ int main(int argc, char **argv)
         pl.SetLensSize(0x5, 0x6);
         pl.SetEnhanceSize(0x7, 0x8);   // no-op (пустая в прошивке)
         pl.SetContrastLevel(3);        // no-op (пустая в прошивке)
+        pl.SetDemoireEN(0x9);          // → 0xa18501cc = 9 (passthrough)
+        pl.SetApmAreaDisplay(true);    // → 0xa18a0008 = 1
         const auto &tv = pl.Trace();
-        const bool vlocOk = tv.size() == 3 &&   // 2 (FreezeVideoLoc) + 1 (LensSize) + 0 + 0
+        const bool vlocOk = tv.size() == 5 &&   // 2 + 1 + 0 + 0 + 1 (demoire) + 1 (apm)
                             tv[0].first == 0xa1800024 && tv[0].second == (0x11u | (0x22u<<16)) &&
                             tv[1].first == 0xa1800028 && tv[1].second == (0x33u | (0x44u<<16)) &&
-                            tv[2].first == 0xa189000c && tv[2].second == (0x5u | (0x6u<<16));
-        qInfo() << "freezeloc/lens/noop writes:" << tv.size() << "(exp 3)"
+                            tv[2].first == 0xa189000c && tv[2].second == (0x5u | (0x6u<<16)) &&
+                            tv[3].first == 0xa18501cc && tv[3].second == 0x9 &&
+                            tv[4].first == 0xa18a0008 && tv[4].second == 1;
+        qInfo() << "freezeloc/lens/noop/demoire/apm writes:" << tv.size() << "(exp 5)"
                 << (vlocOk ? "OK" : "MISMATCH");
         if (!vlocOk) ok = false;
 

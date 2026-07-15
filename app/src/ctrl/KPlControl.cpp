@@ -371,6 +371,12 @@ void KPlControl::SetEnhanceSize(int, int)
     // Реф. SetEnhanceSize — пустая функция (только ret) в этой прошивке.
 }
 
+void KPlControl::SetDemoireEN(int value)
+{
+    // Реф. SetDemoireEN: 0xa18501cc = value (passthrough).
+    WriteValueToPL(0xa18501cc, static_cast<unsigned int>(value));
+}
+
 void KPlControl::SetContrastLevel(int)
 {
     // Реф. SetContrastLevel — пустая функция (только ret) в этой прошивке.
