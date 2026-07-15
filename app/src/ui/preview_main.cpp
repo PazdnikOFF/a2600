@@ -1600,13 +1600,21 @@ int main(int argc, char **argv)
                             si.videoSize == QRect(0, 0, 864, 1056) &&
                             p2 == 60 && p3 == 60;   // 3932220 = 0x3C003C
 
+        // Доп. поля video.ini (рег. KEncStyle::getScopeRotateType/GetScopeZoomRatio/
+        // getScopeParaDefault/getIsDefaultMatch — off-device по имени скопа).
+        const bool extraOk = si.rotateType == 0 && si.workLength == 600 &&
+                             si.defaultMatch == true &&
+                             qAbs(si.zoomRatio - 1.14f) < 1e-4f;
+
         qInfo() << "enc EC-X20=" << KStyleConfig::EncodeScopeName("EC-X20")
                 << "| EB round=" << rEB << "oct=" << oEB
                 << "| Default round=" << rDef << "oct=" << oDef;
         qInfo() << "info valid=" << si.valid << "sensor=" << si.sensorType
                 << "shape=" << si.shapeType << "video=" << si.videoSize
                 << "oct p2/p3=" << p2 << "/" << p3;
-        const bool ok = encOk && cutOk && infoOk;
+        qInfo() << "extra rotate=" << si.rotateType << "zoom=" << si.zoomRatio
+                << "workLen=" << si.workLength << "defMatch=" << si.defaultMatch;
+        const bool ok = encOk && cutOk && infoOk && extraOk;
         qInfo() << (ok ? "scopecut: PASS" : "scopecut: FAIL");
         return ok ? 0 : 22;
     }

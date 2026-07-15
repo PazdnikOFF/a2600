@@ -69,6 +69,14 @@ KStyleConfig::ScopeInfo KStyleConfig::GetScopeInfo(const QString &series,
     si.firmwareType = val("firmwareType").toString();
     si.endoType     = val("endoType").toString();
     si.videoSize    = val("videoSize").toRect();
+    // Доп. ключи (реф. per-scope геттеры KEncStyle). zoomRatio/диаметры — @Variant float.
+    si.rotateType            = val("rotateType").toInt();
+    si.zoomRatio             = val("zoomRatio").toFloat();
+    si.channelDiameter       = val("channelDiameter").toFloat();
+    si.distalEndDiameter     = val("distalEndDiameter").toFloat();
+    si.insertionTubeDiameter = val("insertionTubeDiameter").toFloat();
+    si.workLength            = val("workLength").toInt();
+    si.defaultMatch          = val("defaultMatch").toBool();
     si.valid        = true;
     return si;
 }

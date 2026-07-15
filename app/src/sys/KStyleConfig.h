@@ -34,6 +34,15 @@ public:
         QString firmwareType;    // OV2740_1280X960 …
         QString endoType;        // OV2740_EC_1504X1080 …
         QRect   videoSize;       // @Rect(x y w h)
+        // Доп. поля video.ini (реф. KEncStyle::getScopeRotateType/GetScopeZoomRatio/
+        // getScopeParaDefault/getIsDefaultMatch — off-device по имени скопа).
+        int     rotateType = 0;              // rotateType — поворот кадра (0/1/2)
+        float   zoomRatio = 1.0f;            // zoomRatio (@Variant float)
+        float   channelDiameter = 0.0f;      // channelDiameter (@Variant float, мм)
+        float   distalEndDiameter = 0.0f;    // distalEndDiameter (@Variant float, мм)
+        float   insertionTubeDiameter = 0.0f;// insertionTubeDiameter (@Variant float, мм)
+        int     workLength = 0;              // workLength (мм)
+        bool    defaultMatch = false;        // defaultMatch — «дефолтная» пара скоп/камера
         bool    valid = false;   // false — секции нет и [Default] пуст
     };
     // Полная запись по имени скопа (с фолбэком на [Default]).
