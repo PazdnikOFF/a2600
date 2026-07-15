@@ -239,15 +239,16 @@ int main(int argc, char **argv)
         pl.SetChbStatus(1);   // status!=0 → вкл + запись ChbValue
         pl.SetChbStatus(0);   // status==0 → выкл
         const auto &tb = pl.Trace();
-        // gamma(1)+zoom(1)+ccm1en(1)+ccm1matrix(4)+chb-on(2: en+val)+chb-off(1) = 10
-        bool batchOk = tb.size() == 1 + 1 + 1 + 4 + 2 + 1 && chb == 0x34803c0 &&
+        // gamma(1)+zoom(1)+ccm1en(1)+ccm1matrix(4 пары+1 хвост=5)+chb-on(2)+chb-off(1) = 11
+        bool batchOk = tb.size() == 1 + 1 + 1 + 5 + 2 + 1 && chb == 0x34803c0 &&
                        tb[0].first == 0xa1830000 && tb[1].first == 0xa18d0004 &&
                        tb[1].second == 0x123 && tb[2].first == 0xa1880000 &&
-                       tb[3].first == 0xa1880004 && tb[3].second == 0x100 &&
-                       tb[7].first == 0xa1900008 && tb[7].second == 1 &&
-                       tb[8].first == 0xa1900018 && tb[8].second == (unsigned)chb &&
-                       tb[9].first == 0xa1900008 && tb[9].second == 0;
-        qInfo() << "batch writes:" << tb.size() << "(exp 10) chb=0x" + QString::number(chb,16)
+                       tb[3].first == 0xa1880004 && tb[3].second == 0x100 &&   // 1-я пара
+                       tb[7].first == 0xa1880014 && tb[7].second == 0x100 &&   // хвост (m[8])
+                       tb[8].first == 0xa1900008 && tb[8].second == 1 &&
+                       tb[9].first == 0xa1900018 && tb[9].second == (unsigned)chb &&
+                       tb[10].first == 0xa1900008 && tb[10].second == 0;
+        qInfo() << "batch writes:" << tb.size() << "(exp 11) chb=0x" + QString::number(chb,16)
                 << (batchOk ? "OK" : "MISMATCH");
         if (!batchOk) ok = false;
 

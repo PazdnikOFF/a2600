@@ -37,8 +37,8 @@ bool KPlControl::ReadValueFromPL(unsigned long physAddr, unsigned int &value)
 namespace {
 constexpr unsigned long kGammaBase = 0xa1830000;   // SetGammaLut
 constexpr unsigned long kGammaCh[3] = {0x000, 0x800, 0x1000}; // R/G/B каналы
-constexpr unsigned long kCcm0Base  = 0xa1860000;   // SetCCM0Matrix
-constexpr unsigned long kCcm0Enable = 0xa1860014;
+constexpr unsigned long kCcm0Base  = 0xa1860000;   // SetCCM0 enable
+constexpr unsigned long kCcm0Tail  = 0xa1860014;   // 9-й коэффициент (хвост), реф.
 }
 
 void KPlControl::SetGammaLut(const QVector<int> &lut)
@@ -52,13 +52,22 @@ void KPlControl::SetGammaLut(const QVector<int> &lut)
     }
 }
 
+void KPlControl::SetCCM0(int enable)
+{
+    // Реф. SetCCM0: 0xa1860000 = enable (passthrough).
+    WriteValueToPL(kCcm0Base, static_cast<unsigned int>(enable));
+}
+
 void KPlControl::SetCCM0Matrix(const int m[9])
 {
-    // 9 коэффициентов матрицы в последовательные регистры + включение CCM.
-    for (int i = 0; i < 9; ++i)
-        WriteValueToPL(kCcm0Base + static_cast<unsigned long>(i) * 4,
-                       static_cast<unsigned int>(m[i]));
-    WriteValueToPL(kCcm0Enable, 0x14);   // enable (реф. mov w2,#0x14)
+    // Реф. SetCCM0Matrix (дизасм X2000): 4 пары коэффициентов упаковкой
+    // m[2i]|(m[2i+1]<<16) → 0xa1860004,08,0c,10; затем 9-й коэффициент как
+    // 16-бит (ldurh) → фиксированный 0xa1860014 (хвост). Enable — отдельно (SetCCM0).
+    unsigned long reg = kCcm0Base + 0x4;
+    for (int i = 0; i + 1 < 9; i += 2, reg += 4)
+        WriteValueToPL(reg, static_cast<unsigned int>(m[i]) |
+                            (static_cast<unsigned int>(m[i + 1]) << 16));
+    WriteValueToPL(kCcm0Tail, static_cast<unsigned int>(m[8]) & 0xffff);
 }
 
 // --- Параметры изображения → PL (карты регистров из дизассемблера X2000) ---
@@ -241,11 +250,13 @@ void KPlControl::SetCCM1(int enable)
 
 void KPlControl::SetCCM1Matrix(const unsigned int *data, int count)
 {
-    // Реф.: коэффициенты парами → 0xa1880004.. (data[2i]|(data[2i+1]<<16)).
+    // Реф. SetCCM1Matrix (дизасм X2000): пары data[2i]|(data[2i+1]<<16) → 0xa1880004..;
+    // затем хвост — последний коэффициент как 16-бит (ldurh) → фиксированный 0xa1880014.
     if (!data || count <= 0) return;
     unsigned long reg = kCcm1Base + 0x4;
     for (int i = 0; i + 1 < count; i += 2, reg += 4)
         WriteValueToPL(reg, data[i] | (data[i + 1] << 16));
+    WriteValueToPL(kCcm1Base + 0x14, data[count - 1] & 0xffff);
 }
 
 void KPlControl::SetChbStatus(int status)

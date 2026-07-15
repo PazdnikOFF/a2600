@@ -94,6 +94,9 @@ public:
     //   enable → 0xa1880000; коэффициенты парами → 0xa1880004..
     void SetCCM1(int enable);
     void SetCCM1Matrix(const unsigned int *data, int count);
+    // Первая матрица цветокоррекции (реф. SetCCM0/SetCCM0Matrix). Регион 0xa1860000:
+    //   enable → 0xa1860000; 4 пары коэф. → 0xa1860004..0x10; 9-й (16-бит) → 0xa1860014.
+    void SetCCM0(int enable);
     // CHb (усиление гемоглобина, реф. SetChbStatus): status==0 → выкл (0xa1900008=0);
     //   иначе → вкл (=1) + запись CHb-значения (из AlgParaManager) в 0xa1900018.
     void SetChbStatus(int status);
