@@ -1523,6 +1523,23 @@ int main(int argc, char **argv)
         qInfo() << "MPPS статус:" << gotMpps.status << "end:" << gotMpps.endTime
                 << "| Commit статус:" << gotCommit.commitStatus;
 
+        // MPPS field-map (мульти-record: PerformedProcedureStep/ProcedureCode/Series/…).
+        KDicomFieldMap mpm;
+        const QString mppsXml = QDir(KSystem::UserPresetPath())
+            .absoluteFilePath("dicom/MppsSetFieldMap.xml");
+        const bool mpmOk = mpm.Load(mppsXml);
+        bool ppsFound = false;
+        const auto pps = mpm.RecordByType("PerformedProcedureStep", &ppsFound);
+        bool procFound = false;
+        const auto proc = mpm.RecordByType("ProcedureCode", &procFound);
+        qInfo() << "MppsSetFieldMap: loaded=" << mpmOk << "записей=" << mpm.RecordCount()
+                << "| PPS полей=" << pps.fields.size()
+                << "| ProcedureCode SubGroup=" << proc.subGroup;
+        const bool mpmCheck = mpmOk && mpm.RecordCount() >= 3 &&
+                              ppsFound && pps.fields.size() >= 4 &&
+                              procFound && proc.subGroup == "DCM_ProcedureCodeSequence" &&
+                              mpm.Fields().size() > pps.fields.size();  // все записи плоско
+
         const bool ok = xmlOk && hasKey && wlAdd && wlN == 1 &&
                         got.value("PatientName") == "Ivanov^Ivan" &&
                         got.value("Modality") == "ES" && stAdd && stN == 1 &&
@@ -1531,7 +1548,8 @@ int main(int argc, char **argv)
                         studyOk && studies.size() == 1 && series.size() == 1 &&
                         series.first().numberOfInstances == 5 && ed.GetStudyNumber() == 1 &&
                         mppsOk && gotMpps.status == "COMPLETED" && gotMpps.endTime == "121500" &&
-                        commitOk && gotCommit.commitStatus == 1;
+                        commitOk && gotCommit.commitStatus == 1 &&
+                        mpmCheck;
         ed.CloseDb();
         qInfo() << (ok ? "dicom: PASS" : "dicom: FAIL");
         return ok ? 0 : 10;
