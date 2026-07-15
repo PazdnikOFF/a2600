@@ -36,6 +36,7 @@
 #include "sys/KAccount.h"
 #include "sys/KSystemSet.h"
 #include "sys/KUserSet.h"
+#include "sys/KUserOsdSet.h"
 #include "ctrl/KColdLightConfig.h"
 #include "sys/KUpdateConf.h"
 #include "sys/KUpdateManifest.h"
@@ -760,6 +761,52 @@ int main(int argc, char **argv)
         const bool ok = fmtOk && parseOk && emptyNext && mx == 5 && next == 6;
         qInfo() << (ok ? "savefile: PASS" : "savefile: FAIL");
         return ok ? 0 : 33;
+    }
+
+    // Self-test OSD-конфига: список функций + чтение реального osd.ini (кнопки→функции)
+    // + roundtrip записи (реф. KUserOsdSet).
+    if (screen == "osdset") {
+        KUserOsdSet &osd = KUserOsdSet::GetInstance();
+        // 1) Список функций (фикс. по ID).
+        const QStringList fns = KUserOsdSet::GetFunctionNameList();
+        const bool fnOk = fns.size() == 12 && fns.first() == "TR_Frz" &&
+                          KUserOsdSet::GetFunctionName(11) == "TR_Rcd" &&
+                          KUserOsdSet::GetFunctionName(6) == "TR_Brtnss+" &&
+                          KUserOsdSet::GetFunctionName(99).isEmpty();
+
+        // 2) Чтение реального osd.ini прошивки (ButtomA Short=6, Long=9; ButtomB 7/11).
+        using B = KUserOsdSet;
+        const bool readOk =
+            osd.GetButtonFunctionId(B::BTN_A, B::PRESS_SHORT) == 6 &&
+            osd.GetButtonFunctionId(B::BTN_A, B::PRESS_LONG)  == 9 &&
+            osd.GetButtonFunctionId(B::BTN_B, B::PRESS_SHORT) == 7 &&
+            osd.GetButtonFunctionId(B::BTN_B, B::PRESS_LONG)  == 11 &&
+            osd.GetButtonFunctionId(B::BTN_M, B::PRESS_SHORT) == 0 &&
+            osd.GetFootSwitchFunctionId(2) == 1 &&
+            osd.GetOperationMode() == 0 && osd.GetIrisMode() == 0;
+        qInfo() << "функций:" << fns.size() << "| ButtomA short/long:"
+                << osd.GetButtonFunctionId(B::BTN_A, B::PRESS_SHORT)
+                << osd.GetButtonFunctionId(B::BTN_A, B::PRESS_LONG)
+                << "→" << B::GetFunctionName(osd.GetButtonFunctionId(B::BTN_A, B::PRESS_SHORT))
+                << B::GetFunctionName(osd.GetButtonFunctionId(B::BTN_A, B::PRESS_LONG));
+
+        // 3) Roundtrip записи в tmp-копию osd.ini.
+        const QString tmp = "/tmp/endo_osd.ini";
+        QFile::remove(tmp);
+        { QSettings s(tmp, QSettings::IniFormat);       // затравка
+          s.setValue("ButtomM/ShortPress", 0); s.sync(); }
+        osd.SetConfigFile(tmp);
+        osd.SaveButtonId(B::BTN_M, B::PRESS_SHORT, B::FUNC_RECORD);   // M-short → Rcd(11)
+        osd.SaveOperationMode(3);
+        osd.SaveIrisMode(2);
+        const bool writeOk =
+            osd.GetButtonFunctionId(B::BTN_M, B::PRESS_SHORT) == 11 &&
+            osd.GetOperationMode() == 3 && osd.GetIrisMode() == 2;
+        osd.SetConfigFile(QString());   // вернуть дефолтный путь
+
+        const bool ok = fnOk && readOk && writeOk;
+        qInfo() << (ok ? "osdset: PASS" : "osdset: FAIL");
+        return ok ? 0 : 34;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
