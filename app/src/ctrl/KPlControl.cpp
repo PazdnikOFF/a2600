@@ -35,21 +35,32 @@ bool KPlControl::ReadValueFromPL(unsigned long physAddr, unsigned int &value)
 
 // Базовые адреса PL из дизассемблера оригинала.
 namespace {
-constexpr unsigned long kGammaBase = 0xa1830000;   // SetGammaLut
-constexpr unsigned long kGammaCh[3] = {0x000, 0x800, 0x1000}; // R/G/B каналы
+constexpr unsigned long kGammaBase = 0xa1830000;   // SetGammaLut (ctrl/latch)
+// Реф. SetGammaLut: три банка LUT со сдвигом 0x800 от 0xa1830800.
+constexpr unsigned long kGammaCh[3] = {0x800, 0x1000, 0x1800};
 constexpr unsigned long kCcm0Base  = 0xa1860000;   // SetCCM0 enable
 constexpr unsigned long kCcm0Tail  = 0xa1860014;   // 9-й коэффициент (хвост), реф.
 }
 
 void KPlControl::SetGammaLut(const QVector<int> &lut)
 {
-    // Записать LUT в три канальных таблицы PL (шаг 4 байта на элемент).
-    for (int ch = 0; ch < 3; ++ch) {
-        const unsigned long base = kGammaBase + kGammaCh[ch];
-        for (int i = 0; i < lut.size(); ++i)
-            WriteValueToPL(base + static_cast<unsigned long>(i) * 4,
-                           static_cast<unsigned int>(lut[i]));
+    // Реф. SetGammaLut (дизасм X2000): значения (10 бит) пакуются парами
+    // (v0&0x3ff) | ((v1&0x3ff)<<16) и пишутся в ТРИ банка 0xa1830800/1000/1800
+    // (по 512 записей на 1024 значения). Затем защёлка 0xa1830000 |= 0x2.
+    // (На устройстве реф. ещё ждёт готовности — poll бита 2 в 0xa1830000.)
+    const int pairs = lut.size() / 2;
+    for (int i = 0; i < pairs; ++i) {
+        const unsigned lo = static_cast<unsigned>(lut[2*i])     & 0x3ff;
+        const unsigned hi = static_cast<unsigned>(lut[2*i + 1]) & 0x3ff;
+        const unsigned v  = (hi << 16) | lo;
+        const unsigned long off = static_cast<unsigned long>(i) * 4;
+        for (int ch = 0; ch < 3; ++ch)
+            WriteValueToPL(kGammaBase + kGammaCh[ch] + off, v);
     }
+    // Финализация: 0xa1830000 |= 0x2 (реф. read-modify-write, защёлка LUT).
+    unsigned int ctrl = 0;
+    ReadValueFromPL(kGammaBase, ctrl);
+    WriteValueToPL(kGammaBase, ctrl | 0x2);
 }
 
 void KPlControl::SetCCM0(int enable)
@@ -425,7 +436,9 @@ void KPlControl::SetRbcLut(const unsigned int *hb, const unsigned int *hr,
 void KPlControl::SetKneeLut(const int *data, int count)
 {
     // Реф. SetKneeLut: значения (10 бит) парами → 3 банка; затем защёлка бит1.
+    // Реф. ограничивает число значений сверху 1024 (min(count,0x400)).
     if (!data || count <= 0) return;
+    if (count > 1024) count = 1024;
     const int pairs = count / 2;
     for (int i = 0; i < pairs; ++i) {
         const unsigned lo = static_cast<unsigned>(data[2*i])     & 0x3ff;

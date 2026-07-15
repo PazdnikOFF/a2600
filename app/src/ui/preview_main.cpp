@@ -377,6 +377,26 @@ int main(int argc, char **argv)
                 << "(exp" << (kpairs*3+1) << ")" << (kneeOk ? "OK" : "MISMATCH");
         if (!kneeOk) ok = false;
 
+        // Gamma LUT (реф.: 10-бит пары → 3 банка 0xa1830800/1000/1800 + защёлка).
+        {
+            const auto gp = alg.LoadGammaPara("IMX274", "ARTHROSCOPE");
+            const QVector<int> glut = AlgParaManager::CalGammaLut(gp);
+            pl.ClearTrace();
+            pl.SetGammaLut(glut);
+            const auto &tg = pl.Trace();
+            const int gpairs = glut.size() / 2;
+            const unsigned gv0 = (unsigned(glut.value(1)) & 0x3ff) << 16 |
+                                 (unsigned(glut.value(0)) & 0x3ff);
+            bool gammaOk = gpairs > 0 && tg.size() == gpairs*3 + 1 &&
+                           tg[0].first == 0xa1830800 && tg[0].second == gv0 &&
+                           tg[1].first == 0xa1831000 && tg[2].first == 0xa1831800 &&
+                           tg[3].first == 0xa1830804 &&
+                           tg.last().first == 0xa1830000 && (tg.last().second & 0x2);
+            qInfo() << "Gamma LUT size=" << glut.size() << "writes=" << tg.size()
+                    << "(exp" << (gpairs*3+1) << ")" << (gammaOk ? "OK" : "MISMATCH");
+            if (!gammaOk) ok = false;
+        }
+
         // Iris table (config-driven, 8040 значений → 1005 записей, упаковка 8/регистр).
         const auto iris = alg.LoadIrisTable("IMX274", "1920X1080");
         pl.ClearTrace();

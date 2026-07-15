@@ -460,10 +460,20 @@ KPlControl против ДИЗАССЕМБЛЕРА X2000 — «брать лог
 9 распак. регистров + перепутал адрес 0x14 с enable → переписан на пары+хвост, добавлен
 SetCCM0), ReadBrightnessHistogramValue (не сбрасывал триггер 0xa18a0010=0). ДЕКОДИРОВАНЫ:
 SetFreezeVideoLoc/SetLensSize/SetDemoireEN (+ пустые SetEnhanceSize/SetContrastLevel).
+LUT-БАНКИ (заход аудита): НАЙДЕНА+ИСПРАВЛЕНА фантазия SetGammaLut — банки были
+base+0/0x800/0x1000 без упаковки/маски/защёлки; по дизасму (void, читает AlgPara[word 0x545])
+это ПАРЫ (v0&0x3ff)|((v1&0x3ff)<<16) в 3 банка 0xa1830800/1000/1800 (512 записей) +
+защёлка 0xa1830000|=0x2. Переписано, добавлена plreg-проверка (1537 записей).
+SetKneeLut — добавлен кламп count≤1024 (реф. min([0x352c],1024)).
 ПОДТВЕРЖДЕНЫ верными: SetCameraIrisType, SetVideoCaptureArea, SetTone/Aurora/Chb/AwbCut/
-AWBValue/ImageEnh/ColorEnh/FreezeScaler.
-**ПРОДОЛЖИТЬ АУДИТ:** LUT-банки (SetGammaLut/SetSensorR/G/BLut/SetKneeLut/SetRbcLut —
-проверить регистровые банки/маску 0x3ff/0xfff), SetVistMatrix/SetVistSwitch, SetDenoiseLut,
+AWBValue/ImageEnh/ColorEnh/FreezeScaler, SetSensorR/G/BLut (базы 0xa1820800/1000/1800, пары),
+SetRbcLut (банки 0xa1878200/8100/8000; реф. void читает AlgPara[word 0x4e8/0x507/0x526]×31),
+SetKneeLut (банки 0xa1930800/1000/1800, пары &0x3ff, защёлка |=2).
+ПРИМЕЧАНИЕ: реф. Gamma/Knee/Rbc — void, читают из AlgParaManager (raw int-массив по word-
+офсетам); у нас data-source вынесен в структурные лоадеры AlgParaManager (архит. выбор),
+аудит сверял РЕГИСТРОВУЮ логику. Реф. также poll-ждёт бит2 в ctrl-регистре (device-timing,
+на десктопе не воспроизводим — опущено).
+**ПРОДОЛЖИТЬ АУДИТ:** SetVistMatrix/SetVistSwitch, SetDenoiseLut,
 ReadIrisValue, SetIrisTable (сложная битовая упаковка ириса из AlgPara[0x7a48]),
 SetCornerCutWay (стрим 1080-элем. LUT round/octagon из AlgPara[0x7a50/0x7a58]).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
