@@ -3,7 +3,9 @@
 #include <QObject>
 #include <QImage>
 #include <QString>
-#include <gst/gst.h>
+#if defined(HAVE_GST)
+#include <gst/gst.h>   // видео-тракт V4L2/GStreamer — только сборка endostation (device)
+#endif
 
 class KPlControl;
 
@@ -74,6 +76,15 @@ public:
     // Применить VIST/SFI-матрицу текущего режима (реф. GetVistValue→SetVistMatrix).
     void ApplyVistMatrix();
 
+    // --- Конвертеры фиксированной точки и клампы (реф., 1:1 с дизасмом) ---
+    // Float2FixedPointNumber(f, a, b): Q(a).(b) с насыщением ±(2^(a+b)−1); scale=2^b.
+    int    Float2FixedPointNumber(float f, int a, int b);
+    // FixedPointNumber2Float(x): Σ bit_i·2^(i−12), i=0..11 = (x&0xfff)/4096.
+    double FixedPointNumber2Float(unsigned int x);
+    // IncreaseValue(v, max): v = min(v+1, max). DecreaseValue(v): v = max(v−1, 0).
+    void   IncreaseValue(int &value, int maxValue);
+    void   DecreaseValue(int &value);
+
 private:
     void SetCameraAECValue(unsigned int aec);  // FPGA-I2C: 0xa0048074/70, cmd 0xc00/0xd00
     void SetCameraAGCValue(unsigned int agc);  // FPGA-I2C: cmd 0xa00/0xb00
@@ -81,7 +92,11 @@ private:
     void SetEndoAGCValue(unsigned int agc);    // → SetAECAndAGCValue(cachedAEC, agc)
 public:
 
+#if defined(HAVE_GST)
     bool isRunning() const { return pipeline_ != nullptr; }
+#else
+    bool isRunning() const { return false; }   // без gst видео-тракта нет
+#endif
     const Config &config() const { return cfg_; }
 
 signals:
@@ -92,15 +107,19 @@ private:
     void InitSensorRegs();   // PL-регистровая init-последовательность (из дизасма)
     bool StartCapture();     // запуск V4L2/GStreamer тракта
 
+#if defined(HAVE_GST)
     static GstFlowReturn onNewSample(GstElement *sink, gpointer user);
     static gboolean      onBusMessage(GstBus *bus, GstMessage *msg, gpointer user);
     void handleSample(GstSample *sample);
+#endif
 
     Config      cfg_;
     KPlControl *pl_         = nullptr;
+#if defined(HAVE_GST)
     GstElement *pipeline_   = nullptr;
     GstElement *appsink_    = nullptr;
     guint       busWatchId_ = 0;
+#endif
     bool        frozen_     = false;
     int         sensorId_   = 0;
     QImage      lastFrame_;   // последний кадр (для снимка/стоп-кадра)

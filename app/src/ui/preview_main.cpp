@@ -22,6 +22,7 @@
 #include "ctrl/KDccuParam.h"
 #include "video/KVideoParam.h"
 #include "video/KVideoSet.h"
+#include "video/KVideoProxy.h"
 #include "video/KVideoCal.h"
 #include "sys/KSystem.h"
 #include "dicom/KDicomFieldMap.h"
@@ -1466,6 +1467,41 @@ int main(int argc, char **argv)
         const bool ok = encOk && cutOk && infoOk;
         qInfo() << (ok ? "scopecut: PASS" : "scopecut: FAIL");
         return ok ? 0 : 22;
+    }
+
+    // Self-test конвертеров фиксированной точки KVideoProxy (реф. 1:1 с дизасмом).
+    if (screen == "fxpt") {
+        KVideoProxy vp;
+
+        // Float2FixedPointNumber(f, a, b): Q(a).(b), scale=2^b, потолок 2^(a+b)−1.
+        const bool f2fOk =
+            vp.Float2FixedPointNumber(1.5f, 2, 8) == 384 &&   // 1.5·256, потолок 1023
+            vp.Float2FixedPointNumber(-0.5f, 2, 8) == -128 && // −(0.5·256)
+            vp.Float2FixedPointNumber(10.0f, 2, 8) == 1023 && // насыщение (2560→1023)
+            vp.Float2FixedPointNumber(0.0f, 2, 8) == 0;
+
+        // FixedPointNumber2Float(x) = (x&0xfff)/4096.
+        auto near = [](double a, double b){ return qAbs(a - b) < 1e-9; };
+        const bool p2fOk =
+            near(vp.FixedPointNumber2Float(2048), 0.5) &&
+            near(vp.FixedPointNumber2Float(1024), 0.25) &&
+            near(vp.FixedPointNumber2Float(4095), 4095.0/4096.0) &&
+            near(vp.FixedPointNumber2Float(0), 0.0) &&
+            near(vp.FixedPointNumber2Float(0x1000), 0.0);   // старшие биты игнорятся
+
+        // IncreaseValue/DecreaseValue — клампы.
+        int v = 5;  vp.IncreaseValue(v, 10);  const bool inc1 = (v == 6);
+        v = 10;     vp.IncreaseValue(v, 10);  const bool inc2 = (v == 10);   // потолок
+        v = 5;      vp.DecreaseValue(v);      const bool dec1 = (v == 4);
+        v = 0;      vp.DecreaseValue(v);      const bool dec2 = (v == 0);    // пол
+        const bool clampOk = inc1 && inc2 && dec1 && dec2;
+
+        qInfo() << "Float2Fixed 1.5/Q2.8=" << vp.Float2FixedPointNumber(1.5f, 2, 8)
+                << "| Fixed2Float 2048=" << vp.FixedPointNumber2Float(2048)
+                << "| f2f" << f2fOk << "p2f" << p2fOk << "clamp" << clampOk;
+        const bool ok = f2fOk && p2fOk && clampOk;
+        qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
+        return ok ? 0 : 23;
     }
 
     // Self-test продуктовой конфигурации (project.ini + per-модель product.ini).

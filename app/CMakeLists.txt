@@ -124,6 +124,7 @@ if(GST_FOUND)
     target_link_libraries(endostation PRIVATE
         Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Sql Qt5::Xml
         PkgConfig::GST)
+    target_compile_definitions(endostation PRIVATE HAVE_GST=1)  # видео-тракт KVideoProxy
 
     if(OpenCV_FOUND)
         target_link_libraries(endostation PRIVATE ${OpenCV_LIBS})
@@ -188,6 +189,7 @@ add_executable(ui_preview
     src/video/KVideoParam.cpp
     src/video/KVideoSet.cpp
     src/video/KVideoCal.cpp
+    src/video/KVideoProxy.cpp   # off-device-логика (gst-тракт спрятан за HAVE_GST)
 )
 target_include_directories(ui_preview PRIVATE src)
 target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml)

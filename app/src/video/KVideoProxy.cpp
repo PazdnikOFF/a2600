@@ -6,8 +6,11 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QDir>
+#include <cmath>
+#if defined(HAVE_GST)
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
+#endif
 
 #if defined(__linux__)
 #include <unistd.h>   // usleep
@@ -17,8 +20,10 @@ static inline void usleep(unsigned) {}
 
 KVideoProxy::KVideoProxy(QObject *parent) : QObject(parent)
 {
+#if defined(HAVE_GST)
     if (!gst_is_initialized())
         gst_init(nullptr, nullptr);
+#endif
     qRegisterMetaType<QImage>("QImage");
 }
 
@@ -70,6 +75,10 @@ void KVideoProxy::InitSensorRegs()
 
 bool KVideoProxy::StartCapture()
 {
+#if !defined(HAVE_GST)
+    // Без GStreamer (сборка ui_preview на Mac) видео-тракт недоступен.
+    return false;
+#else
     // На приборе: V4L2 /dev/video0 (NV12, dmabuf), питаемый PL-видеотрактом
     // (switchvideoformat.sh). NV12→RGB для доставки во вьювер.
     QString src = cfg_.useTestSource
@@ -106,10 +115,12 @@ bool KVideoProxy::StartCapture()
     }
     qInfo() << "KVideoProxy::InitCamera:" << desc;
     return true;
+#endif
 }
 
 void KVideoProxy::ResetVideo()
 {
+#if defined(HAVE_GST)
     if (busWatchId_) { g_source_remove(busWatchId_); busWatchId_ = 0; }
     if (appsink_)    { gst_object_unref(appsink_); appsink_ = nullptr; }
     if (pipeline_) {
@@ -117,6 +128,7 @@ void KVideoProxy::ResetVideo()
         gst_object_unref(pipeline_);
         pipeline_ = nullptr;
     }
+#endif
 }
 
 void KVideoProxy::FreezeVideoSwitch(bool freeze)
@@ -124,6 +136,7 @@ void KVideoProxy::FreezeVideoSwitch(bool freeze)
     frozen_ = freeze; // при заморозке кадры из appsink игнорируются
 }
 
+#if defined(HAVE_GST)
 GstFlowReturn KVideoProxy::onNewSample(GstElement *sink, gpointer user)
 {
     auto *self = static_cast<KVideoProxy *>(user);
@@ -159,6 +172,7 @@ void KVideoProxy::handleSample(GstSample *sample)
     lastFrame_ = copy;              // для снимка/стоп-кадра
     emit VideoFrameReady(copy);
 }
+#endif // HAVE_GST
 
 QString KVideoProxy::GenerateVideoFileName() const
 {
@@ -335,6 +349,42 @@ void KVideoProxy::ApplyVistMatrix()
         pl_->SetVistMatrix(m.constData(), m.size());
 }
 
+int KVideoProxy::Float2FixedPointNumber(float f, int a, int b)
+{
+    // Реф. Float2FixedPointNumber (дизасм X2000): формат Q(a).(b), scale=2^b,
+    // насыщение до потолка 2^(a+b)−1. Знак выносится наружу.
+    const unsigned int ceiling = static_cast<unsigned int>(std::pow(2.0, a + b) - 1.0);
+    const float scale = static_cast<float>(1u << b);   // 2^b
+    if (f >= 0.0f) {
+        const unsigned int v = static_cast<unsigned int>(scale * f);
+        return static_cast<int>(qMin(v, ceiling));
+    }
+    const unsigned int v = static_cast<unsigned int>(-(f * scale));   // |f|·2^b
+    return -static_cast<int>(qMin(ceiling, v));
+}
+
+double KVideoProxy::FixedPointNumber2Float(unsigned int x)
+{
+    // Реф. FixedPointNumber2Float (дизасм X2000): 12-бит дробь — сумма bit_i·2^(i−12)
+    // по i=11..0 = (x&0xfff)/4096.
+    double acc = 0.0;
+    for (int bit = 11; bit >= 0; --bit)
+        acc += static_cast<double>((x >> bit) & 1u) * std::pow(2.0, bit - 12);
+    return acc;
+}
+
+void KVideoProxy::IncreaseValue(int &value, int maxValue)
+{
+    // Реф. IncreaseValue: value = min(value+1, maxValue).
+    value = qMin(value + 1, maxValue);
+}
+
+void KVideoProxy::DecreaseValue(int &value)
+{
+    // Реф. DecreaseValue: value = max(value−1, 0).
+    value = qMax(value - 1, 0);
+}
+
 void KVideoProxy::SetOperationMode(int mode)
 {
     // Реф. SetOperationMode: сменить режим, обновить VIST-тракт и шумоподавление.
@@ -380,6 +430,7 @@ void KVideoProxy::ApplyImageParams(const QString &sensor, const QString &res,
     }
 }
 
+#if defined(HAVE_GST)
 gboolean KVideoProxy::onBusMessage(GstBus *, GstMessage *msg, gpointer user)
 {
     auto *self = static_cast<KVideoProxy *>(user);
@@ -400,3 +451,4 @@ gboolean KVideoProxy::onBusMessage(GstBus *, GstMessage *msg, gpointer user)
     }
     return TRUE;
 }
+#endif // HAVE_GST
