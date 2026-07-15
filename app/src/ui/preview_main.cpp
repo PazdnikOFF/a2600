@@ -53,6 +53,7 @@
 #include "sys/KStatisticConfig.h"
 #include "sys/languageConfig.h"
 #include "sys/KLoadUnicodeText.h"
+#include "sys/KEncStyle.h"
 #include "sys/KSystemStatus.h"
 
 #include <QDir>
@@ -1486,6 +1487,42 @@ int main(int argc, char **argv)
             wrong.isEmpty();
         qInfo() << (ok ? "unicodetext: PASS" : "unicodetext: FAIL");
         return ok ? 0 : 25;
+    }
+
+    // Self-test совместимости эндоскопов/камер (matchedScope.ini + KEncStyle).
+    if (screen == "encstyle") {
+        KEncStyle es;
+        // Путь напрямую (X-2600/SonoScape) — не зависит от текущего бренда.
+        const QString sysd = KSystem::SystemPath();
+        const QString ini = QDir(sysd).absoluteFilePath(
+            "style/X-2600/SonoScape/scope/matchedScope.ini");
+        const bool loaded = es.Load(ini);
+        es.SetProductModel("X-2600");
+
+        const QStringList scopes = es.getSupportedScopeList();
+        const QStringList cams = es.GetSupprotedCameraList();
+        qInfo() << "scope-моделей:" << scopes.size() << "камер:" << cams.size();
+        qInfo() << "первые scope:" << scopes.mid(0, 3) << "камеры:" << cams;
+
+        // Фолбэк на [Default] для неизвестной модели (списки те же в этом файле).
+        es.SetProductModel("X-9999");
+        const bool fbOk = es.getSupportedScopeList().size() == scopes.size();
+        es.SetProductModel("X-2600");
+
+        const bool ok = loaded &&
+            scopes.size() == 30 && cams.size() == 4 &&
+            es.IsScopeValid("EG-X20") &&               // есть в списке
+            es.IsScopeValid("ED-5GT") &&               // есть
+            !es.IsScopeValid("EG-999") &&              // нет
+            es.IsCameraValid("10-110-201") &&          // есть
+            es.IsCameraValid("10-100-201") &&          // есть
+            !es.IsCameraValid("99-999-999") &&         // нет
+            fbOk;                                       // фолбэк [Default]
+        qInfo() << "scopeValid EG-X20:" << es.IsScopeValid("EG-X20")
+                << "camValid 10-110-201:" << es.IsCameraValid("10-110-201")
+                << "fallback:" << fbOk;
+        qInfo() << (ok ? "encstyle: PASS" : "encstyle: FAIL");
+        return ok ? 0 : 26;
     }
 
     // Self-test конфигурации брендов/стилей (stylelist.ini).
