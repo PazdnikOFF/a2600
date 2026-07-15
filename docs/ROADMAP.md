@@ -7,8 +7,8 @@
 ## 1. Итог аудита (факты из бинарника)
 
 - **Классов K\* в референсе:** 491 (≈8360 методов в `.text`).
-- **Реализовано классов (по имени):** ~49 (эта сессия +9: KVideoCal, KUpdateManifest,
-  KSysReportTempletCfg, KReportDBTableHandler-пагинация, KSaveFile, KUserOsdSet, KEntityService, KReportDisplayParam, KEndoInfoServerConfig) +
+- **Реализовано классов (по имени):** ~50 (эта сессия +10: KVideoCal, KUpdateManifest,
+  KSysReportTempletCfg, KReportDBTableHandler-пагинация, KSaveFile, KUserOsdSet, KEntityService, KReportDisplayParam, KEndoInfoServerConfig, KRemoteSwitchConfig) +
   namespace `KSystem`. Ранее +15:
   KSystemStatus, KProjectSet, KStyleConfig, KVersionConfig, KExamListConfigHandler, KEntityQuickInput,
   KEntityExam, KFileBackup, KVideoSet, KColdLightConfig, KUpdateConf, KStatisticConfig, KDccuParam,
@@ -26,10 +26,10 @@
   | KVideoParam | 49 | ~25 | держатель видеопараметров |
   | AlgParaManager | — | много | все LUT-загрузчики (config-driven) |
 
-- **Проверяемое off-device ядро (30 self-test-режимов, все PASS):** plreg, filt, dicom, report,
+- **Проверяемое off-device ядро (31 self-test-режим, все PASS):** plreg, filt, dicom, report,
   account, thesaurus, userset, coldlight, version, project, statistic, sysstatus, quickinput, style,
   examcfg, exam, filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb,
-  savefile, osdset, dbservice, dispparam, endoinfo.
+  savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch.
 
 **Вывод:** реализован и протестирован сквозной **config→параметр→PL-регистр** тракт обработки
 изображения + БД-слои + движок отчётов + вспомогательные конфиги. Остальное (87% методов) —

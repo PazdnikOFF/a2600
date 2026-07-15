@@ -43,6 +43,7 @@
 #include "sys/KUpdateConf.h"
 #include "sys/KUpdateManifest.h"
 #include "sys/KEndoInfoServerConfig.h"
+#include "sys/KRemoteSwitchConfig.h"
 #include "sys/KVersionConfig.h"
 #include "sys/KProjectSet.h"
 #include "sys/KStyleConfig.h"
@@ -930,6 +931,33 @@ int main(int argc, char **argv)
                         c.PublicKeyFile().endsWith("endoinfoserver/public_key.pem");
         qInfo() << (ok ? "endoinfo: PASS" : "endoinfo: FAIL");
         return ok ? 0 : 37;
+    }
+
+    // Self-test конфига пульта/ножного переключателя + IHb (реф. user.ini).
+    if (screen == "remoteswitch") {
+        KRemoteSwitchConfig &rs = KRemoteSwitchConfig::GetInstance();
+        // Резолв ID функций в имена через KUserOsdSet (общий список).
+        const int r1 = rs.GetRemoteSwitchFunctionId(1);   // 0 → Frz
+        const int r2 = rs.GetRemoteSwitchFunctionId(2);   // 9 → WBalance
+        const int r3 = rs.GetRemoteSwitchFunctionId(3);   // 4 → IEnh
+        const int r4 = rs.GetRemoteSwitchFunctionId(4);   // 2 → IRIS
+        qInfo() << "конфиг:" << rs.ConfigFile();
+        qInfo() << "RemoteSwitch 1-4:" << r1 << r2 << r3 << r4
+                << "→" << KUserOsdSet::GetFunctionName(r1) << KUserOsdSet::GetFunctionName(r2)
+                << KUserOsdSet::GetFunctionName(r3) << KUserOsdSet::GetFunctionName(r4);
+        qInfo() << "FootSwitch 1-2:" << rs.GetFootSwitchFunctionId(1) << rs.GetFootSwitchFunctionId(2)
+                << "| IHbMode 1-3:" << rs.GetIHbMode(1) << rs.GetIHbMode(2) << rs.GetIHbMode(3);
+
+        // Сверка с реальным user.ini прошивки.
+        const bool ok =
+            r1 == 0 && r2 == 9 && r3 == 4 && r4 == 2 &&
+            KUserOsdSet::GetFunctionName(r1) == "TR_Frz" &&
+            KUserOsdSet::GetFunctionName(r2) == "TR_WBalance" &&
+            KUserOsdSet::GetFunctionName(r3) == "TR_IEnh" &&
+            rs.GetFootSwitchFunctionId(1) == 9 && rs.GetFootSwitchFunctionId(2) == 0 &&
+            rs.GetIHbMode(1) == 1 && rs.GetIHbMode(2) == 2 && rs.GetIHbMode(3) == 3;
+        qInfo() << (ok ? "remoteswitch: PASS" : "remoteswitch: FAIL");
+        return ok ? 0 : 38;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).

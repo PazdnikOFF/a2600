@@ -4,9 +4,9 @@
 > он заменяет длинную историю чата. Детали архитектуры: `docs/ARCHITECTURE.md`,
 > панель 8″: `docs/HMI_PANEL.md`, **полный аудит покрытия + план: `docs/ROADMAP.md`**.
 >
-> Аудит (сверка всех 491 классов референса): реализовано ~49 классов частично,
+> Аудит (сверка всех 491 классов референса): реализовано ~50 классов частично,
 > сквозное ядро обработки изображения + БД + отчёты + вспом. конфиги готовы и
-> проверены (30 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
+> проверены (31 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
 
 ## 0. Цель
 
@@ -93,6 +93,7 @@ ENDO_ROOT=$ER ui_preview osdset                       # self-test OSD-конфи
 ui_preview dbservice                                  # self-test сервиса БД (PRAGMA-окружение + бэкап/восстановление .bak)
 ui_preview dispparam                                  # self-test валидности элементов отчёта (данные→показ, ref-гейт)
 ENDO_ROOT=$ER ui_preview endoinfo                     # self-test конфига сервера выгрузки инфо об эндоскопе (endoinfoserver.ini)
+ENDO_ROOT=$ER ui_preview remoteswitch                 # self-test пульта/ножного переключателя + IHb (user.ini)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -436,12 +437,12 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~49/491 классов, **30 self-test-режимов**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +9 классов (+ расширения KDicomFieldMap мульти-record):
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~50/491 классов, **31 self-test-режим**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +10 классов (+ расширения KDicomFieldMap мульти-record):
 +KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
 +KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
 +KUserOsdSet OSD-конфиг кнопок (A), +KEntityService PRAGMA+бэкап БД (B),
-+KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг (MISC). Репозиторий
++KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг + KRemoteSwitchConfig пульт (MISC). Репозиторий
 на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
@@ -456,7 +457,7 @@ Qt5, boost 1.74, libcrypto.
 
 **Полный список 26 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
