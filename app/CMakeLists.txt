@@ -83,6 +83,7 @@ set(SOURCES
     src/db/KEntityExam.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
+    src/db/KEntityService.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KEntityDicom.cpp
@@ -156,6 +157,7 @@ add_executable(ui_preview
     src/db/KEntityExam.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
+    src/db/KEntityService.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp

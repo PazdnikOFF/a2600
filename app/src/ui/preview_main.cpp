@@ -16,6 +16,7 @@
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
 #include "db/KSaveFile.h"
+#include "db/KEntityService.h"
 #include "alg/AlgParaManager.h"
 #include "ctrl/KPlControl.h"
 #include "ctrl/KDccuParam.h"
@@ -48,7 +49,10 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSettings>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QMap>
 
 #include <QApplication>
@@ -807,6 +811,60 @@ int main(int argc, char **argv)
         const bool ok = fnOk && readOk && writeOk;
         qInfo() << (ok ? "osdset: PASS" : "osdset: FAIL");
         return ok ? 0 : 34;
+    }
+
+    // Self-test сервиса БД (реф. KEntityService): PRAGMA-окружение + бэкап/восстановление.
+    if (screen == "dbservice") {
+        const QString dir = "/tmp/endo_dbsvc";
+        QDir().mkpath(dir);
+        const QString dbPath = dir + "/HD-2000.dat";
+        QFile::remove(dbPath);
+
+        // Создать БД с данными, применить окружение (реф. SetEnvironment).
+        const char *conn = "endo_dbsvc";
+        { QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", conn);
+          db.setDatabaseName(dbPath); db.open();
+          QSqlQuery q(db);
+          q.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)");
+          q.exec("INSERT INTO t (v) VALUES ('alpha')");
+        }
+        const bool envOk = KEntityService::ApplyEnvironment(conn);
+        // Проверить, что PRAGMA применились.
+        bool syncOk = false, jrnOk = false;
+        { QSqlQuery q(QSqlDatabase::database(conn));
+          if (q.exec("PRAGMA synchronous") && q.next()) syncOk = q.value(0).toInt() == 1; // NORMAL=1
+          if (q.exec("PRAGMA journal_mode") && q.next())
+              jrnOk = q.value(0).toString().compare("delete", Qt::CaseInsensitive) == 0;
+        }
+        { QSqlDatabase::database(conn).close(); }
+        QSqlDatabase::removeDatabase(conn);
+
+        // Бэкап (реф. Recover): <base>_<stamp>.bak; затем изменить БД и восстановить.
+        const QString stamp = "20260715_120000";   // метка снаружи (время не off-device)
+        const QString bak = KEntityService::BackupDatabase(dbPath, dir + "/bak", stamp);
+        const bool bakOk = !bak.isEmpty() && QFile::exists(bak) &&
+                           QFileInfo(bak).fileName() == "HD-2000_20260715_120000.bak" &&
+                           KEntityService::DatabaseFileName() == "HD-2000.dat";
+
+        // Испортить основную БД, восстановить из бэкапа, проверить данные.
+        { QFile f(dbPath); f.open(QIODevice::WriteOnly | QIODevice::Truncate); f.close(); }
+        const bool recOk = KEntityService::RecoverDatabase(bak, dbPath);
+        bool dataOk = false;
+        { QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", conn);
+          db.setDatabaseName(dbPath); db.open();
+          QSqlQuery q(db);
+          if (q.exec("SELECT v FROM t WHERE id=1") && q.next())
+              dataOk = q.value(0).toString() == "alpha";
+        }
+        { QSqlDatabase::database(conn).close(); }
+        QSqlDatabase::removeDatabase(conn);
+
+        qInfo() << "env:" << envOk << "sync/jrn:" << syncOk << jrnOk
+                << "| бэкап:" << QFileInfo(bak).fileName() << bakOk
+                << "| восстановление:" << recOk << "данные:" << dataOk;
+        const bool ok = envOk && syncOk && jrnOk && bakOk && recOk && dataOk;
+        qInfo() << (ok ? "dbservice: PASS" : "dbservice: FAIL");
+        return ok ? 0 : 35;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).
