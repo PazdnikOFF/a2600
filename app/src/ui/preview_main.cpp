@@ -659,7 +659,25 @@ int main(int argc, char **argv)
                 << "| флаги (app/hmi):" << um.GetItemNeedUpdate("app") << um.GetItemNeedUpdate("hmi")
                 << "| root:" << um.GetUpdateRoot();
 
-        const bool ok = itemsOk && decideOk && flagsOk;
+        // Проверка целостности файлов пакета (реф. *FileMd5Code).
+        const QString fwFile = root + "/app.bin";
+        { QFile bf(fwFile); bf.open(QIODevice::WriteOnly); bf.write("firmware-payload-v2"); bf.close(); }
+        const QString calcMd5 = KUpdateManifest::CalcFileMd5(fwFile);
+        // md5-файл формата md5sum ("<md5>  <имя>").
+        const QString md5File = root + "/md5sum.txt";
+        { QFile mf(md5File); mf.open(QIODevice::WriteOnly | QIODevice::Text);
+          mf.write((calcMd5 + "  app.bin\n").toUtf8());
+          mf.write("deadbeef00000000deadbeef00000000  other.bin\n"); mf.close(); }
+        const bool md5Ok = calcMd5.size() == 32 &&
+                           KUpdateManifest::ReadFileMd5(md5File, "app.bin") == calcMd5 &&
+                           KUpdateManifest::CheckFileMd5(fwFile, md5File) &&           // совпал
+                           KUpdateManifest::ReadFileMd5(md5File, "nope.bin").isEmpty();
+        // Порча файла → проверка не проходит.
+        { QFile bf(fwFile); bf.open(QIODevice::WriteOnly); bf.write("tampered"); bf.close(); }
+        const bool tamperOk = !KUpdateManifest::CheckFileMd5(fwFile, md5File);
+        qInfo() << "md5:" << calcMd5 << "check ok:" << md5Ok << "tamper detected:" << tamperOk;
+
+        const bool ok = itemsOk && decideOk && flagsOk && md5Ok && tamperOk;
         qInfo() << (ok ? "update: PASS" : "update: FAIL");
         return ok ? 0 : 30;
     }

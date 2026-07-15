@@ -46,6 +46,17 @@ public:
     // Версия компонента в пакете ([<item>]/Version).
     QString GetPackageVersion(const QString &item) const;
 
+    // --- Проверка целостности файлов пакета (реф. KUpdateConf::*FileMd5Code) ---
+    // MD5-хеш файла (hex, нижний регистр). В оригинале считается через HAL
+    // (KHalClass::getUpdateFileChecksum) — off-device эквивалент QCryptographicHash::Md5.
+    static QString CalcFileMd5(const QString &filePath);
+    // Прочитать ожидаемый MD5 для targetName из md5-файла формата "<md5>  <имя>\n"
+    // (реф. ReadFileMd5Code). "" если имя не найдено.
+    static QString ReadFileMd5(const QString &md5File, const QString &targetName);
+    // Совпадает ли посчитанный MD5 файла с записанным в md5File для его basename
+    // (реф. CheckUpdateFileMd5Code).
+    static bool CheckFileMd5(const QString &filePath, const QString &md5File);
+
     // Решение по одному компоненту (реф. UpdateCheck). installed — установленная версия,
     // pkg — версия пакета, matched — список совместимых версий ([] = без ограничения).
     static ItemStatus DecideItem(const QString &installed, const QString &pkg,

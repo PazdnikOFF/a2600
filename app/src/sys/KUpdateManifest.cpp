@@ -5,6 +5,10 @@
 
 #include <QSettings>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QCryptographicHash>
+#include <QRegularExpression>
 
 KUpdateManifest &KUpdateManifest::GetInstance()
 {
@@ -53,6 +57,46 @@ QString KUpdateManifest::GetPackageVersion(const QString &item) const
 {
     QSettings ini(ManifestFile(), QSettings::IniFormat);
     return ini.value(item + "/Version").toString();
+}
+
+QString KUpdateManifest::CalcFileMd5(const QString &filePath)
+{
+    QFile f(filePath);
+    if (!f.open(QIODevice::ReadOnly))
+        return QString();
+    QCryptographicHash hash(QCryptographicHash::Md5);
+    if (!hash.addData(&f))
+        return QString();
+    return QString::fromLatin1(hash.result().toHex());
+}
+
+QString KUpdateManifest::ReadFileMd5(const QString &md5File, const QString &targetName)
+{
+    QFile f(md5File);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QString();
+    const QString content = QString::fromUtf8(f.readAll());
+    // Формат md5sum: "<32-hex>  <имя>" (два пробела) на строку.
+    for (const QString &line : content.split('\n', QString::SkipEmptyParts)) {
+        const QString t = line.trimmed();
+        const int sp = t.indexOf(QRegularExpression("\\s+"));
+        if (sp <= 0)
+            continue;
+        const QString md5 = t.left(sp);
+        const QString name = t.mid(sp).trimmed();
+        if (name == targetName || QFileInfo(name).fileName() == targetName)
+            return md5.toLower();
+    }
+    return QString();
+}
+
+bool KUpdateManifest::CheckFileMd5(const QString &filePath, const QString &md5File)
+{
+    const QString calc = CalcFileMd5(filePath);
+    if (calc.isEmpty())
+        return false;
+    const QString expected = ReadFileMd5(md5File, QFileInfo(filePath).fileName());
+    return !expected.isEmpty() && calc.compare(expected, Qt::CaseInsensitive) == 0;
 }
 
 KUpdateManifest::ItemStatus KUpdateManifest::DecideItem(const QString &installed,
