@@ -14,6 +14,9 @@ QString DataPath()           { return QDir(theme::root()).absoluteFilePath("data
 QString DisplayConfigPath()  { return QDir(SystemPath()).absoluteFilePath("display"); }
 QString UserPresetPath()     { return QDir(SystemPath()).absoluteFilePath("presetdata/userpreset"); }
 QString VideoConfPath()      { return QDir(SystemPath()).absoluteFilePath("videoconf"); }
+// Реф.: SetDataPath = DataPath + "setdata/", UserSetPath = SetDataPath + "userset/".
+QString SetDataPath()        { return QDir(DataPath()).absoluteFilePath("setdata"); }
+QString UserSetPath()        { return QDir(SetDataPath()).absoluteFilePath("userset"); }
 
 QString ProductDisplayConfigPath(const QString &model)
 {

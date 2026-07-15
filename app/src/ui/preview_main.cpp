@@ -28,6 +28,10 @@
 #include "dicom/KDicomFieldMap.h"
 #include "dicom/KEntityDicom.h"
 #include "dicom/KDicomDatasetFormat.h"
+#include "dicom/KSysDICOMData.h"
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "report/KReportTemplate.h"
 #include "report/KSysReportTempletCfg.h"
 #include "report/KReportDataSource.h"
@@ -1552,6 +1556,96 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test конфига DICOM-сервисов (link-dicom.json, KSysDICOMData/KDICOMConf).
+    if (screen == "dcmconf") {
+        // Пишет файл → берём временный ENDO_ROOT.
+        KSysDICOMData data;   // реф. ctor зовёт Load(); файла нет → дефолты
+        const QString path = data.ConfigFilePath();
+        const bool inUserSet = path.endsWith("data/setdata/userset/link-dicom.json");
+
+        // 1. Дефолты Clear() — 1:1 с реф. (Local 104/60/"AE", списки пусты).
+        const KDICOMLocalConf def = data.GetDICOMLocalConf();
+        const bool defOk = def.port == 104 && def.connectTimeout == 60 && def.ae == "AE"
+            && !def.uploadPDFReport && !def.snapSyncUploadImage
+            && data.GetDICOMStorageConfList().isEmpty()
+            && data.GetDICOMWorkListConfList().isEmpty()
+            && data.GetDICOMMPPSConfList().isEmpty()
+            && data.GetDICOMCMTStorageConfList().isEmpty();
+
+        // 2. Собираем конфиг и сохраняем через Save(conf) — сериализация из объекта.
+        KDICOMConf conf;
+        KDICOMLocalConf local;
+        local.port = 11112; local.connectTimeout = 30; local.name = "X2600";
+        local.ae = "ENDO_AE"; local.uploadPDFReport = true; local.snapSyncUploadImage = true;
+        conf.SetDICOMLocalConf(local);
+
+        KDICOMStorageConf st1;                       // включённый + вложенный commit
+        st1.isEnable = true; st1.port = 104; st1.ip = "192.168.1.10";
+        st1.name = "PACS"; st1.ae = "STORESCP"; st1.addTime = "2026-07-15 10:00:00";
+        st1.commitStorage.isEnable = true; st1.commitStorage.port = 105;
+        st1.commitStorage.ip = "192.168.1.11"; st1.commitStorage.ae = "COMMITSCP";
+        KDICOMStorageConf st2;                       // выключенный → фильтр onlyEnable
+        st2.isEnable = false; st2.port = 106; st2.ip = "192.168.1.12"; st2.name = "PACS2";
+        conf.SetDICOMStorageConfList({st1, st2});
+
+        KDICOMWorkListConf wl;
+        wl.isEnable = true; wl.port = 107; wl.ip = "192.168.1.20"; wl.ae = "WLSCP";
+        wl.maxDownloadNum = 50; wl.reqProcDesc = 1;  // реф.: ReqProcDesc — int
+        conf.SetDICOMWorkListConfList({wl});
+
+        KDICOMMPPSConf mp;
+        mp.isEnable = true; mp.port = 108; mp.ip = "192.168.1.30"; mp.ae = "MPPSSCP";
+        conf.SetDICOMMPPSConfList({mp});
+
+        KDICOMCommitStorageConf cm;
+        cm.isEnable = true; cm.port = 109; cm.ip = "192.168.1.40"; cm.ae = "CMTSCP";
+        conf.SetDICOMCMTStorageConfList({cm});
+
+        data.Save(conf);
+        const bool written = QFile::exists(path);
+
+        // 3. Roundtrip: новый объект читает файл в ctor → сверка с исходным conf.
+        KSysDICOMData re;
+        const bool localOk = re.GetDICOMLocalConf() == local;
+        const QList<KDICOMStorageConf> rst = re.GetDICOMStorageConfList();
+        const bool stOk = rst.size() == 2 && rst[0] == st1 && rst[1] == st2
+            && rst[0].commitStorage.port == 105 && rst[0].commitStorage.ae == "COMMITSCP";
+        const QList<KDICOMWorkListConf> rwl = re.GetDICOMWorkListConfList();
+        const bool wlOk = rwl.size() == 1 && rwl[0] == wl && rwl[0].reqProcDesc == 1
+            && rwl[0].maxDownloadNum == 50;
+        const bool mpOk = re.GetDICOMMPPSConfList().size() == 1
+            && re.GetDICOMMPPSConfList()[0] == mp;
+        const bool cmOk = re.GetDICOMCMTStorageConfList().size() == 1
+            && re.GetDICOMCMTStorageConfList()[0] == cm;
+
+        // 4. Фильтр onlyEnable (реф. ldrb IsEnable/cbz).
+        const bool filtOk = re.GetDICOMStorageConfList(true).size() == 1
+            && re.GetDICOMStorageConfList(true)[0].name == "PACS"
+            && re.GetDICOMStorageConfList(false).size() == 2;
+
+        // 5. Схема документа: корень Local + 4 массива, вложенный CommitStorage в Storage.
+        QFile f(path);
+        f.open(QIODevice::ReadOnly);
+        const QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
+        f.close();
+        const bool schemaOk = root.value("Local").isObject()
+            && root.value("MPPS").isArray() && root.value("WorkList").isArray()
+            && root.value("Storage").isArray() && root.value("CommitStorage").isArray()
+            && root.value("Storage").toArray()[0].toObject().value("CommitStorage").isObject()
+            && root.value("Local").toObject().value("Port").toInt() == 11112
+            && root.value("WorkList").toArray()[0].toObject().value("ReqProcDesc").isDouble();
+
+        qInfo() << "path:" << path << "в userset:" << inUserSet << "записан:" << written;
+        qInfo() << "дефолты:" << defOk << "local:" << localOk << "storage:" << stOk
+                << "worklist:" << wlOk << "mpps:" << mpOk << "commit:" << cmOk
+                << "фильтр IsEnable:" << filtOk << "схема:" << schemaOk;
+
+        const bool ok = inUserSet && written && defOk && localOk && stOk && wlOk
+            && mpOk && cmOk && filtOk && schemaOk;
+        qInfo() << (ok ? "dcmconf: PASS" : "dcmconf: FAIL");
+        return ok ? 0 : 28;
     }
 
     // Self-test конфигурации брендов/стилей (stylelist.ini).

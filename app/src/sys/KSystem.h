@@ -14,6 +14,8 @@ QString SystemPath();            // /home/root/system
 QString DataPath();              // /home/root/data
 QString DisplayConfigPath();     // /home/root/system/display
 QString UserPresetPath();        // /home/root/system/presetdata/userpreset
+QString SetDataPath();           // /home/root/data/setdata/
+QString UserSetPath();           // /home/root/data/setdata/userset/
 QString VideoConfPath();         // /home/root/system/videoconf
 QString ProductDisplayConfigPath(const QString &model);  // .../display/<model>/<model>
 QString ProductDisplayConfigFile(const QString &model);  // .../<model>/product.ini
