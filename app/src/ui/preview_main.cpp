@@ -45,6 +45,7 @@
 #include "sys/KUpdateManifest.h"
 #include "sys/KEndoInfoServerConfig.h"
 #include "sys/KRemoteSwitchConfig.h"
+#include "sys/KPatientTimeOperation.h"
 #include "sys/KVersionConfig.h"
 #include "sys/KProjectSet.h"
 #include "sys/KStyleConfig.h"
@@ -993,6 +994,43 @@ int main(int argc, char **argv)
                         fmtSetOk;
         qInfo() << (ok ? "dcmfmt: PASS" : "dcmfmt: FAIL");
         return ok ? 0 : 39;
+    }
+
+    // Self-test конвертеров дат/времени пациента (реф. KPatientTimeOperation).
+    if (screen == "pattime") {
+        using P = KPatientTimeOperation;
+        // Конверсии форматов (1:1 с бинарником).
+        const bool convOk =
+            P::ConvertYYYYMMDDToDbDate("20260714") == "2026-07-14" &&
+            P::ConvertYYYYMMDDToDicomDate("20260714") == "20260714" &&
+            P::ConvertYYYYMMDDToDate("20260714", "dd/MM/yyyy") == "14/07/2026" &&
+            P::ConvertYYYYMMDDToDbDate("2026137") == "" &&           // некорректно
+            P::ConvertHHMMSSToDbTime("120530") == "12:05:30" &&
+            P::ConvertHHMMSSToDicomTime("120530") == "120530" &&
+            P::ConvertHHMMSSToDbTime("250000") == "";               // 25ч — невалидно
+
+        // Возраст по дате рождения (опорная дата инъектируется).
+        const QDate today(2026, 7, 14);
+        const bool ageOk =
+            P::GetAgeByBirthDay("1980-05-01", today) == 46 &&       // ДР прошёл
+            P::GetAgeByBirthDay("1980-12-31", today) == 45 &&       // ДР ещё не наступил
+            P::GetAgeByBirthDay("2026-07-14", today) == 0 &&        // сегодня
+            P::GetAgeByBirthDay("2030-01-01", today) == -1 &&       // будущее
+            P::GetAgeByBirthDay("плохая-дата", today) == -1;
+
+        // Валидация DICOM-диапазона дат.
+        const bool rangeOk =
+            P::IsYYYYMMDDDicomDateRange("20260714") &&
+            P::IsYYYYMMDDDicomDateRange("20260101-20261231") &&
+            !P::IsYYYYMMDDDicomDateRange("2026") &&
+            !P::IsYYYYMMDDDicomDateRange("20260714-bad");
+
+        qInfo() << "conv:" << convOk << "age:" << ageOk << "range:" << rangeOk
+                << "| 1980-05-01→" << P::GetAgeByBirthDay("1980-05-01", today)
+                << "| 20260714→db:" << P::ConvertYYYYMMDDToDbDate("20260714");
+        const bool ok = convOk && ageOk && rangeOk;
+        qInfo() << (ok ? "pattime: PASS" : "pattime: FAIL");
+        return ok ? 0 : 40;
     }
 
     // Self-test файлового слоя (копирование/удаление каталогов, размер, тип устройства).

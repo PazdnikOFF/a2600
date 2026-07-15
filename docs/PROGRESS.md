@@ -4,9 +4,9 @@
 > он заменяет длинную историю чата. Детали архитектуры: `docs/ARCHITECTURE.md`,
 > панель 8″: `docs/HMI_PANEL.md`, **полный аудит покрытия + план: `docs/ROADMAP.md`**.
 >
-> Аудит (сверка всех 491 классов референса): реализовано ~51 класс частично,
+> Аудит (сверка всех 491 классов референса): реализовано ~52 класса частично,
 > сквозное ядро обработки изображения + БД + отчёты + вспом. конфиги готовы и
-> проверены (32 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
+> проверены (33 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
 
 ## 0. Цель
 
@@ -95,6 +95,7 @@ ui_preview dispparam                                  # self-test валидно
 ENDO_ROOT=$ER ui_preview endoinfo                     # self-test конфига сервера выгрузки инфо об эндоскопе (endoinfoserver.ini)
 ENDO_ROOT=$ER ui_preview remoteswitch                 # self-test пульта/ножного переключателя + IHb (user.ini)
 ENDO_ROOT=$ER ui_preview dcmfmt                       # self-test структуры DICOM-датасета (Mpps*DatasetFormat.xml)
+ui_preview pattime                                    # self-test конвертеров дат/времени пациента (возраст, DICOM/БД-формат)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -438,8 +439,8 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~51/491 классов, **32 self-test-режима**
-(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +11 классов (+ расширения KDicomFieldMap мульти-record):
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **33 self-test-режима**
+(все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +12 классов (+ расширения KDicomFieldMap мульти-record):
 +KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
 +KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
 +KUserOsdSet OSD-конфиг кнопок (A), +KEntityService PRAGMA+бэкап БД (B),
@@ -458,7 +459,7 @@ Qt5, boost 1.74, libcrypto.
 
 **Полный список 26 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
