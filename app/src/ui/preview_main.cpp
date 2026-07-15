@@ -398,14 +398,15 @@ int main(int argc, char **argv)
         pl.SetAuroraOffset(0x12, 0x34);
         pl.SetVideoCaptureArea(10, -20);      // enc(10)=20, enc(-20)=(40|0x100)&0x1ff=0x128
         unsigned short hist[256] = {0};
-        pl.ReadBrightnessHistogramValue(hist, 256);   // на десктопе: только триггер-запись
+        pl.ReadBrightnessHistogramValue(hist, 256);   // десктоп: триггер 1 + сброс 0 (реф.)
         pl.ReadIrisValue();                            // read → 0 (нет /dev/mem)
         const auto &tx = pl.Trace();
-        bool auxOk = tx.size() == 3 &&
+        bool auxOk = tx.size() == 4 &&
                      tx[0].first == 0xa004a02c && tx[0].second == (0x12u | (0x34u<<8)) &&
                      tx[1].first == 0xa18d0008 && tx[1].second == (20u | (0x128u<<16)) &&
-                     tx[2].first == 0xa18a0010 && tx[2].second == 1;
-        qInfo() << "aux writes:" << tx.size() << "(exp 3, aurora/capture/hist-trig)"
+                     tx[2].first == 0xa18a0010 && tx[2].second == 1 &&   // hist триггер=1
+                     tx[3].first == 0xa18a0010 && tx[3].second == 0;     // hist сброс=0 (реф.)
+        qInfo() << "aux writes:" << tx.size() << "(exp 4: aurora/capture/hist-trig1/hist-trig0)"
                 << (auxOk ? "OK" : "MISMATCH");
         if (!auxOk) ok = false;
 
