@@ -19,6 +19,7 @@
 // ============================================================================
 
 // --- Видео-фронт FPGA0 (AEC/AGC, Aurora-serdes, тест-паттерн, версии) ---------
+#define REG_CAM_CMD          0xa0048010UL   // FPGA-I2C команд. рег. камеры (mirror/rotate)
 #define REG_AEC_AGC          0xa0048020UL   // SetAECAndAGCValue: bGain|(rGain<<16)
 #define REG_AURORA_OFFSET    0xa004a02cUL   // SetAuroraOffset: a|(b<<8)
 #define REG_VIDEO_TEST       0xa004a040UL   // VideoTest: mode<<2

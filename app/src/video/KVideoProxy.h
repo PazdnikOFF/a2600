@@ -84,6 +84,9 @@ public:
     void SetCutPara(int a, int b);    // → pl_->SetCutPara
     void SetRealtimeVideoState(int state);  // → pl_->SetRealtimeVideoState
     void SetVideoDisPlay(int mode);   // → pl_->SetVideoDisplay (реф.: опечатка DisPlay)
+    // Зеркало/поворот — команд. последовательности в FPGA-I2C рег. камеры (реф.).
+    void SetHorizontalMirror(int mode);  // mode==4: 2 команды в REG_CAM_CMD
+    void SetRotateType(int type);        // type==2: 3 команды в REG_CAM_CMD + паузы
 
     // --- Конвертеры фиксированной точки и клампы (реф., 1:1 с дизасмом) ---
     // Float2FixedPointNumber(f, a, b): Q(a).(b) с насыщением ±(2^(a+b)−1); scale=2^b.

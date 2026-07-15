@@ -1,5 +1,6 @@
 #include "video/KVideoProxy.h"
 #include "ctrl/KPlControl.h"
+#include "ctrl/KPlRegs.h"
 #include "alg/AlgParaManager.h"
 #include "video/KVideoParam.h"
 
@@ -380,6 +381,27 @@ void KVideoProxy::SetVideoDisPlay(int mode)
 {
     // Реф. имя с опечаткой (DisPlay) — сохранено; → KPlControl::SetVideoDisplay.
     if (pl_) pl_->SetVideoDisplay(mode);
+}
+
+void KVideoProxy::SetHorizontalMirror(int mode)
+{
+    // Реф. SetHorizontalMirror: действует только при mode==4 — две команды в
+    // FPGA-I2C регистр камеры REG_CAM_CMD (0xa0048010).
+    if (mode != 4 || !pl_) return;
+    pl_->WriteValueToPL(REG_CAM_CMD, 0x00370141);
+    pl_->WriteValueToPL(REG_CAM_CMD, 0x00500703);
+}
+
+void KVideoProxy::SetRotateType(int type)
+{
+    // Реф. SetRotateType: только type==2 пишет — три команды в REG_CAM_CMD с паузами
+    // (type==0 — ничего; иначе только debug-лог оригинала, без записей).
+    if (type != 2 || !pl_) return;
+    pl_->WriteValueToPL(REG_CAM_CMD, 0x003811a8);
+    usleep(2000);
+    pl_->WriteValueToPL(REG_CAM_CMD, 0x00381317);
+    usleep(2000);
+    pl_->WriteValueToPL(REG_CAM_CMD, 0x003820b0);
 }
 
 int KVideoProxy::Float2FixedPointNumber(float f, int a, int b)

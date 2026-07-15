@@ -1519,7 +1519,22 @@ int main(int argc, char **argv)
             tw[5].first == 0xa0080028 && tw[5].second == 2;
         qInfo() << "wrappers writes:" << tw.size() << "(exp 6)" << (wrapOk ? "OK" : "MISMATCH");
 
-        const bool ok = f2fOk && p2fOk && clampOk && wrapOk;
+        // Зеркало/поворот — командные последовательности в REG_CAM_CMD (0xa0048010).
+        pl.ClearTrace();
+        vp.SetHorizontalMirror(1);     // не 4 → ничего
+        vp.SetHorizontalMirror(4);     // 2 команды
+        vp.SetRotateType(0);           // 0 → ничего
+        vp.SetRotateType(2);           // 3 команды
+        const auto &tm = pl.Trace();
+        const bool mrOk = tm.size() == 5 &&
+            tm[0].first == 0xa0048010 && tm[0].second == 0x00370141 &&
+            tm[1].first == 0xa0048010 && tm[1].second == 0x00500703 &&
+            tm[2].first == 0xa0048010 && tm[2].second == 0x003811a8 &&
+            tm[3].first == 0xa0048010 && tm[3].second == 0x00381317 &&
+            tm[4].first == 0xa0048010 && tm[4].second == 0x003820b0;
+        qInfo() << "mirror/rotate writes:" << tm.size() << "(exp 5)" << (mrOk ? "OK" : "MISMATCH");
+
+        const bool ok = f2fOk && p2fOk && clampOk && wrapOk && mrOk;
         qInfo() << (ok ? "fxpt: PASS" : "fxpt: FAIL");
         return ok ? 0 : 23;
     }

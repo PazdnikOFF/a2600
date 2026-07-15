@@ -513,8 +513,15 @@ KVIDEOPROXY РАЗБЛОКИРОВАН ДЛЯ ui_preview: gst-тракт (pipeli
 scale=2^b, насыщение 2^(a+b)−1), FixedPointNumber2Float(x)=(x&0xfff)/4096, IncreaseValue/
 DecreaseValue (клампы) — self-test `fxpt`. KVideoProxy: 26→36 методов (+6 тонких обёрток SetColorR/B/CLevel-SetCutPara-SetRealtimeVideoState-SetVideoDisPlay к KPlControl, имена с опечатками как в реф.) (из 116; остальные
 device: camera/gst/endoscope).
-**ПРОДОЛЖИТЬ (новое направление):** off-device методы KVideoProxy (Send*/Set*Level-оркестрация,
-RBCValue*, конвертеры) — теперь тестируемы; либо off-device Фазы ROADMAP (§9).
+Добавлены command-последовательности SetHorizontalMirror (mode==4 → 2 записи 0xa0048010)
+и SetRotateType (type==2 → 3 записи + паузы) — рег. REG_CAM_CMD, self-test `fxpt`.
+KVideoProxy 26→38/116.
+ОТЛОЖЕНО (глубокая многоклассовая цепочка, не «фантазировать»): RBCValueAdd/Sub/Set/
+RBCModeSwitch — тянут KVideoParam::Set{R,B,S}Gain (в реф. зовут KVideoSet::SetColor*Value
+→ KUserSet/KUserOsdSet::SaveColorConf + сигнал VideoParamChanged; поля 0x58/0x5c с
+неясной семантикой max). Нужен отдельный заход с реверсом KVideoSet color-value + user-persist.
+**ПРОДОЛЖИТЬ:** прочие тонкие/регистровые off-device методы KVideoProxy (SwitchVLSMode,
+SetImageEnhanceType*, SetMonitorCtrl) — тестируемы; либо off-device Фазы ROADMAP (§9).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 
