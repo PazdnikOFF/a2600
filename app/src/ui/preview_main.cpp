@@ -976,6 +976,11 @@ int main(int argc, char **argv)
                 << "| ScheduledStepAttrSeq: seq=" << seq.isSequence
                 << "детей=" << seq.children.size();
 
+        // Тот же парсер обрабатывает и MppsSetDatasetFormat.xml (Set-вариант).
+        KDicomDatasetFormat fmtSet;
+        const bool fmtSetOk = fmtSet.Load(QDir(KSystem::UserPresetPath())
+            .absoluteFilePath("dicom/MppsSetDatasetFormat.xml")) && fmtSet.TotalCount() > 0;
+
         const bool ok = loaded && fmt.RootCount() > 5 && fmt.TotalCount() > fmt.RootCount() &&
                         seqFound && seq.isSequence && seq.children.size() >= 3 &&
                         // вложенные теги последовательности
@@ -984,7 +989,8 @@ int main(int argc, char **argv)
                         // корневые листья
                         fmt.Contains("DCM_PatientID") &&
                         fmt.Contains("DCM_PerformedProcedureStepStatus") &&
-                        !fmt.Contains("DCM_NoSuchTag");
+                        !fmt.Contains("DCM_NoSuchTag") &&
+                        fmtSetOk;
         qInfo() << (ok ? "dcmfmt: PASS" : "dcmfmt: FAIL");
         return ok ? 0 : 39;
     }
@@ -1611,10 +1617,15 @@ int main(int argc, char **argv)
         qInfo() << "MppsSetFieldMap: loaded=" << mpmOk << "записей=" << mpm.RecordCount()
                 << "| PPS полей=" << pps.fields.size()
                 << "| ProcedureCode SubGroup=" << proc.subGroup;
+        // Тот же парсер обрабатывает и MppsCreateFieldMap.xml (Create-вариант).
+        KDicomFieldMap mpmCreate;
+        const bool mpmCreateOk = mpmCreate.Load(QDir(KSystem::UserPresetPath())
+            .absoluteFilePath("dicom/MppsCreateFieldMap.xml")) && mpmCreate.RecordCount() >= 1;
         const bool mpmCheck = mpmOk && mpm.RecordCount() >= 3 &&
                               ppsFound && pps.fields.size() >= 4 &&
                               procFound && proc.subGroup == "DCM_ProcedureCodeSequence" &&
-                              mpm.Fields().size() > pps.fields.size();  // все записи плоско
+                              mpm.Fields().size() > pps.fields.size() &&  // все записи плоско
+                              mpmCreateOk;
 
         const bool ok = xmlOk && hasKey && wlAdd && wlN == 1 &&
                         got.value("PatientName") == "Ivanov^Ivan" &&
