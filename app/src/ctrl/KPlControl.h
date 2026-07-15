@@ -102,7 +102,8 @@ public:
     bool GetFpga2Version(unsigned int &version);   // 0xa1000000
     bool GetFpga3Version(unsigned int &version);   // 0xa0060000
     bool GetFpga2System(unsigned int &value);      // 0xa1000008
-    // Чтение результата ББ (реф. ReadAWBValue): 0xa1840014 → r=(v>>16)&0xffff, b=v&0x1ffff.
+    // Чтение результата ББ (реф. ReadAWBValue, дизасм): 0xa1840014 →
+    //   rGain=(v>>16)&0x3fff, bGain=v&0x3fff (14 бит на канал).
     bool ReadAWBValue(unsigned int &rGain, unsigned int &bGain);
 
     // Стоп-кадр (реф. SetFreezeStatus) → 0xa180002c.

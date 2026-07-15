@@ -287,12 +287,13 @@ bool KPlControl::GetFpga2System(unsigned int &value)
 
 bool KPlControl::ReadAWBValue(unsigned int &rGain, unsigned int &bGain)
 {
-    // Реф.: читаем 0xa1840014, распаковываем как в SetAWBValue (b[16:0]|r[31:16]).
+    // Реф. ReadAWBValue (дизасм X2000, 0xa1840014): распаковка — 14 бит на канал:
+    //   bGain = v & 0x3fff (and w0,w4,#0x3fff); rGain = (v>>16) & 0x3fff (ubfx #16,#14).
     unsigned int v = 0;
     if (!ReadValueFromPL(0xa1840014, v))
         return false;
-    rGain = (v >> 16) & 0xffff;
-    bGain = v & 0x1ffff;
+    rGain = (v >> 16) & 0x3fff;
+    bGain = v & 0x3fff;
     return true;
 }
 
