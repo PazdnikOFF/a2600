@@ -269,6 +269,23 @@ int main(int argc, char **argv)
         qInfo() << "geo/freeze writes:" << tg.size() << "(exp 6)" << (geoOk ? "OK" : "MISMATCH");
         if (!geoOk) ok = false;
 
+        // Новые декодированные методы (логика 1:1 из дизасма X2000):
+        //   SetFreezeVideoLoc → 0xa1800024=a|(b<<16), 0xa1800028=c|(d<<16);
+        //   SetLensSize → 0xa189000c=a|(b<<16); SetEnhanceSize/SetContrastLevel — пустые.
+        pl.ClearTrace();
+        pl.SetFreezeVideoLoc(0x11, 0x22, 0x33, 0x44);
+        pl.SetLensSize(0x5, 0x6);
+        pl.SetEnhanceSize(0x7, 0x8);   // no-op (пустая в прошивке)
+        pl.SetContrastLevel(3);        // no-op (пустая в прошивке)
+        const auto &tv = pl.Trace();
+        const bool vlocOk = tv.size() == 3 &&   // 2 (FreezeVideoLoc) + 1 (LensSize) + 0 + 0
+                            tv[0].first == 0xa1800024 && tv[0].second == (0x11u | (0x22u<<16)) &&
+                            tv[1].first == 0xa1800028 && tv[1].second == (0x33u | (0x44u<<16)) &&
+                            tv[2].first == 0xa189000c && tv[2].second == (0x5u | (0x6u<<16));
+        qInfo() << "freezeloc/lens/noop writes:" << tv.size() << "(exp 3)"
+                << (vlocOk ? "OK" : "MISMATCH");
+        if (!vlocOk) ok = false;
+
         // Sensor LUT (config-driven, OV2740_EC_1504X1080: по 1024 → 512 пар/канал).
         const auto sl = alg.LoadSensorLut("OV2740", "EC_1504X1080");
         pl.ClearTrace();

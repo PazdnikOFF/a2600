@@ -350,6 +350,32 @@ void KPlControl::SetCutPara(int a, int b)
                    static_cast<unsigned int>(b) | (static_cast<unsigned int>(a) << 16));
 }
 
+void KPlControl::SetFreezeVideoLoc(int a, int b, int c, int d)
+{
+    // Реф. SetFreezeVideoLoc: 0xa1800024 = a|(b<<16), 0xa1800028 = c|(d<<16).
+    WriteValueToPL(0xa1800024,
+                   static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
+    WriteValueToPL(0xa1800028,
+                   static_cast<unsigned int>(c) | (static_cast<unsigned int>(d) << 16));
+}
+
+void KPlControl::SetLensSize(int a, int b)
+{
+    // Реф. SetLensSize: 0xa189000c = a|(b<<16).
+    WriteValueToPL(0xa189000c,
+                   static_cast<unsigned int>(a) | (static_cast<unsigned int>(b) << 16));
+}
+
+void KPlControl::SetEnhanceSize(int, int)
+{
+    // Реф. SetEnhanceSize — пустая функция (только ret) в этой прошивке.
+}
+
+void KPlControl::SetContrastLevel(int)
+{
+    // Реф. SetContrastLevel — пустая функция (только ret) в этой прошивке.
+}
+
 void KPlControl::SetSensorRLut(const unsigned int *data, int count)
 {
     writePairedLut(this, kSensorLutR, data, count);

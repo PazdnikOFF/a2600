@@ -116,6 +116,15 @@ public:
     void SetFreezeScalerRatio(int a, int b);
     // Параметры обрезки (реф. SetCutPara) → 0xa1860018 = b|(a<<16).
     void SetCutPara(int a, int b);
+    // Позиция видео стоп-кадра (реф. SetFreezeVideoLoc): 0xa1800024 = a|(b<<16),
+    //   0xa1800028 = c|(d<<16).
+    void SetFreezeVideoLoc(int a, int b, int c, int d);
+    // Размер линзы/маски (реф. SetLensSize) → 0xa189000c = a|(b<<16).
+    void SetLensSize(int a, int b);
+    // Реф. SetEnhanceSize/SetContrastLevel — в этой прошивке ПУСТЫЕ (только ret),
+    //   оставлены для совместимости API (не пишут регистры).
+    void SetEnhanceSize(int a, int b);
+    void SetContrastLevel(int level);
 
     // LUT линеаризации сенсора по каналам (реф. SetSensorR/G/BLut). Значения из
     // sensor_lut_{r,g,b}.txt (через AlgParaManager). Регион 0xa1820000:
