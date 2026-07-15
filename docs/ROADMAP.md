@@ -7,7 +7,7 @@
 ## 1. Итог аудита (факты из бинарника)
 
 - **Классов K\* в референсе:** 491 (≈8360 методов в `.text`).
-- **Реализовано классов (по имени):** ~55 (+languageConfig,+KLoadUnicodeText,+KEncStyle) (эта сессия +12: KVideoCal, KUpdateManifest,
+- **Реализовано классов (по имени):** ~56 (+languageConfig,+KLoadUnicodeText,+KEncStyle,+KExamListRecordFileUpdate) (эта сессия +12: KVideoCal, KUpdateManifest,
   KSysReportTempletCfg, KReportDBTableHandler-пагинация, KSaveFile, KUserOsdSet, KEntityService, KReportDisplayParam, KEndoInfoServerConfig, KRemoteSwitchConfig, KDicomDatasetFormat, KPatientTimeOperation) +
   namespace `KSystem`. Ранее +15:
   KSystemStatus, KProjectSet, KStyleConfig, KVersionConfig, KExamListConfigHandler, KEntityQuickInput,
@@ -29,7 +29,7 @@
 - **Проверяемое off-device ядро (33 self-test-режима, все PASS):** plreg, filt, dicom, report,
   account, thesaurus, userset, coldlight, version, project, statistic, sysstatus, quickinput, style,
   examcfg, exam, filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb,
-  savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, language, unicodetext, encstyle.
+  savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, language, unicodetext, encstyle, recfiles.
 
 **Вывод:** реализован и протестирован сквозной **config→параметр→PL-регистр** тракт обработки
 изображения + БД-слои + движок отчётов + вспомогательные конфиги. Остальное (87% методов) —

@@ -81,6 +81,7 @@ set(SOURCES
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/db/KExamListRecordFileUpdate.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
@@ -164,6 +165,7 @@ add_executable(ui_preview
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/db/KExamListRecordFileUpdate.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp

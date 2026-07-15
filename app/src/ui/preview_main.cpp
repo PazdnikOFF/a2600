@@ -54,10 +54,12 @@
 #include "sys/languageConfig.h"
 #include "sys/KLoadUnicodeText.h"
 #include "sys/KEncStyle.h"
+#include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
 
 #include <QDir>
 #include <QFile>
+#include <QTemporaryDir>
 #include <QFileInfo>
 #include <QSettings>
 #include <QSqlDatabase>
@@ -1523,6 +1525,33 @@ int main(int argc, char **argv)
                 << "fallback:" << fbOk;
         qInfo() << (ok ? "encstyle: PASS" : "encstyle: FAIL");
         return ok ? 0 : 26;
+    }
+
+    // Self-test пересчёта файлов записи осмотра (KExamListRecordFileUpdate).
+    if (screen == "recfiles") {
+        // Временный каталог осмотра с известным составом файлов.
+        QTemporaryDir tmp;
+        const QString dir = tmp.path();
+        auto touch = [&](const QString &name) {
+            QFile f(QDir(dir).absoluteFilePath(name));
+            f.open(QIODevice::WriteOnly); f.write("x"); f.close();
+        };
+        touch("1.jpg"); touch("2.jpg"); touch("3.jpg");   // 3 снимка jpg
+        touch("4.bmp");                                    // 1 снимок bmp
+        touch("a.mp4"); touch("b.mp4");                    // 2 видео mp4
+        touch("c.avi");                                    // 1 видео avi
+        touch("notes.txt");                                // не считается
+
+        const int jpg   = KExamListRecordFileUpdate::GetFiletypeNumFromPath(dir, {"*.jpg"});
+        const int imgs  = KExamListRecordFileUpdate::ImageFileNum(dir);   // jpg+bmp+png+jpeg
+        const int vids  = KExamListRecordFileUpdate::VideoFileNum(dir);   // mp4+avi
+        const int none  = KExamListRecordFileUpdate::GetFiletypeNumFromPath(
+            "/no/such/path/xyz", {"*.jpg"});               // несуществующий → 0
+        qInfo() << "jpg:" << jpg << "images:" << imgs << "videos:" << vids << "missing:" << none;
+
+        const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
+        qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
+        return ok ? 0 : 27;
     }
 
     // Self-test конфигурации брендов/стилей (stylelist.ini).
