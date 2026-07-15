@@ -444,7 +444,11 @@ Qt5, boost 1.74, libcrypto.
 +KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
 +KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
 +KUserOsdSet OSD-конфиг кнопок (A), +KEntityService PRAGMA+бэкап БД (B),
-+KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг + KRemoteSwitchConfig пульт (MISC). Репозиторий
++KReportDisplayParam валидность элементов (C), +KEndoInfoServerConfig облачный конфиг +
+KRemoteSwitchConfig пульт (MISC), +KDicomDatasetFormat структура датасета (DICOM),
++KPatientTimeOperation конвертеры дат (CORE), +MD5-верификация пакета (D).
+**РУБЕЖ: у каждого конфига прошивки (presetdata) теперь есть off-device-ридер с self-test
+(unread=0).** Дальнейшее — device-bound (HW/DCMTK-сеть/GStreamer/UI-виджеты). Репозиторий
 на GitHub (github.com/PazdnikOFF/a2600), git чистый. **План и gap-анализ — `docs/ROADMAP.md`.**
 
 1. Прочитать этот файл + **docs/ROADMAP.md** (фазы/приоритеты) + при нужде ARCHITECTURE/HMI_PANEL.
