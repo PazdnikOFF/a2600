@@ -1410,6 +1410,43 @@ int main(int argc, char **argv)
         return ok ? 0 : 22;
     }
 
+    // Self-test scope-info (реф. KEncStyle::getScopeDefault{Round,Octangle}Cut) —
+    // <style>/<brand>/scope/video.ini, секции hex-кода имени скопа + [Default] фолбэк.
+    if (screen == "scopecut") {
+        KStyleConfig &st = KStyleConfig::GetInstance();
+        const QString series = "X-2500", brand = "SonoScape";
+
+        // Hex-кодировка имени (ConvertSrc2Enc).
+        const bool encOk = KStyleConfig::EncodeScopeName("EC-X20") == "45432d583230" &&
+                           KStyleConfig::EncodeScopeName("EB-X20") == "45422d583230";
+
+        // Per-scope значения (EB-X20 отличается от Default).
+        const int rEB = st.GetScopeDefaultCut(series, brand, "EB-X20", 0);  // round 458
+        const int oEB = st.GetScopeDefaultCut(series, brand, "EB-X20", 1);  // oct 3932220
+        // Несуществующий скоп → фолбэк [Default] (round 746 / oct 5898330).
+        const int rDef = st.GetScopeDefaultCut(series, brand, "NO-SUCH", 0);
+        const int oDef = st.GetScopeDefaultCut(series, brand, "NO-SUCH", 1);
+        const bool cutOk = rEB == 458 && oEB == 3932220 && rDef == 746 && oDef == 5898330;
+
+        // Полная запись + распаковка octangleCut в параметры геометрии (p2<<16|p3).
+        const auto si = st.GetScopeInfo(series, brand, "EB-X20");
+        const int p2 = si.octangleCut >> 16, p3 = si.octangleCut & 0xffff;
+        const bool infoOk = si.valid && si.sensorType == "OH01A" &&
+                            si.shapeType == "OCTANGLE_AND_ROUND" &&
+                            si.videoSize == QRect(0, 0, 864, 1056) &&
+                            p2 == 60 && p3 == 60;   // 3932220 = 0x3C003C
+
+        qInfo() << "enc EC-X20=" << KStyleConfig::EncodeScopeName("EC-X20")
+                << "| EB round=" << rEB << "oct=" << oEB
+                << "| Default round=" << rDef << "oct=" << oDef;
+        qInfo() << "info valid=" << si.valid << "sensor=" << si.sensorType
+                << "shape=" << si.shapeType << "video=" << si.videoSize
+                << "oct p2/p3=" << p2 << "/" << p3;
+        const bool ok = encOk && cutOk && infoOk;
+        qInfo() << (ok ? "scopecut: PASS" : "scopecut: FAIL");
+        return ok ? 0 : 22;
+    }
+
     // Self-test продуктовой конфигурации (project.ini + per-модель product.ini).
     if (screen == "project") {
         const QString sysd = QDir(KSystem::SystemPath()).absoluteFilePath("");

@@ -6,7 +6,7 @@
 >
 > Аудит (сверка всех 491 классов референса): реализовано ~52 класса частично,
 > сквозное ядро обработки изображения + БД + отчёты + вспом. конфиги готовы и
-> проверены (33 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
+> проверены (34 self-test, все PASS). Пробелы и фазы — в ROADMAP.md, позиция — §10.
 
 ## 0. Цель
 
@@ -65,6 +65,7 @@ QT_QPA_PLATFORM=offscreen ui_preview db out.db     # self-test БД
 ENDO_ROOT=$ER ui_preview alg                        # self-test гамма+CCM
 ENDO_ROOT=$ER ui_preview plreg [SENSOR]             # self-test PL-регистров парам. изобр. + BrightEQ LUT
 ui_preview cornercut                                 # self-test геометрии обрезки углов (круг/8-угол) + стрим 0xa18c8000
+ENDO_ROOT=$ER ui_preview scopecut                    # self-test scope-info video.ini (defaultRound/OctangleCut, hex-имена)
 ENDO_ROOT=<tmp> ui_preview dccu                      # self-test KDccuParam (пишет dccuparam.ini — брать tmp-root!)
 ENDO_ROOT=$ER ui_preview filt                        # self-test VIST-матрицы + Denoise LUT
 ENDO_ROOT=$ER ui_preview dicom                        # self-test WorklistFieldMap.xml + БД tb_Dcm*
@@ -440,7 +441,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **33 self-test-режима**
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~52/491 класса, **34 self-test-режима**
 (все PASS), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто. За эту сессию +12 классов (+ расширения KDicomFieldMap мульти-record):
 +KVideoCal (A), +KUpdateManifest (D), +KSysReportTempletCfg каталог+библиотека шаблонов (C),
 +KReportDBTableHandler-пагинация в KEntityReport (C), +KSaveFile нумерация файлов (B),
@@ -489,8 +490,13 @@ W-2c); стрим 1080 слов в 0xa18c8000. W/H (реф. поля +0x10/+0x14
 1005 регистров, упаковка 8 нибблов (data[k]>>shift)<<(k*4); различие только в источнике
 (arg-указатель vs AlgPara[0x7a48]).
 **АУДИТ register-методов KPlControl ПОЛНОСТЬЮ ЗАВЕРШЁН — все Set*/Read* сверены с дизасмом.**
-**ПРОДОЛЖИТЬ (новое направление):** off-device Фазы ROADMAP или §9; либо device-bound
-вызывающие (KVideoProxy::SetCornerCutWay/UpdateGammaDownloadLut — нужен живой эндоскоп).
+CORNER-CUT ЦЕПОЧКА off-device достроена: (1) геометрия AlgParaManager + стрим KPlControl
+(self-test `cornercut`), (2) источник параметров KStyleConfig scope-info из <style>/scope/
+video.ini (defaultRoundCut=радиус, defaultOctangleCut=(p2<<16)|p3, shapeType, videoSize;
+секции — hex-код имени скопа ConvertSrc2Enc, фолбэк [Default]; реф. KEncStyle::
+getScopeDefault{Round,Octangle}Cut) — self-test `scopecut`. ОСТАЛОСЬ device: KVideoProxy::
+ReadCornerData/SetCornerCutWay (way/b/c с EEPROM живого эндоскопа), поля W/H(+0x10/+0x14).
+**ПРОДОЛЖИТЬ (новое направление):** off-device Фазы ROADMAP (§9) или device-bound вызывающие.
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 
@@ -507,9 +513,9 @@ W-2c); стрим 1080 слов в 0xa18c8000. W/H (реф. поля +0x10/+0x14
 6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
    `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
 
-**Полный список 33 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+**Полный список 34 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, cornercut.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, cornercut, scopecut.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).

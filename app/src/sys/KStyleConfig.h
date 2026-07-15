@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QRect>
 
 // Конфигурация стилей/брендов (реф. KEncStyle::getStyleList/getCurrentStyle* +
 // KStyleFactory + stylelist.ini, X-2600). Бренды перечислены в
@@ -21,6 +22,29 @@ public:
 
     // Путь ассетов бренда: <styleRoot>/<series>/<brand> (реф. getCurrentStylePath).
     QString GetStylePath(const QString &series, const QString &brand) const;
+
+    // --- Scope-info: <stylePath>/scope/video.ini (реф. KEncStyle::getScopeInfoPath +
+    // getScopeDefault{Round,Octangle}Cut). Секции — hex-код имени скопа (ConvertSrc2Enc:
+    // ASCII→hex, напр. "EC-X20"→"45432d583230"), есть [Default] как фолбэк. ---
+    struct ScopeInfo {
+        int roundCut = 0;        // defaultRoundCut — радиус круга (b для SetCornerCutWay way0)
+        int octangleCut = 0;     // defaultOctangleCut — упаковка (p2<<16)|p3 (way1)
+        QString shapeType;       // OCTANGLE_AND_ROUND / ROUND_ONLY / OCTANGLE_ONLY
+        QString sensorType;      // OV2740 / OH01A / OCHFA_OAH0428 / OV6946 …
+        QString firmwareType;    // OV2740_1280X960 …
+        QString endoType;        // OV2740_EC_1504X1080 …
+        QRect   videoSize;       // @Rect(x y w h)
+        bool    valid = false;   // false — секции нет и [Default] пуст
+    };
+    // Полная запись по имени скопа (с фолбэком на [Default]).
+    ScopeInfo GetScopeInfo(const QString &series, const QString &brand,
+                           const QString &scope) const;
+    // Значение выреза (реф. getScopeDefaultRoundCut/OctangleCut): per-scope ключ с
+    // фолбэком на [Default]. way 0 = round, 1 = octangle.
+    int GetScopeDefaultCut(const QString &series, const QString &brand,
+                           const QString &scope, int way) const;
+    // ConvertSrc2Enc: ASCII-строка → hex (нижний регистр, 2 символа на байт).
+    static QString EncodeScopeName(const QString &scope);
     // Текущий бренд (по умолчанию — первый из списка; на устройстве — из настроек).
     QString GetCurrentStyle() const { return current_.isEmpty() && !styleList_.isEmpty()
                                               ? styleList_.first() : current_; }
