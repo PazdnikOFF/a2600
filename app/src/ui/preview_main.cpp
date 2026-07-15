@@ -52,6 +52,7 @@
 #include "sys/KStyleConfig.h"
 #include "sys/KStatisticConfig.h"
 #include "sys/languageConfig.h"
+#include "sys/KLoadUnicodeText.h"
 #include "sys/KSystemStatus.h"
 
 #include <QDir>
@@ -1453,6 +1454,38 @@ int main(int argc, char **argv)
         const bool ok = initOk && setTypeOk && setCurOk && sigConnectable;
         qInfo() << (ok ? "language: PASS" : "language: FAIL");
         return ok ? 0 : 24;
+    }
+
+    // Self-test карты экранной клавиатуры (multi_language_unicode_2_text.xml).
+    if (screen == "unicodetext") {
+        KLoadUnicodeText &ut = KLoadUnicodeText::GetInstance();
+        const bool built = ut.BuildUnic2TextLayoutLibFromXml();
+        int langCount = ut.Lib().isEmpty() ? 0 : ut.Lib().first().maps.size();
+        qInfo() << "раскладок:" << ut.Lib().size() << "языков:" << langCount;
+
+        auto find = [&](const QString &key, const QString &lang) {
+            return ut.FindTextFromUnic2TextLayoutLib("PAD", "1.1", key, lang);
+        };
+        // Русская раскладка: кириллица, обычные символы, name2value (&, <).
+        const QString io   = find("SONO_Cyrillic_io", "Russian");     // ё
+        const QString excl = find("SONO_exclam", "Russian");          // !
+        const QString amp  = find("SONO_ampersand", "Russian");       // & (из value=)
+        const QString less = find("SONO_less", "Russian");            // < (из value=)
+        const QString miss = find("SONO_NOPE", "Russian");            // нет → пусто
+        const QString wrong= find("SONO_exclam", "Klingon");          // нет языка → пусто
+        qInfo() << "io=" << io << "excl=" << excl << "amp=" << amp
+                << "less=" << less << "miss=[" << miss << "]";
+
+        const bool ok = built &&
+            ut.Lib().size() == 1 && langCount == 5 &&
+            io == QString::fromUtf8("ё") &&
+            excl == "!" &&
+            amp == "&" &&          // name2value → value-атрибут
+            less == "<" &&         // name2value → value-атрибут
+            miss.isEmpty() &&
+            wrong.isEmpty();
+        qInfo() << (ok ? "unicodetext: PASS" : "unicodetext: FAIL");
+        return ok ? 0 : 25;
     }
 
     // Self-test конфигурации брендов/стилей (stylelist.ini).

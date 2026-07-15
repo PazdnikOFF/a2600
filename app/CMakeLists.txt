@@ -79,6 +79,7 @@ set(SOURCES
     src/sys/KStyleConfig.cpp
     src/sys/KStatisticConfig.cpp
     src/sys/languageConfig.cpp
+    src/sys/KLoadUnicodeText.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
@@ -160,6 +161,7 @@ add_executable(ui_preview
     src/sys/KStyleConfig.cpp
     src/sys/KStatisticConfig.cpp
     src/sys/languageConfig.cpp
+    src/sys/KLoadUnicodeText.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp

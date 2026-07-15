@@ -100,6 +100,7 @@ ENDO_ROOT=$ER ui_preview dcmfmt                       # self-test структу
 ui_preview pattime                                    # self-test конвертеров дат/времени пациента (возраст, DICOM/БД-формат)
 ENDO_ROOT=$ER ui_preview fxpt                         # self-test фикс.-точки + AEC/AGC/getAecValue/FreezeCalResolution KVideoProxy
 ENDO_ROOT=$ER ui_preview language                     # self-test мультиязычности (mutilanguageinfo.ini + languageConfig)
+ENDO_ROOT=$ER ui_preview unicodetext                  # self-test карты экранной клавиатуры (multi_language_unicode_2_text.xml + KLoadUnicodeText)
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -443,12 +444,12 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~53/491 класса, **36 self-test-режимов**
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** реализовано ~54/491 класса, **37 self-test-режимов**
 (все PASS, регрессия прогнана), off-device-ядро ROADMAP Фаз A/B/C/D в основном закрыто.
-KVideoProxy 57/116. ПОСЛЕДНЕЕ: ПИВОТ на CORE (по решению пользователя — остаток KVideoProxy
-требует value-based/сигнальной инфраструктуры) — новый класс languageConfig
-(mutilanguageinfo.ini, self-test `language`). Ранее по KVideoProxy: SendRBCValue+SwitchCHbStatus;
-Dehaze/HDR тогглы; SetDemoire; тонкие обёртки Set*Level/Size/AwbCut/CHb.
+KVideoProxy 57/116. ПОСЛЕДНЕЕ: ПИВОТ на CORE (по решению пользователя) — новые классы
+languageConfig (mutilanguageinfo.ini, self-test `language`) и KLoadUnicodeText
+(multi_language_unicode_2_text.xml, self-test `unicodetext`). Ранее по KVideoProxy:
+SendRBCValue+SwitchCHbStatus; Dehaze/HDR тогглы; SetDemoire; тонкие обёртки.
 **Последняя сессия (KPlControl/KVideoProxy):** (1) полный аудит register-методов KPlControl
 vs дизасм — исправлена фантазия SetGammaLut, сигнатуры LUT-загрузчиков выровнены под
 бинарник (void + чтение AlgParaManager); (2) реализована corner-cut геометрия (round/octagon,
@@ -624,11 +625,21 @@ Enum `_KLanguageType` (1-based: Chinese=1..Polish=8, реверс из qm-таб
 дизасмом: setLanguageType пишет ОБА поля (stp w1,w1), setCurrentLanguage — только если
 t==Chinese||t==languageType (иначе no-op); оба чисто in-memory (персист — KSystemSet, не тут).
 Сигнал CurrentLanChange объявлен (ref из сеттеров не эмитит). Self-test `language`. ~53 класса.
-**ПРОДОЛЖИТЬ (CORE off-device):** следующий чистый config/логика-класс — разведка через
-субагента (искать конфиг-файлы update/root, не читаемые ни одним классом; см. кандидаты
-разведки: Unicode2Text keyboard-map multi_language_unicode_2_text.xml (off-device лукап-ядро),
-KExamListRecordFileUpdate). Либо крупный заход KVideoProxy VideoParamChanged (нужно решение).
-Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
+ЗАХОД KLoadUnicodeText (пивот, продолжение CORE): новый off-device класс-синглтон
+`app/src/sys/KLoadUnicodeText.{h,cpp}` — читает system/language/multi_language_unicode_2_text.xml
+(MachineType PAD→KeyboardVersion 1.1→LanguageType×5 Russian/Latin/French/Polish/Hungary→
+Key SONO_*→символ). Структуры реф. stUnicode2TextLayout/stUnicode2TextMap; лукап
+FindTextFromUnic2TextLayoutLib(machine,keyboard,keyName,lang) — обход раскладок→язык→ключ,
+не найдено→пусто. Спец-правило name2value: текст "name2value" → символ из value=-атрибута
+(для &,<,пробел). ВАЖНО: файл — НЕвалидный строгий XML (голые &/</пробел в value=), поэтому
+парсим построчно регэкспами (оригинал тоже лоялен). Полная цепочка реф.: GetSingleUnicodeText
+(keycode,lang)=KKey2Name::GetNameOfKey(keycode→SONO_*, DEVICE-клавиатура)→FindText — реализовано
+off-device ядро (парс+лукап), int-код→имя отложено (device). Библиотека — синглтон (в реф.
+файловый глобал g_s_vec_stUnic2TextLayoutLib). Self-test `unicodetext` (ё/!/name2value &,<). ~54 класса.
+**ПРОДОЛЖИТЬ (CORE off-device):** следующий чистый config/логика-класс — разведка субагентом
+(конфиг-файлы update/root, не читаемые ни одним классом). Кандидат из прошлой разведки:
+KExamListRecordFileUpdate (счётчики jpg/mp4→БД). Либо крупный заход KVideoProxy VideoParamChanged
+(нужно решение). Приём поиска: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 Приём поиска нереализованного: `comm -23 <методы-бинарника> <наши>` (см. историю сессии).
 ВАЖНО: собирать+гонять `plreg` ДО коммита (был один поспешный коммит — регрессию поймал).
 
@@ -645,9 +656,9 @@ KExamListRecordFileUpdate). Либо крупный заход KVideoProxy Video
 6. Закоммитить+запушить (git на ветке main, remote origin). **НЕ коммитить `update/` (прошивка) и
    `docs/ref/*.pdf` — они в .gitignore (проприетарный референс SonoScape).**
 
-**Полный список 36 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
+**Полный список 37 self-test-режимов** (в §4): plreg, filt, dicom, report, account, thesaurus,
 userset, coldlight, version, project, statistic, sysstatus, quickinput, style, examcfg, exam,
-filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, cornercut, scopecut, fxpt, language.
+filebackup, videoset, dsreal, dsdemo, videocal, update, templetcfg, reportdb, savefile, osdset, dbservice, dispparam, endoinfo, remoteswitch, dcmfmt, pattime, cornercut, scopecut, fxpt, language, unicodetext.
 
 **Остаток ROADMAP (Фазы E/F) — device-bound:** HW (KEndoScope/K3ADimming/KLcdProxy/принтер),
 UI (131 Widgets-класс), DCMTK-сеть, GStreamer live-video, панель 8″ (§8 — нужно решение по подходу).
