@@ -29,6 +29,10 @@ public:
     int Exec(const char *sql);
     int Exec(const std::string &sql) { return Exec(sql.c_str()); }
 
+    // CRUD (реф. snprintf в буфер 0xa000 + Exec; SQL-литералы LOWERCASE, сверены дизасмом):
+    int InsertField(const std::string &table, const std::string &field);   // "alter table %s add %s varchar"
+    int DeleteRecord(const std::string &table, const std::string &where);  // "delete from %s [where %s]"
+
     std::string GetLastErrorMsg() const { return m_strLastError; }   // копия [0x08]
     std::string GetDbPath() const { return m_strDbPath; }            // копия [0x38]
     static void SetLogEnabled(bool on) { m_bIsLogOn = on; }          // статик m_bIsLogOn

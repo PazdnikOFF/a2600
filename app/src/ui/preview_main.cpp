@@ -2285,6 +2285,13 @@ int main(int argc, char **argv)
         const int bad = s.Exec("SELECT * FROM no_such_table;");
         const bool errOk = bad != SQLITE_OK && !s.GetLastErrorMsg().empty();
 
+        // InsertField: "alter table t add age varchar" → колонка добавлена (вставка с ней проходит).
+        const bool fieldOk = s.InsertField("t", "age") == SQLITE_OK
+            && s.Exec("INSERT INTO t(id,name,age) VALUES(3,'carol','30');") == SQLITE_OK;
+        // DeleteRecord: с where и без (все строки).
+        const bool delOk = s.DeleteRecord("t", "id=1") == SQLITE_OK
+            && s.DeleteRecord("t", "") == SQLITE_OK;
+
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
 
@@ -2300,10 +2307,11 @@ int main(int argc, char **argv)
         KDbSqlite::SetLogEnabled(false);
 
         qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
-                << "err:" << errOk << s.GetLastErrorMsg().c_str();
+                << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
         qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
 
-        const bool ok = preOk && openOk && ddlOk && errOk && nullOk && notOpenExecOk && closeOk;
+        const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
+            && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }

@@ -1,6 +1,13 @@
 #include "db/KDbSqlite.h"
 
+#include <cstdio>
+#include <vector>
+
 bool KDbSqlite::m_bIsLogOn = false;
+
+namespace {
+const int SQL_BUF_SIZE = 0xa000;   // реф. — фикс. буфер snprintf 40960 байт
+}
 
 KDbSqlite::KDbSqlite()
 {
@@ -90,4 +97,23 @@ int KDbSqlite::Exec(const char *sql)
         sqlite3_free(errmsg);
     }
     return rc;   // реф. при rc!=0 ремапит на внутр. константы; off-device — прямой sqlite rc
+}
+
+int KDbSqlite::InsertField(const std::string &table, const std::string &field)
+{
+    // реф. @0x447108: snprintf(buf, "alter table %s add %s varchar", table, field) → Exec.
+    std::vector<char> buf(SQL_BUF_SIZE);
+    snprintf(buf.data(), buf.size(), "alter table %s add %s varchar", table.c_str(), field.c_str());
+    return Exec(buf.data());
+}
+
+int KDbSqlite::DeleteRecord(const std::string &table, const std::string &where)
+{
+    // реф. @0x447068: пустой where → "delete from %s"; иначе "delete from %s where %s".
+    std::vector<char> buf(SQL_BUF_SIZE);
+    if (where.empty())
+        snprintf(buf.data(), buf.size(), "delete from %s", table.c_str());
+    else
+        snprintf(buf.data(), buf.size(), "delete from %s where %s", table.c_str(), where.c_str());
+    return Exec(buf.data());
 }

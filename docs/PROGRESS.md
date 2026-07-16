@@ -484,7 +484,7 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **70 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 79 классов / 780 методов (12.1%)** (report_template 28/36 = 78% — свободные функции
+затронуто 79 классов / 782 метода (12.2%)** (report_template 28/36 = 78% — свободные функции
 namespace по сути закрыты, остаток «36» — Qt-виджет KLineEdit). Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
@@ -509,12 +509,14 @@ SDK). ВСЁ ЯДРО сверено дизасмом вручную (`objdump -
 m_bIsLogOn); ctor=sqlite3_mutex_alloc(RECURSIVE); **Open**=sqlite3_open+ретрай BUSY; **Close**=
 sqlite3_close+ретрай BUSY, null-ит handle; **IsOpen**=(m_pDb!=0) под mutex; **Exec(char*/string)**=
 charset→UTF8(стаб)+FilterLogSql(стаб→true)+sqlite3_exec под mutex+ретрай BUSY, errmsg→m_strLastError,
-null sql→-4102; **GetLastErrorMsg/GetDbPath/SetLogEnabled/FilterLogSql**. ОПУЩЕНО off-device
+null sql→-4102; **GetLastErrorMsg/GetDbPath/SetLogEnabled/FilterLogSql**; **InsertField**("alter table %s add %s
+varchar")+**DeleteRecord**("delete from %s [where %s]") — snprintf(буфер 0xa000)+Exec, литералы
+LOWERCASE сверены. ОПУЩЕНО off-device
 (device-only, помечено): SQLCipher-разблокировка в Open — проба `select count(*) from tb_DcmWorklist`
 без ключа → при ошибке `sqlite3_key(m_pDb,"SONOSCOPE_X2000_KEY",19)`+повтор (plain libsqlite3 без
-sqlite3_key). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): CRUD/query — InsertRecord(map→INSERT)/
-UpdateRecord(map+where→UPDATE)/DeleteRecord/InsertField(ALTER TABLE ADD COLUMN)/QueryRecords(→vector
-<map>)/QuerySingleRecord(→map)/GetFieldNameList(→set)/GetRecordsNumber. IDatabase-база (чистый
+sqlite3_key). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): остаток CRUD/query — InsertRecord(map→INSERT)/
+UpdateRecord(map+where→UPDATE)/QueryRecords(→vector<map>)/QuerySingleRecord(→map)/GetFieldNameList
+(→set)/GetRecordsNumber. IDatabase-база (чистый
 интерфейс) — off-device standalone, методы virtual как в реф.
 
 РАНЕЕ (эта сессия): `XmlParser` (self-test `xmlparser`, `app/src/report/`)** — тонкая
