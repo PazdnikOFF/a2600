@@ -478,6 +478,15 @@ Qt5, boost 1.74, libcrypto.
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
+**СНЯТЫ С DB-РОАДМАПА (реверс показал ложный домен — эвристика имён в COVERAGE.md врёт,
+это НЕ DB-классы):** `KImportRules` — на самом деле **KDialog** (UI-диалог импорта правил
+logcheck: USB `<usb>/rules/` → редактирование в textEdit → копия в `system/autotest/logcheck/
+rulesfile`; тянет KDialog+KUsbDevice). `KRecordItem` — **OSD-ячейка меню** (KOsdMenuCell-
+GreyedWhenCameraDisconnected: кнопка старт/стоп видеозаписи, TR_Rcd/TR_RStop, серая при
+отключённой камере/USB; тянет KCamera/KUsbDevice/KUiMsgProxy). Оба — в UI/OSD-фазу, не сейчас.
+ОБЩИЙ УРОК (уже отмечался на KFactoryOptions/KDataOprEventDeal): перед взятием кандидата из
+COVERAGE.md ОБЯЗАТЕЛЬНО проверять дизасмом typeinfo/базы — «домен» там угадан по имени и врёт.
+
 **ПОСЛЕДНЕЕ (эта сессия): `KSessionInfo`** (`app/src/sys/`, self-test `session`) — синглтон
 состояния облачной login-сессии SonoScape В ПАМЯТИ (персиста нет, обнуляется при рестарте).
 НЕ UI/device/БД. Два независимых канала: Manu (производитель, KPUserLoginDlg::Login) и
