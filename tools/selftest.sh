@@ -13,7 +13,7 @@ export QT_QPA_PLATFORM=offscreen
 # Режимы, которым нужен ENDO_ROOT прошивки.
 ER_MODES="alg plreg scopecut filt dicom report thesaurus userset coldlight version
 statistic sysstatus project style videoset dsdemo videocal templetcfg osdset endoinfo
-remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib"
+remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib encset"
 # Режимы без ENDO_ROOT (чистая логика / своя БД).
 PLAIN_MODES="cornercut quickinput examcfg exam filebackup update reportdb
 savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop patstr stopwatch patient doctor dbstr session"

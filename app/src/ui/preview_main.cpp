@@ -43,6 +43,7 @@
 #include "db/KEntityDoctor.h"
 #include "db/KDbStrHandler.h"
 #include "sys/KSessionInfo.h"
+#include "sys/KEncSettings.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1580,6 +1581,69 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test зашифрованных списков моделей (KEncSettings — bitwise NOT CSV).
+    if (screen == "encset") {
+        // 1. Реальный файл прошивки: genc.ini расшифровывается в CSV моделей.
+        const QString real = QDir(KSystem::SystemPath())
+            .absoluteFilePath("style/X-2600/PyCkeun/scope/genc.ini");
+        bool realOk = false;
+        if (QFile::exists(real)) {
+            KEncSettings enc(real);
+            const QString decoded = enc.value(QString()).toString();
+            const QStringList models = enc.getStringList();
+            realOk = decoded == "EG-500,EG-500L,EG-X20"
+                && models == QStringList{"EG-500", "EG-500L", "EG-X20"};
+            qInfo() << "genc.ini →" << decoded;
+        } else {
+            qInfo() << "genc.ini не найден (пропуск реального):" << real;
+            realOk = true;   // не блокируем, если ENDO_ROOT без прошивки
+        }
+
+        // 2. Roundtrip во временный файл: список → запись(шифр) → чтение(дешифр).
+        QTemporaryDir tmp;
+        const QString path = QDir(tmp.path()).absoluteFilePath("test_enc.ini");
+        KEncSettings w(path);
+        const QStringList src{"EC-500", "EC-500L", "EC-X20"};
+        w.loadFileFromList(src);
+        const bool rtOk = w.getStringList() == src
+            && w.value(QString()).toString() == "EC-500,EC-500L,EC-X20";
+
+        // 3. На диске байты ЗАШИФРОВАНЫ (инверсны исходному тексту).
+        QFile f(path);
+        f.open(QIODevice::ReadOnly);
+        const QByteArray raw = f.readAll();
+        f.close();
+        const QByteArray plain = QByteArray("EC-500,EC-500L,EC-X20");
+        bool cipherOk = raw.size() == plain.size();
+        for (int i = 0; cipherOk && i < raw.size(); ++i)
+            cipherOk = static_cast<char>(~raw[i]) == plain[i];
+
+        // 4. Пустой/несуществующий файл → value отдаёт дефолт.
+        KEncSettings none(QDir(tmp.path()).absoluteFilePath("no.ini"));
+        const bool defOk = none.value(QString(), "DEF").toString() == "DEF"
+            && none.getDataLen() == 0;
+
+        // 5. loadFileFromUsb: собирает блоб из Model/Num + Model/ID<i>.
+        const QString usbIni = QDir(tmp.path()).absoluteFilePath("usb.ini");
+        {
+            QSettings s(usbIni, QSettings::IniFormat);
+            s.setValue("Model/Num", 2);
+            s.setValue("Model/ID0", "EB-X20");
+            s.setValue("Model/ID1", "EB-X20T");
+        }
+        const QString target = QDir(tmp.path()).absoluteFilePath("benc.ini");
+        KEncSettings usb(target);
+        usb.loadFileFromUsb(usbIni);
+        const bool usbOk = usb.getStringList() == QStringList{"EB-X20", "EB-X20T"};
+
+        qInfo() << "реальный:" << realOk << "roundtrip:" << rtOk << "шифр на диске:" << cipherOk
+                << "дефолт:" << defOk << "usb-импорт:" << usbOk;
+
+        const bool ok = realOk && rtOk && cipherOk && defOk && usbOk;
+        qInfo() << (ok ? "encset: PASS" : "encset: FAIL");
+        return ok ? 0 : 46;
     }
 
     // Self-test состояния облачной сессии (KSessionInfo — синглтон в памяти).
