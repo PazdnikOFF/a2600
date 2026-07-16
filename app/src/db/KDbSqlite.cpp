@@ -1,6 +1,7 @@
 #include "db/KDbSqlite.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 
 bool KDbSqlite::m_bIsLogOn = false;
@@ -217,4 +218,30 @@ int KDbSqlite::UpdateRecord(const std::map<std::string, std::string> &fields,
     rc = Exec(sql);
     sqlite3_free(sql);
     return rc;
+}
+
+int KDbSqlite::GetRecordsNumber(const std::string &table, const std::string &where) const
+{
+    // реф. @0x4466c8: count-запрос → sqlite3_get_table → strtol первой ячейки данных (azResult[ncol]).
+    char buf[1024];
+    if (where.empty())
+        snprintf(buf, sizeof(buf) - 1, "select count(*) from %s", table.c_str());
+    else
+        snprintf(buf, sizeof(buf) - 1, "select count(*) from %s where %s",
+                 table.c_str(), where.c_str());
+
+    sqlite3_mutex_enter(m_pMutex);
+    char **azResult = nullptr;
+    int nrow = 0, ncol = 0;
+    char *errmsg = nullptr;
+    int result = 0;
+    const int rc = sqlite3_get_table(m_pDb, buf, &azResult, &nrow, &ncol, &errmsg);
+    if (rc == SQLITE_OK && azResult && azResult[ncol])
+        result = static_cast<int>(strtol(azResult[ncol], nullptr, 10));   // первая ячейка данных
+    if (azResult)
+        sqlite3_free_table(azResult);
+    if (errmsg)
+        sqlite3_free(errmsg);
+    sqlite3_mutex_leave(m_pMutex);
+    return result;
 }

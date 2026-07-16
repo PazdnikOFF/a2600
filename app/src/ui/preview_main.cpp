@@ -2304,6 +2304,10 @@ int main(int argc, char **argv)
         const bool updOk = s.UpdateRecord({{"name", "eve"}}, "t", "id=10") == SQLITE_OK
             && s.UpdateRecord({{"name", "all"}}, "t", "") == SQLITE_OK
             && s.UpdateRecord({{"name", "x"}}, "no_such_table", "") != SQLITE_OK;
+        // GetRecordsNumber: в t сейчас 1 строка (id=10). where-фильтр считает совпадения.
+        const bool cntOk = s.GetRecordsNumber("t", "") == 1
+            && s.GetRecordsNumber("t", "id=10") == 1
+            && s.GetRecordsNumber("t", "id=999") == 0;
 
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
@@ -2322,11 +2326,11 @@ int main(int argc, char **argv)
         qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
                 << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
         qInfo() << "fieldList:" << fnlOk << cols.size() << "insertRec:" << insRecOk
-                << "updateRec:" << updOk << "null:" << nullOk << "notOpenExec:" << notOpenExecOk
-                << "close:" << closeOk;
+                << "updateRec:" << updOk << "count:" << cntOk;
+        qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
 
         const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
-            && fnlOk && insRecOk && updOk && nullOk && notOpenExecOk && closeOk;
+            && fnlOk && insRecOk && updOk && cntOk && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }

@@ -517,9 +517,10 @@ sqlite3_snprintf("%Q"); "insert into %s (%s) values(%s)" через mprintf→Ex
 "col=%Q" через тот же фильтр колонок; "update %s set %s [where %s]" mprintf→Exec, запятая условная).
 ОПУЩЕНО off-device (device-only, помечено): SQLCipher-разблокировка в Open — проба `select count(*)
 from tb_DcmWorklist` без ключа → при ошибке `sqlite3_key(m_pDb,"SONOSCOPE_X2000_KEY",19)`+повтор
-(plain libsqlite3 без sqlite3_key). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): READ-сторона —
-QueryRecords(→vector<map> @0x447be0)/QuerySingleRecord(→map @0x447758)/GetRecordsNumber(→int
-@0x4466c8) — нужен разбор result-set (sqlite3_get_table/step). IDatabase-база (чистый
+(plain libsqlite3 без sqlite3_key). **GetRecordsNumber**("select count(*) from %s [where %s]" →
+sqlite3_get_table → strtol azResult[ncol]). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): последние
+2 READ-метода — QueryRecords(→vector<map> @0x447be0)/QuerySingleRecord(→map @0x447758), разбор
+result-set. IDatabase-база (чистый
 интерфейс) — off-device standalone, методы virtual как в реф.
 
 РАНЕЕ (эта сессия): `XmlParser` (self-test `xmlparser`, `app/src/report/`)** — тонкая

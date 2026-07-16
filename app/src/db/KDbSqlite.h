@@ -44,6 +44,9 @@ public:
     // GetFieldNameList+snprintf), "update %s set %s [where %s]" через mprintf→Exec.
     int UpdateRecord(const std::map<std::string, std::string> &fields, const std::string &table,
                      const std::string &where);
+    // Число записей (реф. @0x4466c8): "select count(*) from %s [where %s]" → sqlite3_get_table →
+    // strtol(первая ячейка данных). 0 при ошибке/пусто.
+    int GetRecordsNumber(const std::string &table, const std::string &where) const;
 
     std::string GetLastErrorMsg() const { return m_strLastError; }   // копия [0x08]
     std::string GetDbPath() const { return m_strDbPath; }            // копия [0x38]
