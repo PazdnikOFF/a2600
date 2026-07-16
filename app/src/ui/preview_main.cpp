@@ -47,6 +47,7 @@
 #include "report/KTextBlock.h"
 #include "report/KImageBlock.h"
 #include "report/KTableBlock.h"
+#include "report/KTitleTableBlock.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1744,6 +1745,58 @@ int main(int argc, char **argv)
             && bwOk && colorOk && marginOk && cwOk && refOk && orphanOk;
         qInfo() << (ok ? "tableblock: PASS" : "tableblock: FAIL");
         return ok ? 0 : 49;
+    }
+
+    // Self-test модели таблицы-с-заголовком (KTitleTableBlock — наследник KTableBlock:
+    // +1 строка под заголовок, ячейки сдвинуты, ShowTitle форсирован, Title/SetTitle).
+    if (screen == "titletableblock") {
+        KReportTemplateDataNew data;
+
+        KReportTemplateItem item;
+        item.m_strID = "/RT_TTBL"; item.m_strName = "RT_TTBL";
+        item.m_strType = "RT_TABLE_BLOCK"; item.m_strTitle = "Report Title";
+        item.m_strColumn = "3"; item.m_strShowTitle = "0";   // 0 — но ShowTitle() форсит true
+        for (int i = 0; i < 7; ++i) {                        // база: ceil(7/3)=3 строки
+            KReportTemplateItem child;
+            child.m_strID = "c" + std::to_string(i); child.m_strName = child.m_strID;
+            item.m_lstSubItems.push_back(child);
+        }
+        data.m_lstItems.push_back(item);
+
+        KTitleTableBlock block(&data.m_lstItems.front(), &data);
+
+        // Размер: база (3,3) + строка заголовка → (width=4, height=3).
+        const bool sizeOk = block.Size() == QSize(4, 3);
+        // ShowTitle форсирован в true, несмотря на m_strShowTitle=="0".
+        const bool showOk = block.ShowTitle();
+        // Наследование от KTableBlock: базовые аксессоры работают.
+        const bool idOk = block.ElementId() == "/RT_TTBL"
+            && block.TableType() == "RT_TABLE_BLOCK";
+
+        // Ячейки сдвинуты: row 0 — заголовок (нет данных), данные с row 1.
+        KReportTemplateItem *cell = nullptr;
+        const bool titleRow = !block.GetTemplateItemForCell(0, 0, cell) && cell == nullptr; // row-1=-1
+        const bool r1c0 = block.GetTemplateItemForCell(1, 0, cell) && cell->m_strID == "c0"; // база(0,0)
+        cell = nullptr;
+        const bool r3c0 = block.GetTemplateItemForCell(3, 0, cell) && cell->m_strID == "c6"; // база(2,0)=index6
+        cell = nullptr;
+        const bool oob = !block.GetTemplateItemForCell(3, 1, cell);   // база(2,1)=index7 → нет
+        const bool cellOk = titleRow && r1c0 && r3c0 && oob;
+
+        // Title(): читает item->m_strTitle (fromLatin1).
+        const bool titleReadOk = block.Title() == "Report Title";
+        // SetTitle(): пишет UTF-8 в узел; ASCII → round-trip корректен.
+        block.SetTitle("New Title");
+        const bool titleSetOk = block.Title() == "New Title"
+            && data.m_lstItems.front().m_strTitle == "New Title";
+
+        qInfo() << "size:" << sizeOk << block.Size() << "show:" << showOk << "id/type:" << idOk;
+        qInfo() << "ячейки:" << cellOk << "| title-read:" << titleReadOk
+                << "title-set:" << titleSetOk;
+
+        const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
+        qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
+        return ok ? 0 : 50;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).
