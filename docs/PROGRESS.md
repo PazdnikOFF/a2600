@@ -110,13 +110,14 @@ ENDO_ROOT=$ER ui_preview meaxml                       # self-test фундаме
 ENDO_ROOT=$ER ui_preview templatecfg                  # self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate, 5 файлов)
 ui_preview strutil                                    # self-test строковых утилит (KMeaStringUtil: split/trim/конверсии — неинтуитивная семантика)
 ENDO_ROOT=<tmp> ui_preview examno                     # self-test генератора номеров осмотра (KExamNoGenerate — пишет файл, брать tmp-root!)
+ENDO_ROOT=$ER ui_preview templatelib                  # self-test библиотеки шаблонов (KTemplateLibCfg + report_template::Merge*/ID — 11 блоков, 5 групп)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 49  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 50  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -460,14 +461,43 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **49 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **50 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 53 класса / 568 методов (8.8%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 55 классов / 582 метода (9.0%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KExamNoGenerate`** (`app/src/db/`, self-test `examno`) —
+**ПОСЛЕДНЕЕ (эта сессия): `KTemplateLibCfg` + `report_template::*`** (`app/src/report/`,
+self-test `templatelib`) — ВТОРАЯ ветка шаблонов (заводские «кирпичи»), закрывает
+KMeaXMLBase-семейство (наследники: KTemplateCfg ✅, KTemplateLibCfg ✅, KTemplateParamCfg ⏳).
+`KReportTemplateCommonDef.h/.cpp` — GenerateIDByPath (JOIN), RevertPathByID (SPLIT:
+пустые токены в начале/середине СОХРАНЯЮТСЯ, хвостового пустого НЕТ), GetParentItemID,
+GetSubItemsID (pre-order DFS, СОБСТВЕННЫЙ ID не включается), MergeSubItem, MergeData.
+СЕМАНТИКА СЛИЯНИЯ (сверено дизасмом, не «по смыслу»): m_mapConfigs и m_mapItemConfigs —
+**SRC побеждает**; m_lstItems — **DST побеждает**, дедуп **по m_strName и НА КАЖДОМ УРОВНЕ
+ОТДЕЛЬНО** (не по m_strID!), при совпадении имени рекурсия ТОЛЬКО в под-элементы (поля
+dst не трогаются), новый элемент клонируется ДОСЛОВНО (m_strID НЕ перестраивается) в КОНЕЦ
+списка; out-список = ID только НОВЫХ поддеревьев.
+`KTemplateLibCfg` (наследник KMeaXMLBase, НЕ синглтон, НЕ UI): Check (5 путей, аргументы
+игнорирует), LoadCache (SubContentList.xml → m_data, плоский пул 11 блоков),
+LoadCacheGroup (доп. 6-й слот vtable; TemplateTypes.xml → 5 групп ReportTemplateNP-*),
+LoadTemplateLib/LoadTemplateLibs, GetTemplateLib, UpdateTemplateLib ×2, RemoveNotUserItem.
+КОДЫ реф.: **-40** — XML не загрузился, **0** — нет корня "root" (а НЕ -40), **1** — успех;
+битая запись по Ref пропускается МОЛЧА (не ошибка). Схема список-файлов СВОЯ:
+`<root><Item Format="TemplateContent" Ref="X.xml"/></root>`; имя группы = basename Ref до
+первой точки. СТРАННОСТИ РЕФ. (воспроизведены 1:1): `GetTemplateLib` при промахе отдаёт
+**ссылку на m_data, а НЕ nullptr** (и ничего не вставляет); обе перегрузки
+`UpdateTemplateLib` **НИКУДА НЕ ПИШУТ** — делают копию, прогоняют RemoveNotUserItem,
+копию ВЫБРАСЫВАЮТ и просто перечитывают с диска (persistence-пути в достижимом коде нет);
+имя в `UpdateTemplateLib(name,data)` игнорируется; 3-й аргумент LoadTemplateLib
+передаётся по значению и не используется; m_strUserSubContentDir строится, но не читается
+(user-ветки у этого класса нет — в отличие от KTemplateCfg с фолбэком user→RO).
+`RemoveNotUserItem`: безусловно чистит m_mapConfigs; критерий user — ровно m_bUserDefine;
+имена берёт из ПОЛЯ m_strName (не из ключа map); множество keep = префиксы длиной **>=2**
+(длины 1 исключены — из кода не выводится, почему) + полный ID; из дерева удаляет вместе
+с поддеревом.
+РАНЕЕ (эта сессия): `KExamNoGenerate`** (`app/src/db/`, self-test `examno`) —
 генератор номеров осмотра. НЕ синглтон и не объект: sizeof==1, ctor пустой, все методы
 static, состояние — два static-поля (shared_ptr<KConfig> + int index) в .bss.
 Файл `<data>/protected/ExamListId.ini`, персист — **наш KConfig** (не QSettings):

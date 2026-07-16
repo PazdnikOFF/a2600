@@ -34,6 +34,8 @@
 #include "report/KMeaStringUtil.h"
 #include "db/KExamNoGenerate.h"
 #include "report/KTemplateCfg.h"
+#include "report/KTemplateLibCfg.h"
+#include "report/KReportTemplateCommonDef.h"
 #include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
 #include "db/KWorklistConfigSetupHandler.h"
@@ -1565,6 +1567,122 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test библиотеки шаблонов (KTemplateLibCfg + report_template::*).
+    if (screen == "templatelib") {
+        // 1. Чистые функции ID: join/split и их краевые случаи (реф.).
+        const std::string sep = report_template::STR_PATH_SEPARATOR;
+        const bool idOk = report_template::GenerateIDByPath({"A", "B", "C"}, sep) == "A/B/C"
+            && report_template::GenerateIDByPath({}, sep).empty()
+            && report_template::RevertPathByID("A/B/C", sep) == std::vector<std::string>{"A","B","C"}
+            // пустые токены в начале сохраняются, хвостового пустого НЕТ
+            && report_template::RevertPathByID("/A", sep) == std::vector<std::string>{"", "A"}
+            && report_template::RevertPathByID("A/", sep) == std::vector<std::string>{"A"}
+            && report_template::RevertPathByID("", sep).empty();
+        std::string parent;
+        report_template::GetParentItemID("/A/B", parent);
+        const bool parentOk = parent == "/A";
+
+        // 2. MergeSubItem: дедуп по m_strName (НЕ по ID), dst побеждает,
+        //    новые клонируются с исходным m_strID, out = ID новых + потомков.
+        std::list<KReportTemplateItem> dst, src;
+        KReportTemplateItem d1;
+        d1.m_strName = "A"; d1.m_strID = "/A"; d1.m_strTitle = "dst-заголовок";
+        dst.push_back(d1);
+        KReportTemplateItem s1;                       // то же имя → слияние
+        s1.m_strName = "A"; s1.m_strID = "/A"; s1.m_strTitle = "src-заголовок";
+        KReportTemplateItem s1c;                      // новый ребёнок внутри A
+        s1c.m_strName = "A1"; s1c.m_strID = "/A/A1";
+        s1.m_lstSubItems.push_back(s1c);
+        KReportTemplateItem s2;                       // новое имя → клон
+        s2.m_strName = "B"; s2.m_strID = "/B";
+        KReportTemplateItem s2c;
+        s2c.m_strName = "B1"; s2c.m_strID = "/B/B1";
+        s2.m_lstSubItems.push_back(s2c);
+        src.push_back(s1); src.push_back(s2);
+
+        std::list<std::string> out;
+        report_template::MergeSubItem(dst, src, out);
+        const bool mergeOk = dst.size() == 2
+            && dst.front().m_strTitle == "dst-заголовок"        // dst побеждает
+            && dst.front().m_lstSubItems.size() == 1            // рекурсия в под-элементы
+            && dst.back().m_strName == "B" && dst.back().m_strID == "/B"
+            // out — только НОВЫЕ: /A/A1 (новый ребёнок), /B и его потомок /B/B1
+            && out == std::list<std::string>{"/A/A1", "/B", "/B/B1"};
+
+        // 3. MergeData: для обеих map побеждает src.
+        KReportTemplateDataNew dd, ss;
+        dd.m_mapConfigs["k"] = "dst"; dd.m_mapConfigs["only-dst"] = "1";
+        ss.m_mapConfigs["k"] = "src";
+        KReportTemplateItemConfig ic; ic.m_strName = "/X"; ic.m_mapAttrs["a"] = "src";
+        ss.m_mapItemConfigs["/X"] = ic;
+        std::list<std::string> ids;
+        report_template::MergeData(dd, ss, ids);
+        const bool mdOk = dd.m_mapConfigs["k"] == "src"          // src побеждает
+            && dd.m_mapConfigs["only-dst"] == "1"                // чужие ключи целы
+            && dd.m_mapItemConfigs["/X"].m_mapAttrs["a"] == "src";
+
+        // 4. Реальная прошивка: SubContentList.xml → плоский пул блоков.
+        KTemplateLibCfg lib;
+        lib.Check("", "");
+        const int lc = lib.LoadCache();
+        const KReportTemplateDataNew &pool = lib.Data();
+        const bool poolOk = lc == 1 && !pool.m_lstItems.empty()
+            && !pool.m_mapItemConfigs.empty();
+
+        // 5. TemplateTypes.xml → 5 групп (ReportTemplateNP-*).
+        const int lg = lib.LoadCacheGroup();
+        const std::map<std::string, KReportTemplateDataNew> &libs = lib.TemplateLibs();
+        const bool groupOk = lg == 1 && libs.size() == 5
+            && libs.count("ReportTemplateNP-1x4") == 1
+            && libs.count("ReportTemplateNP-nx3") == 1
+            && !libs.at("ReportTemplateNP-1x4").m_lstItems.empty();
+
+        // 6. GetTemplateLib: при ПРОМАХЕ реф. отдаёт m_data, а не nullptr.
+        const bool getOk = lib.GetTemplateLib("ReportTemplateNP-1x4") != nullptr
+            && lib.GetTemplateLib("нет такой") == &lib.Data();
+
+        // 7. Коды ошибок: нет файла → -40; XML без корня "root" → 0 (не -40).
+        KReportTemplateDataNew tmp2;
+        const int missRet = lib.LoadTemplateLib("/no/such/file.xml", tmp2, "");
+        QTemporaryDir td;
+        const QString noRoot = QDir(td.path()).absoluteFilePath("noroot.xml");
+        { QFile f(noRoot); f.open(QIODevice::WriteOnly); f.write("<other/>"); f.close(); }
+        const int noRootRet = lib.LoadTemplateLib(noRoot.toStdString(), tmp2, "");
+        const bool retOk = missRet == -40 && noRootRet == 0;
+
+        // 8. RemoveNotUserItem: чистит configs, оставляет только UserDefine,
+        //    дерево — по префиксам длиной >= 2.
+        KReportTemplateDataNew rd;
+        rd.m_mapConfigs["c"] = "будет удалён";
+        KReportTemplateItemConfig user; user.m_bUserDefine = true; user.m_strName = "/A/B";
+        KReportTemplateItemConfig sys;  sys.m_bUserDefine = false; sys.m_strName = "/A/C";
+        rd.m_mapItemConfigs["/A/B"] = user;
+        rd.m_mapItemConfigs["/A/C"] = sys;
+        KReportTemplateItem ra; ra.m_strName = "A"; ra.m_strID = "/A";
+        KReportTemplateItem rb; rb.m_strName = "B"; rb.m_strID = "/A/B";
+        KReportTemplateItem rc; rc.m_strName = "C"; rc.m_strID = "/A/C";
+        ra.m_lstSubItems.push_back(rb); ra.m_lstSubItems.push_back(rc);
+        rd.m_lstItems.push_back(ra);
+        lib.RemoveNotUserItem(rd);
+        // keep = {"/A" (префикс длины 2 от ["","A","B"]), "/A/B"} → "/A/C" вылетает.
+        const bool rmOk = rd.m_mapConfigs.empty()
+            && rd.m_mapItemConfigs.size() == 1 && rd.m_mapItemConfigs.count("/A/B") == 1
+            && rd.m_lstItems.size() == 1
+            && rd.m_lstItems.front().m_lstSubItems.size() == 1
+            && rd.m_lstItems.front().m_lstSubItems.front().m_strID == "/A/B";
+
+        qInfo() << "ID join/split:" << idOk << "родитель:" << parentOk << "| merge:" << mergeOk
+                << "MergeData:" << mdOk;
+        qInfo() << "пул блоков:" << poolOk << "элементов:" << pool.m_lstItems.size()
+                << "| групп:" << libs.size() << groupOk << "| GetTemplateLib:" << getOk
+                << "| коды:" << retOk << "| RemoveNotUserItem:" << rmOk;
+
+        const bool ok = idOk && parentOk && mergeOk && mdOk && poolOk && groupOk && getOk
+            && retOk && rmOk;
+        qInfo() << (ok ? "templatelib: PASS" : "templatelib: FAIL");
+        return ok ? 0 : 35;
     }
 
     // Self-test генератора номеров осмотра (KExamNoGenerate).
