@@ -16,7 +16,7 @@ statistic sysstatus project style videoset dsdemo videocal templetcfg osdset end
 remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib"
 # Режимы без ENDO_ROOT (чистая логика / своя БД).
 PLAIN_MODES="cornercut quickinput examcfg exam filebackup update reportdb
-savefile dbservice dispparam pattime recfiles kconfig strutil templateparam"
+savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop"
 # Режимы, пишущие в ENDO_ROOT → временный каталог.
 TMP_MODES="dccu account dcmconf listsetup examno manupwd"
 

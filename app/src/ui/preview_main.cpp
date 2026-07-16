@@ -34,6 +34,7 @@
 #include "report/KMeaStringUtil.h"
 #include "db/KExamNoGenerate.h"
 #include "sys/KManuPwdMng.h"
+#include "db/KDbFileOperation.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1570,6 +1571,77 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test файловых/дисковых утилит (KDbFileOperation) — чистая логика.
+    if (screen == "dbfileop") {
+        QTemporaryDir tmp;
+        const QString root = tmp.path();
+        const QString sub  = QDir(root).absoluteFilePath("a/b/c");
+        const std::string f1 = QDir(root).absoluteFilePath("x.jpg").toStdString();
+        const std::string f2 = QDir(root).absoluteFilePath("y.txt").toStdString();
+
+        // 1. Создание каталога, файлов, проверки существования и размера.
+        const bool mk = KDbFileOperation::CreateFolder(sub.toStdString());
+        { QFile f(QString::fromStdString(f1)); f.open(QIODevice::WriteOnly); f.write("12345"); f.close(); }
+        { QFile f(QString::fromStdString(f2)); f.open(QIODevice::WriteOnly); f.write("hi"); f.close(); }
+        const bool existOk = mk && KDbFileOperation::IsFileExist(f1)
+            && KDbFileOperation::IsFileDirExist(sub.toStdString())
+            && !KDbFileOperation::IsFileExist(f1 + ".none")
+            && KDbFileOperation::GetFileSize(f1) == 5
+            && KDbFileOperation::GetFileSize("/no/such") == -1
+            && KDbFileOperation::IsPatientDataExist(f2);
+
+        // 2. Копирование, удаление файла.
+        const std::string f1copy = QDir(root).absoluteFilePath("x2.jpg").toStdString();
+        const bool copyOk = KDbFileOperation::CopyFileToFile(f1, f1copy)
+            && KDbFileOperation::IsFileExist(f1copy)
+            && KDbFileOperation::RemoveFile(f1copy)
+            && !KDbFileOperation::IsFileExist(f1copy);
+
+        // 3. Листинг по маске.
+        std::vector<std::string> jpgs;
+        KDbFileOperation::GetFilesByFilter(root.toStdString(), "*.jpg", jpgs);
+        const bool listOk = jpgs.size() == 1 && jpgs[0] == "x.jpg";
+
+        // 4. basename / имя последнего каталога.
+        const bool nameOk = KDbFileOperation::GetFileNameWithoutDir("/a/b/file.txt") == "file.txt"
+            && KDbFileOperation::GetLastDirName("/a/b/c") == "c";
+
+        // 5. StringReplace — все вхождения; пустой from → no-op.
+        std::string s = "a.b.c";
+        KDbFileOperation::StringReplace(s, ".", "-");
+        std::string s2 = "abc";
+        KDbFileOperation::StringReplace(s2, "", "X");
+        const bool replOk = s == "a-b-c" && s2 == "abc";
+
+        // 6. GetNumOfSpaces (частичная семантика).
+        const bool spOk = KDbFileOperation::GetNumOfSpaces("a b c", 5) == 2
+            && KDbFileOperation::GetNumOfSpaces("a b c", 2) == 1
+            && KDbFileOperation::GetNumOfSpaces(nullptr, 5) == 0;
+
+        // 7. Ёмкость ФС (statfs) — total > 0, free > 0, free <= total.
+        double total = 0, free = 0;
+        KDbFileOperation::GetCapacityByPath(root.toUtf8().constData(), total, free);
+        double free2 = 0, total2 = 0;
+        KDbFileOperation::GetSpecifyFreeCapacity(root.toUtf8().constData(), free2);
+        KDbFileOperation::GetSpecifyTotalCapacity(root.toUtf8().constData(), total2);
+        KDbFileOperation::GetCapacityByPath("/no/such/path", total2 = 9, free2 = 9);
+        const bool capOk = total > 0 && free > 0 && free <= total
+            && total2 == 0 && free2 == 0;   // несуществующий путь → 0/0
+
+        // 8. Удаление каталога рекурсивно.
+        const bool delOk = KDbFileOperation::DeleteFolder(QDir(root).absoluteFilePath("a").toStdString())
+            && !KDbFileOperation::IsFileDirExist(sub.toStdString());
+
+        qInfo() << "существование:" << existOk << "копир/удал:" << copyOk << "листинг:" << listOk
+                << "имена:" << nameOk;
+        qInfo() << "замена:" << replOk << "пробелы:" << spOk << "ёмкость:" << capOk
+                << "(total" << total << "free" << free << ")" << "удал.кат:" << delOk;
+
+        const bool ok = existOk && copyOk && listOk && nameOk && replOk && spOk && capOk && delOk;
+        qInfo() << (ok ? "dbfileop: PASS" : "dbfileop: FAIL");
+        return ok ? 0 : 38;
     }
 
     // Self-test доступа производителя (KManuPwdMng) — пишет [Manu] в system.ini,

@@ -85,6 +85,7 @@ set(SOURCES
     src/sys/KEncStyle.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
+    src/db/KDbFileOperation.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
@@ -182,6 +183,7 @@ add_executable(ui_preview
     src/sys/KEncStyle.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
+    src/db/KDbFileOperation.cpp
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp

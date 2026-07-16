@@ -113,13 +113,14 @@ ENDO_ROOT=<tmp> ui_preview examno                     # self-test генерат
 ENDO_ROOT=$ER ui_preview templatelib                  # self-test библиотеки шаблонов (KTemplateLibCfg + report_template::Merge*/ID — 11 блоков, 5 групп)
 ui_preview templateparam                              # self-test параметров шаблона (KTemplateParamCfg — в прошивке мёртвый класс, фикстура своя)
 ENDO_ROOT=<tmp> ui_preview manupwd                    # self-test доступа производителя (KManuPwdMng: пароли от даты + лицензия + countdown; пишет [Manu], tmp-root!)
+ui_preview dbfileop                                   # self-test файловых/дисковых утилит (KDbFileOperation: ФС + statfs-ёмкость)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 52  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 53  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -463,14 +464,29 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **52 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **53 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 57 классов / 602 метода (9.4%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 58 классов / 618 методов (9.6%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KManuPwdMng`** (`app/src/sys/`, self-test `manupwd`) — контур
+**ПОСЛЕДНЕЕ (эта сессия): `KDbFileOperation`** (`app/src/db/`, self-test `dbfileop`) —
+файловые/дисковые утилиты. Несмотря на «Db» в имени SQLite НЕ трогает (нет ни одного
+KEntity*/sqlite3_) — чистые ФС/statfs-хелперы поверх Qt+POSIX, все методы static, полей
+нет, НЕ UI/НЕ device. IsFileExist/IsFileDirExist/GetFileSize/RemoveFile/CreateFolder/
+DeleteFolder/CopyFileToFile/GetFilesByFilter/GetLastDirName/GetFileNameWithoutDir/
+StringReplace/IsPatientDataExist(tail→IsFileExist) + ёмкость ФС по пути (statfs, БАЙТЫ:
+f_blocks·f_bsize / f_bavail·f_bsize). С KEntityService НЕ пересекается. ЧАСТИЧНО ОПРЕДЕЛЕНО:
+GetNumOfSpaces(char*,int) — роль 2-го аргумента из дизасма не восстановлена (принято: число
+пробелов в первых n символах), в self-test проверено консервативно.
+СНЯТ КАНДИДАТ: **KDataOprEventDeal** — БЛОКЕР: подписчик своей msg-шины (KObject/KMessage,
+НЕ Qt signals) + напрямую рулит UI-диалогом KProgressDlg; требует не реализованных
+KObject/KMessage/KProgressDlg/KDataFileOpr. Реализовывать после портирования шины KObject.
+ОТЛОЖЕН: **KExportRecord** (экспорт снимков осмотра на USB, НЕ UI) — device-coupled:
+freeSize/ExportFiles тянут GetUsbDevice/KUsbDevice; `PicInfo.ini` — НЕ конфиг, а имя-маркер
+(сайдкар осмотра: копируется, но не учитывается в successFileNum). Ждёт заглушки USB.
+РАНЕЕ (эта сессия): `KManuPwdMng`** (`app/src/sys/`, self-test `manupwd`) — контур
 доступа производителя/сервиса. НЕ UI, НЕ синглтон-с-состоянием (sizeof==1, полей нет — всё
 в KSystemSet [Manu]). Пароли производителя/админа/сервиса — ПРОИЗВОДНЫЕ ОТ ТЕКУЩЕЙ ДАТЫ
 (меняются помесячно), простая арифметика БЕЗ хеша/шифра: getPwd(n) = a*month*n, где
