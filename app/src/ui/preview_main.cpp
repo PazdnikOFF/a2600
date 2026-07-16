@@ -2292,6 +2292,15 @@ int main(int argc, char **argv)
         const bool delOk = s.DeleteRecord("t", "id=1") == SQLITE_OK
             && s.DeleteRecord("t", "") == SQLITE_OK;
 
+        // GetFieldNameList: колонки t = {id, name, age}.
+        std::set<std::string> cols;
+        const bool fnlOk = s.GetFieldNameList("t", cols) == SQLITE_OK
+            && cols.count("id") && cols.count("name") && cols.count("age");
+        // InsertRecord: несуществующий ключ "nocol" ОТФИЛЬТРОВАН → INSERT валиден.
+        std::map<std::string, std::string> rec{{"id", "10"}, {"name", "d'ave"}, {"nocol", "zzz"}};
+        const bool insRecOk = s.InsertRecord(rec, "t") == SQLITE_OK   // %Q экранирует апостроф
+            && s.InsertRecord(rec, "no_such_table") != SQLITE_OK;     // нет таблицы → GetFieldNameList fail
+
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
 
@@ -2308,10 +2317,11 @@ int main(int argc, char **argv)
 
         qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
                 << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
-        qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
+        qInfo() << "fieldList:" << fnlOk << cols.size() << "insertRec:" << insRecOk
+                << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
 
         const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
-            && nullOk && notOpenExecOk && closeOk;
+            && fnlOk && insRecOk && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }

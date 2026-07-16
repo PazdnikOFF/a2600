@@ -117,3 +117,71 @@ int KDbSqlite::DeleteRecord(const std::string &table, const std::string &where)
         snprintf(buf.data(), buf.size(), "delete from %s where %s", table.c_str(), where.c_str());
     return Exec(buf.data());
 }
+
+int KDbSqlite::GetFieldNameList(const std::string &table, std::set<std::string> &out)
+{
+    // реф. @0x446be0: sprintf("select * from %s", table) → prepare_v2 → column_name[i] в set.
+    std::vector<char> buf(SQL_BUF_SIZE);
+    snprintf(buf.data(), buf.size(), "select * from %s", table.c_str());
+
+    sqlite3_stmt *stmt = nullptr;
+    sqlite3_mutex_enter(m_pMutex);
+    if (!m_pDb) {                          // реф. — лог "db not open" + код ошибки
+        sqlite3_mutex_leave(m_pMutex);
+        return SQLITE_ERROR;
+    }
+    int rc = sqlite3_prepare_v2(m_pDb, buf.data(), -1, &stmt, nullptr);
+    while (rc == SQLITE_BUSY) {            // реф. ретрай BUSY
+        sqlite3_sleep(100);
+        rc = sqlite3_prepare_v2(m_pDb, buf.data(), -1, &stmt, nullptr);
+    }
+    sqlite3_mutex_leave(m_pMutex);
+
+    if (rc != SQLITE_OK) {                 // реф. — finalize + лог + код ошибки
+        if (stmt)
+            sqlite3_finalize(stmt);
+        return rc;
+    }
+    if (stmt) {
+        const int n = sqlite3_column_count(stmt);
+        for (int i = 0; i < n; ++i) {
+            const char *name = sqlite3_column_name(stmt, i);
+            out.insert(std::string(name ? name : ""));
+        }
+        sqlite3_finalize(stmt);
+    }
+    return rc;
+}
+
+int KDbSqlite::InsertRecord(const std::map<std::string, std::string> &fields,
+                            const std::string &table)
+{
+    // реф. @0x447190: колонки таблицы через GetFieldNameList; в INSERT попадают ТОЛЬКО поля,
+    // чей ключ реально есть в таблице; значения — sqlite3_snprintf("%Q").
+    std::set<std::string> cols;
+    int rc = GetFieldNameList(table, cols);
+    if (rc != SQLITE_OK)
+        return rc;
+
+    std::string colList, valList;
+    for (const auto &kv : fields) {
+        if (cols.find(kv.first) == cols.end())   // ключа нет как колонки → пропуск
+            continue;
+        if (!colList.empty())
+            colList += ",";
+        colList += kv.first;
+        if (!valList.empty())
+            valList += ",";
+        std::vector<char> vbuf(SQL_BUF_SIZE);
+        sqlite3_snprintf(SQL_BUF_SIZE - 1, vbuf.data(), "%Q", kv.second.c_str());
+        valList += vbuf.data();
+    }
+
+    char *sql = sqlite3_mprintf("insert into %s (%s) values(%s)",
+                                table.c_str(), colList.c_str(), valList.c_str());
+    if (!sql)                              // реф. — mprintf==null → -0x1005
+        return -4101;
+    rc = Exec(sql);
+    sqlite3_free(sql);
+    return rc;
+}
