@@ -115,13 +115,14 @@ ui_preview templateparam                              # self-test парамет
 ENDO_ROOT=<tmp> ui_preview manupwd                    # self-test доступа производителя (KManuPwdMng: пароли от даты + лицензия + countdown; пишет [Manu], tmp-root!)
 ui_preview dbfileop                                   # self-test файловых/дисковых утилит (KDbFileOperation: ФС + statfs-ёмкость)
 ENDO_ROOT=<tmp> ui_preview controlini                 # self-test слоя ini машинного контроля (KControlINI, control.ini — пишет файл, tmp-root!)
+ui_preview patstr                                     # self-test строковых/DICOM-утилит (KPatientStringOperation+KDbStringOperation: split/charset/SOP UID)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 54  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 55  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -465,14 +466,38 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **54 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **55 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 59 классов / 637 методов (9.9%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 61 класс / 658 методов (10.2%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KControlINI`** (`app/src/kernel/`, self-test `controlini`) —
+**ПОСЛЕДНЕЕ (эта сессия): `KPatientStringOperation` + `KDbStringOperation`** (`app/src/dicom/`,
+self-test `patstr`) — строковые/DICOM-утилиты (потребители — DICOM-слой). НЕ UI/НЕ device,
+все методы static, состояние — function-local static-таблицы. std::string везде.
+KPatient (12): StringReplace/StringTrim(фикс. " \r\n\t")/ReplaceInvalidCharInFolderName
+(\ / : * ? " < > |), GetSOPClassUID(type/flag → US Multiframe/VL Endoscopic/Secondary
+Capture/US Image), ConvertCharacterset (iconv, буфер 5120 → усечение), ConvertCharactersetToUTF8
+(GB2312/ISO-8859-1/-5 → utf-8), GetISOCharactersetOfDicom (ISO_IR 100..192/GB18030→charset),
+SplitDicomPatientName (по '^', ПОРЯДОК реф. token0→p4/token1→p2/token2→p3; без '^' → p2=вся),
+AssembleDicomPatientName, AssembleDicomFilePath (dir/name + ".dcm" если flag==false),
+AssembleCoverFilePath (пробует .jpeg/.bmp/.png через QFile::exists), GenerateUniqueIdentifier
+(суффикс .1.1..1.10 по сущности). KDb (9): те же строковые (делегируют KPatient) + УРЕЗАННАЯ
+таблица charset, а ConvertCharacterset/ToUTF8 — ЗАГЛУШКИ return true (БД хранит UTF-8 напрямую,
+DB-путь конверсию отключил). Имя «KDbStringOperation» вводит в заблуждение: SQL-экранирования
+НЕТ. Дубли реф.: StringReplace≡KMeaStringUtil::ReplaceStr, StringTrim⊂Trim*. Добавлен линк
+libiconv в CMake (на Xilinx-target iconv в glibc). НЕ ОПРЕДЕЛЕНО (помечено): bool-флаг
+GetISOCharactersetOfDicom; обрезка хвостовых '^' в AssembleDicomPatientName; финал
+GenerateUniqueIdentifier — DCMTK dcmGenerateUniqueIdentifier + site-root (device, возвращён
+только суффикс).
+ОТЛОЖЕНЫ БЛОКЕРЫ отчётной ветки (нужен отдельный заход): **KSysReportTempletControl** —
+тонкий фасад, но осмыслен лишь с **KSysReportTempletModel** (~19 методов, не реверснут),
+а полный Save тянет **KReportTemplateManager** (не реализован отд. классом) + доп. методы
+KSysReportTempletCfg (GetTemplateByName/SaveTempletInfos/SaveTemplateCfg). **KDataOprEventDeal** —
+msg-шина KObject/KMessage + UI KProgressDlg. **KExportRecord** — USB (KUsbDevice).
+**KControlProc** — DES yxyDES2.
+РАНЕЕ (эта сессия): `KControlINI`** (`app/src/kernel/`, self-test `controlini`) —
 слой доступа к ini машинного контроля. НЕ UI, НЕ крипто (DES — в компаньоне KControlProc),
 stateless (полей нет; реф. методы инстансные, но this не используют → у нас static).
 ПЕРСИСТ — QSettings(IniFormat), НЕ наш KConfig: bool у QSettings пишется true/false, а KConfig

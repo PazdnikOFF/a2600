@@ -104,6 +104,8 @@ set(SOURCES
     src/dicom/KDicomDatasetFormat.cpp
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
+    src/dicom/KPatientStringOperation.cpp
+    src/dicom/KDbStringOperation.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
     src/report/KMeaStringUtil.cpp
@@ -207,6 +209,8 @@ add_executable(ui_preview
     src/dicom/KDicomDatasetFormat.cpp
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
+    src/dicom/KPatientStringOperation.cpp
+    src/dicom/KDbStringOperation.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
     src/report/KMeaStringUtil.cpp
@@ -231,3 +235,8 @@ add_executable(ui_preview
 )
 target_include_directories(ui_preview PRIVATE src)
 target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml)
+# iconv: на macOS отдельная libiconv, на Xilinx-target — в glibc (линкуется через libc).
+find_library(ICONV_LIB NAMES iconv)
+if(ICONV_LIB)
+    target_link_libraries(ui_preview PRIVATE ${ICONV_LIB})
+endif()

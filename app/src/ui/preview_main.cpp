@@ -36,6 +36,8 @@
 #include "sys/KManuPwdMng.h"
 #include "db/KDbFileOperation.h"
 #include "kernel/KControlINI.h"
+#include "dicom/KPatientStringOperation.h"
+#include "dicom/KDbStringOperation.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1572,6 +1574,77 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test строковых/DICOM-утилит пациента (KPatientStringOperation + KDbStringOperation).
+    if (screen == "patstr") {
+        using P = KPatientStringOperation;
+
+        // 1. StringReplace / StringTrim (фикс. набор " \r\n\t").
+        std::string r = "a.b.c"; P::StringReplace(r, ".", "-");
+        std::string t = " \t x y \r\n"; P::StringTrim(t);
+        std::string allws = " \t\r\n"; P::StringTrim(allws);
+        const bool strOk = r == "a-b-c" && t == "x y" && allws.empty();
+
+        // 2. ReplaceInvalidCharInFolderName — набор \ / : * ? " < > |.
+        std::string fn = "a/b:c*d?"; P::ReplaceInvalidCharInFolderName(fn, "_");
+        const bool invOk = fn == "a_b_c_d_";
+
+        // 3. GetSOPClassUID.
+        const bool sopOk = P::GetSOPClassUID(0, true) == "1.2.840.10008.5.1.4.1.1.3.1"
+            && P::GetSOPClassUID(0, false) == "1.2.840.10008.5.1.4.1.1.77.1.1"
+            && P::GetSOPClassUID(1, false) == "1.2.840.10008.5.1.4.1.1.7"
+            && P::GetSOPClassUID(2, false) == "1.2.840.10008.5.1.4.1.1.6.2"
+            && P::GetSOPClassUID(99, false).empty();
+
+        // 4. SplitDicomPatientName — порядок реф. token0→p4, token1→p2, token2→p3.
+        std::string p2, p3, p4;
+        P::SplitDicomPatientName("Family^Given^Middle", p2, p3, p4);
+        const bool splitOk = p4 == "Family" && p2 == "Given" && p3 == "Middle";
+        std::string q2, q3, q4;
+        P::SplitDicomPatientName("NoCaret", q2, q3, q4);   // без '^' → p2 = вся строка
+        const bool split2Ok = q2 == "NoCaret" && q3.empty() && q4.empty();
+
+        // 5. AssembleDicomFilePath — flag управляет расширением .dcm.
+        const bool pathOk = P::AssembleDicomFilePath("/d", "f", false) == "/d/f.dcm"
+            && P::AssembleDicomFilePath("/d", "f", true) == "/d/f";
+
+        // 6. GetISOCharactersetOfDicom — таблица + флаг распознавания.
+        bool rec = false;
+        const bool isoOk = P::GetISOCharactersetOfDicom("ISO_IR 192", rec) == "utf-8" && rec
+            && P::GetISOCharactersetOfDicom("ISO_IR 100", rec) == "ISO-8859-1"
+            && P::GetISOCharactersetOfDicom("НетТакого", rec).empty() && !rec;
+
+        // 7. ConvertCharacterset (iconv): пустой → true no-op; ASCII utf-8→utf-8 сохраняется.
+        std::string empty; const bool convEmpty = P::ConvertCharacterset("utf-8", "utf-8", empty);
+        std::string ascii = "hello";
+        const bool convAscii = P::ConvertCharacterset("utf-8", "utf-8", ascii) && ascii == "hello";
+        std::string u = "world"; const bool utf8Ok = P::ConvertCharactersetToUTF8(u);
+
+        // 8. GenerateUniqueIdentifier — суффикс по типу (финал DCMTK — заглушка).
+        const bool uidOk = P::GenerateUniqueIdentifier("Patient") == ".1.1"
+            && P::GenerateUniqueIdentifier("Querylist") == ".1.10"
+            && P::GenerateUniqueIdentifier("НетТакого").empty();
+
+        // 9. KDbStringOperation: строковые делегируют KPatient; iconv — заглушки true.
+        std::string dr = "x/y/z"; KDbStringOperation::StringReplace(dr, "/", "-");
+        std::string di = "нетронуто";
+        const bool dbOk = dr == "x-y-z"
+            && KDbStringOperation::ConvertCharacterset("gbk", "utf-8", di) && di == "нетронуто"
+            && KDbStringOperation::ConvertCharactersetToUTF8(di);   // заглушка, не меняет
+        bool drec = false;
+        const bool dbIsoOk = KDbStringOperation::GetISOCharactersetOfDicom("ISO_IR 144", drec)
+            == "ISO-8859-5";
+
+        qInfo() << "строки:" << strOk << "invalid:" << invOk << "SOP:" << sopOk
+                << "split:" << splitOk << split2Ok << "path:" << pathOk;
+        qInfo() << "ISO:" << isoOk << "iconv:" << convEmpty << convAscii << utf8Ok
+                << "UID:" << uidOk << "| KDb:" << dbOk << dbIsoOk;
+
+        const bool ok = strOk && invOk && sopOk && splitOk && split2Ok && pathOk && isoOk
+            && convEmpty && convAscii && utf8Ok && uidOk && dbOk && dbIsoOk;
+        qInfo() << (ok ? "patstr: PASS" : "patstr: FAIL");
+        return ok ? 0 : 40;
     }
 
     // Self-test слоя ini машинного контроля (KControlINI).
