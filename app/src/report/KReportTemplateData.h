@@ -47,3 +47,14 @@ struct KReportTemplateDataNew {
     std::list<KReportTemplateItem> m_lstItems;         // +0x30 — дерево <Content>
     std::map<std::string, KReportTemplateItemConfig> m_mapItemConfigs;  // +0x48 — <ItemConfig>
 };
+
+// Параметры разделительной линии секции (реф. KSplitLineInfo, sizeof 0x50). Наполняется
+// report_template::GetSplitLineInfo из атрибутов item-config. Тип/цвет — обычные строки
+// (реф. НЕ QColor/QTextLength; десериализуются потребителем при рендере).
+struct KSplitLineInfo {
+    int m_nSplitLineWidth = 0;         // +0x00 — "SplitLineWidth" (обязателен: gate)
+    int m_nSplitLineSpace = 0;         // +0x04 — "SplitLineSpace"
+    int m_nSplitStartIndex = 0;        // +0x08 — "SplitStartIndex"
+    std::string m_strSplitLineType;    // +0x10 — "SplitLineType", дефолт "Horizontal"
+    std::string m_strSplitLineColor;   // +0x30 — "SplitLineColor", дефолт "black"
+};

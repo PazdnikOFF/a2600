@@ -1987,6 +1987,65 @@ int main(int argc, char **argv)
         const bool custOk = secOk && renOk && delGuardOk && delOk
             && appCustGuard && appCustOk && appCust2Ok;
 
+        // AppendSubData: заглушка.
+        KReportTemplateDataNew sd1, sd2;
+        const bool subAppendOk = !AppendSubData(sd1, "k", sd2);
+
+        // GetSubItemsParam: плоский substring-скан m_mapItemConfigs, out не чистится.
+        KReportTemplateDataNew t5;
+        t5.m_mapItemConfigs["/G"] = KReportTemplateItemConfig();
+        t5.m_mapItemConfigs["/G/a"] = KReportTemplateItemConfig();
+        t5.m_mapItemConfigs["/G/b"] = KReportTemplateItemConfig();
+        t5.m_mapItemConfigs["/H"] = KReportTemplateItemConfig();
+        std::map<std::string, KReportTemplateItemConfig> paramOut;
+        paramOut["/PRE"] = KReportTemplateItemConfig();          // проверим отсутствие clear
+        GetSubItemsParam(t5, "/G", paramOut);                    // /G,/G/a,/G/b (+ /PRE)
+        const bool paramOk = paramOut.size() == 4 && paramOut.count("/G")
+            && paramOut.count("/G/a") && paramOut.count("/G/b") && paramOut.count("/PRE")
+            && !paramOut.count("/H");
+
+        // ConvertToDetail: инверс ConvertToSourceID.
+        std::string base; std::map<std::string, std::string> prm;
+        const bool detOk = ConvertToDetail("SRC,a|1;b|2;", base, prm)
+            && base == "SRC" && prm.size() == 2 && prm["a"] == "1" && prm["b"] == "2";
+        std::string base2; std::map<std::string, std::string> prm2; prm2["keep"] = "1";
+        const bool detTrailOk = ConvertToDetail("SRC,", base2, prm2)   // 1 часть → param не тронут
+            && base2 == "SRC" && prm2.size() == 1 && prm2.count("keep");
+        std::string base3; std::map<std::string, std::string> prm3;
+        const bool detEmptyOk = !ConvertToDetail("", base3, prm3);     // пусто → false
+        // Round-trip ConvertToSourceID → ConvertToDetail.
+        std::string sid3; std::map<std::string, std::string> rt3 = {{"x", "9"}};
+        ConvertToSourceID("BASE", rt3, sid3);
+        std::string rtBase; std::map<std::string, std::string> rtPrm;
+        const bool rtDetOk = ConvertToDetail(sid3, rtBase, rtPrm)
+            && rtBase == "BASE" && rtPrm["x"] == "9";
+        const bool convOk = detOk && detTrailOk && detEmptyOk && rtDetOk;
+
+        // GetSplitLineInfo: gate по SplitLineWidth, дефолты, override.
+        std::map<std::string, KReportTemplateItemConfig> slCfgs;
+        KReportTemplateItemConfig slFull;
+        slFull.m_mapAttrs["SplitLineWidth"] = "2";
+        slFull.m_mapAttrs["SplitLineSpace"] = "5";
+        slFull.m_mapAttrs["SplitStartIndex"] = "1";
+        slFull.m_mapAttrs["SplitLineColor"] = "red";        // override дефолта black
+        // SplitLineType не задан → дефолт Horizontal.
+        slCfgs["/L"] = slFull;
+        KReportTemplateItemConfig slGate;                   // нет SplitLineWidth → gate закрыт
+        slGate.m_mapAttrs["SplitLineColor"] = "blue";
+        slCfgs["/NG"] = slGate;
+        KSplitLineInfo sl;
+        GetSplitLineInfo("/L", slCfgs, sl);
+        const bool slOk = sl.m_nSplitLineWidth == 2 && sl.m_nSplitLineSpace == 5
+            && sl.m_nSplitStartIndex == 1 && sl.m_strSplitLineType == "Horizontal"
+            && sl.m_strSplitLineColor == "red";
+        KSplitLineInfo slNg; slNg.m_strSplitLineColor = "dirty"; slNg.m_nSplitLineWidth = 99;
+        GetSplitLineInfo("/NG", slCfgs, slNg);              // gate закрыт → всё сброшено
+        const bool slGateOk = slNg.m_nSplitLineWidth == 0 && slNg.m_strSplitLineColor.empty()
+            && slNg.m_strSplitLineType.empty();
+        KSplitLineInfo slMiss; GetSplitLineInfo("/nope", slCfgs, slMiss);
+        const bool slMissOk = slMiss.m_nSplitLineWidth == 0 && slMiss.m_strSplitLineType.empty();
+        const bool splitOk = slOk && slGateOk && slMissOk;
+
         qInfo() << "map→str:" << m2sOk << s.c_str() << "| str→map:" << s2mOk << "мусор:" << badOk
                 << "merge:" << mergeOk;
         qInfo() << "sourceId:" << sidOk << sid.c_str() << "| пустой:" << sidEmptyOk
@@ -1997,11 +2056,13 @@ int main(int argc, char **argv)
                 << "append:" << appOk << appDupOk << "list:" << appListOk;
         qInfo() << "custom:" << "sections:" << secOk << "rename:" << renOk << "delete:" << delOk
                 << "append:" << appCustOk << appCust2Ok;
+        qInfo() << "subAppend:" << subAppendOk << "param:" << paramOk << "detail:" << convOk
+                << "splitLine:" << splitOk;
 
         const bool ok = m2sOk && s2mOk && badOk && mergeOk && sidOk && sidEmptyOk
             && genOk && boldOk && rtOk && findOk && updOk && subDataOk && groupOk
             && giOk && byIdOk && remOk && remMissOk && appOk && appDupOk && appListOk
-            && custOk;
+            && custOk && subAppendOk && paramOk && convOk && splitOk;
         qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
         return ok ? 0 : 51;
     }

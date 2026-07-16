@@ -162,4 +162,29 @@ bool DeleteCustomedItem(KReportTemplateDataNew &data, const std::string &parentI
 bool AppendCustomedItem(KReportTemplateDataNew &data, const std::string &parentId,
                         KReportTemplateItem &item);
 
+// реф. AppendSubData @0x595390 — СКОМПИЛИРОВАННАЯ ЗАГЛУШКА (return false), как GetSubData.
+bool AppendSubData(KReportTemplateDataNew &data, const std::string &id,
+                   const KReportTemplateDataNew &src);
+
+// Сбор конфигов под-элементов (реф. GetSubItemsParam @0x598848). ПЛОСКИЙ обход всего
+// m_mapItemConfigs (НЕ дерево!): ключ СОДЕРЖИТ id (substring) → out.insert (unique, без
+// перезаписи). out НЕ очищается; узел с key==id включается; пустой id → копируются ВСЕ.
+void GetSubItemsParam(const KReportTemplateDataNew &data, const std::string &id,
+                      std::map<std::string, KReportTemplateItemConfig> &out);
+
+// Разбор source-id (реф. ConvertToDetail @0x597c70 — инверс ConvertToSourceID). Пустой src →
+// false. RevertPathByID(src, ",") → parts; outBase=parts[0]; при >=2 частях outParam.clear()
+// + ConvertStringToMap(parts[1]). Возврат true. ("src," → base="src", param не тронут.)
+bool ConvertToDetail(const std::string &src, std::string &outBase,
+                     std::map<std::string, std::string> &outParam);
+
+// Параметры разделительной линии из item-config (реф. GetSplitLineInfo @0x5971b8). out
+// сбрасывается; если id нет в configs ИЛИ нет атрибута "SplitLineWidth" (gate) — out остаётся
+// сброшенным. Иначе: Width=toInt; дефолты Type="Horizontal", Color="black"; переопределяются
+// непустыми "SplitLineType"/"SplitLineColor"; Space/StartIndex=toInt при наличии. int строго
+// через QString::toInt (мусор → 0).
+void GetSplitLineInfo(const std::string &id,
+                      const std::map<std::string, KReportTemplateItemConfig> &configs,
+                      KSplitLineInfo &out);
+
 } // namespace report_template

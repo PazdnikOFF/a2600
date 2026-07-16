@@ -2,6 +2,7 @@
 #include "report/KMeaStringUtil.h"
 
 #include <QObject>
+#include <QString>
 
 #include <map>
 #include <set>
@@ -441,6 +442,80 @@ bool AppendCustomedItem(KReportTemplateDataNew &data, const std::string &parentI
 
     data.m_lstItems.push_back(item);   // копия в конец
     return true;
+}
+
+bool AppendSubData(KReportTemplateDataNew &data, const std::string &id,
+                   const KReportTemplateDataNew &src)
+{
+    // реф. @0x595390 — скомпилированная заглушка `mov w0,#0; ret`.
+    (void)data; (void)id; (void)src;
+    return false;
+}
+
+void GetSubItemsParam(const KReportTemplateDataNew &data, const std::string &id,
+                      std::map<std::string, KReportTemplateItemConfig> &out)
+{
+    // Плоский обход ВСЕХ конфигов; ключ содержит id (substring) → unique-insert (out не чистим).
+    for (const auto &kv : data.m_mapItemConfigs) {
+        if (kv.first.find(id) != std::string::npos)
+            out.insert(kv);   // без перезаписи существующих ключей
+    }
+}
+
+bool ConvertToDetail(const std::string &src, std::string &outBase,
+                     std::map<std::string, std::string> &outParam)
+{
+    if (src.empty())
+        return false;
+    const std::vector<std::string> parts = RevertPathByID(src, ",");
+    if (parts.empty())
+        return false;
+    outBase = parts[0];
+    if (parts.size() >= 2) {
+        outParam.clear();
+        ConvertStringToMap(parts[1], outParam);
+    }
+    return true;
+}
+
+void GetSplitLineInfo(const std::string &id,
+                      const std::map<std::string, KReportTemplateItemConfig> &configs,
+                      KSplitLineInfo &out)
+{
+    // Сброс out.
+    out.m_nSplitLineWidth = 0;
+    out.m_nSplitLineSpace = 0;
+    out.m_nSplitStartIndex = 0;
+    out.m_strSplitLineType.clear();
+    out.m_strSplitLineColor.clear();
+
+    const auto cit = configs.find(id);
+    if (cit == configs.end())
+        return;
+    const std::map<std::string, std::string> &attrs = cit->second.m_mapAttrs;
+
+    // Gate: без "SplitLineWidth" — out остаётся сброшенным.
+    const auto w = attrs.find("SplitLineWidth");
+    if (w == attrs.end())
+        return;
+    out.m_nSplitLineWidth = QString::fromLatin1(w->second.c_str()).toInt();   // строго, мусор→0
+
+    // Дефолты — только после прохождения gate.
+    out.m_strSplitLineType = "Horizontal";
+    out.m_strSplitLineColor = "black";
+
+    const auto t = attrs.find("SplitLineType");
+    if (t != attrs.end() && !t->second.empty())
+        out.m_strSplitLineType = t->second;
+    const auto c = attrs.find("SplitLineColor");
+    if (c != attrs.end() && !c->second.empty())
+        out.m_strSplitLineColor = c->second;
+    const auto sp = attrs.find("SplitLineSpace");
+    if (sp != attrs.end())
+        out.m_nSplitLineSpace = QString::fromLatin1(sp->second.c_str()).toInt();
+    const auto si = attrs.find("SplitStartIndex");
+    if (si != attrs.end())
+        out.m_nSplitStartIndex = QString::fromLatin1(si->second.c_str()).toInt();
 }
 
 } // namespace report_template
