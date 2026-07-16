@@ -104,4 +104,33 @@ bool GetSubData(const KReportTemplateDataNew &data, const std::string &key,
 bool HasSameNameInGroup(KReportTemplateDataNew &data, const std::string &id,
                         const std::string &name);
 
+// Сбор под-элементов (реф. GetSubItems @0x595e70 — близнец GetSubItemsID, но ЭЛЕМЕНТЫ).
+// out НЕ очищается; сам item НЕ включается; копии ПОВЕРХНОСТНЫЕ (7 строк, m_lstSubItems
+// пустой → плоский список); при bRecursive — pre-order DFS. Возврат true.
+bool GetSubItems(const KReportTemplateItem &item, std::list<KReportTemplateItem> &out,
+                 bool bRecursive);
+// By-ID (реф. @0x596308): id пустой → корень m_lstItems (без Find); иначе FindConstRefItem,
+// miss → false (out не тронут). Тело идентично overload выше.
+bool GetSubItems(const KReportTemplateDataNew &data, const std::string &id,
+                 std::list<KReportTemplateItem> &out, bool bRecursive);
+
+// Удаление под-элемента (реф. RemoveSubItem @0x5967d0). parent=FindRefItem(parentId) (БЕЗ
+// root-фолбэка; пустой parentId → miss → false). Ищет ребёнка по **m_strName == id** (sic,
+// НЕ m_strID!) и erase. Затем чистит m_mapItemConfigs: удаляет ключи, СОДЕРЖАЩИЕ префикс
+// "<parentId>/<id>/" (собственный конфиг узла БЕЗ хвостового '/' НЕ трогается). true, если
+// ребёнок найден и удалён.
+bool RemoveSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const std::string &id);
+
+// Добавление под-элемента (реф. AppendSubItem @0x596a98). parent=FindRefItem (БЕЗ root-
+// фолбэка). Дедуп по **m_strName** среди прямых детей — дубль → лог+false. Иначе push_back
+// ГЛУБОКОЙ ДОСЛОВНОЙ копии (m_strID НЕ пересчитывается, как в MergeSubItem). true при успехе.
+bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const KReportTemplateItem &item);
+// List-overload (реф. @0x596e18). Множество имён строится ОДИН РАЗ до цикла и НЕ обновляется
+// → внутрибатчевые дубли ОБА добавляются (отличие от N вызовов single-версии). Дубль с
+// существующим ребёнком → skip+continue (не прерывает). false только если parent не найден.
+bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const std::list<KReportTemplateItem> &items);
+
 } // namespace report_template

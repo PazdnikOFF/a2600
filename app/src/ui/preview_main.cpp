@@ -1879,15 +1879,77 @@ int main(int argc, char **argv)
             && !HasSameNameInGroup(tree, "/A", "TA");                // корень, один сиблинг=сам
         const bool groupOk = dupOk && noDupOk;
 
+        // Мутации/сбор: дерево /P → {X → {X1}, Y}; конфиги /P/X, /P/X/1.
+        KReportTemplateDataNew t2;
+        KReportTemplateItem P; P.m_strID = "/P"; P.m_strName = "P";
+        KReportTemplateItem X; X.m_strID = "/P/X"; X.m_strName = "X"; X.m_strTitle = "TX";
+        KReportTemplateItem X1; X1.m_strID = "/P/X/1"; X1.m_strName = "X1";
+        X.m_lstSubItems.push_back(X1);
+        KReportTemplateItem Y; Y.m_strID = "/P/Y"; Y.m_strName = "Y";
+        P.m_lstSubItems.push_back(X); P.m_lstSubItems.push_back(Y);
+        t2.m_lstItems.push_back(P);
+        t2.m_mapItemConfigs["/P/X"] = KReportTemplateItemConfig();
+        t2.m_mapItemConfigs["/P/X/1"] = KReportTemplateItemConfig();
+        KReportTemplateItem *pRef = FindRefItem(t2, "/P");
+
+        // GetSubItems(item): flat [X,Y]; recursive pre-order [X,X1,Y]; копии поверхностные.
+        std::list<KReportTemplateItem> giFlat, giRec;
+        GetSubItems(*pRef, giFlat, false);
+        GetSubItems(*pRef, giRec, true);
+        const bool giOk = giFlat.size() == 2 && giFlat.front().m_strName == "X"
+            && giRec.size() == 3 && std::next(giRec.begin())->m_strName == "X1"
+            && giRec.front().m_lstSubItems.empty();          // поверхностная копия
+
+        // GetSubItems(by-id): /P → 2; "" → корень [P]; miss → false; out не очищается.
+        std::list<KReportTemplateItem> gid; KReportTemplateItem dummy; dummy.m_strName = "DUMMY";
+        gid.push_back(dummy);
+        GetSubItems(t2, "/P", gid, false);                   // append → DUMMY,X,Y
+        std::list<KReportTemplateItem> groot, gmiss;
+        GetSubItems(t2, "", groot, false);
+        const bool byIdOk = gid.size() == 3 && gid.front().m_strName == "DUMMY"
+            && groot.size() == 1 && groot.front().m_strName == "P"
+            && !GetSubItems(t2, "/nope", gmiss, false) && gmiss.empty();
+
+        // RemoveSubItem: матч по m_strName; чистка конфигов-потомков "/P/X/".
+        const bool remOk = RemoveSubItem(t2, "/P", "X")      // X по имени → удалён
+            && pRef->m_lstSubItems.size() == 1 && pRef->m_lstSubItems.front().m_strName == "Y"
+            && t2.m_mapItemConfigs.count("/P/X/1") == 0      // потомок вычищен
+            && t2.m_mapItemConfigs.count("/P/X") == 1;       // собственный НЕ тронут
+        const bool remMissOk = !RemoveSubItem(t2, "/nope", "X")   // нет родителя
+            && !RemoveSubItem(t2, "/P", "ZZZ");                    // нет ребёнка с таким именем
+
+        // AppendSubItem: дедуп по m_strName, дословная копия (m_strID не пересчитан).
+        KReportTemplateItem N; N.m_strName = "NEW"; N.m_strID = "verbatim-id";
+        const bool appOk = AppendSubItem(t2, "/P", N)
+            && pRef->m_lstSubItems.back().m_strName == "NEW"
+            && pRef->m_lstSubItems.back().m_strID == "verbatim-id";   // не пересчитан
+        KReportTemplateItem dupY; dupY.m_strName = "Y";
+        const bool appDupOk = !AppendSubItem(t2, "/P", dupY)         // дубль имени → false
+            && !AppendSubItem(t2, "/nope", N);                       // нет родителя → false
+
+        // AppendSubItem(list): множество имён строится ОДИН РАЗ → внутрибатчевые дубли обе.
+        std::list<KReportTemplateItem> batch;
+        KReportTemplateItem d1; d1.m_strName = "DUP"; KReportTemplateItem d2; d2.m_strName = "DUP";
+        KReportTemplateItem existY; existY.m_strName = "Y";
+        batch.push_back(d1); batch.push_back(d2); batch.push_back(existY);
+        AppendSubItem(t2, "/P", batch);
+        int dupCount = 0;
+        for (const KReportTemplateItem &c : pRef->m_lstSubItems)
+            if (c.m_strName == "DUP") ++dupCount;
+        const bool appListOk = dupCount == 2;                        // обе DUP добавлены, Y — нет
+
         qInfo() << "map→str:" << m2sOk << s.c_str() << "| str→map:" << s2mOk << "мусор:" << badOk
                 << "merge:" << mergeOk;
         qInfo() << "sourceId:" << sidOk << sid.c_str() << "| пустой:" << sidEmptyOk
                 << "| genId:" << genOk << "bold:" << boldOk << "title:" << rtOk;
         qInfo() << "find:" << findOk << "update:" << updOk << "subData:" << subDataOk
                 << "group:" << groupOk;
+        qInfo() << "getSub:" << giOk << byIdOk << "remove:" << remOk << remMissOk
+                << "append:" << appOk << appDupOk << "list:" << appListOk;
 
         const bool ok = m2sOk && s2mOk && badOk && mergeOk && sidOk && sidEmptyOk
-            && genOk && boldOk && rtOk && findOk && updOk && subDataOk && groupOk;
+            && genOk && boldOk && rtOk && findOk && updOk && subDataOk && groupOk
+            && giOk && byIdOk && remOk && remMissOk && appOk && appDupOk && appListOk;
         qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
         return ok ? 0 : 51;
     }

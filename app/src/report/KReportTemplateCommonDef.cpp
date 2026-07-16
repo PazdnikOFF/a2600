@@ -2,6 +2,7 @@
 #include "report/KMeaStringUtil.h"
 
 #include <map>
+#include <set>
 #include <vector>
 
 namespace report_template {
@@ -238,6 +239,107 @@ bool HasSameNameInGroup(KReportTemplateDataNew &data, const std::string &id,
             return true;
     }
     return false;
+}
+
+namespace {
+// Рекурсивный сбор под-элементов (плоские поверхностные копии). Общая база двух overload
+// GetSubItems. out НЕ очищается; сам родитель не включается; pre-order.
+void collectSubItems(const std::list<KReportTemplateItem> &level,
+                     std::list<KReportTemplateItem> &out, bool bRecursive)
+{
+    for (const KReportTemplateItem &child : level) {
+        KReportTemplateItem copy = child;   // 7 строк…
+        copy.m_lstSubItems.clear();         // …без под-дерева (реф. — плоский список)
+        out.push_back(copy);
+        if (bRecursive && !child.m_lstSubItems.empty())
+            collectSubItems(child.m_lstSubItems, out, true);
+    }
+}
+} // namespace
+
+bool GetSubItems(const KReportTemplateItem &item, std::list<KReportTemplateItem> &out,
+                 bool bRecursive)
+{
+    collectSubItems(item.m_lstSubItems, out, bRecursive);
+    return true;
+}
+
+bool GetSubItems(const KReportTemplateDataNew &data, const std::string &id,
+                 std::list<KReportTemplateItem> &out, bool bRecursive)
+{
+    if (id.empty()) {
+        collectSubItems(data.m_lstItems, out, bRecursive);   // корень, без Find
+        return true;
+    }
+    const KReportTemplateItem *p = FindConstRefItem(data, id);
+    if (!p)
+        return false;   // out не тронут
+    collectSubItems(p->m_lstSubItems, out, bRecursive);
+    return true;
+}
+
+bool RemoveSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const std::string &id)
+{
+    KReportTemplateItem *parent = FindRefItem(data, parentId);   // без root-фолбэка
+    if (!parent)
+        return false;
+
+    for (auto it = parent->m_lstSubItems.begin(); it != parent->m_lstSubItems.end(); ++it) {
+        if (it->m_strName == id) {          // sic: сравнение с m_strName, не m_strID
+            parent->m_lstSubItems.erase(it);
+            // Чистка конфигов потомков: ключи, содержащие "<parentId>/<id>/".
+            const std::string prefix =
+                GenerateIDByString(parentId, id, STR_PATH_SEPARATOR) + STR_PATH_SEPARATOR;
+            for (auto cit = data.m_mapItemConfigs.begin();
+                 cit != data.m_mapItemConfigs.end(); ) {
+                if (cit->first.find(prefix) != std::string::npos)
+                    cit = data.m_mapItemConfigs.erase(cit);
+                else
+                    ++cit;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const KReportTemplateItem &item)
+{
+    KReportTemplateItem *parent = FindRefItem(data, parentId);   // без root-фолбэка
+    if (!parent)
+        return false;
+
+    std::set<std::string> names;
+    for (const KReportTemplateItem &c : parent->m_lstSubItems)
+        names.insert(c.m_strName);
+    if (names.count(item.m_strName))
+        return false;   // реф. — лог [APP][W] "AppenSubItem failed!" (device-only), отброшено
+
+    parent->m_lstSubItems.push_back(item);   // глубокая дословная копия, m_strID НЕ пересчитан
+    return true;
+}
+
+bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
+                   const std::list<KReportTemplateItem> &items)
+{
+    KReportTemplateItem *parent = FindRefItem(data, parentId);
+    if (!parent)
+        return false;
+
+    // Множество имён строится ОДИН РАЗ и НЕ обновляется в цикле (реф.): внутрибатчевые
+    // дубли обе добавляются, проверка — только против исходных детей.
+    std::set<std::string> names;
+    for (const KReportTemplateItem &c : parent->m_lstSubItems)
+        names.insert(c.m_strName);
+
+    for (const KReportTemplateItem &item : items) {
+        if (names.count(item.m_strName))
+            continue;                            // дубль с существующим → skip, не прерывая
+        parent->m_lstSubItems.push_back(item);   // deep verbatim; names НЕ пополняется
+    }
+    return true;
 }
 
 } // namespace report_template
