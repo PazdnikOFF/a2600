@@ -108,13 +108,14 @@ ui_preview kconfig                                    # self-test INI-движк
 ENDO_ROOT=<tmp> ui_preview listsetup                  # self-test конфигов списков пациентов/worklist (пишет файлы, брать tmp-root!)
 ENDO_ROOT=$ER ui_preview meaxml                       # self-test фундамента XML (KMeaXMLBase+KEnvConfig на реальном Template(NP-1x4).xml)
 ENDO_ROOT=$ER ui_preview templatecfg                  # self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate, 5 файлов)
+ui_preview strutil                                    # self-test строковых утилит (KMeaStringUtil: split/trim/конверсии — неинтуитивная семантика)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 47  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 48  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -458,14 +459,39 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **47 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **48 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 51 класс / 541 метод (8.4%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 52 класса / 563 метода (8.8%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): структуры данных отчёта + KTemplateCfg.**
+**ПОСЛЕДНЕЕ (эта сессия): `KMeaStringUtil`** (`app/src/report/`, self-test `strutil`) —
+строковые утилиты, на которых сидит отчётная ветка (report_template::ConvertStringToMap,
+KTextBlock::FontSize, KImageBlock::Url, KTableBlock::Margin…). Класс ПУСТОЙ и без состояния,
+но методы НЕ static (реф. ctor/dtor = голый ret) — потребители делают `KMeaStringUtil u;`.
+СЕМАНТИКА НЕИНТУИТИВНА (закреплена self-test'ом, не менять «по здравому смыслу»):
+SplitStr — разделитель это НАБОР символов (find_first_of), SplitStr2 — ПОДСТРОКА (find);
+оба пропускают пустые токены и НЕ тримят; ПУСТОЙ разделитель → ПУСТОЙ вектор, а не {s};
+разделитель не найден → {s}. TrimBeginEndStr* тримит ТОЛЬКО пробел ' ' (не \t\n\v\r\f);
+TrimAllStr удаляет ' '/'\t'/'\n' ОТОВСЮДУ (не с концов), '\r' не трогает.
+ConvertStringTo{Int,Double} без валидации и исключений: "abc"→0, "12abc"→12, "0x10"→0.
+ConvertDoubleToString — stringstream (6 знач. цифр), НЕ std::to_string: 100.0→"100",
+1234567.0→"1.23457e+06". IsBeginWith/IsEndWith с пустым префиксом → true.
+ReplaceIllegalChar меняет только ПЕРВОЕ вхождение каждого из 9 символов (\ / : * ? " > < |).
+ReadChars — векторы НЕ очищаются (append), пустые токены сохраняются, хвост без ';' теряется.
+БАГИ РЕФ. (не воспроизводим намеренно): ConvertIntToFormatString при width>=100 пишет за
+100-байтовый буфер (buf[snprintf()]) — у нас буфер по размеру; SearchStr не экранирует
+left/right (regex-метасимволы, битый шаблон бросает) — оставлено как в реф.
+16 из 22 методов в самом X2000 не вызываются (внешний API/мёртвый код).
+СНЯТ КАНДИДАТ: **KFactoryOptions** — по дизасму это Qt-ДИАЛОГ (KDialog→QDialog, 39 методов,
+гейт по роли аккаунта), а НЕ конфиг-класс: off-device там лишь ReadTestEnv/SaveTestEnv/
+GetTestConfPath/CopyConf (2 ключа: Env/Scope в data/presetdata/syspreset/testenv.ini и
+AgeTest/IsAgeTest в data/protected/syspreset/testenv.ini, оба через QSettings, НЕ KConfig).
+Остальное тянет UI/железо. ВЫВОД ПРО КАРТУ: домен/off-device в `docs/COVERAGE.md` — эвристики
+ИМЁН, они врут (KFactoryOptions помечен UPDATE/✅). Перед взятием кандидата из карты
+ОБЯЗАТЕЛЬНО проверять дизасмом, что это не диалог и на чём персист.
+РАНЕЕ (эта сессия): структуры данных отчёта + KTemplateCfg.**
 `app/src/report/KReportTemplateData.h` — центральные структуры (их не было вовсе; на них
 завязаны KTemplateCfg/KTemplateLibCfg/KTextBlock/KImageBlock/KTableBlock/report_template::*):
 `KReportTemplateItem` (0xF8: m_strID=parentPath+"/"+Name, Name/Title/Type/DataSrc/Column/

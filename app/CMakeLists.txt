@@ -102,6 +102,7 @@ set(SOURCES
     src/dicom/KDicomInterface.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
+    src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
@@ -197,6 +198,7 @@ add_executable(ui_preview
     src/dicom/KDicomInterface.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
+    src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp

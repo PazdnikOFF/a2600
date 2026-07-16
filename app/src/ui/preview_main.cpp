@@ -31,6 +31,7 @@
 #include "dicom/KSysDICOMData.h"
 #include "kernel/KConfig.h"
 #include "report/KMeaXMLBase.h"
+#include "report/KMeaStringUtil.h"
 #include "report/KTemplateCfg.h"
 #include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
@@ -1563,6 +1564,104 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test строковых утилит (KMeaStringUtil) — закрепляет НЕинтуитивную
+    // семантику реф., на которую завязана отчётная ветка.
+    if (screen == "strutil") {
+        KMeaStringUtil u;   // реф.: методы НЕ static, класс пустой
+
+        // 1. SplitStr — разделитель это НАБОР символов; пустые токены пропускаются.
+        const std::vector<std::string> a = u.SplitStr("25,50,25", ",");
+        const std::vector<std::string> b = u.SplitStr("a,,b", ",");
+        const std::vector<std::string> c = u.SplitStr("a,b;c", ",;");   // набор из двух
+        const bool splitOk = a == std::vector<std::string>{"25", "50", "25"}
+            && b == std::vector<std::string>{"a", "b"}                  // пустой токен выпал
+            && c == std::vector<std::string>{"a", "b", "c"}
+            && u.SplitStr("нет разделителя", ",") == std::vector<std::string>{"нет разделителя"}
+            && u.SplitStr("", ",").empty()
+            && u.SplitStr("abc", "").empty();          // пустой набор → ПУСТОЙ вектор
+
+        // 2. SplitStr2 — разделитель это ПОДСТРОКА (в отличие от SplitStr).
+        const bool split2Ok = u.SplitStr2("a::b::c", "::") == std::vector<std::string>{"a", "b", "c"}
+            // Подстрока ",;" в "a,b" не найдена → весь вход одним токеном…
+            && u.SplitStr2("a,b", ",;") == std::vector<std::string>{"a,b"}
+            // …тогда как для SplitStr ",;" — это НАБОР, и оба символа-разделителя найдены.
+            && u.SplitStr("a,b", ",;") == std::vector<std::string>{"a", "b"}
+            && u.SplitStr2("abc", "").empty();   // пустой разделитель → ПУСТОЙ вектор
+
+        // 3. Конверсии: без валидации, без исключений.
+        const bool convOk = u.ConvertStringToInt("42") == 42
+            && u.ConvertStringToInt("abc") == 0 && u.ConvertStringToInt("") == 0
+            && u.ConvertStringToInt("12abc") == 12 && u.ConvertStringToInt("0x10") == 0
+            && qAbs(u.ConvertStringToDouble("3.5") - 3.5) < 1e-9
+            && u.ConvertStringToDouble("abc") == 0.0
+            && u.ConvertIntToString(-7) == "-7"
+            // stringstream, а не to_string: 6 значащих цифр
+            && u.ConvertDoubleToString(100.0) == "100"
+            && u.ConvertDoubleToString(1234567.0) == "1.23457e+06"
+            && u.ConvertIntToFormatString(42, 5) == "00042";
+
+        // 4. Тримминг: TrimBeginEndStr — ТОЛЬКО пробел; TrimAllStr — отовсюду.
+        std::string t1 = "  x  ";
+        const std::string t1r = u.TrimBeginEndStrRef(t1);
+        std::string t2 = " a b\tc\nd\re ";
+        u.TrimAllStr(t2);
+        const bool trimOk = t1r == "x" && t1 == "x"                 // тримит in-place
+            && u.TrimBeginEndStr("\t x \n") == "\t x \n"            // \t\n НЕ тримятся!
+            && u.TrimBeginEndStr("   ").empty()
+            && t2 == "abcd\re";                                     // \r НЕ удаляется
+
+        // 5. Префикс/суффикс: пустой → true. Регистрозависимо.
+        const bool edgeOk = u.IsBeginWith("hello", "he") && !u.IsBeginWith("hello", "HE")
+            && u.IsBeginWith("hello", "") && !u.IsBeginWith("h", "hello")
+            && u.IsEndWith("hello", "lo") && u.IsEndWith("hello", "")
+            && u.IsEqual("ABC", "abc", false) && !u.IsEqual("ABC", "abc", true);
+
+        // 6. ReplaceStr — все вхождения; пустой from → no-op.
+        std::string r1 = "a-b-c";
+        u.ReplaceStr(r1, "-", "+");
+        std::string r2 = "abc";
+        u.ReplaceStr(r2, "", "X");
+        // ReplaceIllegalChar — только ПЕРВОЕ вхождение каждого символа.
+        std::string r3 = "a/b/c:d";
+        u.ReplaceIllegalChar(r3, "_");
+        const bool replOk = r1 == "a+b+c" && r2 == "abc" && r3 == "a_b/c_d";
+
+        // 7. DeleteChars + FormatStr.
+        char buf[] = "a1b2c3";
+        u.DeleteChars(buf, "123");
+        u.DeleteChars(nullptr, "x");   // nullptr → no-op, не падаем
+        const bool miscOk = std::string(buf) == "abc"
+            && u.FormatStr("%s=%d", "n", 5) == "n=5";
+
+        // 8. ReadChars: append (не очищает), пустые токены сохраняются,
+        //    хвост без ';' теряется.
+        std::vector<std::string> keys{"старый"}, vals;
+        char kv[] = "k1:v1;k2:v2;k3:потеряется";
+        u.ReadChars(kv, keys, vals);
+        const bool rcOk = keys == std::vector<std::string>{"старый", "k1", "k2", "k3"}
+            && vals == std::vector<std::string>{"v1", "v2"};   // третий value потерян
+
+        // 9. SearchStr — группа между left/right.
+        const bool srchOk = u.SearchStr("<a>text</a>", "<a>", "</a>") == "text"
+            && u.SearchStr("нет", "<a>", "</a>").empty();
+
+        // 10. IsChineseChar — многобайтные символы; выход за границы → false.
+        const std::string cn = "ф";   // UTF-8: 2 байта, оба со старшим битом
+        const bool cnOk = u.IsChineseChar(cn, 0) && u.IsChineseChar(cn, 1)
+            && !u.IsChineseChar("a", 0) && !u.IsChineseChar(cn, -1)
+            && !u.IsChineseChar(cn, 99) && !u.IsChineseChar("", 0);
+
+        qInfo() << "split:" << splitOk << "split2:" << split2Ok << "конверсии:" << convOk
+                << "тримминг:" << trimOk << "края:" << edgeOk;
+        qInfo() << "замены:" << replOk << "прочее:" << miscOk << "ReadChars:" << rcOk
+                << "SearchStr:" << srchOk << "многобайтные:" << cnOk;
+
+        const bool ok = splitOk && split2Ok && convOk && trimOk && edgeOk && replOk
+            && miscOk && rcOk && srchOk && cnOk;
+        qInfo() << (ok ? "strutil: PASS" : "strutil: FAIL");
+        return ok ? 0 : 33;
     }
 
     // Self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate).
