@@ -90,6 +90,7 @@ set(SOURCES
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
+    src/db/KDbStrHandler.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp
@@ -194,6 +195,7 @@ add_executable(ui_preview
     src/sys/KSystemStatus.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
+    src/db/KDbStrHandler.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp

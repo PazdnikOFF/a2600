@@ -119,13 +119,14 @@ ui_preview patstr                                     # self-test строков
 ui_preview stopwatch                                  # self-test экранного секундомера (KStopWatch: конечный автомат старт/пауза/стоп, offscreen)
 ui_preview patient                                    # self-test сущности/CRUD пациента (KEntityPatient+KPatientListDBTableHandler, tb_PatientList)
 ui_preview doctor                                     # self-test сущности/CRUD врача (KEntityDoctor+KDoctorDBTableHandler, tb_Doctor + недавние по time/count)
+ui_preview dbstr                                      # self-test построителя SQL-условий (KDbStrHandler) + факт SQLCipher-ключа
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 58  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 59  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -469,14 +470,30 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **58 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **59 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 66 классов / 691 метод (10.7%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 67 классов / 696 методов (10.8%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KEntityDoctor` + `KDoctorDBTableHandler`** (`app/src/db/`,
+**ПОСЛЕДНЕЕ (эта сессия): `KDbStrHandler` + SQLCipher-ключ.** `app/src/db/KDbStrHandler`
+(self-test `dbstr`) — построитель SQL-условий генерик-слоя реф.: SqliteReplace,
+SqliteCharsEscape (' → ''), BuildSimpleCondition ("field op 'value'", порядок (field,value,op),
+value СЫРОЙ без escape — особенность реф.!), BuildAndCondition "(a) and (b)",
+BuildOrCondition "(a) or (b)". Чистый static-класс.
+**КЛЮЧЕВАЯ НАХОДКА (load-bearing): SQLCipher-ключ БД — хардкод-литерал `SONOSCOPE_X2000_KEY`**
+(реф. KDbSqlite::Open: sqlite3_open → sqlite3_key(этот литерал) → пробный select из
+tb_DcmWorklist). Без него реальный HD-2000.dat не читается. Добавлено в
+`KEntityManage::OpenDb` как `PRAGMA key='SONOSCOPE_X2000_KEY'` сразу после open() — на
+устройстве (SQLCipher-драйвер) применяется, штатный QSQLITE в отладке молча игнорирует
+(вся БД-регрессия PASS). РЕВЕРС ДВИЖКА (для справки, реализовывать НЕ нужно — наш
+connection-based слой эквивалентен): KEntityBase(IDatabase&, type) — абстрактная сущность,
+CRUD виртуальный (база возвращает ERR_NOT_SUPPORT/0/-1, работу делают наследники через
+IDatabase-vtable Open/Exec/InsertRecord/QueryRecords/…); KEntityManage — реестр по
+type-строке (GetEntityInterface); единственный реализатор IDatabase — KDbSqlite (raw
+sqlite3_* + SQLCipher, НЕ QtSql). Реестр заводить не нужно (косметика). РАНЕЕ (эта сессия):
+`KEntityDoctor` + `KDoctorDBTableHandler`** (`app/src/db/`,
 self-test `doctor`) — сущность/CRUD врача, **отдельная** таблица-справочник tb_Doctor
 (account/пароль/счётчик) — НЕ дублирует tb_QuickInputDoctor (история автоввода, др. классы).
 Чистый SQLite, endo_main, по паттерну KEntityPatient. Колонки: account/passwdLength/count/

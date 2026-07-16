@@ -41,6 +41,7 @@
 #include "ui/KStopWatch.h"
 #include "db/KEntityPatient.h"
 #include "db/KEntityDoctor.h"
+#include "db/KDbStrHandler.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1577,6 +1578,49 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test построителя SQL-условий (KDbStrHandler) + факта SQLCipher-ключа.
+    if (screen == "dbstr") {
+        using H = KDbStrHandler;
+
+        // 1. SqliteReplace / SqliteCharsEscape (' → '').
+        const bool replOk = H::SqliteReplace("a.b.c", ".", "-") == "a-b-c"
+            && H::SqliteReplace("abc", "", "X") == "abc"          // пустой from → без изменений
+            && H::SqliteCharsEscape("O'Brien") == "O''Brien"
+            && H::SqliteCharsEscape("no quote") == "no quote";
+
+        // 2. BuildSimpleCondition — "field op 'value'"; порядок (field, value, op).
+        //    value сырой (без escape); пустой field/op → "".
+        const bool simpleOk = H::BuildSimpleCondition("name", "John", "=") == "name = 'John'"
+            && H::BuildSimpleCondition("id", "5", ">") == "id > '5'"
+            && H::BuildSimpleCondition("", "x", "=").empty()
+            && H::BuildSimpleCondition("f", "x", "").empty()
+            // value не экранируется — кавычка проходит как есть (особенность реф.)
+            && H::BuildSimpleCondition("n", "O'B", "=") == "n = 'O'B'";
+
+        // 3. AND / OR.
+        const std::string c1 = H::BuildSimpleCondition("a", "1", "=");
+        const std::string c2 = H::BuildSimpleCondition("b", "2", "=");
+        const bool logicOk = H::BuildAndCondition(c1, c2) == "(a = '1') and (b = '2')"
+            && H::BuildOrCondition(c1, c2) == "(a = '1') or (b = '2')";
+
+        // 4. Факт: наш KEntityManage::OpenDb теперь ставит PRAGMA key (SQLCipher-ключ
+        //    реф. "SONOSCOPE_X2000_KEY"). На штатном QSQLITE прагма игнорируется — БД
+        //    должна открываться и работать (проверяем сквозной CRUD).
+        const QString dbPath = "/tmp/endo_dbstr.db";
+        QFile::remove(dbPath);
+        const bool openOk = KEntityManage::Instance().OpenDb(dbPath);
+        KEntityDoctor ent; ent.CreateTable();
+        KDoctorEntry e; e.account = "k"; e.count = "1"; e.time = "2026-07-16";
+        const bool crudOk = ent.CreateEntity(e) && ent.GetEntityNumber() == 1;
+
+        qInfo() << "replace/escape:" << replOk << "simple:" << simpleOk << "and/or:" << logicOk
+                << "| open+ключ:" << openOk << "crud:" << crudOk;
+
+        const bool ok = replOk && simpleOk && logicOk && openOk && crudOk;
+        qInfo() << (ok ? "dbstr: PASS" : "dbstr: FAIL");
+        return ok ? 0 : 44;
     }
 
     // Self-test сущности/CRUD врача (KEntityDoctor + KDoctorDBTableHandler, tb_Doctor).

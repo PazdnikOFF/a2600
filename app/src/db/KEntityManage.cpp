@@ -28,6 +28,14 @@ bool KEntityManage::OpenDb(const QString &dbPath)
         qWarning() << "KEntityManage::OpenDb:" << db.lastError().text();
         return false;
     }
+    // Реф. KDbSqlite::Open сразу после open() ставит SQLCipher-ключ через sqlite3_key
+    // литералом "SONOSCOPE_X2000_KEY" — без него реальный HD-2000.dat не читается.
+    // На устройстве (SQLCipher-драйвер) PRAGMA key его применяет; штатный QSQLITE в
+    // отладке молча игнорирует незнакомую прагму — совместимость с device сохранена.
+    {
+        QSqlQuery keyq(db);
+        keyq.exec(QStringLiteral("PRAGMA key='SONOSCOPE_X2000_KEY'"));
+    }
     opened_ = true;
     return createTables();
 }
