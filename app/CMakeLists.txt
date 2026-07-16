@@ -102,6 +102,7 @@ set(SOURCES
     src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
+    src/db/KPatientExamData.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
     src/kernel/KControlINI.cpp
@@ -213,6 +214,7 @@ add_executable(ui_preview
     src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
+    src/db/KPatientExamData.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
     src/kernel/KControlINI.cpp

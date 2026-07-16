@@ -1,0 +1,802 @@
+
+update/root/X2000:	file format elf64-littleaarch64
+
+Disassembly of section .text:
+
+0000000000487d88 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE>:
+  487d88: d11203ff     	sub	sp, sp, #0x480
+  487d8c: a9007bfd     	stp	x29, x30, [sp]
+  487d90: 910003fd     	mov	x29, sp
+  487d94: a9025bf5     	stp	x21, x22, [sp, #0x20]
+  487d98: aa0003f5     	mov	x21, x0
+  487d9c: a9046bf9     	stp	x25, x26, [sp, #0x40]
+  487da0: a90573fb     	stp	x27, x28, [sp, #0x50]
+  487da4: f9400400     	ldr	x0, [x0, #0x8]
+  487da8: b4004840     	cbz	x0, 0x4886b0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x928>
+  487dac: a90153f3     	stp	x19, x20, [sp, #0x10]
+  487db0: 910363f3     	add	x19, sp, #0xd8
+  487db4: 91006262     	add	x2, x19, #0x18
+  487db8: 9100e260     	add	x0, x19, #0x38
+  487dbc: 9101826b     	add	x11, x19, #0x60
+  487dc0: 9102026a     	add	x10, x19, #0x80
+  487dc4: 91028269     	add	x9, x19, #0xa0
+  487dc8: 91038267     	add	x7, x19, #0xe0
+  487dcc: 91040266     	add	x6, x19, #0x100
+  487dd0: 91048265     	add	x5, x19, #0x120
+  487dd4: 91052264     	add	x4, x19, #0x148
+  487dd8: 9105a263     	add	x3, x19, #0x168
+  487ddc: a90363f7     	stp	x23, x24, [sp, #0x30]
+  487de0: aa0103f7     	mov	x23, x1
+  487de4: 91030261     	add	x1, x19, #0xc0
+  487de8: a90e7fe2     	stp	x2, xzr, [sp, #0xe0]
+  487dec: 91062262     	add	x2, x19, #0x188
+  487df0: 3903c3ff     	strb	wzr, [sp, #0xf0]
+  487df4: 91072268     	add	x8, x19, #0x1c8
+  487df8: a9107fe0     	stp	x0, xzr, [sp, #0x100]
+  487dfc: 9107a270     	add	x16, x19, #0x1e8
+  487e00: 9108226f     	add	x15, x19, #0x208
+  487e04: 390443ff     	strb	wzr, [sp, #0x110]
+  487e08: 9108a26e     	add	x14, x19, #0x228
+  487e0c: a912ffeb     	stp	x11, xzr, [sp, #0x128]
+  487e10: 9109226d     	add	x13, x19, #0x248
+  487e14: 9109a26c     	add	x12, x19, #0x268
+  487e18: 3904e3ff     	strb	wzr, [sp, #0x138]
+  487e1c: 910a226b     	add	x11, x19, #0x288
+  487e20: a914ffea     	stp	x10, xzr, [sp, #0x148]
+  487e24: 910aa26a     	add	x10, x19, #0x2a8
+  487e28: 9106a260     	add	x0, x19, #0x1a8
+  487e2c: 390563ff     	strb	wzr, [sp, #0x158]
+  487e30: 90002ef4     	adrp	x20, 0xa63000 <_ZN15report_templateL19STR_RT_VALUE_HEADERE+0x10>
+  487e34: a916ffe9     	stp	x9, xzr, [sp, #0x168]
+  487e38: 910b2269     	add	x9, x19, #0x2c8
+  487e3c: 3905e3ff     	strb	wzr, [sp, #0x178]
+  487e40: a918ffe1     	stp	x1, xzr, [sp, #0x188]
+  487e44: 91342281     	add	x1, x20, #0xd08
+  487e48: 91210021     	add	x1, x1, #0x840
+  487e4c: 390663ff     	strb	wzr, [sp, #0x198]
+  487e50: a91affe7     	stp	x7, xzr, [sp, #0x1a8]
+  487e54: 910bc267     	add	x7, x19, #0x2f0
+  487e58: 3906e3ff     	strb	wzr, [sp, #0x1b8]
+  487e5c: a91cffe6     	stp	x6, xzr, [sp, #0x1c8]
+  487e60: 910c4266     	add	x6, x19, #0x310
+  487e64: 390763ff     	strb	wzr, [sp, #0x1d8]
+  487e68: a91effe5     	stp	x5, xzr, [sp, #0x1e8]
+  487e6c: 910cc265     	add	x5, x19, #0x330
+  487e70: 3907e3ff     	strb	wzr, [sp, #0x1f8]
+  487e74: f9010be4     	str	x4, [sp, #0x210]
+  487e78: 910d4264     	add	x4, x19, #0x350
+  487e7c: f9010fff     	str	xzr, [sp, #0x218]
+  487e80: f9011be3     	str	x3, [sp, #0x230]
+  487e84: 910dc263     	add	x3, x19, #0x370
+  487e88: f9012be2     	str	x2, [sp, #0x250]
+  487e8c: 910e4262     	add	x2, x19, #0x390
+  487e90: f9014be8     	str	x8, [sp, #0x290]
+  487e94: 12800008     	mov	w8, #-0x1               // =-1
+  487e98: 390883ff     	strb	wzr, [sp, #0x220]
+  487e9c: f9011fff     	str	xzr, [sp, #0x238]
+  487ea0: 390903ff     	strb	wzr, [sp, #0x240]
+  487ea4: f9012fff     	str	xzr, [sp, #0x258]
+  487ea8: 390983ff     	strb	wzr, [sp, #0x260]
+  487eac: f9013be0     	str	x0, [sp, #0x270]
+  487eb0: 91002260     	add	x0, x19, #0x8
+  487eb4: f9013fff     	str	xzr, [sp, #0x278]
+  487eb8: 390a03ff     	strb	wzr, [sp, #0x280]
+  487ebc: f9014fff     	str	xzr, [sp, #0x298]
+  487ec0: 390a83ff     	strb	wzr, [sp, #0x2a0]
+  487ec4: f9015bf0     	str	x16, [sp, #0x2b0]
+  487ec8: f9015fff     	str	xzr, [sp, #0x2b8]
+  487ecc: 390b03ff     	strb	wzr, [sp, #0x2c0]
+  487ed0: f9016bef     	str	x15, [sp, #0x2d0]
+  487ed4: f9016fff     	str	xzr, [sp, #0x2d8]
+  487ed8: 390b83ff     	strb	wzr, [sp, #0x2e0]
+  487edc: f9017bee     	str	x14, [sp, #0x2f0]
+  487ee0: f9017fff     	str	xzr, [sp, #0x2f8]
+  487ee4: 390c03ff     	strb	wzr, [sp, #0x300]
+  487ee8: f9018bed     	str	x13, [sp, #0x310]
+  487eec: f9018fff     	str	xzr, [sp, #0x318]
+  487ef0: 390c83ff     	strb	wzr, [sp, #0x320]
+  487ef4: f9019bec     	str	x12, [sp, #0x330]
+  487ef8: f9019fff     	str	xzr, [sp, #0x338]
+  487efc: 390d03ff     	strb	wzr, [sp, #0x340]
+  487f00: f901abeb     	str	x11, [sp, #0x350]
+  487f04: f901afff     	str	xzr, [sp, #0x358]
+  487f08: 390d83ff     	strb	wzr, [sp, #0x360]
+  487f0c: f901bbea     	str	x10, [sp, #0x370]
+  487f10: f901bfff     	str	xzr, [sp, #0x378]
+  487f14: b900dbe8     	str	w8, [sp, #0xd8]
+  487f18: 390e03ff     	strb	wzr, [sp, #0x380]
+  487f1c: f901cbe9     	str	x9, [sp, #0x390]
+  487f20: f901cfff     	str	xzr, [sp, #0x398]
+  487f24: 390e83ff     	strb	wzr, [sp, #0x3a0]
+  487f28: f901dfe7     	str	x7, [sp, #0x3b8]
+  487f2c: f901e3ff     	str	xzr, [sp, #0x3c0]
+  487f30: 390f23ff     	strb	wzr, [sp, #0x3c8]
+  487f34: f901efe6     	str	x6, [sp, #0x3d8]
+  487f38: f901f3ff     	str	xzr, [sp, #0x3e0]
+  487f3c: 390fa3ff     	strb	wzr, [sp, #0x3e8]
+  487f40: f901ffe5     	str	x5, [sp, #0x3f8]
+  487f44: f90203ff     	str	xzr, [sp, #0x400]
+  487f48: 391023ff     	strb	wzr, [sp, #0x408]
+  487f4c: f9020fe4     	str	x4, [sp, #0x418]
+  487f50: f90213ff     	str	xzr, [sp, #0x420]
+  487f54: 3910a3ff     	strb	wzr, [sp, #0x428]
+  487f58: f9021fe3     	str	x3, [sp, #0x438]
+  487f5c: f90223ff     	str	xzr, [sp, #0x440]
+  487f60: 391123ff     	strb	wzr, [sp, #0x448]
+  487f64: f9022fe2     	str	x2, [sp, #0x458]
+  487f68: f90233ff     	str	xzr, [sp, #0x460]
+  487f6c: 3911a3ff     	strb	wzr, [sp, #0x468]
+  487f70: 97f5e878     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487f74: 91342281     	add	x1, x20, #0xd08
+  487f78: 9100a260     	add	x0, x19, #0x28
+  487f7c: 91210021     	add	x1, x1, #0x840
+  487f80: 97f5e874     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487f84: 12800002     	mov	w2, #-0x1               // =-1
+  487f88: 91342281     	add	x1, x20, #0xd08
+  487f8c: 91210021     	add	x1, x1, #0x840
+  487f90: 91014260     	add	x0, x19, #0x50
+  487f94: b90123e2     	str	w2, [sp, #0x120]
+  487f98: 97f5e86e     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487f9c: 91342281     	add	x1, x20, #0xd08
+  487fa0: 9101c260     	add	x0, x19, #0x70
+  487fa4: 91210021     	add	x1, x1, #0x840
+  487fa8: 97f5e86a     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487fac: 91342281     	add	x1, x20, #0xd08
+  487fb0: 91024260     	add	x0, x19, #0x90
+  487fb4: 91210021     	add	x1, x1, #0x840
+  487fb8: 97f5e866     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487fbc: 91342281     	add	x1, x20, #0xd08
+  487fc0: 9102c260     	add	x0, x19, #0xb0
+  487fc4: 91210021     	add	x1, x1, #0x840
+  487fc8: 97f5e862     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487fcc: 91342281     	add	x1, x20, #0xd08
+  487fd0: 91034260     	add	x0, x19, #0xd0
+  487fd4: 91210021     	add	x1, x1, #0x840
+  487fd8: 97f5e85e     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487fdc: 91342281     	add	x1, x20, #0xd08
+  487fe0: 9103c260     	add	x0, x19, #0xf0
+  487fe4: 91210021     	add	x1, x1, #0x840
+  487fe8: 97f5e85a     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487fec: 91342281     	add	x1, x20, #0xd08
+  487ff0: 91044260     	add	x0, x19, #0x110
+  487ff4: 91210021     	add	x1, x1, #0x840
+  487ff8: 97f5e856     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  487ffc: 12800002     	mov	w2, #-0x1               // =-1
+  488000: 91342281     	add	x1, x20, #0xd08
+  488004: 91210021     	add	x1, x1, #0x840
+  488008: 9104e260     	add	x0, x19, #0x138
+  48800c: b9020be2     	str	w2, [sp, #0x208]
+  488010: 97f5e850     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488014: 91342281     	add	x1, x20, #0xd08
+  488018: 91056260     	add	x0, x19, #0x158
+  48801c: 91210021     	add	x1, x1, #0x840
+  488020: 97f5e84c     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488024: 91342281     	add	x1, x20, #0xd08
+  488028: 9105e260     	add	x0, x19, #0x178
+  48802c: 91210021     	add	x1, x1, #0x840
+  488030: 97f5e848     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488034: 91342281     	add	x1, x20, #0xd08
+  488038: 91066260     	add	x0, x19, #0x198
+  48803c: 91210021     	add	x1, x1, #0x840
+  488040: 97f5e844     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488044: 91342281     	add	x1, x20, #0xd08
+  488048: 9106e260     	add	x0, x19, #0x1b8
+  48804c: 91210021     	add	x1, x1, #0x840
+  488050: 97f5e840     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488054: 91342281     	add	x1, x20, #0xd08
+  488058: 91076260     	add	x0, x19, #0x1d8
+  48805c: 91210021     	add	x1, x1, #0x840
+  488060: 97f5e83c     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488064: 91342281     	add	x1, x20, #0xd08
+  488068: 9107e260     	add	x0, x19, #0x1f8
+  48806c: 91210021     	add	x1, x1, #0x840
+  488070: 97f5e838     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488074: 91342281     	add	x1, x20, #0xd08
+  488078: 91086260     	add	x0, x19, #0x218
+  48807c: 91210021     	add	x1, x1, #0x840
+  488080: 97f5e834     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488084: 91342281     	add	x1, x20, #0xd08
+  488088: 9108e260     	add	x0, x19, #0x238
+  48808c: 91210021     	add	x1, x1, #0x840
+  488090: 97f5e830     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  488094: 91342281     	add	x1, x20, #0xd08
+  488098: 91096260     	add	x0, x19, #0x258
+  48809c: 91210021     	add	x1, x1, #0x840
+  4880a0: 97f5e82c     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880a4: 91342281     	add	x1, x20, #0xd08
+  4880a8: 9109e260     	add	x0, x19, #0x278
+  4880ac: 91210021     	add	x1, x1, #0x840
+  4880b0: 97f5e828     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880b4: 91342281     	add	x1, x20, #0xd08
+  4880b8: 910a6260     	add	x0, x19, #0x298
+  4880bc: 91210021     	add	x1, x1, #0x840
+  4880c0: 97f5e824     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880c4: 91342281     	add	x1, x20, #0xd08
+  4880c8: 910ae260     	add	x0, x19, #0x2b8
+  4880cc: 91210021     	add	x1, x1, #0x840
+  4880d0: 97f5e820     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880d4: 92800002     	mov	x2, #-0x1               // =-1
+  4880d8: 91342281     	add	x1, x20, #0xd08
+  4880dc: 91210021     	add	x1, x1, #0x840
+  4880e0: 910b8260     	add	x0, x19, #0x2e0
+  4880e4: f901dbe2     	str	x2, [sp, #0x3b0]
+  4880e8: 97f5e81a     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880ec: 91342281     	add	x1, x20, #0xd08
+  4880f0: 910c0260     	add	x0, x19, #0x300
+  4880f4: 91210021     	add	x1, x1, #0x840
+  4880f8: 97f5e816     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  4880fc: 91342281     	add	x1, x20, #0xd08
+  488100: 910c8260     	add	x0, x19, #0x320
+  488104: 91210021     	add	x1, x1, #0x840
+  488108: 97f5e812     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  48810c: 91342281     	add	x1, x20, #0xd08
+  488110: 910d0260     	add	x0, x19, #0x340
+  488114: 91210021     	add	x1, x1, #0x840
+  488118: 97f5e80e     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  48811c: 91342281     	add	x1, x20, #0xd08
+  488120: 910d8260     	add	x0, x19, #0x360
+  488124: 91210021     	add	x1, x1, #0x840
+  488128: 97f5e80a     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  48812c: 91342281     	add	x1, x20, #0xd08
+  488130: 910e0260     	add	x0, x19, #0x380
+  488134: 91210021     	add	x1, x1, #0x840
+  488138: 97f5e806     	bl	0x202150 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt>
+  48813c: 92800002     	mov	x2, #-0x1               // =-1
+  488140: aa1303e1     	mov	x1, x19
+  488144: aa1503e0     	mov	x0, x21
+  488148: f9023fe2     	str	x2, [sp, #0x478]
+  48814c: 97fe2c81     	bl	0x413350 <_ZN23KExamListDBTableHandler13GetExamEntityERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEER10KExamEntry>
+  488150: b9006be0     	str	w0, [sp, #0x68]
+  488154: 350028e0     	cbnz	w0, 0x488670 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x8e8>
+  488158: 910263f8     	add	x24, sp, #0x98
+  48815c: 91004304     	add	x4, x24, #0x10
+  488160: aa1803e0     	mov	x0, x24
+  488164: f941dfe2     	ldr	x2, [sp, #0x3b8]
+  488168: f9004fe4     	str	x4, [sp, #0x98]
+  48816c: f941e3e3     	ldr	x3, [sp, #0x3c0]
+  488170: aa0203e1     	mov	x1, x2
+  488174: 8b030042     	add	x2, x2, x3
+  488178: 52800003     	mov	w3, #0x0                // =0
+  48817c: 97f9ce77     	bl	0x2fbb58 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPcEEvT_S7_St20forward_iterator_tag>
+  488180: 940931a4     	bl	0x6d4810 <_Z12GetUsbDevicev>
+  488184: 9101c3f5     	add	x21, sp, #0x70
+  488188: aa1503e8     	mov	x8, x21
+  48818c: 940930f7     	bl	0x6d4568 <_ZN10KUsbDevice10GetUsbPathEv>
+  488190: 9101e3f9     	add	x25, sp, #0x78
+  488194: aa1503e0     	mov	x0, x21
+  488198: aa1903e8     	mov	x8, x25
+  48819c: 97f5dde5     	bl	0x1ff930 <_ZN7QString13toUtf8_helperERKS_@plt>
+  4881a0: f9403fe1     	ldr	x1, [sp, #0x78]
+  4881a4: 9102e3f6     	add	x22, sp, #0xb8
+  4881a8: 910042c4     	add	x4, x22, #0x10
+  4881ac: aa1603e0     	mov	x0, x22
+  4881b0: 52800003     	mov	w3, #0x0                // =0
+  4881b4: f9400825     	ldr	x5, [x1, #0x10]
+  4881b8: b9800422     	ldrsw	x2, [x1, #0x4]
+  4881bc: 8b050021     	add	x1, x1, x5
+  4881c0: f9005fe4     	str	x4, [sp, #0xb8]
+  4881c4: 8b020022     	add	x2, x1, x2
+  4881c8: 97fa08e4     	bl	0x30a558 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPKcEEvT_S8_St20forward_iterator_tag>
+  4881cc: f9403fe0     	ldr	x0, [sp, #0x78]
+  4881d0: b9400001     	ldr	w1, [x0]
+  4881d4: 34000cc1     	cbz	w1, 0x48836c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x5e4>
+  4881d8: 3100043f     	cmn	w1, #0x1
+  4881dc: 540000c0     	b.eq	0x4881f4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x46c>
+  4881e0: 885ffc01     	ldaxr	w1, [x0]
+  4881e4: 51000421     	sub	w1, w1, #0x1
+  4881e8: 8802fc01     	stlxr	w2, w1, [x0]
+  4881ec: 35ffffa2     	cbnz	w2, 0x4881e0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x458>
+  4881f0: 34000bc1     	cbz	w1, 0x488368 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x5e0>
+  4881f4: d2800400     	mov	x0, #0x20               // =32
+  4881f8: a9087fff     	stp	xzr, xzr, [sp, #0x80]
+  4881fc: f9004bff     	str	xzr, [sp, #0x90]
+  488200: 97f5ea10     	bl	0x202a40 <_Znwm@plt>
+  488204: a94b9be2     	ldp	x2, x6, [sp, #0xb8]
+  488208: 91004005     	add	x5, x0, #0x10
+  48820c: f9000005     	str	x5, [x0]
+  488210: 91008014     	add	x20, x0, #0x20
+  488214: 52800003     	mov	w3, #0x0                // =0
+  488218: f90043e0     	str	x0, [sp, #0x80]
+  48821c: f9004bf4     	str	x20, [sp, #0x90]
+  488220: aa0203e1     	mov	x1, x2
+  488224: 8b060042     	add	x2, x2, x6
+  488228: 97f9ce4c     	bl	0x2fbb58 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPcEEvT_S7_St20forward_iterator_tag>
+  48822c: f9405fe0     	ldr	x0, [sp, #0xb8]
+  488230: f90047f4     	str	x20, [sp, #0x88]
+  488234: 910042c1     	add	x1, x22, #0x10
+  488238: eb01001f     	cmp	x0, x1
+  48823c: 54000060     	b.eq	0x488248 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x4c0>
+  488240: 97f5db9c     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488244: d503201f     	nop
+  488248: f9403be0     	ldr	x0, [sp, #0x70]
+  48824c: b9400001     	ldr	w1, [x0]
+  488250: 34002281     	cbz	w1, 0x4886a0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x918>
+  488254: 3100043f     	cmn	w1, #0x1
+  488258: 540000c0     	b.eq	0x488270 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x4e8>
+  48825c: 885ffc01     	ldaxr	w1, [x0]
+  488260: 51000421     	sub	w1, w1, #0x1
+  488264: 8802fc01     	stlxr	w2, w1, [x0]
+  488268: 35ffffa2     	cbnz	w2, 0x48825c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x4d4>
+  48826c: 34002161     	cbz	w1, 0x488698 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x910>
+  488270: a9486ffa     	ldp	x26, x27, [sp, #0x80]
+  488274: 910042dc     	add	x28, x22, #0x10
+  488278: aa1a03f4     	mov	x20, x26
+  48827c: eb1a037f     	cmp	x27, x26
+  488280: 54000461     	b.ne	0x48830c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x584>
+  488284: 14000050     	b	0x4883c4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x63c>
+  488288: 3100043f     	cmn	w1, #0x1
+  48828c: 540000c0     	b.eq	0x4882a4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x51c>
+  488290: 885ffc01     	ldaxr	w1, [x0]
+  488294: 51000421     	sub	w1, w1, #0x1
+  488298: 8802fc01     	stlxr	w2, w1, [x0]
+  48829c: 35ffffa2     	cbnz	w2, 0x488290 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x508>
+  4882a0: 34001de1     	cbz	w1, 0x48865c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x8d4>
+  4882a4: aa1503e0     	mov	x0, x21
+  4882a8: 97f5e042     	bl	0x2003b0 <_ZNK4QDir6existsEv@plt>
+  4882ac: 72001c1f     	tst	w0, #0xff
+  4882b0: 540001c0     	b.eq	0x4882e8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x560>
+  4882b4: a94086e0     	ldp	x0, x1, [x23, #0x8]
+  4882b8: eb01001f     	cmp	x0, x1
+  4882bc: 54000600     	b.eq	0x48837c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x5f4>
+  4882c0: 91004001     	add	x1, x0, #0x10
+  4882c4: f9000001     	str	x1, [x0]
+  4882c8: 52800003     	mov	w3, #0x0                // =0
+  4882cc: a94b93e2     	ldp	x2, x4, [sp, #0xb8]
+  4882d0: aa0203e1     	mov	x1, x2
+  4882d4: 8b040042     	add	x2, x2, x4
+  4882d8: 97f9ce20     	bl	0x2fbb58 <_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPcEEvT_S7_St20forward_iterator_tag>
+  4882dc: f94006e0     	ldr	x0, [x23, #0x8]
+  4882e0: 91008000     	add	x0, x0, #0x20
+  4882e4: f90006e0     	str	x0, [x23, #0x8]
+  4882e8: aa1503e0     	mov	x0, x21
+  4882ec: 97f5f3a5     	bl	0x205180 <_ZN4QDirD1Ev@plt>
+  4882f0: f9405fe0     	ldr	x0, [sp, #0xb8]
+  4882f4: eb1c001f     	cmp	x0, x28
+  4882f8: 54000040     	b.eq	0x488300 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x578>
+  4882fc: 97f5db6d     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488300: 91008294     	add	x20, x20, #0x20
+  488304: eb14037f     	cmp	x27, x20
+  488308: 54000440     	b.eq	0x488390 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x608>
+  48830c: aa1603e8     	mov	x8, x22
+  488310: aa1803e1     	mov	x1, x24
+  488314: aa1403e0     	mov	x0, x20
+  488318: 97fef44e     	bl	0x445450 <_ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EERKS8_SA_>
+  48831c: f9405ffa     	ldr	x26, [sp, #0xb8]
+  488320: 12800001     	mov	w1, #-0x1               // =-1
+  488324: b400009a     	cbz	x26, 0x488334 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x5ac>
+  488328: aa1a03e0     	mov	x0, x26
+  48832c: 97f5f8b1     	bl	0x2065f0 <strlen@plt>
+  488330: 2a0003e1     	mov	w1, w0
+  488334: aa1a03e0     	mov	x0, x26
+  488338: 97f5fc3e     	bl	0x207430 <_ZN7QString16fromAscii_helperEPKci@plt>
+  48833c: aa1903e1     	mov	x1, x25
+  488340: f9003fe0     	str	x0, [sp, #0x78]
+  488344: aa1503e0     	mov	x0, x21
+  488348: 97f5d412     	bl	0x1fd390 <_ZN4QDirC1ERK7QString@plt>
+  48834c: f9403fe0     	ldr	x0, [sp, #0x78]
+  488350: b9400001     	ldr	w1, [x0]
+  488354: 35fff9a1     	cbnz	w1, 0x488288 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x500>
+  488358: d2800102     	mov	x2, #0x8                // =8
+  48835c: d2800041     	mov	x1, #0x2                // =2
+  488360: 97f5da80     	bl	0x1fed60 <_ZN10QArrayData10deallocateEPS_mm@plt>
+  488364: 17ffffd0     	b	0x4882a4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x51c>
+  488368: f9403fe0     	ldr	x0, [sp, #0x78]
+  48836c: d2800102     	mov	x2, #0x8                // =8
+  488370: d2800021     	mov	x1, #0x1                // =1
+  488374: 97f5da7b     	bl	0x1fed60 <_ZN10QArrayData10deallocateEPS_mm@plt>
+  488378: 17ffff9f     	b	0x4881f4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x46c>
+  48837c: aa0003e1     	mov	x1, x0
+  488380: aa1603e2     	mov	x2, x22
+  488384: aa1703e0     	mov	x0, x23
+  488388: 97fd5d32     	bl	0x3df850 <_ZNSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS5_EE17_M_realloc_insertIJRKS5_EEEvN9__gnu_cxx17__normal_iteratorIPS5_S7_EEDpOT_>
+  48838c: 17ffffd7     	b	0x4882e8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x560>
+  488390: a9486bf4     	ldp	x20, x26, [sp, #0x80]
+  488394: eb1a029f     	cmp	x20, x26
+  488398: 54000160     	b.eq	0x4883c4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x63c>
+  48839c: d503201f     	nop
+  4883a0: aa1403e1     	mov	x1, x20
+  4883a4: f8410420     	ldr	x0, [x1], #0x10
+  4883a8: eb01001f     	cmp	x0, x1
+  4883ac: 54000040     	b.eq	0x4883b4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x62c>
+  4883b0: 97f5db40     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4883b4: 91008294     	add	x20, x20, #0x20
+  4883b8: eb14035f     	cmp	x26, x20
+  4883bc: 54ffff21     	b.ne	0x4883a0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x618>
+  4883c0: f94043fa     	ldr	x26, [sp, #0x80]
+  4883c4: b400007a     	cbz	x26, 0x4883d0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x648>
+  4883c8: aa1a03e0     	mov	x0, x26
+  4883cc: 97f5db39     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4883d0: f9404fe0     	ldr	x0, [sp, #0x98]
+  4883d4: 91004318     	add	x24, x24, #0x10
+  4883d8: eb18001f     	cmp	x0, x24
+  4883dc: 54000040     	b.eq	0x4883e4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x65c>
+  4883e0: 97f5db34     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4883e4: f9422fe0     	ldr	x0, [sp, #0x458]
+  4883e8: 910e4261     	add	x1, x19, #0x390
+  4883ec: eb01001f     	cmp	x0, x1
+  4883f0: 54000040     	b.eq	0x4883f8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x670>
+  4883f4: 97f5db2f     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4883f8: f9421fe0     	ldr	x0, [sp, #0x438]
+  4883fc: 910dc261     	add	x1, x19, #0x370
+  488400: eb01001f     	cmp	x0, x1
+  488404: 54000040     	b.eq	0x48840c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x684>
+  488408: 97f5db2a     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48840c: f9420fe0     	ldr	x0, [sp, #0x418]
+  488410: 910d4261     	add	x1, x19, #0x350
+  488414: eb01001f     	cmp	x0, x1
+  488418: 54000040     	b.eq	0x488420 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x698>
+  48841c: 97f5db25     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488420: f941ffe0     	ldr	x0, [sp, #0x3f8]
+  488424: 910cc261     	add	x1, x19, #0x330
+  488428: eb01001f     	cmp	x0, x1
+  48842c: 54000040     	b.eq	0x488434 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x6ac>
+  488430: 97f5db20     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488434: f941efe0     	ldr	x0, [sp, #0x3d8]
+  488438: 910c4261     	add	x1, x19, #0x310
+  48843c: eb01001f     	cmp	x0, x1
+  488440: 54000040     	b.eq	0x488448 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x6c0>
+  488444: 97f5db1b     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488448: f941dfe0     	ldr	x0, [sp, #0x3b8]
+  48844c: 910bc261     	add	x1, x19, #0x2f0
+  488450: eb01001f     	cmp	x0, x1
+  488454: 54000040     	b.eq	0x48845c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x6d4>
+  488458: 97f5db16     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48845c: f941cbe0     	ldr	x0, [sp, #0x390]
+  488460: 910b2261     	add	x1, x19, #0x2c8
+  488464: eb01001f     	cmp	x0, x1
+  488468: 54000040     	b.eq	0x488470 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x6e8>
+  48846c: 97f5db11     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488470: f941bbe0     	ldr	x0, [sp, #0x370]
+  488474: 910aa261     	add	x1, x19, #0x2a8
+  488478: eb01001f     	cmp	x0, x1
+  48847c: 54000040     	b.eq	0x488484 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x6fc>
+  488480: 97f5db0c     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488484: f941abe0     	ldr	x0, [sp, #0x350]
+  488488: 910a2261     	add	x1, x19, #0x288
+  48848c: eb01001f     	cmp	x0, x1
+  488490: 54000040     	b.eq	0x488498 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x710>
+  488494: 97f5db07     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488498: f9419be0     	ldr	x0, [sp, #0x330]
+  48849c: 9109a261     	add	x1, x19, #0x268
+  4884a0: eb01001f     	cmp	x0, x1
+  4884a4: 54000040     	b.eq	0x4884ac <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x724>
+  4884a8: 97f5db02     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4884ac: f9418be0     	ldr	x0, [sp, #0x310]
+  4884b0: 91092261     	add	x1, x19, #0x248
+  4884b4: eb01001f     	cmp	x0, x1
+  4884b8: 54000040     	b.eq	0x4884c0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x738>
+  4884bc: 97f5dafd     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4884c0: f9417be0     	ldr	x0, [sp, #0x2f0]
+  4884c4: 9108a261     	add	x1, x19, #0x228
+  4884c8: eb01001f     	cmp	x0, x1
+  4884cc: 54000040     	b.eq	0x4884d4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x74c>
+  4884d0: 97f5daf8     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4884d4: f9416be0     	ldr	x0, [sp, #0x2d0]
+  4884d8: 91082261     	add	x1, x19, #0x208
+  4884dc: eb01001f     	cmp	x0, x1
+  4884e0: 54000040     	b.eq	0x4884e8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x760>
+  4884e4: 97f5daf3     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4884e8: f9415be0     	ldr	x0, [sp, #0x2b0]
+  4884ec: 9107a261     	add	x1, x19, #0x1e8
+  4884f0: eb01001f     	cmp	x0, x1
+  4884f4: 54000040     	b.eq	0x4884fc <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x774>
+  4884f8: 97f5daee     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4884fc: f9414be0     	ldr	x0, [sp, #0x290]
+  488500: 91072261     	add	x1, x19, #0x1c8
+  488504: eb01001f     	cmp	x0, x1
+  488508: 54000040     	b.eq	0x488510 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x788>
+  48850c: 97f5dae9     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488510: f9413be0     	ldr	x0, [sp, #0x270]
+  488514: 9106a261     	add	x1, x19, #0x1a8
+  488518: eb01001f     	cmp	x0, x1
+  48851c: 54000040     	b.eq	0x488524 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x79c>
+  488520: 97f5dae4     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488524: f9412be0     	ldr	x0, [sp, #0x250]
+  488528: 91062261     	add	x1, x19, #0x188
+  48852c: eb01001f     	cmp	x0, x1
+  488530: 54000040     	b.eq	0x488538 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x7b0>
+  488534: 97f5dadf     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488538: f9411be0     	ldr	x0, [sp, #0x230]
+  48853c: 9105a261     	add	x1, x19, #0x168
+  488540: eb01001f     	cmp	x0, x1
+  488544: 54000040     	b.eq	0x48854c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x7c4>
+  488548: 97f5dada     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48854c: f9410be0     	ldr	x0, [sp, #0x210]
+  488550: 91052261     	add	x1, x19, #0x148
+  488554: eb01001f     	cmp	x0, x1
+  488558: 54000040     	b.eq	0x488560 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x7d8>
+  48855c: 97f5dad5     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488560: f940f7e0     	ldr	x0, [sp, #0x1e8]
+  488564: 91048261     	add	x1, x19, #0x120
+  488568: eb01001f     	cmp	x0, x1
+  48856c: 54000040     	b.eq	0x488574 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x7ec>
+  488570: 97f5dad0     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488574: f940e7e0     	ldr	x0, [sp, #0x1c8]
+  488578: 91040261     	add	x1, x19, #0x100
+  48857c: eb01001f     	cmp	x0, x1
+  488580: 54000040     	b.eq	0x488588 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x800>
+  488584: 97f5dacb     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488588: f940d7e0     	ldr	x0, [sp, #0x1a8]
+  48858c: 91038261     	add	x1, x19, #0xe0
+  488590: eb01001f     	cmp	x0, x1
+  488594: 54000040     	b.eq	0x48859c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x814>
+  488598: 97f5dac6     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48859c: f940c7e0     	ldr	x0, [sp, #0x188]
+  4885a0: 91030261     	add	x1, x19, #0xc0
+  4885a4: eb01001f     	cmp	x0, x1
+  4885a8: 54000040     	b.eq	0x4885b0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x828>
+  4885ac: 97f5dac1     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4885b0: f940b7e0     	ldr	x0, [sp, #0x168]
+  4885b4: 91028261     	add	x1, x19, #0xa0
+  4885b8: eb01001f     	cmp	x0, x1
+  4885bc: 54000040     	b.eq	0x4885c4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x83c>
+  4885c0: 97f5dabc     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4885c4: f940a7e0     	ldr	x0, [sp, #0x148]
+  4885c8: 91020261     	add	x1, x19, #0x80
+  4885cc: eb01001f     	cmp	x0, x1
+  4885d0: 54000040     	b.eq	0x4885d8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x850>
+  4885d4: 97f5dab7     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4885d8: f94097e0     	ldr	x0, [sp, #0x128]
+  4885dc: 91018261     	add	x1, x19, #0x60
+  4885e0: eb01001f     	cmp	x0, x1
+  4885e4: 54000040     	b.eq	0x4885ec <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x864>
+  4885e8: 97f5dab2     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4885ec: f94083e0     	ldr	x0, [sp, #0x100]
+  4885f0: 9100e261     	add	x1, x19, #0x38
+  4885f4: eb01001f     	cmp	x0, x1
+  4885f8: 54000040     	b.eq	0x488600 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x878>
+  4885fc: 97f5daad     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488600: f94073e0     	ldr	x0, [sp, #0xe0]
+  488604: 91006273     	add	x19, x19, #0x18
+  488608: eb13001f     	cmp	x0, x19
+  48860c: 54000160     	b.eq	0x488638 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x8b0>
+  488610: 97f5daa8     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488614: a94153f3     	ldp	x19, x20, [sp, #0x10]
+  488618: a94363f7     	ldp	x23, x24, [sp, #0x30]
+  48861c: b9406be0     	ldr	w0, [sp, #0x68]
+  488620: a9407bfd     	ldp	x29, x30, [sp]
+  488624: a9425bf5     	ldp	x21, x22, [sp, #0x20]
+  488628: a9446bf9     	ldp	x25, x26, [sp, #0x40]
+  48862c: a94573fb     	ldp	x27, x28, [sp, #0x50]
+  488630: 911203ff     	add	sp, sp, #0x480
+  488634: d65f03c0     	ret
+  488638: b9406be0     	ldr	w0, [sp, #0x68]
+  48863c: a9407bfd     	ldp	x29, x30, [sp]
+  488640: a94153f3     	ldp	x19, x20, [sp, #0x10]
+  488644: a9425bf5     	ldp	x21, x22, [sp, #0x20]
+  488648: a94363f7     	ldp	x23, x24, [sp, #0x30]
+  48864c: a9446bf9     	ldp	x25, x26, [sp, #0x40]
+  488650: a94573fb     	ldp	x27, x28, [sp, #0x50]
+  488654: 911203ff     	add	sp, sp, #0x480
+  488658: d65f03c0     	ret
+  48865c: f9403fe0     	ldr	x0, [sp, #0x78]
+  488660: d2800102     	mov	x2, #0x8                // =8
+  488664: d2800041     	mov	x1, #0x2                // =2
+  488668: 97f5d9be     	bl	0x1fed60 <_ZN10QArrayData10deallocateEPS_mm@plt>
+  48866c: 17ffff0e     	b	0x4882a4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x51c>
+  488670: f94002a3     	ldr	x3, [x21]
+  488674: b0001f02     	adrp	x2, 0x869000 <_ZTS40KOsdMenuCellGreyedWhenCameraDisconnected+0x80>
+  488678: d0001da1     	adrp	x1, 0x83e000 <_ZZZN15KDicomEventDeal22OnHandleResendProgressER8KMessageENKUlRKS0_E_clES3_E12__FUNCTION__+0x7f8>
+  48867c: 910ca042     	add	x2, x2, #0x328
+  488680: 9116a021     	add	x1, x1, #0x5a8
+  488684: 52800020     	mov	w0, #0x1                // =1
+  488688: 9407c830     	bl	0x67a748 <_Z11LogPrintfExbPKcS0_z>
+  48868c: 12800000     	mov	w0, #-0x1               // =-1
+  488690: b9006be0     	str	w0, [sp, #0x68]
+  488694: 17ffff54     	b	0x4883e4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x65c>
+  488698: f9403be0     	ldr	x0, [sp, #0x70]
+  48869c: d503201f     	nop
+  4886a0: d2800102     	mov	x2, #0x8                // =8
+  4886a4: d2800041     	mov	x1, #0x2                // =2
+  4886a8: 97f5d9ae     	bl	0x1fed60 <_ZN10QArrayData10deallocateEPS_mm@plt>
+  4886ac: 17fffef1     	b	0x488270 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x4e8>
+  4886b0: 12800003     	mov	w3, #-0x1               // =-1
+  4886b4: b0001f02     	adrp	x2, 0x869000 <_ZTS40KOsdMenuCellGreyedWhenCameraDisconnected+0x80>
+  4886b8: d0001da1     	adrp	x1, 0x83e000 <_ZZZN15KDicomEventDeal22OnHandleResendProgressER8KMessageENKUlRKS0_E_clES3_E12__FUNCTION__+0x7f8>
+  4886bc: 910c4042     	add	x2, x2, #0x310
+  4886c0: 9116a021     	add	x1, x1, #0x5a8
+  4886c4: 52800020     	mov	w0, #0x1                // =1
+  4886c8: b9006be3     	str	w3, [sp, #0x68]
+  4886cc: 9407c81f     	bl	0x67a748 <_Z11LogPrintfExbPKcS0_z>
+  4886d0: 17ffffd3     	b	0x48861c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x894>
+  4886d4: aa0003f4     	mov	x20, x0
+  4886d8: f94043e0     	ldr	x0, [sp, #0x80]
+  4886dc: b4000040     	cbz	x0, 0x4886e4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x95c>
+  4886e0: 97f5da74     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4886e4: f9405fe0     	ldr	x0, [sp, #0xb8]
+  4886e8: 910042d6     	add	x22, x22, #0x10
+  4886ec: eb16001f     	cmp	x0, x22
+  4886f0: 54000040     	b.eq	0x4886f8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x970>
+  4886f4: 97f5da6f     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4886f8: aa1503e0     	mov	x0, x21
+  4886fc: 97f9ca8f     	bl	0x2fb138 <_ZN7QStringD2Ev>
+  488700: 14000006     	b	0x488718 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x990>
+  488704: 97f5d36f     	bl	0x1fd4c0 <__cxa_begin_catch@plt>
+  488708: 97f5f486     	bl	0x205920 <__cxa_rethrow@plt>
+  48870c: aa0003f4     	mov	x20, x0
+  488710: 910203e0     	add	x0, sp, #0x80
+  488714: 97f9db51     	bl	0x2ff458 <_ZNSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS5_EED2Ev>
+  488718: f9404fe0     	ldr	x0, [sp, #0x98]
+  48871c: 91004318     	add	x24, x24, #0x10
+  488720: eb18001f     	cmp	x0, x24
+  488724: 54000141     	b.ne	0x48874c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9c4>
+  488728: aa1303e0     	mov	x0, x19
+  48872c: 97f9da1f     	bl	0x2fefa8 <_ZN10KExamEntryD2Ev>
+  488730: aa1403e0     	mov	x0, x20
+  488734: 97f5dce7     	bl	0x1ffad0 <_Unwind_Resume@plt>
+  488738: f90037e0     	str	x0, [sp, #0x68]
+  48873c: 97f5f3e5     	bl	0x2056d0 <__cxa_end_catch@plt>
+  488740: f94037e0     	ldr	x0, [sp, #0x68]
+  488744: aa0003f4     	mov	x20, x0
+  488748: 17ffffe4     	b	0x4886d8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x950>
+  48874c: 97f5da59     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488750: 17fffff6     	b	0x488728 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9a0>
+  488754: aa0003f4     	mov	x20, x0
+  488758: 17fffff0     	b	0x488718 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x990>
+  48875c: f9422fe2     	ldr	x2, [sp, #0x458]
+  488760: 910e4261     	add	x1, x19, #0x390
+  488764: aa0003f4     	mov	x20, x0
+  488768: eb01005f     	cmp	x2, x1
+  48876c: 54000060     	b.eq	0x488778 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9f0>
+  488770: aa0203e0     	mov	x0, x2
+  488774: 97f5da4f     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488778: f9421fe0     	ldr	x0, [sp, #0x438]
+  48877c: 910dc261     	add	x1, x19, #0x370
+  488780: eb01001f     	cmp	x0, x1
+  488784: 54000040     	b.eq	0x48878c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa04>
+  488788: 97f5da4a     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48878c: f9420fe0     	ldr	x0, [sp, #0x418]
+  488790: 910d4261     	add	x1, x19, #0x350
+  488794: eb01001f     	cmp	x0, x1
+  488798: 54000040     	b.eq	0x4887a0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa18>
+  48879c: 97f5da45     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4887a0: f941ffe0     	ldr	x0, [sp, #0x3f8]
+  4887a4: 910cc261     	add	x1, x19, #0x330
+  4887a8: eb01001f     	cmp	x0, x1
+  4887ac: 54000040     	b.eq	0x4887b4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa2c>
+  4887b0: 97f5da40     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4887b4: f941efe0     	ldr	x0, [sp, #0x3d8]
+  4887b8: 910c4261     	add	x1, x19, #0x310
+  4887bc: eb01001f     	cmp	x0, x1
+  4887c0: 54000040     	b.eq	0x4887c8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa40>
+  4887c4: 97f5da3b     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4887c8: f941dfe0     	ldr	x0, [sp, #0x3b8]
+  4887cc: 910bc261     	add	x1, x19, #0x2f0
+  4887d0: eb01001f     	cmp	x0, x1
+  4887d4: 54000040     	b.eq	0x4887dc <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa54>
+  4887d8: 97f5da36     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4887dc: f941cbe0     	ldr	x0, [sp, #0x390]
+  4887e0: 910b2261     	add	x1, x19, #0x2c8
+  4887e4: eb01001f     	cmp	x0, x1
+  4887e8: 54000040     	b.eq	0x4887f0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa68>
+  4887ec: 97f5da31     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4887f0: f941bbe0     	ldr	x0, [sp, #0x370]
+  4887f4: 910aa261     	add	x1, x19, #0x2a8
+  4887f8: eb01001f     	cmp	x0, x1
+  4887fc: 54000040     	b.eq	0x488804 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa7c>
+  488800: 97f5da2c     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488804: f941abe0     	ldr	x0, [sp, #0x350]
+  488808: 910a2261     	add	x1, x19, #0x288
+  48880c: eb01001f     	cmp	x0, x1
+  488810: 54000040     	b.eq	0x488818 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xa90>
+  488814: 97f5da27     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488818: f9419be0     	ldr	x0, [sp, #0x330]
+  48881c: 9109a261     	add	x1, x19, #0x268
+  488820: eb01001f     	cmp	x0, x1
+  488824: 54000040     	b.eq	0x48882c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xaa4>
+  488828: 97f5da22     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48882c: f9418be0     	ldr	x0, [sp, #0x310]
+  488830: 91092261     	add	x1, x19, #0x248
+  488834: eb01001f     	cmp	x0, x1
+  488838: 54000040     	b.eq	0x488840 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xab8>
+  48883c: 97f5da1d     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488840: f9417be0     	ldr	x0, [sp, #0x2f0]
+  488844: 9108a261     	add	x1, x19, #0x228
+  488848: eb01001f     	cmp	x0, x1
+  48884c: 54000040     	b.eq	0x488854 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xacc>
+  488850: 97f5da18     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488854: f9416be0     	ldr	x0, [sp, #0x2d0]
+  488858: 91082261     	add	x1, x19, #0x208
+  48885c: eb01001f     	cmp	x0, x1
+  488860: 54000040     	b.eq	0x488868 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xae0>
+  488864: 97f5da13     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488868: f9415be0     	ldr	x0, [sp, #0x2b0]
+  48886c: 9107a261     	add	x1, x19, #0x1e8
+  488870: eb01001f     	cmp	x0, x1
+  488874: 54000040     	b.eq	0x48887c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xaf4>
+  488878: 97f5da0e     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48887c: f9414be0     	ldr	x0, [sp, #0x290]
+  488880: 91072261     	add	x1, x19, #0x1c8
+  488884: eb01001f     	cmp	x0, x1
+  488888: 54000040     	b.eq	0x488890 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb08>
+  48888c: 97f5da09     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488890: f9413be0     	ldr	x0, [sp, #0x270]
+  488894: 9106a261     	add	x1, x19, #0x1a8
+  488898: eb01001f     	cmp	x0, x1
+  48889c: 54000040     	b.eq	0x4888a4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb1c>
+  4888a0: 97f5da04     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4888a4: f9412be0     	ldr	x0, [sp, #0x250]
+  4888a8: 91062261     	add	x1, x19, #0x188
+  4888ac: eb01001f     	cmp	x0, x1
+  4888b0: 54000040     	b.eq	0x4888b8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb30>
+  4888b4: 97f5d9ff     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4888b8: f9411be0     	ldr	x0, [sp, #0x230]
+  4888bc: 9105a261     	add	x1, x19, #0x168
+  4888c0: eb01001f     	cmp	x0, x1
+  4888c4: 54000040     	b.eq	0x4888cc <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb44>
+  4888c8: 97f5d9fa     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4888cc: f9410be0     	ldr	x0, [sp, #0x210]
+  4888d0: 91052261     	add	x1, x19, #0x148
+  4888d4: eb01001f     	cmp	x0, x1
+  4888d8: 54000040     	b.eq	0x4888e0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb58>
+  4888dc: 97f5d9f5     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4888e0: f940f7e0     	ldr	x0, [sp, #0x1e8]
+  4888e4: 91048261     	add	x1, x19, #0x120
+  4888e8: eb01001f     	cmp	x0, x1
+  4888ec: 54000040     	b.eq	0x4888f4 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb6c>
+  4888f0: 97f5d9f0     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4888f4: f940e7e0     	ldr	x0, [sp, #0x1c8]
+  4888f8: 91040261     	add	x1, x19, #0x100
+  4888fc: eb01001f     	cmp	x0, x1
+  488900: 54000040     	b.eq	0x488908 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb80>
+  488904: 97f5d9eb     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488908: f940d7e0     	ldr	x0, [sp, #0x1a8]
+  48890c: 91038261     	add	x1, x19, #0xe0
+  488910: eb01001f     	cmp	x0, x1
+  488914: 54000040     	b.eq	0x48891c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xb94>
+  488918: 97f5d9e6     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48891c: f940c7e0     	ldr	x0, [sp, #0x188]
+  488920: 91030261     	add	x1, x19, #0xc0
+  488924: eb01001f     	cmp	x0, x1
+  488928: 54000040     	b.eq	0x488930 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xba8>
+  48892c: 97f5d9e1     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488930: f940b7e0     	ldr	x0, [sp, #0x168]
+  488934: 91028261     	add	x1, x19, #0xa0
+  488938: eb01001f     	cmp	x0, x1
+  48893c: 54000040     	b.eq	0x488944 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xbbc>
+  488940: 97f5d9dc     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488944: f940a7e0     	ldr	x0, [sp, #0x148]
+  488948: 91020261     	add	x1, x19, #0x80
+  48894c: eb01001f     	cmp	x0, x1
+  488950: 54000040     	b.eq	0x488958 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xbd0>
+  488954: 97f5d9d7     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488958: f94097e0     	ldr	x0, [sp, #0x128]
+  48895c: 91018261     	add	x1, x19, #0x60
+  488960: eb01001f     	cmp	x0, x1
+  488964: 54000040     	b.eq	0x48896c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xbe4>
+  488968: 97f5d9d2     	bl	0x1ff0b0 <_ZdlPv@plt>
+  48896c: f94083e0     	ldr	x0, [sp, #0x100]
+  488970: 9100e261     	add	x1, x19, #0x38
+  488974: eb01001f     	cmp	x0, x1
+  488978: 54000040     	b.eq	0x488980 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xbf8>
+  48897c: 97f5d9cd     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488980: f94073e0     	ldr	x0, [sp, #0xe0]
+  488984: 91006273     	add	x19, x19, #0x18
+  488988: eb13001f     	cmp	x0, x19
+  48898c: 54ffed20     	b.eq	0x488730 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9a8>
+  488990: 97f5d9c8     	bl	0x1ff0b0 <_ZdlPv@plt>
+  488994: 17ffff67     	b	0x488730 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9a8>
+  488998: aa0003f4     	mov	x20, x0
+  48899c: 17ffff63     	b	0x488728 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x9a0>
+  4889a0: aa0003f4     	mov	x20, x0
+  4889a4: aa1903e0     	mov	x0, x25
+  4889a8: 97fa05bc     	bl	0x30a098 <_ZN10QByteArrayD2Ev>
+  4889ac: 17ffff53     	b	0x4886f8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x970>
+  4889b0: aa0003f4     	mov	x20, x0
+  4889b4: 17ffff51     	b	0x4886f8 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x970>
+  4889b8: aa0003f4     	mov	x20, x0
+  4889bc: 14000004     	b	0x4889cc <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xc44>
+  4889c0: aa0003f4     	mov	x20, x0
+  4889c4: aa1903e0     	mov	x0, x25
+  4889c8: 97f9c9dc     	bl	0x2fb138 <_ZN7QStringD2Ev>
+  4889cc: f9405fe0     	ldr	x0, [sp, #0xb8]
+  4889d0: 910042d6     	add	x22, x22, #0x10
+  4889d4: eb16001f     	cmp	x0, x22
+  4889d8: 54000040     	b.eq	0x4889e0 <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xc58>
+  4889dc: 97f5d9b5     	bl	0x1ff0b0 <_ZdlPv@plt>
+  4889e0: aa1403e0     	mov	x0, x20
+  4889e4: 17ffff4a     	b	0x48870c <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0x984>
+  4889e8: aa0003f4     	mov	x20, x0
+  4889ec: aa1503e0     	mov	x0, x21
+  4889f0: 97f5f1e4     	bl	0x205180 <_ZN4QDirD1Ev@plt>
+  4889f4: 17fffff6     	b	0x4889cc <_ZN15PatientExamData15GetExamDataPathERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERSt6vectorIS5_SaIS5_EE+0xc44>

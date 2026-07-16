@@ -49,6 +49,8 @@
 #include "report/KTableBlock.h"
 #include "report/KTitleTableBlock.h"
 #include "report/KReportTemplateCommonDef.h"
+#include "db/KPatientExamData.h"
+#include <QTemporaryDir>
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -2065,6 +2067,64 @@ int main(int argc, char **argv)
             && custOk && subAppendOk && paramOk && convOk && splitOk;
         qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
         return ok ? 0 : 51;
+    }
+
+    // Self-test перечислителя файлов обследования (PatientExamData — статические файловые
+    // методы; device-only резолв id→каталог заменён прямым examDir).
+    if (screen == "examdata") {
+        QTemporaryDir tmp;
+        const bool tmpOk = tmp.isValid();
+        const QString qdir = tmp.path() + "/";
+        const std::string dir = qdir.toUtf8().constData();
+        // Раскладываем файлы: 2 картинки, 2 видео, pdf, посторонний.
+        const char *files[] = {"a.jpg", "b.bmp", "m1.mp4", "m2.mkv", "report.pdf", "note.txt"};
+        for (const char *f : files) {
+            QFile qf(qdir + f); qf.open(QIODevice::WriteOnly); qf.write("x"); qf.close();
+        }
+
+        const bool existOk = PatientExamData::IsFileExist(dir + "a.jpg")
+            && !PatientExamData::IsFileExist(dir + "zzz.jpg");
+
+        std::vector<std::string> imgs;
+        PatientExamData::GetExamDataImage(dir, imgs);
+        const bool imgOk = imgs.size() == 2 && imgs[0] == dir + "a.jpg"   // сорт по baseName
+            && imgs[1] == dir + "b.bmp";
+
+        std::vector<std::string> vids;
+        PatientExamData::GetExamDataVideo(dir, vids);
+        const bool vidOk = vids.size() == 2 && vids[0] == dir + "m1.mp4"
+            && vids[1] == dir + "m2.mkv";
+
+        std::string pdf;
+        const bool pdfOk = PatientExamData::GetExamDataPdf(dir, pdf) == 0
+            && pdf == dir + "report.pdf";
+
+        std::vector<std::string> paths;
+        const bool pathOk = PatientExamData::GetExamDataPath(dir, paths) == 0
+            && paths.size() == 1 && paths[0] == dir;
+
+        std::vector<std::string> all;
+        PatientExamData::GetExamDataAll(dir, all);   // 2 картинки + pdf, БЕЗ видео
+        const bool allOk = all.size() == 3 && all.back() == dir + "report.pdf";
+
+        // append: out не очищается.
+        std::vector<std::string> acc; acc.push_back("PRE");
+        PatientExamData::GetExamDataImage(dir, acc);
+        const bool appendOk = acc.size() == 3 && acc[0] == "PRE";
+
+        // IsExamVideoExist: есть видео здесь, нет в пустом подкаталоге.
+        QDir(qdir).mkdir("empty");
+        const bool vExistOk = PatientExamData::IsExamVideoExist(dir)
+            && !PatientExamData::IsExamVideoExist(dir + "empty/");
+
+        qInfo() << "tmp:" << tmpOk << "exist:" << existOk << "img:" << imgOk << "vid:" << vidOk;
+        qInfo() << "pdf:" << pdfOk << "path:" << pathOk << "all:" << allOk
+                << "append:" << appendOk << "vExist:" << vExistOk;
+
+        const bool ok = tmpOk && existOk && imgOk && vidOk && pdfOk && pathOk && allOk
+            && appendOk && vExistOk;
+        qInfo() << (ok ? "examdata: PASS" : "examdata: FAIL");
+        return ok ? 0 : 52;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).
