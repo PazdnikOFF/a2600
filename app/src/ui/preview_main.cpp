@@ -38,6 +38,7 @@
 #include "kernel/KControlINI.h"
 #include "dicom/KPatientStringOperation.h"
 #include "dicom/KDbStringOperation.h"
+#include "ui/KStopWatch.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1574,6 +1575,55 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test экранного секундомера (KStopWatch — конечный автомат, offscreen).
+    if (screen == "stopwatch") {
+        KStopWatch sw;   // ctor → InitStopWatch: state Stop, "00:00:00"
+
+        // Сигнал ловим в счётчик смен состояния.
+        QList<int> states;
+        QObject::connect(&sw, &KStopWatch::StopWatchStateChanged,
+                         [&states](int s) { states.append(s); });
+
+        const bool initOk = sw.State() == KStopWatch::Stop && sw.TimeText() == "00:00:00";
+
+        // 1. Старт (F1) → Run; тики UpdateTime считают секунды.
+        sw.HandleKeyPress(0x01000030);   // F1
+        const bool startOk = sw.State() == KStopWatch::Run;
+        sw.UpdateTime(); sw.UpdateTime(); sw.UpdateTime();
+        const bool countOk = sw.TimeText() == "00:00:03";
+
+        // 2. Пауза (Space) → Pause; тик во время паузы игнорировать не обязан
+        //    (UpdateTime зовётся таймером, который остановлен) — проверяем сам переход.
+        sw.HandleKeyPress(0x20);         // Space
+        const bool pauseOk = sw.State() == KStopWatch::Pause;
+        // 3. Resume (Space) → Run.
+        sw.HandleKeyPress(0x20);
+        const bool resumeOk = sw.State() == KStopWatch::Run;
+        sw.UpdateTime();
+        const bool contOk = sw.TimeText() == "00:00:04";
+
+        // 4. Стоп (F1 из Run) → Stop + сброс на 00:00:00.
+        sw.HandleKeyPress(0x01000030);
+        const bool stopOk = sw.State() == KStopWatch::Stop && sw.TimeText() == "00:00:00";
+
+        // 5. Прочие клавиши — без эффекта; в Stop пауза ничего не делает.
+        sw.HandleKeyPress(0x42);         // 'B'
+        sw.HandleStopWatchPauseState();
+        const bool noopOk = sw.State() == KStopWatch::Stop;
+
+        // Сигнал испускался только на Run/Stop переходах через Runing (не Pause).
+        const bool sigOk = states == QList<int>{KStopWatch::Run, KStopWatch::Stop};
+
+        qInfo() << "init:" << initOk << "старт:" << startOk << "счёт:" << countOk
+                << sw.TimeText() << "| пауза:" << pauseOk << "resume:" << resumeOk << contOk;
+        qInfo() << "стоп+сброс:" << stopOk << "no-op:" << noopOk << "сигналы:" << sigOk << states;
+
+        const bool ok = initOk && startOk && countOk && pauseOk && resumeOk && contOk
+            && stopOk && noopOk && sigOk;
+        qInfo() << (ok ? "stopwatch: PASS" : "stopwatch: FAIL");
+        return ok ? 0 : 41;
     }
 
     // Self-test строковых/DICOM-утилит пациента (KPatientStringOperation + KDbStringOperation).

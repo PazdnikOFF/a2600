@@ -116,13 +116,14 @@ ENDO_ROOT=<tmp> ui_preview manupwd                    # self-test доступа
 ui_preview dbfileop                                   # self-test файловых/дисковых утилит (KDbFileOperation: ФС + statfs-ёмкость)
 ENDO_ROOT=<tmp> ui_preview controlini                 # self-test слоя ini машинного контроля (KControlINI, control.ini — пишет файл, tmp-root!)
 ui_preview patstr                                     # self-test строковых/DICOM-утилит (KPatientStringOperation+KDbStringOperation: split/charset/SOP UID)
+ui_preview stopwatch                                  # self-test экранного секундомера (KStopWatch: конечный автомат старт/пауза/стоп, offscreen)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 55  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 56  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -466,14 +467,27 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **55 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **56 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 61 класс / 658 методов (10.2%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 62 класса / 663 метода (10.3%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KPatientStringOperation` + `KDbStringOperation`** (`app/src/dicom/`,
+**ПОСЛЕДНЕЕ (эта сессия): `KStopWatch`** (`app/src/ui/`, self-test `stopwatch`) — ПЕРВЫЙ
+UI-виджет в наборе (реф. KStopWatch : QFrame). Экранный секундомер процедуры: конечный
+автомат STOPWATCH_STATUS {0 Stop/сброс, 1 Pause, 2 Run}, тик — целые секунды по QTimer(1000мс)
+(реального монотонного таймера нет — счётчик тиков, 1:1). HandleKeyPress: Space(0x20)→Pause,
+F1(0x01000030)→Runing. HandleStopWatchRuningState: Stop→Run (старт) / иначе → Stop+сброс
+"00:00:00" + сигнал StopWatchStateChanged. HandleStopWatchPauseState: Pause⇄Run, в Stop —
+ничего. UpdateTime: m_time += 1 сек, timelabel = toString("hh:mm:ss"). Виджет тестируется
+offscreen (как остальной UI в ui_preview): автомат прогоняется без ожидания таймера — тики
+вызываются напрямую. ЗАМЕТКА: ctor реф. оставляет m_time невалидным (00:00:00 ставит внешний
+KViewBase::InitStopWatch) — у нас InitStopWatch вынесен в класс для самодостаточности.
+ОТЛОЖЕН: **KTimeMng** (QObject-синглтон, 3 QTimer: display 1000/day 60000/mc 1500 мс) —
+тянет KUiMsgProxy (UI-мост, не реализован): UpdateSystemtime/CheckMachineControl/UpdateRecTime;
+EachDayMC — полночный лиценз-отсчёт (GetRemainDays==1 → SetProductAuthFlag(0)).
+РАНЕЕ (эта сессия): `KPatientStringOperation` + `KDbStringOperation`** (`app/src/dicom/`,
 self-test `patstr`) — строковые/DICOM-утилиты (потребители — DICOM-слой). НЕ UI/НЕ device,
 все методы static, состояние — function-local static-таблицы. std::string везде.
 KPatient (12): StringReplace/StringTrim(фикс. " \r\n\t")/ReplaceInvalidCharInFolderName
