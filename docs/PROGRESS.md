@@ -117,13 +117,14 @@ ui_preview dbfileop                                   # self-test файловы
 ENDO_ROOT=<tmp> ui_preview controlini                 # self-test слоя ini машинного контроля (KControlINI, control.ini — пишет файл, tmp-root!)
 ui_preview patstr                                     # self-test строковых/DICOM-утилит (KPatientStringOperation+KDbStringOperation: split/charset/SOP UID)
 ui_preview stopwatch                                  # self-test экранного секундомера (KStopWatch: конечный автомат старт/пауза/стоп, offscreen)
+ui_preview patient                                    # self-test сущности/CRUD пациента (KEntityPatient+KPatientListDBTableHandler, tb_PatientList)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 56  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 57  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -467,14 +468,27 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **56 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **57 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 62 класса / 663 метода (10.3%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 64 класса / 677 методов (10.5%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KStopWatch`** (`app/src/ui/`, self-test `stopwatch`) — ПЕРВЫЙ
+**ПОСЛЕДНЕЕ (эта сессия): `KEntityPatient` + `KPatientListDBTableHandler`** (`app/src/db/`,
+self-test `patient`) — сущность/CRUD пациента, tb_PatientList. Чистый SQLite (не UI/device),
+соединение endo_main (HD-2000.dat), по отлаженному паттерну KEntityExam. Колонки реверснуты
+из KPatientEntry::ConvertToMap: PatientID/PatientName/PatientSex/PatientBirthday/ApplicantDate/
+Applicants/UserItem1/UserItem2/SickBedId/TelephoneNumber/RegisterNumber/WorklistUID/PatientAge/
+ExamStatus (в реф. ВСЕ строки, включая ExamStatus/PatientAge). PK — технический `id`
+AUTOINCREMENT; PatientID — бизнес-ключ. Хендлер тонкий: GetEntity (коды 0/-1), AddNew/Update/
+DeleteEntity, UpdateExamStatus (read→ExamStatus=%d→write), GetPageRecordFromDb. СТРАННОСТЬ РЕФ.
+1:1: `DeleteEntites(vector)` — ЗАГЛУШКА (тело возвращает глоб. int, НИЧЕГО не удаляет) →
+воспроизведено как no-op. ДОДУМАНО (помечено): типы колонок DDL (в реф. живут в KEntityManage,
+не в этих классах) — приняты TEXT / id INTEGER; в реф. дизайн реестровый (KEntityBase+type-строка,
+GetInnerEntityManage), у нас connection-based (как KEntityExam). KPatientStringOperation в этих
+классах НЕ зовётся (split имени — на UI-уровне). FK PatientID↔tb_ExamList.PatientId не enforced.
+РАНЕЕ (эта сессия): `KStopWatch`** (`app/src/ui/`, self-test `stopwatch`) — ПЕРВЫЙ
 UI-виджет в наборе (реф. KStopWatch : QFrame). Экранный секундомер процедуры: конечный
 автомат STOPWATCH_STATUS {0 Stop/сброс, 1 Pause, 2 Run}, тик — целые секунды по QTimer(1000мс)
 (реального монотонного таймера нет — счётчик тиков, 1:1). HandleKeyPress: Space(0x20)→Pause,

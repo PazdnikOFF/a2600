@@ -39,6 +39,7 @@
 #include "dicom/KPatientStringOperation.h"
 #include "dicom/KDbStringOperation.h"
 #include "ui/KStopWatch.h"
+#include "db/KEntityPatient.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1575,6 +1576,73 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test сущности/CRUD пациента (KEntityPatient + KPatientListDBTableHandler).
+    if (screen == "patient") {
+        const QString dbPath = "/tmp/endo_patient.db";
+        QFile::remove(dbPath);
+        KEntityManage &em = KEntityManage::Instance();
+        if (!em.OpenDb(dbPath)) { qWarning() << "OpenDb failed"; return 42; }
+
+        KEntityPatient ent;   // соединение endo_main
+        const bool createOk = ent.CreateTable();
+
+        KPatientListDBTableHandler h;
+
+        // Добавляем трёх пациентов через хендлер.
+        auto mk = [](const QString &pid, const QString &name, const QString &sex) {
+            KPatientEntry e;
+            e.patientID = pid; e.patientName = name; e.patientSex = sex;
+            e.patientBirthday = "1980-01-01"; e.applicantDate = "2026-07-16";
+            e.applicants = "Dr.Ivanov"; e.sickBedId = "B12"; e.telephoneNumber = "555-01";
+            e.registerNumber = "R-" + pid; e.patientAge = "46"; e.examStatus = "0";
+            return e;
+        };
+        const bool addOk = h.AddNewPatientEntity(mk("P001", "Иванов Иван", "M"))
+            && h.AddNewPatientEntity(mk("P002", "Петрова Мария", "F"))
+            && h.AddNewPatientEntity(mk("P003", "Сидоров Пётр", "M"));
+
+        const bool countOk = h.GetRecordNumber() == 3 && ent.GetEntityNumber() == 3;
+
+        // Все записи: id проставлен AUTOINCREMENT (бизнес-ключ PatientID сохранён).
+        const QList<KPatientEntry> all = h.GetPageRecordFromDb();
+        const bool listOk = all.size() == 3 && !all[0].id.isEmpty()
+            && all[0].patientID == "P001" && all[1].patientName == "Петрова Мария";
+        const QString id2 = all[1].id;   // технический id второго пациента
+
+        // GetEntity по техническому id: код 0 при успехе, -1 при отсутствии.
+        KPatientEntry got;
+        const bool getOk = h.GetEntity(id2, got) == 0 && got.patientID == "P002"
+            && got.patientSex == "F"
+            && h.GetEntity("9999", got) == -1;
+
+        // UpdateExamStatus по id (реф. читает → правит ExamStatus → пишет).
+        const bool updOk = h.UpdateExamStatus(id2, 2);
+        KPatientEntry re;
+        h.GetEntity(id2, re);
+        const bool statusOk = re.examStatus == "2" && re.patientName == "Петрова Мария";
+
+        // Update полей.
+        re.telephoneNumber = "555-99";
+        const bool upd2Ok = h.UpdatePatientEntity(id2, re);
+        KPatientEntry re2; h.GetEntity(id2, re2);
+        const bool upd2ChkOk = re2.telephoneNumber == "555-99";
+
+        // DeleteEntity убирает запись; DeleteEntites — заглушка реф. (ничего не делает).
+        const bool delOk = h.DeleteEntity(id2) && h.GetRecordNumber() == 2
+            && h.GetEntity(id2, got) == -1;
+        const bool stubOk = !h.DeleteEntites({all[0].id, all[2].id})   // заглушка → false
+            && h.GetRecordNumber() == 2;                               // ничего не удалила
+
+        qInfo() << "create:" << createOk << "add:" << addOk << "count:" << countOk
+                << "list:" << listOk << "| get:" << getOk << "status:" << statusOk
+                << "update:" << upd2Ok << upd2ChkOk << "| delete:" << delOk << "заглушка:" << stubOk;
+
+        const bool ok = createOk && addOk && countOk && listOk && getOk && statusOk
+            && upd2Ok && upd2ChkOk && delOk && stubOk;
+        qInfo() << (ok ? "patient: PASS" : "patient: FAIL");
+        return ok ? 0 : 42;
     }
 
     // Self-test экранного секундомера (KStopWatch — конечный автомат, offscreen).

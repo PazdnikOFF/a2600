@@ -12,8 +12,8 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **62** (13%) |
-| Методов реализовано (совпало по имени) | **663** (10.3%) |
+| Классов затронуто у нас | **64** (13%) |
+| Методов реализовано (совпало по имени) | **677** (10.5%) |
 
 ## 2. По доменам
 
@@ -25,7 +25,7 @@
 | **HW** | 40 | 598 | 4 | 0.7% | 1 |
 | **MISC** | 27 | 543 | 99 | 18.2% | 9 |
 | **DICOM** | 60 | 423 | 53 | 12.5% | 10 |
-| **DB** | 47 | 352 | 47 | 13.4% | 6 |
+| **DB** | 47 | 352 | 61 | 17.3% | 8 |
 | **UPDATE** | 12 | 137 | 8 | 5.8% | 4 |
 
 ## 3. Верифицируемость off-device
@@ -68,7 +68,6 @@
 | `KReportTemplateManager` | REPORT | 11 | `ReportTemplateConfig.xml` | есть заголовок, но свой API — сверить имена |
 | `KSessionInfo` | DB | 10 | — | не начат |
 | `KRTCreatorContext` | REPORT | 10 | — | не начат |
-| `KPatientListDBTableHandler` | DB | 10 | — | не начат |
 | `KTextBlock` | REPORT | 9 | — | не начат |
 | `KImportRules` | DB | 9 | — | не начат |
 | `KDoctorDBTableHandler` | DB | 9 | — | не начат |
@@ -78,10 +77,11 @@
 | `KSelfTest` | CORE | 9 | `testenv.ini` | не начат |
 | `KRecordItem` | DB | 8 | — | не начат |
 | `KEntityReport` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
-| `KEntityPatient` | DB | 8 | — | не начат |
 | `PatientExamData` | MISC | 8 | — | не начат |
 | `KRTDataSourceDemo` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityQuickInputDoctor` | DB | 8 | — | не начат |
+| `KEntityQuickInputPatient` | DB | 8 | — | не начат |
+| `KEntityQuickInputApplicant` | DB | 8 | — | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
