@@ -98,6 +98,7 @@ set(SOURCES
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
+    src/kernel/KControlINI.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
@@ -196,6 +197,7 @@ add_executable(ui_preview
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
+    src/kernel/KControlINI.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp

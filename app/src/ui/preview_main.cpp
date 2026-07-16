@@ -35,6 +35,7 @@
 #include "db/KExamNoGenerate.h"
 #include "sys/KManuPwdMng.h"
 #include "db/KDbFileOperation.h"
+#include "kernel/KControlINI.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1571,6 +1572,69 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test слоя ini машинного контроля (KControlINI).
+    // Пишет <root>/data/protected/kmachinecontrol/control.ini → tmp ENDO_ROOT!
+    if (screen == "controlini") {
+        // 1. Пути: каталог kmachinecontrol создаётся, имена файлов верны.
+        const QString ctrl = KControlINI::ControlINIPath();
+        const bool pathOk = ctrl.endsWith("data/protected/kmachinecontrol/control.ini")
+            && KControlINI::PlainINIpath().endsWith("kmachinecontrol/plain.ini")
+            && KControlINI::MatchProListIni().endsWith("kmachinecontrol/matchprolist.ini")
+            && KControlINI::HistoryLicenseRecord().endsWith("kmachinecontrol/licensehistory.ini")
+            && QDir(QFileInfo(ctrl).absolutePath()).exists();   // каталог создан
+
+        // 2. Дефолты на пустом файле.
+        _MC_Time t0;
+        KControlINI::ReadMcTime(t0);
+        const bool defOk = !t0.controlTime && t0.deadline == "2099-01-01" && t0.remainDays == 0
+            && !KControlINI::IsStartTimeControl() && !KControlINI::IsStartEndoControl()
+            && KControlINI::GetDeadline() == "2099-01-01" && KControlINI::GetRemainDays() == 0
+            && KControlINI::GetMatchEndos().isEmpty();
+
+        // 3. WriteMcTime → ReadMcTime roundtrip.
+        _MC_Time t; t.controlTime = true; t.deadline = "2027-03-15"; t.remainDays = 42;
+        KControlINI::WriteMcTime(t);
+        _MC_Time t2;
+        KControlINI::ReadMcTime(t2);
+        const bool timeOk = t2.controlTime && t2.deadline == "2027-03-15" && t2.remainDays == 42
+            && KControlINI::IsStartTimeControl()          // те же ключи через поэлементный доступ
+            && KControlINI::GetDeadline() == "2027-03-15" && KControlINI::GetRemainDays() == 42;
+
+        // 4. WriteMcEndo → ReadMcEndo (QStringList).
+        _MC_Endo e; e.controlEndo = true; e.endos = QStringList{"SN001", "SN002", "SN003"};
+        KControlINI::WriteMcEndo(e);
+        _MC_Endo e2;
+        KControlINI::ReadMcEndo(e2);
+        const bool endoOk = e2.controlEndo && e2.endos == QStringList{"SN001", "SN002", "SN003"}
+            && KControlINI::IsStartEndoControl()
+            && KControlINI::GetMatchEndos() == QStringList{"SN001", "SN002", "SN003"};
+
+        // 5. Поэлементные сеттеры пишут те же ключи, что видит блочное чтение.
+        KControlINI::SetRemainDays(7);
+        KControlINI::SetDeadline("2030-01-01");
+        KControlINI::StartTimeControl(false);
+        KControlINI::SetMatchEndos(QStringList{"X"});
+        _MC_Time t3; KControlINI::ReadMcTime(t3);
+        _MC_Endo e3; KControlINI::ReadMcEndo(e3);
+        const bool setOk = t3.remainDays == 7 && t3.deadline == "2030-01-01" && !t3.controlTime
+            && e3.endos == QStringList{"X"};
+
+        // 6. Формат файла — QSettings (bool как true/false, НЕ KConfig True/False).
+        QFile f(ctrl);
+        f.open(QIODevice::ReadOnly);
+        const QString text = QString::fromUtf8(f.readAll());
+        f.close();
+        const bool fmtOk = text.contains("Control_endo=true")   // QSettings-стиль
+            && !text.contains("True");                          // не KConfig-стиль
+
+        qInfo() << "пути:" << pathOk << "дефолты:" << defOk << "| time:" << timeOk
+                << "endo:" << endoOk << "сеттеры:" << setOk << "| формат QSettings:" << fmtOk;
+
+        const bool ok = pathOk && defOk && timeOk && endoOk && setOk && fmtOk;
+        qInfo() << (ok ? "controlini: PASS" : "controlini: FAIL");
+        return ok ? 0 : 39;
     }
 
     // Self-test файловых/дисковых утилит (KDbFileOperation) — чистая логика.

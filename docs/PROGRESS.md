@@ -114,13 +114,14 @@ ENDO_ROOT=$ER ui_preview templatelib                  # self-test библиот
 ui_preview templateparam                              # self-test параметров шаблона (KTemplateParamCfg — в прошивке мёртвый класс, фикстура своя)
 ENDO_ROOT=<tmp> ui_preview manupwd                    # self-test доступа производителя (KManuPwdMng: пароли от даты + лицензия + countdown; пишет [Manu], tmp-root!)
 ui_preview dbfileop                                   # self-test файловых/дисковых утилит (KDbFileOperation: ФС + statfs-ёмкость)
+ENDO_ROOT=<tmp> ui_preview controlini                 # self-test слоя ini машинного контроля (KControlINI, control.ini — пишет файл, tmp-root!)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 53  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 54  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -464,14 +465,31 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **53 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **54 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 58 классов / 618 методов (9.6%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 59 классов / 637 методов (9.9%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KDbFileOperation`** (`app/src/db/`, self-test `dbfileop`) —
+**ПОСЛЕДНЕЕ (эта сессия): `KControlINI`** (`app/src/kernel/`, self-test `controlini`) —
+слой доступа к ini машинного контроля. НЕ UI, НЕ крипто (DES — в компаньоне KControlProc),
+stateless (полей нет; реф. методы инстансные, но this не используют → у нас static).
+ПЕРСИСТ — QSettings(IniFormat), НЕ наш KConfig: bool у QSettings пишется true/false, а KConfig
+"True/False" — несовместимо, поэтому именно QSettings (проверено self-test'ом: control.ini
+содержит `Control_endo=true`, не `True`). Корень: ProtectedPath()+"kmachinecontrol/"
+(каталог создаётся). Реально читается/пишется ТОЛЬКО control.ini (плоские ключи → [General]):
+Control_time(bool)/Deadline(QString,дефолт "2099-01-01")/RemainDays(int,0)/Control_endo(bool)/
+Endos(QStringList). Методы: MachineControlPath/ControlINIPath/PlainINIpath/MatchProListIni/
+HistoryLicenseRecord (последние три — path-хелперы, сам класс их не читает; их файлы
+обслуживает KControlProc), ReadMcTime/WriteMcTime/ReadMcEndo/WriteMcEndo, Get/SetDeadline,
+Get/SetRemainDays, Get/SetMatchEndos (ключ Endos в control.ini, НЕ matchprolist!),
+IsStart/StartTimeControl, IsStart/StartEndoControl. НЕ РЕАЛИЗОВАН: UpdateMatchEndos(_MC_InputInfo*)
+— структура _MC_InputInfo (известны лишь int@0/int@8) и правило add/remove из дизасма не
+восстановлены; строительные блоки Get/SetMatchEndos доступны.
+ЗАМЕТКА для будущего: компаньон **KControlProc** (прототип-/лиценз-контроль) остаётся
+отложен — тянет DES-класс yxyDES2 (Cipher2Plain/DecryptionStr) для расшифровки лицензий.
+РАНЕЕ (эта сессия): `KDbFileOperation`** (`app/src/db/`, self-test `dbfileop`) —
 файловые/дисковые утилиты. Несмотря на «Db» в имени SQLite НЕ трогает (нет ни одного
 KEntity*/sqlite3_) — чистые ФС/statfs-хелперы поверх Qt+POSIX, все методы static, полей
 нет, НЕ UI/НЕ device. IsFileExist/IsFileDirExist/GetFileSize/RemoveFile/CreateFolder/
