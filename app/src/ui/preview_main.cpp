@@ -46,6 +46,7 @@
 #include "sys/KEncSettings.h"
 #include "report/KTextBlock.h"
 #include "report/KImageBlock.h"
+#include "report/KTableBlock.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1647,6 +1648,102 @@ int main(int argc, char **argv)
         const bool ok = idOk && nameOk && sizeOk && alignOk && urlOk && url2Ok && orphanOk;
         qInfo() << (ok ? "imageblock: PASS" : "imageblock: FAIL");
         return ok ? 0 : 48;
+    }
+
+    // Self-test модели табличного блока отчёта (KTableBlock — полиморфный сиблинг
+    // KTextBlock/KImageBlock: сетка + бордюр/отступы + маппинг ячейка→под-элемент).
+    if (screen == "tableblock") {
+        KReportTemplateDataNew data;
+
+        // Блок-таблица: Column="3", ShowTitle="1", тип-алиас → RT_TITLE_TABLE_BLOCK.
+        KReportTemplateItem item;
+        item.m_strID = "/RT_TBL"; item.m_strName = "RT_TBL";
+        item.m_strType = "RT_SUB_DATA_BLOCK";   // алиас → TableType() = RT_TITLE_TABLE_BLOCK
+        item.m_strColumn = "3"; item.m_strShowTitle = "1";
+        for (int i = 0; i < 7; ++i) {           // 7 детей → ceil(7/3)=3 строки
+            KReportTemplateItem child;
+            child.m_strID = "c" + std::to_string(i); child.m_strName = child.m_strID;
+            item.m_lstSubItems.push_back(child);
+        }
+        data.m_lstItems.push_back(item);
+
+        KReportTemplateItemConfig cfg;
+        cfg.m_strName = "/RT_TBL";
+        cfg.m_mapAttrs["BorderWidth"] = "2.5";
+        cfg.m_mapAttrs["BorderColor"] = "red";
+        cfg.m_mapAttrs["MarginWidth"] = "10,20";   // → 10*0.62, 20*0.62
+        cfg.m_mapAttrs["ColumnRatio"] = "25,50,25";
+        data.m_mapItemConfigs["/RT_TBL"] = cfg;
+
+        KTableBlock block(&data.m_lstItems.front(), &data);
+
+        // Сетка: 7 детей / 3 столбца → QSize(width=3 строки, height=3 столбца).
+        const bool sizeOk = block.Size() == QSize(3, 3);
+        const bool idOk = block.ElementId() == "/RT_TBL";
+        const bool showTitleOk = block.ShowTitle();                       // "1"
+        const bool typeOk = block.TableType() == "RT_TITLE_TABLE_BLOCK";  // ремап алиаса
+        const bool titleBlkOk = block.TitleTextBlock().ElementId() == "/RT_TBL";
+
+        // Ячейка→под-элемент: index = row*cols(3)+col.
+        KReportTemplateItem *cell = nullptr;
+        const bool c00 = block.GetTemplateItemForCell(0, 0, cell) && cell->m_strID == "c0";
+        cell = nullptr;
+        const bool c20 = block.GetTemplateItemForCell(2, 0, cell) && cell->m_strID == "c6"; // index6
+        cell = nullptr;
+        // index=7 при 7 детях (0..6) → вне списка → false, cell не тронут.
+        const bool cOob = !block.GetTemplateItemForCell(2, 1, cell) && cell == nullptr;      // index7
+        const bool cNeg = !block.GetTemplateItemForCell(-1, 0, cell);
+        const bool cellOk = c00 && c20 && cOob && cNeg;
+
+        // Бордюр/цвет/отступы/пропорции столбцов.
+        const bool bwOk = block.BorderWidth() == 2.5f && block.ShowBorder();
+        const bool colorOk = block.BorderColor() == "red";
+        const std::vector<float> m = block.Margin();
+        const bool marginOk = m.size() == 2
+            && qFuzzyCompare(m[0], 10.0f * 0.62f) && qFuzzyCompare(m[1], 20.0f * 0.62f);
+        const QVector<QTextLength> cw = block.ColWidthContraints();
+        const bool cwOk = cw.size() == 3
+            && cw[0].rawValue() == 25 && cw[1].rawValue() == 50 && cw[2].rawValue() == 25
+            && cw[0].type() == QTextLength::PercentageLength;
+
+        // Ref-override: Column="2", но RefColumnID→конфиг с RefColumn="4" → 4 столбца.
+        KReportTemplateItem item2;
+        item2.m_strID = "/RT_TBL2"; item2.m_strName = "RT_TBL2";
+        item2.m_strType = "RT_TABLE_BLOCK";   // не алиас → TableType без ремапа
+        item2.m_strColumn = "2";
+        for (int i = 0; i < 8; ++i) {
+            KReportTemplateItem child; child.m_strID = "d" + std::to_string(i);
+            item2.m_lstSubItems.push_back(child);
+        }
+        data.m_lstItems.push_back(item2);
+        KReportTemplateItemConfig cfg2; cfg2.m_strName = "/RT_TBL2";
+        cfg2.m_mapAttrs["RefColumnID"] = "REFCFG";
+        data.m_mapItemConfigs["/RT_TBL2"] = cfg2;
+        KReportTemplateItemConfig refcfg; refcfg.m_strName = "REFCFG";
+        refcfg.m_mapAttrs["RefColumn"] = "4";
+        data.m_mapItemConfigs["REFCFG"] = refcfg;
+        KTableBlock block2(&data.m_lstItems.back(), &data);
+        const bool refOk = block2.Size() == QSize(2, 4)               // 8/4 → 2 строки, 4 столбца
+            && block2.TableType() == "RT_TABLE_BLOCK";
+
+        // Промах item-config + нет Column: attrs пусты → дефолты, Size=(детей,1).
+        KReportTemplateItem orphan; orphan.m_strID = "/NONE"; orphan.m_strName = "N";
+        KTableBlock empty(&orphan, &data);
+        const bool orphanOk = empty.Size() == QSize(0, 1)
+            && empty.BorderWidth() == 0.0f && !empty.ShowBorder()
+            && empty.BorderColor() == "black" && empty.Margin().empty()
+            && empty.ColWidthContraints().isEmpty() && !empty.ShowTitle();
+
+        qInfo() << "size:" << sizeOk << block.Size() << "id:" << idOk << "title:" << showTitleOk
+                << "type:" << typeOk << titleBlkOk;
+        qInfo() << "ячейки:" << cellOk << "| бордюр:" << bwOk << "цвет:" << colorOk
+                << "отступ:" << marginOk << "столбцы:" << cwOk;
+        qInfo() << "ref-override:" << refOk << block2.Size() << "| промах:" << orphanOk;
+
+        const bool ok = sizeOk && idOk && showTitleOk && typeOk && titleBlkOk && cellOk
+            && bwOk && colorOk && marginOk && cwOk && refOk && orphanOk;
+        qInfo() << (ok ? "tableblock: PASS" : "tableblock: FAIL");
+        return ok ? 0 : 49;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).
