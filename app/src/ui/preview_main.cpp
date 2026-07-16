@@ -32,6 +32,7 @@
 #include "kernel/KConfig.h"
 #include "report/KMeaXMLBase.h"
 #include "report/KMeaStringUtil.h"
+#include "db/KExamNoGenerate.h"
 #include "report/KTemplateCfg.h"
 #include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
@@ -1564,6 +1565,70 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test генератора номеров осмотра (KExamNoGenerate).
+    // Пишет <root>/data/protected/ExamListId.ini → брать временный ENDO_ROOT!
+    if (screen == "examno") {
+        const QString ini = QDir(KSystem::ProtectedPath()).absoluteFilePath("ExamListId.ini");
+        const QString date = QDate::currentDate().toString("yyyyMMdd");
+
+        // 1. Файла нет: InitConfigFile создаёт каталог и ПУСТОЙ файл; индекс → дефолт 0.
+        KExamNoGenerate::InitConfigFile();
+        const bool initOk = QFile::exists(ini) && KExamNoGenerate::GetExamIdIndex() == 0;
+
+        // 2. MakeExamId: инкремент только в памяти, на диск НЕ пишет.
+        KSystemStatus::GetInstance().SetViewType(0);          // эндоскоп → без суффикса
+        const std::string id1 = KExamNoGenerate::MakeExamId();
+        const bool fmtOk = id1 == (date + "0001").toStdString();
+        const bool notSavedOk = KExamNoGenerate::GetExamIdIndex() == 0;   // диск не тронут
+
+        // Повторный MakeExamId без коммита даёт ТОТ ЖЕ номер (читает индекс с диска).
+        const bool sameOk = KExamNoGenerate::MakeExamId() == id1;
+
+        // 3. SetExamId — коммит текущего индекса на диск.
+        KExamNoGenerate::SetExamId();
+        const bool savedOk = KExamNoGenerate::GetExamIdIndex() == 1;
+        const std::string id2 = KExamNoGenerate::MakeExamId();
+        const bool nextOk = id2 == (date + "0002").toStdString();
+
+        // 4. Суффикс 'R' — при любом ненулевом ViewType (камерный режим).
+        KSystemStatus::GetInstance().SetViewType(1);
+        const bool rOk = KExamNoGenerate::MakeExamId() == (date + "0002R").toStdString();
+        KSystemStatus::GetInstance().SetViewType(7);          // реф. — cbnz, не «==1»
+        const bool rAnyOk = KExamNoGenerate::MakeExamId() == (date + "0002R").toStdString();
+        KSystemStatus::GetInstance().SetViewType(0);
+
+        // 5. Переполнение: реф. берёт ОСТАТОК от 9999, а не сбрасывает в 1.
+        KExamNoGenerate::SetExamId(9999);
+        const bool wrapOk = KExamNoGenerate::MakeExamId() == (date + "0001").toStdString();
+        KExamNoGenerate::SetExamId(19997);   // +1 = 19998; 19998 % 9999 == 0
+        const bool wrapZeroOk = KExamNoGenerate::MakeExamId() == (date + "0000").toStdString();
+
+        // 6. SetExamId(<0) → 0; формат файла — KConfig.
+        KExamNoGenerate::SetExamId(-5);
+        const bool negOk = KExamNoGenerate::GetExamIdIndex() == 0;
+        QFile f(ini);
+        f.open(QIODevice::ReadOnly);
+        const QString text = QString::fromUtf8(f.readAll());
+        f.close();
+        const bool fileOk = text.contains("[ExamId]") && text.contains("ExamIdIndex=0");
+
+        // 7. IsValidExamId — заглушка `return true` (аргумент не читается).
+        const bool validOk = KExamNoGenerate::IsValidExamId("что угодно")
+            && KExamNoGenerate::IsValidExamId("");
+
+        qInfo() << "init:" << initOk << "формат:" << fmtOk << id1.c_str()
+                << "| не пишет на диск:" << notSavedOk << "повтор тот же:" << sameOk;
+        qInfo() << "коммит:" << savedOk << "следующий:" << nextOk << "| суффикс R:" << rOk
+                << "любой ViewType:" << rAnyOk;
+        qInfo() << "остаток 9999:" << wrapOk << "остаток 0:" << wrapZeroOk
+                << "| отриц.→0:" << negOk << "файл:" << fileOk << "| IsValid:" << validOk;
+
+        const bool ok = initOk && fmtOk && notSavedOk && sameOk && savedOk && nextOk && rOk
+            && rAnyOk && wrapOk && wrapZeroOk && negOk && fileOk && validOk;
+        qInfo() << (ok ? "examno: PASS" : "examno: FAIL");
+        return ok ? 0 : 34;
     }
 
     // Self-test строковых утилит (KMeaStringUtil) — закрепляет НЕинтуитивную

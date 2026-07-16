@@ -109,13 +109,14 @@ ENDO_ROOT=<tmp> ui_preview listsetup                  # self-test конфиго
 ENDO_ROOT=$ER ui_preview meaxml                       # self-test фундамента XML (KMeaXMLBase+KEnvConfig на реальном Template(NP-1x4).xml)
 ENDO_ROOT=$ER ui_preview templatecfg                  # self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate, 5 файлов)
 ui_preview strutil                                    # self-test строковых утилит (KMeaStringUtil: split/trim/конверсии — неинтуитивная семантика)
+ENDO_ROOT=<tmp> ui_preview examno                     # self-test генератора номеров осмотра (KExamNoGenerate — пишет файл, брать tmp-root!)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 48  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 49  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -459,14 +460,33 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **48 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **49 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 52 класса / 563 метода (8.8%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 53 класса / 568 методов (8.8%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KMeaStringUtil`** (`app/src/report/`, self-test `strutil`) —
+**ПОСЛЕДНЕЕ (эта сессия): `KExamNoGenerate`** (`app/src/db/`, self-test `examno`) —
+генератор номеров осмотра. НЕ синглтон и не объект: sizeof==1, ctor пустой, все методы
+static, состояние — два static-поля (shared_ptr<KConfig> + int index) в .bss.
+Файл `<data>/protected/ExamListId.ini`, персист — **наш KConfig** (не QSettings):
+`[ExamId] ExamIdIndex=<int>`. Схема номера: `<yyyyMMdd><NNNN>` + суффикс **'R' при ЛЮБОМ
+ненулевом ViewType** (реф. cbnz, не «==1»; 1=камера, 0=эндоскоп; обратная функция реф. —
+GetViewTypeByExamId: последний символ 'R'). ВАЖНО: `MakeExamId` инкрементит только В ПАМЯТИ
+и на диск НЕ пишет — коммитит `SetExamId()` (отсюда пара CreateTemporaryExamId→TakeEffectExamId
+у KExamBussinessHandler). Переполнение: `idx>9999 → idx%%9999` — это ОСТАТОК, а не сброс в 1
+(10000→1, но 19998→**0000**); закреплено self-test'ом. GetExamIdIndex дефолт **0**, не 1,
+и кэша не имеет (читает файл каждый раз). SetExamId(idx<0)→0. IsValidExamId — заглушка
+`return true` (аргумент не читается; MIN/MAX_DATE_RANGE в TU есть, но ни на что не ссылаются).
+ОТЛОЖЕН: **KExamBussinessHandler** (21 метод, CORE, НЕ UI) — висит на нереализованных
+KExamNoGenerate(теперь есть)/KPatientMngExamStatus/KExamListDBTableHandler/KExamDataFileNameGenerator
++ структуры KPatientEntry(0x1b0)/KExamEntry(0x3c8)/MainUiPatientInfo(0x128), у которых
+ИМЕНА ПОЛЕЙ из бинарника не восстановимы (известны только смещения) → 1:1 сейчас = фантазия.
+Часть методов тянет железо: FinishSaveDataAction (KEndoScope/KCamera/DicomStore),
+GetSaveDataPath (KUsbDevice). Схему `endodata/` строит НЕ он, а `KSaveFile::CreateFilePath`
+(литерал "endodata/" в бинарнике ровно один, там); направление вызовов KSaveFile→Handler.
+РАНЕЕ (эта сессия): `KMeaStringUtil`** (`app/src/report/`, self-test `strutil`) —
 строковые утилиты, на которых сидит отчётная ветка (report_template::ConvertStringToMap,
 KTextBlock::FontSize, KImageBlock::Url, KTableBlock::Margin…). Класс ПУСТОЙ и без состояния,
 но методы НЕ static (реф. ctor/dtor = голый ret) — потребители делают `KMeaStringUtil u;`.
@@ -536,12 +556,13 @@ GetUsrDir=ProjectUserPresetPath (userpreset) — оба без кэша (реф.
 ProjectUserPresetPath; **AppPath был неверен** — реф. AppPath = DataPath+"app/", а не корень
 прошивки (вызывающих не было, поправлено); UserPresetPath оставлен синонимом
 ProjectUserPresetPath (на него завязаны вызывающие).
-НАЙДЕНО, НО НЕ СДЕЛАНО (важно для следующей сессии): наш `KReportTemplate` парсит НЕ ТОТ
-источник — заводские «кирпичи» ReportTemplateNP-*.xml + SubContent/, тогда как реф.
-KTemplateCfg грузит склеенный FullTemplate/Template(NP-*).xml (5 файлов на диске). Схема
-одна и та же (root/TemplateConfig/Content/ItemConfig), но ветки разные: FullTemplate —
-сохраняемый/редактируемый результат, SubContent — заводские блоки. Требуется сверка/
-рефактор, иначе будут два расходящихся парсера одной схемы.
+ПРО ДВЕ ВЕТКИ ШАБЛОНОВ (уточнено реверсом KTemplateLibCfg — РАСХОЖДЕНИЯ НЕТ, отбой
+прошлой тревоге): в оригинале ОБЕ ветки существуют и разведены по классам —
+`KTemplateCfg` → `FullTemplate/Template(NP-*).xml` (склеенный результат, 5 файлов),
+`KTemplateLibCfg` → `SubContentList.xml`/`TemplateTypes.xml`/`ReportTemplateNP-*.xml`
++ `SubContent/*.xml` (11 заводских «кирпичей») — это ровно то, что читает наш
+`KReportTemplate`. Пересечение только через static `KTemplateCfg::ParseTemplateFile`.
+Рефактор НЕ нужен; при реализации KTemplateLibCfg — свести с нашим KReportTemplate.
 РАНЕЕ (эта сессия): INI-движок ядра `KConfig` + два фасада над ним.**
 `app/src/kernel/KConfig.h/.cpp` (реф. architecture/src/kernel/ini/KConfig.cpp) — self-test
 `kconfig`. ПОЧЕМУ ОТДЕЛЬНЫЙ ДВИЖОК, А НЕ QSettings (важно!): реф. сериализует bool как
