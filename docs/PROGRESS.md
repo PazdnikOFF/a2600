@@ -107,13 +107,14 @@ ENDO_ROOT=<tmp> ui_preview dcmconf                    # self-test конфига
 ui_preview kconfig                                    # self-test INI-движка ядра (KConfig: формат True/False, '#'-комменты, парсинг)
 ENDO_ROOT=<tmp> ui_preview listsetup                  # self-test конфигов списков пациентов/worklist (пишет файлы, брать tmp-root!)
 ENDO_ROOT=$ER ui_preview meaxml                       # self-test фундамента XML (KMeaXMLBase+KEnvConfig на реальном Template(NP-1x4).xml)
+ENDO_ROOT=$ER ui_preview templatecfg                  # self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate, 5 файлов)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 46  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 47  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -457,14 +458,39 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **46 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **47 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 48 классов / 507 методов (7.9%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 51 класс / 541 метод (8.4%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): фундамент XML-подсистемы — `KMeaXMLBase` + `KEnvConfig`.**
+**ПОСЛЕДНЕЕ (эта сессия): структуры данных отчёта + KTemplateCfg.**
+`app/src/report/KReportTemplateData.h` — центральные структуры (их не было вовсе; на них
+завязаны KTemplateCfg/KTemplateLibCfg/KTextBlock/KImageBlock/KTableBlock/report_template::*):
+`KReportTemplateItem` (0xF8: m_strID=parentPath+"/"+Name, Name/Title/Type/DataSrc/Column/
+ShowTitle + список детей — рекурсия <Content>), `KReportTemplateItemConfig` (0x58),
+`KReportTemplateDataNew` (m_mapConfigs/m_lstItems/m_mapItemConfigs).
+КЛЮЧЕВОЕ (иначе фантазия): ВСЕ поля Item — СТРОКИ (реф. as_string("")), отсутствующий
+атрибут = "" (не 0/false); Column/ShowTitle тоже строки — в числа их конвертируют
+потребители. `KReportTemplateItemConfig` НЕ раскладывает Section/AlignH/FontType/
+ColumnRatio/SplitLine* по типизированным полям — кладёт ВСЕ атрибуты as-is в
+map<string,string> (включая сам Name); "25,50,25" остаётся строкой, split делают
+потребители. Единственное типизированное поле — m_bUserDefine (== "1"). Единственный
+дефолт парсера: пустой ShowTitle + Type=="RT_TITLE_TABLE_BLOCK" → "1".
+Type/DataSrc — строки, НЕ enum (сравниваются с report_template::STR_*).
+`app/src/report/KTemplateCfg` (наследник KMeaXMLBase, НЕ синглтон): Check (задаёт каталоги;
+**аргументы игнорирует** — сверено дизасмом), LoadCache (заглушка return 1), GetTemplateFileName
+("Template(<name>).xml"), GetTemplateFiles (entryList+regexp), GetLib/UserTemplateFiles,
+GetTemplateCfg (кэш по ИМЕНИ ФАЙЛА → промах: сначала user-ветка, фолбэк на RO),
+GetSubTemplateData (только кэш), Update/DeleteTemplateCfg, Parse/SaveTemplateFile +
+Parse/Save{Config,Content,ItemConfig}. Каталоги (оба литерала с завершающим '/'):
+RO = GetReadOnlyBaseDir()+"mainapp/patient/report/template/FullTemplate/",
+user = GetUsrDir()+"patient/report/template/FullTemplate/" — асимметрия "mainapp/" НЕ опечатка.
+Реф. держит ТРИ map-кэша (+0x70/+0xa0/+0xd0); доказан только +0xa0 (его читает GetTemplateCfg) —
+роли двух других не восстановлены, НЕ воспроизводим. Self-test `templatecfg` на 5 реальных
+файлах (Content=59 узлов, TemplateConfig=10, ItemConfig=34 — сверено независимым разбором).
+РАНЕЕ (эта сессия): фундамент XML-подсистемы — `KMeaXMLBase` + `KEnvConfig`.**
 `app/src/report/KMeaXMLBase.h/.cpp` (реф. dialog/patient/reporttemplate/pugi/) — база ВСЕХ
 XML-конфигов: static LoadXMLFile/ParseXML/IsFileExist/ReplaceUserByLib, чисто виртуальные
 Check/LoadCache (контракт наследника; база их НЕ диспетчирует — зовёт владелец,

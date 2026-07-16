@@ -31,10 +31,12 @@
 #include "dicom/KSysDICOMData.h"
 #include "kernel/KConfig.h"
 #include "report/KMeaXMLBase.h"
+#include "report/KTemplateCfg.h"
 #include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
 #include "db/KWorklistConfigSetupHandler.h"
 #include <QJsonArray>
+#include <functional>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include "report/KReportTemplate.h"
@@ -1561,6 +1563,106 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test загрузчика шаблонов отчёта (KTemplateCfg, ветка FullTemplate).
+    if (screen == "templatecfg") {
+        KTemplateCfg cfg;
+        cfg.Check("", "");            // задаёт каталоги RO/user
+        cfg.LoadCache();              // реф. — заглушка
+
+        // 1. Каталог RO-ветки: 5 реальных шаблонов прошивки.
+        std::vector<std::string> libs = cfg.GetLibTemplateFiles();
+        std::sort(libs.begin(), libs.end());
+        const bool filesOk = libs.size() == 5 && libs[0] == "NP-1x4" && libs[1] == "NP-2x2"
+            && libs[2] == "NP-2x3" && libs[3] == "NP-4x1" && libs[4] == "NP-nx3";
+        const bool nameOk = KTemplateCfg::GetTemplateFileName("NP-1x4") == "Template(NP-1x4).xml";
+
+        // 2. Разбор реального Template(NP-1x4).xml: user-ветки нет → фолбэк на RO.
+        KReportTemplateDataNew data;
+        const int ret = cfg.GetTemplateCfg("NP-1x4", data);
+        const bool cfgOk = data.m_mapConfigs.size() == 10
+            && data.m_mapConfigs["CalcApp"] == "NP-1x4"
+            && data.m_mapConfigs["ReportName"] == "NP-1x4 Report"
+            && data.m_mapConfigs["FontSize"] == "16";
+
+        // Дерево Content: рекурсия + путь m_strID = parentPath + "/" + Name.
+        const KReportTemplateItem &head = data.m_lstItems.front();
+        const bool treeOk = !data.m_lstItems.empty() && head.m_strName == "RT_HEADER"
+            && head.m_strID == "/RT_HEADER" && head.m_strType == "RT_TABLE_BLOCK"
+            && head.m_strColumn == "1" && !head.m_lstSubItems.empty()
+            && head.m_lstSubItems.front().m_strName == "RT_HOSPITAL_TOP"
+            && head.m_lstSubItems.front().m_strID == "/RT_HEADER/RT_HOSPITAL_TOP";
+        // Вложенность 3-го уровня + DataSrc как строка "<источник>,<поле>".
+        const KReportTemplateItem &logo = head.m_lstSubItems.front().m_lstSubItems.front();
+        const bool deepOk = logo.m_strName == "RT_HOSPITAL_LOGO"
+            && logo.m_strType == "RT_IMAGE_BLOCK"
+            && logo.m_strDataSrc == "RT_DATASOURCE_PERIPHERAL,RT_HOSPITAL_LOGO"
+            && logo.m_strID == "/RT_HEADER/RT_HOSPITAL_TOP/RT_HOSPITAL_LOGO"
+            && logo.m_lstSubItems.empty();
+
+        // Все узлы дерева (рекурсивный подсчёт) — сверка с числом <Item> в Content.
+        std::function<int(const std::list<KReportTemplateItem> &)> countTree =
+            [&](const std::list<KReportTemplateItem> &l) {
+                int n = 0;
+                for (const KReportTemplateItem &i : l) { n += 1 + countTree(i.m_lstSubItems); }
+                return n;
+            };
+        // Сверено независимым разбором Template(NP-1x4).xml: <Content> = 6 корневых
+        // Item + вложенные = 59; <TemplateConfig> = 10; <ItemConfig> = 34.
+        const int nodes = countTree(data.m_lstItems);
+        const bool countOk = nodes == 59 && data.m_lstItems.size() == 6
+            && data.m_mapItemConfigs.size() == 34;
+
+        // 3. ItemConfig: атрибуты НЕ типизированы — все лежат строками в generic-map
+        //    (включая сам Name); в одной map и пути, и именованные стили.
+        const KReportTemplateItemConfig &glob = data.m_mapItemConfigs["/"];
+        const bool icfgOk = glob.m_mapAttrs.at("SplitLineType") == "Horizontal"
+            && glob.m_mapAttrs.at("SplitLineWidth") == "2"        // строка, не int
+            && glob.m_mapAttrs.count("Name") == 1                  // Name тоже в map
+            && !glob.m_bUserDefine
+            && data.m_mapItemConfigs["/RT_ADDITION"].m_mapAttrs.at("Section") == "Footer"
+            && data.m_mapItemConfigs.count("FirstTitle") == 1;     // стиль без '/'
+        const KReportTemplateItemConfig &style = data.m_mapItemConfigs["FirstTitle"];
+        const bool styleOk = style.m_mapAttrs.count("Size") == 1 && style.m_strName == "FirstTitle";
+
+        // 4. Кэш: второй запрос идёт из памяти; GetSubTemplateData — только кэш.
+        KReportTemplateDataNew again;
+        const bool cacheOk = cfg.GetTemplateCfg("NP-1x4", again) == 1
+            && again.m_mapConfigs["CalcApp"] == "NP-1x4"
+            && cfg.GetSubTemplateData("NP-1x4", again) == 1
+            && cfg.GetSubTemplateData("NP-2x2", again) != 1;   // не в кэше → не с диска
+
+        // 5. Roundtrip: сохранить в user-ветку и перечитать (в tmp ENDO_ROOT).
+        QTemporaryDir tmp;
+        const std::string out = QDir(tmp.path()).absoluteFilePath("Template(NP-1x4).xml")
+                                    .toStdString();
+        const bool saveOk = KTemplateCfg::SaveTemplateFile(out, data) == 1;
+        KReportTemplateDataNew back;
+        const bool rtOk = KTemplateCfg::ParseTemplateFile(out, back) == 1
+            && back.m_mapConfigs == data.m_mapConfigs
+            && countTree(back.m_lstItems) == nodes
+            && back.m_lstItems.front().m_strID == "/RT_HEADER"
+            && back.m_mapItemConfigs.size() == data.m_mapItemConfigs.size()
+            && back.m_mapItemConfigs["/"].m_mapAttrs == glob.m_mapAttrs;
+
+        // 6. Все 5 шаблонов прошивки разбираются.
+        int parsed = 0;
+        for (const std::string &n : libs) {
+            KReportTemplateDataNew d;
+            if (cfg.GetTemplateCfg(n, d) == 1 && !d.m_lstItems.empty()) ++parsed;
+        }
+
+        qInfo() << "шаблоны:" << libs.size() << "имя файла:" << nameOk << "| GetTemplateCfg:" << ret
+                << "| TemplateConfig:" << cfgOk << "дерево:" << treeOk << "глубина:" << deepOk
+                << "узлов Content:" << nodes << countOk;
+        qInfo() << "ItemConfig:" << icfgOk << "стиль:" << styleOk << "| кэш:" << cacheOk
+                << "| save:" << saveOk << "roundtrip:" << rtOk << "| разобрано 5/5:" << parsed;
+
+        const bool ok = filesOk && nameOk && ret == 1 && cfgOk && treeOk && deepOk && countOk
+            && icfgOk && styleOk && cacheOk && saveOk && rtOk && parsed == 5;
+        qInfo() << (ok ? "templatecfg: PASS" : "templatecfg: FAIL");
+        return ok ? 0 : 32;
     }
 
     // Self-test фундамента XML-подсистемы (KMeaXMLBase + KEnvConfig).
