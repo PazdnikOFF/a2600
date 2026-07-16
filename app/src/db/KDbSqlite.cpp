@@ -185,3 +185,36 @@ int KDbSqlite::InsertRecord(const std::map<std::string, std::string> &fields,
     sqlite3_free(sql);
     return rc;
 }
+
+int KDbSqlite::UpdateRecord(const std::map<std::string, std::string> &fields,
+                            const std::string &table, const std::string &where)
+{
+    // реф. @0x447470: как InsertRecord, но SET-пары "col=%Q" (запятая между, не ведущая).
+    std::set<std::string> cols;
+    int rc = GetFieldNameList(table, cols);
+    if (rc != SQLITE_OK)
+        return rc;
+
+    std::string setClause;
+    for (const auto &kv : fields) {
+        if (cols.find(kv.first) == cols.end())
+            continue;
+        if (!setClause.empty())
+            setClause += ",";
+        setClause += kv.first;
+        setClause += "=";
+        std::vector<char> vbuf(SQL_BUF_SIZE);
+        sqlite3_snprintf(SQL_BUF_SIZE - 1, vbuf.data(), "%Q", kv.second.c_str());
+        setClause += vbuf.data();
+    }
+
+    char *sql = where.empty()
+        ? sqlite3_mprintf("update %s set %s", table.c_str(), setClause.c_str())
+        : sqlite3_mprintf("update %s set %s where %s",
+                          table.c_str(), setClause.c_str(), where.c_str());
+    if (!sql)
+        return -4101;
+    rc = Exec(sql);
+    sqlite3_free(sql);
+    return rc;
+}

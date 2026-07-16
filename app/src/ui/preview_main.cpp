@@ -2300,6 +2300,10 @@ int main(int argc, char **argv)
         std::map<std::string, std::string> rec{{"id", "10"}, {"name", "d'ave"}, {"nocol", "zzz"}};
         const bool insRecOk = s.InsertRecord(rec, "t") == SQLITE_OK   // %Q экранирует апостроф
             && s.InsertRecord(rec, "no_such_table") != SQLITE_OK;     // нет таблицы → GetFieldNameList fail
+        // UpdateRecord: SET col=%Q, с where и без; несущ. таблица → ошибка.
+        const bool updOk = s.UpdateRecord({{"name", "eve"}}, "t", "id=10") == SQLITE_OK
+            && s.UpdateRecord({{"name", "all"}}, "t", "") == SQLITE_OK
+            && s.UpdateRecord({{"name", "x"}}, "no_such_table", "") != SQLITE_OK;
 
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
@@ -2318,10 +2322,11 @@ int main(int argc, char **argv)
         qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
                 << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
         qInfo() << "fieldList:" << fnlOk << cols.size() << "insertRec:" << insRecOk
-                << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
+                << "updateRec:" << updOk << "null:" << nullOk << "notOpenExec:" << notOpenExecOk
+                << "close:" << closeOk;
 
         const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
-            && fnlOk && insRecOk && nullOk && notOpenExecOk && closeOk;
+            && fnlOk && insRecOk && updOk && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }

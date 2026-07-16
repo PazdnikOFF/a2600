@@ -40,6 +40,10 @@ public:
     // колонки (через GetFieldNameList); значения — sqlite3_snprintf("%Q") (SQL-quote);
     // "insert into %s (%s) values(%s)" через sqlite3_mprintf → Exec.
     int InsertRecord(const std::map<std::string, std::string> &fields, const std::string &table);
+    // Обновление (реф. @0x447470): SET из ключей-существующих-колонок ("col=%Q" через
+    // GetFieldNameList+snprintf), "update %s set %s [where %s]" через mprintf→Exec.
+    int UpdateRecord(const std::map<std::string, std::string> &fields, const std::string &table,
+                     const std::string &where);
 
     std::string GetLastErrorMsg() const { return m_strLastError; }   // копия [0x08]
     std::string GetDbPath() const { return m_strDbPath; }            // копия [0x38]

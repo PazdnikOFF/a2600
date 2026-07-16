@@ -484,7 +484,7 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **70 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 79 классов / 784 метода (12.2%)** (report_template 28/36 = 78% — свободные функции
+затронуто 79 классов / 785 методов (12.2%)** (report_template 28/36 = 78% — свободные функции
 namespace по сути закрыты, остаток «36» — Qt-виджет KLineEdit). Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
@@ -513,12 +513,13 @@ null sql→-4102; **GetLastErrorMsg/GetDbPath/SetLogEnabled/FilterLogSql**; **In
 varchar")+**DeleteRecord**("delete from %s [where %s]") — snprintf(буфер 0xa000)+Exec, литералы
 LOWERCASE сверены; **GetFieldNameList**("select * from %s"→prepare_v2→column_name'ы в set);
 **InsertRecord**(в INSERT только ключи-существующие-колонки через GetFieldNameList; значения
-sqlite3_snprintf("%Q"); "insert into %s (%s) values(%s)" через mprintf→Exec). ОПУЩЕНО off-device
-(device-only, помечено): SQLCipher-разблокировка в Open — проба `select count(*) from tb_DcmWorklist`
-без ключа → при ошибке `sqlite3_key(m_pDb,"SONOSCOPE_X2000_KEY",19)`+повтор (plain libsqlite3 без
-sqlite3_key). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): остаток CRUD/query — UpdateRecord(map+where→UPDATE
-@0x447470)/QueryRecords(→vector<map> @0x447be0)/QuerySingleRecord(→map @0x447758)/GetRecordsNumber
-(→int @0x4466c8). IDatabase-база (чистый
+sqlite3_snprintf("%Q"); "insert into %s (%s) values(%s)" через mprintf→Exec); **UpdateRecord**(SET
+"col=%Q" через тот же фильтр колонок; "update %s set %s [where %s]" mprintf→Exec, запятая условная).
+ОПУЩЕНО off-device (device-only, помечено): SQLCipher-разблокировка в Open — проба `select count(*)
+from tb_DcmWorklist` без ключа → при ошибке `sqlite3_key(m_pDb,"SONOSCOPE_X2000_KEY",19)`+повтор
+(plain libsqlite3 без sqlite3_key). НЕ РЕАЛИЗОВАНО (декод-заметки в task-чипе): READ-сторона —
+QueryRecords(→vector<map> @0x447be0)/QuerySingleRecord(→map @0x447758)/GetRecordsNumber(→int
+@0x4466c8) — нужен разбор result-set (sqlite3_get_table/step). IDatabase-база (чистый
 интерфейс) — off-device standalone, методы virtual как в реф.
 
 РАНЕЕ (эта сессия): `XmlParser` (self-test `xmlparser`, `app/src/report/`)** — тонкая
