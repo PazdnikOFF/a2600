@@ -96,6 +96,7 @@ set(SOURCES
     src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
     src/db/KEntityPatient.cpp
+    src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp
@@ -199,6 +200,7 @@ add_executable(ui_preview
     src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
     src/db/KEntityPatient.cpp
+    src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp

@@ -40,6 +40,7 @@
 #include "dicom/KDbStringOperation.h"
 #include "ui/KStopWatch.h"
 #include "db/KEntityPatient.h"
+#include "db/KEntityDoctor.h"
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1576,6 +1577,70 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test сущности/CRUD врача (KEntityDoctor + KDoctorDBTableHandler, tb_Doctor).
+    if (screen == "doctor") {
+        const QString dbPath = "/tmp/endo_doctor.db";
+        QFile::remove(dbPath);
+        KEntityManage &em = KEntityManage::Instance();
+        if (!em.OpenDb(dbPath)) { qWarning() << "OpenDb failed"; return 43; }
+
+        KDoctorDBTableHandler h;
+        const bool createOk = KEntityDoctor().CreateTable();
+
+        auto mk = [](const QString &acc, const QString &cnt, const QString &time) {
+            KDoctorEntry e;
+            e.account = acc; e.passwdLength = "6"; e.count = cnt; e.time = time;
+            e.reserved1 = "r1"; e.reserved2 = "r2";
+            return e;
+        };
+        const bool addOk = h.AddNewEntity(mk("dr_ivanov", "5", "2026-07-10 09:00:00"))
+            && h.AddNewEntity(mk("dr_petrov", "12", "2026-07-16 08:00:00"))
+            && h.AddNewEntity(mk("dr_sidorov", "3", "2026-07-15 10:00:00"));
+
+        const bool countOk = h.GetRecordNumber() == 3;
+
+        // Список аккаунтов; технический id проставлен AUTOINCREMENT.
+        const QList<KDoctorEntry> all = h.GetAllEntities();
+        const bool listOk = all.size() == 3 && !all[0].id.isEmpty();
+        const QList<QString> accts = h.GetAllAccount();
+        const bool acctOk = accts.contains("dr_ivanov") && accts.contains("dr_petrov")
+            && accts.size() == 3;
+
+        // Поиск по account (0/-1).
+        KDoctorEntry byAcc;
+        const bool byAccOk = h.GetEntityByAccount("dr_petrov", byAcc) == 0
+            && byAcc.count == "12"
+            && h.GetEntityByAccount("нет", byAcc) == -1;
+
+        // Недавние: ORDER BY time DESC, count DESC → petrov(16-е) > sidorov(15) > ivanov(10).
+        const QList<QString> recent = h.GetRecentUseAccount();
+        const bool recentOk = recent == QList<QString>{"dr_petrov", "dr_sidorov", "dr_ivanov"};
+        const QList<QString> recent2 = h.GetRecentUseAccount(2);
+        const bool limitOk = recent2 == QList<QString>{"dr_petrov", "dr_sidorov"};
+
+        // GetEntity по id + Update + Delete.
+        const QString id1 = all[0].id;
+        KDoctorEntry got;
+        const bool getOk = h.GetEntity(id1, got) == 0 && got.account == "dr_ivanov"
+            && h.GetEntity("9999", got) == -1;
+        got.count = "99";
+        const bool updOk = h.UpdateEntity(id1, got);
+        KDoctorEntry re; h.GetEntity(id1, re);
+        const bool updChkOk = re.count == "99";
+        const bool delOk = h.DeleteEntity(id1) && h.GetRecordNumber() == 2
+            && h.GetEntity(id1, got) == -1;
+
+        qInfo() << "create:" << createOk << "add:" << addOk << "count:" << countOk
+                << "list:" << listOk << acctOk << "| account:" << byAccOk
+                << "недавние:" << recentOk << "limit:" << limitOk;
+        qInfo() << "get:" << getOk << "update:" << updOk << updChkOk << "delete:" << delOk;
+
+        const bool ok = createOk && addOk && countOk && listOk && acctOk && byAccOk
+            && recentOk && limitOk && getOk && updOk && updChkOk && delOk;
+        qInfo() << (ok ? "doctor: PASS" : "doctor: FAIL");
+        return ok ? 0 : 43;
     }
 
     // Self-test сущности/CRUD пациента (KEntityPatient + KPatientListDBTableHandler).
