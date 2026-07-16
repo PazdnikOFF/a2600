@@ -44,6 +44,7 @@
 #include "db/KDbStrHandler.h"
 #include "sys/KSessionInfo.h"
 #include "sys/KEncSettings.h"
+#include "report/KTextBlock.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1581,6 +1582,68 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test модели текстового блока отчёта (KTextBlock).
+    if (screen == "textblock") {
+        // Собираем шаблон-данные: элемент "/RT_DIAGNOSIS" + его item-config (с TemplateData/
+        // AlignH/LineHeight1/FontType) + именованный стиль "ThirdTitle" (Size/Bold/Italic) +
+        // значение данных в m_mapConfigs.
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["DIAG_KEY"] = "Chronic gastritis";   // значение блока
+
+        KReportTemplateItem item;
+        item.m_strID = "/RT_DIAGNOSIS"; item.m_strName = "RT_DIAGNOSIS";
+        item.m_strTitle = "TR_Diagnosis"; item.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(item);
+
+        KReportTemplateItemConfig cfg;   // конфиг конкретного элемента (ключ = его ID)
+        cfg.m_strName = "/RT_DIAGNOSIS";
+        cfg.m_mapAttrs["TemplateData"] = "DIAG_KEY";
+        cfg.m_mapAttrs["AlignH"]       = "Center";
+        cfg.m_mapAttrs["LineHeight1"]  = "24";
+        cfg.m_mapAttrs["FontType"]     = "ThirdTitle";
+        data.m_mapItemConfigs["/RT_DIAGNOSIS"] = cfg;
+
+        KReportTemplateItemConfig style;   // именованный шрифтовой стиль
+        style.m_strName = "ThirdTitle";
+        style.m_mapAttrs["Size"]   = "18";
+        style.m_mapAttrs["Bold"]   = "1";
+        style.m_mapAttrs["Italic"] = "0";
+        data.m_mapItemConfigs["ThirdTitle"] = style;
+
+        KTextBlock block(&data.m_lstItems.front(), &data);
+
+        const bool idOk = block.ElementId() == "/RT_DIAGNOSIS";
+        const bool dataOk = block.Data() == "Chronic gastritis";
+        // Title: "TR_Diagnosis : " (FormatStr "%s : "); tr() без переводов вернёт ключ.
+        const bool titleOk = block.Title() == "TR_Diagnosis : ";
+        const bool fullOk = block.FullText() == "TR_Diagnosis : Chronic gastritis";
+
+        // Стиль из FontType="ThirdTitle": Size 18, Bold, не Italic.
+        int sz = 0; block.FontSize(sz);
+        const bool styleOk = sz == 18 && block.Bold() && !block.Italic();
+
+        // Выравнивание и высота строки.
+        QFlags<Qt::AlignmentFlag> al;
+        const bool alSet = block.Alignment(al);
+        const bool alignOk = alSet && (al & Qt::AlignHCenter);
+        int lh = 0;
+        const bool lhOk = block.LineHeight(1, lh) && lh == 24 && !block.LineHeight(3, lh);
+
+        // Промах item-config: блок без записи в m_mapItemConfigs → пустой конфиг, Data "".
+        KReportTemplateItem orphan; orphan.m_strID = "/NONE"; orphan.m_strTitle = "";
+        KTextBlock empty(&orphan, &data);
+        const bool orphanOk = empty.Data().empty() && empty.Title().empty();
+
+        qInfo() << "id:" << idOk << "data:" << dataOk << "title:" << block.Title().c_str()
+                << titleOk << "full:" << fullOk;
+        qInfo() << "стиль(size" << sz << "):" << styleOk << "выравн:" << alignOk
+                << "lineheight:" << lhOk << "промах:" << orphanOk;
+
+        const bool ok = idOk && dataOk && titleOk && fullOk && styleOk && alignOk && lhOk && orphanOk;
+        qInfo() << (ok ? "textblock: PASS" : "textblock: FAIL");
+        return ok ? 0 : 47;
     }
 
     // Self-test зашифрованных списков моделей (KEncSettings — bitwise NOT CSV).

@@ -43,4 +43,8 @@ bool MergeSubItem(std::list<KReportTemplateItem> &dst, const std::list<KReportTe
 bool MergeData(KReportTemplateDataNew &dst, const KReportTemplateDataNew &src,
                std::list<std::string> &outIDs);
 
+// Заголовок элемента для показа (реф. QueryTemplateItemRealTitle @0x595688). Точная
+// логика резолва из дизасма не декодирована — принято: возврат m_strTitle элемента.
+std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item);
+
 } // namespace report_template

@@ -93,4 +93,9 @@ bool MergeData(KReportTemplateDataNew &dst, const KReportTemplateDataNew &src,
     return true;
 }
 
+std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item)
+{
+    return item.m_strTitle;   // реф. @0x595688 — точный резолв не декодирован
+}
+
 } // namespace report_template

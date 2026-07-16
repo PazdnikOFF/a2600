@@ -12,8 +12,8 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **69** (14%) |
-| Методов реализовано (совпало по имени) | **714** (11.1%) |
+| Классов затронуто у нас | **70** (14%) |
+| Методов реализовано (совпало по имени) | **718** (11.2%) |
 
 ## 2. По доменам
 
@@ -21,9 +21,9 @@
 |---|---:|---:|---:|---:|---:|
 | **UI** | 167 | 2410 | 46 | 1.9% | 5 |
 | **CORE** | 60 | 1216 | 370 | 30.4% | 22 |
-| **REPORT** | 72 | 752 | 44 | 5.9% | 6 |
+| **REPORT** | 72 | 752 | 47 | 6.2% | 7 |
 | **HW** | 40 | 598 | 4 | 0.7% | 1 |
-| **MISC** | 27 | 543 | 99 | 18.2% | 9 |
+| **MISC** | 27 | 543 | 100 | 18.4% | 9 |
 | **DICOM** | 60 | 423 | 53 | 12.5% | 10 |
 | **DB** | 47 | 352 | 90 | 25.6% | 12 |
 | **UPDATE** | 12 | 137 | 8 | 5.8% | 4 |
@@ -66,7 +66,6 @@
 | `KRTDataSourceReal` | REPORT | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KReportTemplateManager` | REPORT | 11 | `ReportTemplateConfig.xml` | есть заголовок, но свой API — сверить имена |
 | `KRTCreatorContext` | REPORT | 10 | — | не начат |
-| `KTextBlock` | REPORT | 9 | — | не начат |
 | `KImportRules` | DB | 9 | — | не начат |
 | `KReportDBTableHandler` | REPORT | 9 | — | не начат |
 | `KFunTest` | CORE | 9 | `testcaselist.txt` | не начат |
@@ -82,6 +81,7 @@
 | `KQuickInputDoctorDbTableHandler` | DB | 8 | — | не начат |
 | `KQuickInputPatientDbTableHandler` | DB | 8 | — | не начат |
 | `KQuickInputApplicantDbTableHandler` | DB | 8 | — | не начат |
+| `KVersion` | UPDATE | 8 | — | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
@@ -98,7 +98,7 @@
 | `KSystem` | CORE | 51 | 14 | 27% |
 | `KEncStyle` | CORE | 38 | 4 | 11% |
 | `KVideoCal` | UI | 34 | 3 | 9% |
-| `report_template` | MISC | 36 | 6 | 17% |
+| `report_template` | MISC | 36 | 7 | 19% |
 | `KUpdateConf` | UPDATE | 28 | 1 | 4% |
 | `KUserOsdSet` | CORE | 34 | 7 | 21% |
 | `KVideoParam` | CORE | 42 | 16 | 38% |
