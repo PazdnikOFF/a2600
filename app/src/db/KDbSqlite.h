@@ -47,6 +47,10 @@ public:
     // Число записей (реф. @0x4466c8): "select count(*) from %s [where %s]" → sqlite3_get_table →
     // strtol(первая ячейка данных). 0 при ошибке/пусто.
     int GetRecordsNumber(const std::string &table, const std::string &where) const;
+    // Одна запись (реф. @0x447758): "select * from %s [where (%s)] limit 1" → sqlite3_get_table →
+    // out[имя_колонки]=значение первой строки. out не очищается.
+    int QuerySingleRecord(const std::string &table, const std::string &where,
+                          std::map<std::string, std::string> &out);
 
     std::string GetLastErrorMsg() const { return m_strLastError; }   // копия [0x08]
     std::string GetDbPath() const { return m_strDbPath; }            // копия [0x38]

@@ -245,3 +245,40 @@ int KDbSqlite::GetRecordsNumber(const std::string &table, const std::string &whe
     sqlite3_mutex_leave(m_pMutex);
     return result;
 }
+
+int KDbSqlite::QuerySingleRecord(const std::string &table, const std::string &where,
+                                 std::map<std::string, std::string> &out)
+{
+    // реф. @0x447758: select первой строки → map(колонка→значение). out НЕ очищается.
+    std::vector<char> buf(SQL_BUF_SIZE);
+    if (where.empty())
+        snprintf(buf.data(), SQL_BUF_SIZE - 1, "select * from %s limit 1", table.c_str());
+    else
+        snprintf(buf.data(), SQL_BUF_SIZE - 1, "select * from %s where (%s) limit 1",
+                 table.c_str(), where.c_str());
+
+    sqlite3_mutex_enter(m_pMutex);
+    char **az = nullptr;
+    int nrow = 0, ncol = 0;
+    char *errmsg = nullptr;
+    int rc = sqlite3_get_table(m_pDb, buf.data(), &az, &nrow, &ncol, &errmsg);
+    while (rc == SQLITE_BUSY) {            // реф. — второй get_table (ретрай BUSY)
+        sqlite3_sleep(100);
+        if (az) { sqlite3_free_table(az); az = nullptr; }
+        if (errmsg) { sqlite3_free(errmsg); errmsg = nullptr; }
+        rc = sqlite3_get_table(m_pDb, buf.data(), &az, &nrow, &ncol, &errmsg);
+    }
+    if (rc == SQLITE_OK && az && nrow >= 1) {
+        for (int i = 0; i < ncol; ++i) {
+            const char *col = az[i];               // заголовки колонок [0..ncol)
+            const char *val = az[ncol + i];        // первая строка данных [ncol..2*ncol)
+            out[col ? col : ""] = val ? val : "";
+        }
+    }
+    if (az)
+        sqlite3_free_table(az);
+    if (errmsg)
+        sqlite3_free(errmsg);
+    sqlite3_mutex_leave(m_pMutex);
+    return rc;
+}

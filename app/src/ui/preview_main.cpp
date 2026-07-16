@@ -2308,6 +2308,10 @@ int main(int argc, char **argv)
         const bool cntOk = s.GetRecordsNumber("t", "") == 1
             && s.GetRecordsNumber("t", "id=10") == 1
             && s.GetRecordsNumber("t", "id=999") == 0;
+        // QuerySingleRecord: строка id=10 → map колонка→значение (name='all' после update).
+        std::map<std::string, std::string> row;
+        const bool qsrOk = s.QuerySingleRecord("t", "id=10", row) == SQLITE_OK
+            && row["id"] == "10" && row["name"] == "all" && row.count("age");
 
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
@@ -2326,11 +2330,11 @@ int main(int argc, char **argv)
         qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
                 << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
         qInfo() << "fieldList:" << fnlOk << cols.size() << "insertRec:" << insRecOk
-                << "updateRec:" << updOk << "count:" << cntOk;
+                << "updateRec:" << updOk << "count:" << cntOk << "single:" << qsrOk;
         qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
 
         const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
-            && fnlOk && insRecOk && updOk && cntOk && nullOk && notOpenExecOk && closeOk;
+            && fnlOk && insRecOk && updOk && cntOk && qsrOk && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }
