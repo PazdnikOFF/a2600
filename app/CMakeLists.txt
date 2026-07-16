@@ -105,6 +105,9 @@ set(SOURCES
     src/db/KPatientExamData.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
+    src/kernel/KMessage.cpp
+    src/kernel/KObject.cpp
+    src/kernel/KPublishManager.cpp
     src/kernel/KControlINI.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
@@ -217,6 +220,9 @@ add_executable(ui_preview
     src/db/KPatientExamData.cpp
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
+    src/kernel/KMessage.cpp
+    src/kernel/KObject.cpp
+    src/kernel/KPublishManager.cpp
     src/kernel/KControlINI.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp

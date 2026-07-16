@@ -51,6 +51,24 @@
 #include "report/KReportTemplateCommonDef.h"
 #include "db/KPatientExamData.h"
 #include <QTemporaryDir>
+#include "kernel/KObject.h"
+#include "kernel/KMessage.h"
+#include "kernel/KPublishManager.h"
+
+// Тестовый подкласс KObject для self-test kobject: фиксирует доставку обработчиков.
+namespace {
+class KObjTestSink : public KObject
+{
+public:
+    KObjTestSink(int id, KObject *parent) : KObject(id, parent) {}
+    int subCount = 0, lastSub = 0;
+    int msgCount = 0, lastMsg = 0;
+    int reqCount = 0, lastReq = 0;
+    void HandleSubscribeMsg(KMessage &m) override { ++subCount; lastSub = m.m_msgId; }
+    void HandleMsg(KMessage &m) override { ++msgCount; lastMsg = m.m_msgId; m.m_bHandled = true; }
+    void HandleChildRequest(KMessage &m) override { ++reqCount; lastReq = m.m_msgId; }
+};
+} // namespace
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -2125,6 +2143,73 @@ int main(int argc, char **argv)
             && appendOk && vExistOk;
         qInfo() << (ok ? "examdata: PASS" : "examdata: FAIL");
         return ok ? 0 : 52;
+    }
+
+    // Self-test in-process шины сообщений (KObject/KMessage/KPublishManager — синхронная
+    // pub/sub + адресный send + запрос родителю; PostMsg — заглушка).
+    if (screen == "kobject") {
+        KObjTestSink parent(1, nullptr);       // объект id=1, без родителя
+        KObjTestSink child(2, &parent);        // id=2, родитель = parent
+        KObjTestSink subA(3, nullptr);
+        KObjTestSink subB(4, nullptr);
+        KObjTestSink caller(5, nullptr);
+
+        // Реестр: GetKObject по id, GetParentObject.
+        const bool regOk = caller.GetKObject(2) == &child && caller.GetKObject(99) == nullptr
+            && child.GetParentObject() == &parent;
+
+        // Publish (msgId в (9999,13999]) → оба подписчика получают HandleSubscribeMsg.
+        subA.SubscribeMsg(10001);
+        subB.SubscribeMsg(10001);
+        KMessage pm; pm.m_msgId = 10001;
+        caller.PublishMsg(pm);
+        const bool pubOk = subA.subCount == 1 && subB.subCount == 1
+            && subA.lastSub == 10001 && subB.lastSub == 10001;
+
+        // Отписка одного → второй публикации получит только subB.
+        subA.UnSubscribeMsg(10001);
+        KMessage pm2; pm2.m_msgId = 10001;
+        caller.PublishMsg(pm2);
+        const bool unsubOk = subA.subCount == 1 && subB.subCount == 2;
+
+        // Convenience-overload PublishMsg: sender=caller, доставка subB.
+        caller.PublishMsg(10001, 7, 42, "x");
+        const bool pubConvOk = subB.subCount == 3;
+
+        // SendMsg (адресно): target id=2 → child.HandleMsg, возвращает handled=true.
+        const bool sendOk = caller.SendMsg(2, 100, 0, 0, 0, "") && child.msgCount == 1
+            && child.lastMsg == 100;
+        // SendMsg на незарегистрированный id → false, без доставки.
+        const bool sendMissOk = !caller.SendMsg(99, 100, 0, 0, 0, "") && child.msgCount == 1;
+
+        // RequestToParent: child → parent.HandleChildRequest (msgId в (19999,23999]).
+        KMessage rq; rq.m_msgId = 20001;
+        child.RequestToParent(rq);
+        const bool reqOk = parent.reqCount == 1 && parent.lastReq == 20001;
+
+        // PostMsg — заглушка: ничего не доставляется.
+        const int beforeSub = subB.subCount, beforeMsg = child.msgCount;
+        caller.PostMsg(10001, 0, 0, "");
+        KMessage post; post.m_msgId = 10001;
+        caller.PostMsg(post);
+        const bool postOk = subB.subCount == beforeSub && child.msgCount == beforeMsg;
+
+        // KMessage IsValid/Reset.
+        KMessage empty;
+        KMessage nonEmpty; nonEmpty.m_msgId = 5;
+        KMessage r; r.m_msgId = 5; r.Reset();
+        const bool msgOk = !empty.IsValid() && nonEmpty.IsValid()
+            && !r.IsValid() && r.m_bHandled;   // Reset ставит handled=true
+
+        qInfo() << "reg:" << regOk << "pub:" << pubOk << "unsub:" << unsubOk
+                << "pubConv:" << pubConvOk;
+        qInfo() << "send:" << sendOk << sendMissOk << "req:" << reqOk << "post:" << postOk
+                << "msg:" << msgOk;
+
+        const bool ok = regOk && pubOk && unsubOk && pubConvOk && sendOk && sendMissOk
+            && reqOk && postOk && msgOk;
+        qInfo() << (ok ? "kobject: PASS" : "kobject: FAIL");
+        return ok ? 0 : 53;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).
