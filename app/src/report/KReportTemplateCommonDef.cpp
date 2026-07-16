@@ -1,6 +1,8 @@
 #include "report/KReportTemplateCommonDef.h"
 #include "report/KMeaStringUtil.h"
 
+#include <QObject>
+
 #include <map>
 #include <set>
 #include <vector>
@@ -18,6 +20,9 @@ const char *SEP_KV        = "|";
 // Маркеры IsPatientInfoTitleBold (реф. литералы).
 const char *MARK_PATIENT_INFO = "RT_PATIENT_INFO";
 const char *MARK_HOSPITAL_OTHER = "HOSPITAL_OTHER";
+// AppendCustomedItem (реф. CUSTOMTED_SECTION_TAG / STR_RT_ELEMENT_TITLE_TABLE_BLOCK).
+const char *CUSTOMED_SECTION_TAG = "KW_NEW_SECTION";
+const char *TYPE_TITLE_TABLE = "RT_TITLE_TABLE_BLOCK";
 } // namespace
 
 std::string GenerateIDByPath(const std::vector<std::string> &path, const std::string &sep)
@@ -339,6 +344,102 @@ bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
             continue;                            // дубль с существующим → skip, не прерывая
         parent->m_lstSubItems.push_back(item);   // deep verbatim; names НЕ пополняется
     }
+    return true;
+}
+
+bool GetCustomedSections(const KReportTemplateDataNew &data, std::vector<std::string> &out)
+{
+    out.clear();
+    for (const KReportTemplateItem &item : data.m_lstItems) {   // только верхний уровень
+        const auto it = data.m_mapItemConfigs.find(item.m_strID);
+        if (it != data.m_mapItemConfigs.end() && it->second.m_bUserDefine)
+            out.push_back(item.m_strID);
+    }
+    return true;
+}
+
+bool RenameCustomedItem(KReportTemplateDataNew &data, const std::string &id,
+                        const std::string &newName)
+{
+    KReportTemplateItem *item = FindRefItem(data, id);
+    if (!item)
+        return false;                 // реф. — "not find rename ref item"
+    item->m_strTitle = newName;       // sic: пишет m_strTitle, НЕ m_strName; без миграции ID
+    return true;
+}
+
+bool DeleteCustomedItem(KReportTemplateDataNew &data, const std::string &parentId,
+                        const KReportTemplateItem &item)
+{
+    if (!parentId.empty())            // реф. — только корень (parentId == "")
+        return false;
+
+    bool erased = false;
+    for (auto it = data.m_lstItems.begin(); it != data.m_lstItems.end(); ++it) {
+        if (it->m_strID == item.m_strID) {   // sic: матч по m_strID (в RemoveSubItem — m_strName)
+            data.m_lstItems.erase(it);
+            erased = true;
+            break;
+        }
+    }
+    if (!erased)
+        return false;
+
+    // Чистка конфигов: ключ == id ЛИБО «родитель ключа» СОДЕРЖИТ id (substring-баг сохранён).
+    for (auto c = data.m_mapItemConfigs.begin(); c != data.m_mapItemConfigs.end(); ) {
+        const std::string &key = c->first;
+        const std::string parentOfKey = key.substr(0, key.find_last_of(STR_PATH_SEPARATOR));
+        if (key == item.m_strID || parentOfKey.find(item.m_strID) != std::string::npos)
+            c = data.m_mapItemConfigs.erase(c);
+        else
+            ++c;
+    }
+    return true;
+}
+
+bool AppendCustomedItem(KReportTemplateDataNew &data, const std::string &parentId,
+                        KReportTemplateItem &item)
+{
+    if (!parentId.empty())            // реф. — только корень; иначе "not find parent item"
+        return false;
+
+    // Первое свободное имя KW_NEW_SECTION_<n> среди сиблингов верхнего уровня.
+    std::set<std::string> names;
+    for (const KReportTemplateItem &c : data.m_lstItems)
+        names.insert(c.m_strName);
+
+    KMeaStringUtil util;
+    int n = 1;
+    std::string candidate;
+    for (;;) {
+        candidate = util.FormatStr("%s_%d", CUSTOMED_SECTION_TAG, n);
+        if (!names.count(candidate))
+            break;
+        ++n;
+    }
+
+    // Мутация item на месте.
+    item.m_strName = candidate;
+    // tr — device-only; off-device возвращает исходный тег → title = "KW_NEW_SECTION<n>".
+    item.m_strTitle = util.FormatStr("%s%d",
+        QObject::tr(CUSTOMED_SECTION_TAG).toUtf8().constData(), n);
+    item.m_strID = parentId + STR_PATH_SEPARATOR + item.m_strName;   // безусловный "/"
+    item.m_strType = TYPE_TITLE_TABLE;
+    item.m_strShowTitle.insert(0, "1");   // реф. _M_replace(0,0,"1") — префикс
+    item.m_strColumn.insert(0, "3");
+
+    // Конфиг кастомной секции.
+    KReportTemplateItemConfig cfg;
+    cfg.m_bUserDefine = true;
+    cfg.m_strName = item.m_strID;
+    cfg.m_mapAttrs["UserDefine"]  = "1";
+    cfg.m_mapAttrs["Append"]      = "1";
+    cfg.m_mapAttrs["RefColumn"]   = "3";
+    cfg.m_mapAttrs["FontType"]    = "ThirdTitle";
+    cfg.m_mapAttrs["RefColumnID"] = item.m_strID;
+    data.m_mapItemConfigs.insert({item.m_strID, cfg});   // без перезаписи, если ключ есть
+
+    data.m_lstItems.push_back(item);   // копия в конец
     return true;
 }
 

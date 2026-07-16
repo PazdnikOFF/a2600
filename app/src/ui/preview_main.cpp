@@ -1938,6 +1938,55 @@ int main(int argc, char **argv)
             if (c.m_strName == "DUP") ++dupCount;
         const bool appListOk = dupCount == 2;                        // обе DUP добавлены, Y — нет
 
+        // Customed-семейство: корневые кастомные секции.
+        KReportTemplateDataNew t3;
+        KReportTemplateItem S1; S1.m_strID = "/S1"; S1.m_strName = "S1"; S1.m_strTitle = "Old";
+        KReportTemplateItem S2; S2.m_strID = "/S2"; S2.m_strName = "S2";
+        t3.m_lstItems.push_back(S1); t3.m_lstItems.push_back(S2);
+        KReportTemplateItemConfig cS1; cS1.m_bUserDefine = true;   // S1 — кастомная
+        t3.m_mapItemConfigs["/S1"] = cS1;
+        t3.m_mapItemConfigs["/S2"] = KReportTemplateItemConfig();  // S2 — обычная
+        t3.m_mapItemConfigs["/S1/child"] = KReportTemplateItemConfig();   // потомок S1
+
+        // GetCustomedSections: только m_bUserDefine=true, верхний уровень.
+        std::vector<std::string> secs; secs.push_back("STALE");   // проверим clear
+        GetCustomedSections(t3, secs);
+        const bool secOk = secs.size() == 1 && secs[0] == "/S1";
+
+        // RenameCustomedItem: пишет m_strTitle.
+        const bool renOk = RenameCustomedItem(t3, "/S1", "NewTitle")
+            && FindConstRefItem(t3, "/S1")->m_strTitle == "NewTitle"
+            && FindConstRefItem(t3, "/S1")->m_strName == "S1"          // m_strName не тронут
+            && !RenameCustomedItem(t3, "/nope", "X");                  // miss → false
+
+        // DeleteCustomedItem: только корень, матч по m_strID, чистка потомков-конфигов.
+        const bool delGuardOk = !DeleteCustomedItem(t3, "/notroot", S1);   // parentId!="" → false
+        const bool delOk = DeleteCustomedItem(t3, "", S1)             // удалить /S1
+            && FindConstRefItem(t3, "/S1") == nullptr
+            && t3.m_mapItemConfigs.count("/S1") == 0                  // собственный конфиг…
+            && t3.m_mapItemConfigs.count("/S1/child") == 0           // …и потомок вычищены
+            && t3.m_mapItemConfigs.count("/S2") == 1;                // S2 не тронут
+
+        // AppendCustomedItem: синтез KW_NEW_SECTION_1 + конфиг, мутация item.
+        KReportTemplateDataNew t4;
+        KReportTemplateItem fresh;
+        const bool appCustGuard = !AppendCustomedItem(t4, "/x", fresh);   // не корень → false
+        const bool appCustOk = AppendCustomedItem(t4, "", fresh)
+            && fresh.m_strName == "KW_NEW_SECTION_1"
+            && fresh.m_strID == "/KW_NEW_SECTION_1"
+            && fresh.m_strType == "RT_TITLE_TABLE_BLOCK"
+            && fresh.m_strShowTitle == "1" && fresh.m_strColumn == "3"
+            && t4.m_lstItems.size() == 1
+            && t4.m_mapItemConfigs.count("/KW_NEW_SECTION_1") == 1
+            && t4.m_mapItemConfigs["/KW_NEW_SECTION_1"].m_bUserDefine
+            && t4.m_mapItemConfigs["/KW_NEW_SECTION_1"].m_mapAttrs["FontType"] == "ThirdTitle";
+        // Второй вызов → KW_NEW_SECTION_2 (первое имя занято).
+        KReportTemplateItem fresh2;
+        AppendCustomedItem(t4, "", fresh2);
+        const bool appCust2Ok = fresh2.m_strName == "KW_NEW_SECTION_2" && t4.m_lstItems.size() == 2;
+        const bool custOk = secOk && renOk && delGuardOk && delOk
+            && appCustGuard && appCustOk && appCust2Ok;
+
         qInfo() << "map→str:" << m2sOk << s.c_str() << "| str→map:" << s2mOk << "мусор:" << badOk
                 << "merge:" << mergeOk;
         qInfo() << "sourceId:" << sidOk << sid.c_str() << "| пустой:" << sidEmptyOk
@@ -1946,10 +1995,13 @@ int main(int argc, char **argv)
                 << "group:" << groupOk;
         qInfo() << "getSub:" << giOk << byIdOk << "remove:" << remOk << remMissOk
                 << "append:" << appOk << appDupOk << "list:" << appListOk;
+        qInfo() << "custom:" << "sections:" << secOk << "rename:" << renOk << "delete:" << delOk
+                << "append:" << appCustOk << appCust2Ok;
 
         const bool ok = m2sOk && s2mOk && badOk && mergeOk && sidOk && sidEmptyOk
             && genOk && boldOk && rtOk && findOk && updOk && subDataOk && groupOk
-            && giOk && byIdOk && remOk && remMissOk && appOk && appDupOk && appListOk;
+            && giOk && byIdOk && remOk && remMissOk && appOk && appDupOk && appListOk
+            && custOk;
         qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
         return ok ? 0 : 51;
     }

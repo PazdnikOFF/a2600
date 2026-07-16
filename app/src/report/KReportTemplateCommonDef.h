@@ -133,4 +133,33 @@ bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
 bool AppendSubItem(KReportTemplateDataNew &data, const std::string &parentId,
                    const std::list<KReportTemplateItem> &items);
 
+// Список ID кастомных секций верхнего уровня (реф. GetCustomedSections @0x5974a0). out
+// ОЧИЩАЕТСЯ. Обходит ТОЛЬКО data.m_lstItems (не рекурсивно); секция кастомная, если
+// m_mapItemConfigs[item.m_strID].m_bUserDefine == true. Пушит item.m_strID. Возврат true.
+bool GetCustomedSections(const KReportTemplateDataNew &data, std::vector<std::string> &out);
+
+// Переименование кастомного элемента (реф. RenameCustomedItem @0x55fc18). item=FindRefItem(id);
+// miss → false. Пишет newName в **m_strTitle** (НЕ m_strName!); БЕЗ пересчёта ID/миграции
+// конфигов. Возврат true при успехе.
+bool RenameCustomedItem(KReportTemplateDataNew &data, const std::string &id,
+                        const std::string &newName);
+
+// Удаление кастомного элемента (реф. DeleteCustomedItem @0x561b58). ТОЛЬКО корень: parentId
+// должен быть "" (иначе false). Ищет ребёнка data.m_lstItems по **m_strID == item.m_strID**
+// (в отличие от RemoveSubItem — по m_strName), erase. Чистка m_mapItemConfigs: ключ равен
+// item.m_strID ЛИБО «родитель ключа» (key без последнего сегмента) СОДЕРЖИТ item.m_strID
+// (реф. substring-баг сохранён: "/S1" зацепит "/S10/..."). Возврат true при удалении.
+bool DeleteCustomedItem(KReportTemplateDataNew &data, const std::string &parentId,
+                        const KReportTemplateItem &item);
+
+// Добавление новой кастомной секции (реф. AppendCustomedItem @0x563168). ТОЛЬКО корень
+// (parentId=="" иначе false). item МУТИРУЕТСЯ на месте: m_strName="KW_NEW_SECTION_<n>" (первое
+// свободное среди сиблингов), m_strTitle=tr("KW_NEW_SECTION")+n (off-device tr=идентичность),
+// m_strID=parentId+"/"+m_strName (безусловный "/"), m_strType="RT_TITLE_TABLE_BLOCK",
+// m_strShowTitle→"1", m_strColumn→"3"; в m_mapItemConfigs[id] кладётся конфиг {UserDefine=1,
+// Append=1, RefColumn=3, FontType=ThirdTitle, RefColumnID=id, m_bUserDefine=true}; копия item
+// в конец m_lstItems. (Реф. возврат неопределён — возвращаем bool по смыслу.)
+bool AppendCustomedItem(KReportTemplateDataNew &data, const std::string &parentId,
+                        KReportTemplateItem &item);
+
 } // namespace report_template
