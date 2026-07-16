@@ -106,6 +106,7 @@ set(SOURCES
     src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KTemplateLibCfg.cpp
+    src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
@@ -205,6 +206,7 @@ add_executable(ui_preview
     src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KTemplateLibCfg.cpp
+    src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp

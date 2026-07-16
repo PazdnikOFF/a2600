@@ -35,6 +35,7 @@
 #include "db/KExamNoGenerate.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
+#include "report/KTemplateParamCfg.h"
 #include "report/KReportTemplateCommonDef.h"
 #include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
@@ -1567,6 +1568,78 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test параметров шаблона (KTemplateParamCfg — 3-й наследник KMeaXMLBase).
+    // В прошивке класс МЁРТВЫЙ (нет xref и нет ReportTemplateParam.xml) → фикстура своя.
+    if (screen == "templateparam") {
+        QTemporaryDir tmp;
+        const QString base = tmp.path() + "/";
+        const QString dir  = base + "report/ReportTemplate";
+        QDir().mkpath(dir);
+        const QString file = dir + "/ReportTemplateParam.xml";
+        {
+            QFile f(file);
+            f.open(QIODevice::WriteOnly);
+            f.write("<root>\n"
+                    "  <Font>\n"
+                    "    <Item Name=\"Size\" Value=\"16\"/>\n"
+                    "    <Item Name=\"Bold\" Value=\"1\"/>\n"
+                    "    <Item Name=\"НетЗначения\" Value=\"\"/>\n"   // Value пуст → пропуск
+                    "    <Item Value=\"безымянный\"/>\n"              // Name пуст → пропуск
+                    "    <Other Name=\"x\" Value=\"y\"/>\n"           // не Item → пропуск
+                    "  </Font>\n"
+                    "  <ЛюбоеИмя>\n"                                   // имя группы произвольно
+                    "    <Item Name=\"k\" Value=\"v\"/>\n"
+                    "  </ЛюбоеИмя>\n"
+                    "  <Пустая>\n"                                     // без валидных Item…
+                    "    <Item Name=\"\" Value=\"\"/>\n"
+                    "  </Пустая>\n"                                    // …→ группа отбрасывается
+                    "</root>\n");
+            f.close();
+        }
+
+        KTemplateParamCfg cfg;
+        // ОТЛИЧИЕ от сиблингов: arg1 реально используется как базовый каталог.
+        cfg.Check(base.toStdString(), "игнорируется");
+        const bool pathOk = QString::fromStdString(cfg.ParamFile())
+                                .contains("report/ReportTemplate")
+            && QString::fromStdString(cfg.ParamFile()).endsWith("ReportTemplateParam.xml");
+
+        const int lc = cfg.LoadCache();
+        const auto &p = cfg.Params();
+        const bool loadOk = lc == 1 && p.size() == 2          // «Пустая» отброшена
+            && p.count("Font") == 1 && p.count("ЛюбоеИмя") == 1
+            && p.count("Пустая") == 0
+            && p.at("Font").size() == 2;                       // пропущены Item без Name/Value
+
+        std::string v;
+        const bool getOk = cfg.GetTemplateParam("Font", "Size", v) == 1 && v == "16"
+            && cfg.GetTemplateParam("ЛюбоеИмя", "k", v) == 1 && v == "v";
+        // Промах: честный 0, out НЕ трогается (в отличие от KTemplateLibCfg::GetTemplateLib).
+        std::string keep = "не трогать";
+        const bool missOk = cfg.GetTemplateParam("НетГруппы", "Size", keep) == 0
+            && cfg.GetTemplateParam("Font", "НетКлюча", keep) == 0
+            && keep == "не трогать";
+
+        // Коды: нет файла → -40; XML без корня "root" → 0.
+        std::map<std::string, std::map<std::string, std::string>> m;
+        const int missRet = KTemplateParamCfg::ParseParamFile("/no/such.xml", m);
+        const QString noRoot = QDir(tmp.path()).absoluteFilePath("noroot.xml");
+        { QFile f(noRoot); f.open(QIODevice::WriteOnly); f.write("<other/>"); f.close(); }
+        const int noRootRet = KTemplateParamCfg::ParseParamFile(noRoot.toStdString(), m);
+        const bool retOk = missRet == -40 && noRootRet == 0;
+
+        // GetModuleVersion не переопределён → -1 (наследуется от базы).
+        const bool verOk = cfg.GetModuleVersion() == -1;
+
+        qInfo() << "путь:" << pathOk << "| LoadCache:" << lc << loadOk << "групп:" << p.size()
+                << "| Get:" << getOk << "промах не трогает out:" << missOk
+                << "| коды:" << retOk << "| версия:" << verOk;
+
+        const bool ok = pathOk && loadOk && getOk && missOk && retOk && verOk;
+        qInfo() << (ok ? "templateparam: PASS" : "templateparam: FAIL");
+        return ok ? 0 : 36;
     }
 
     // Self-test библиотеки шаблонов (KTemplateLibCfg + report_template::*).

@@ -111,13 +111,14 @@ ENDO_ROOT=$ER ui_preview templatecfg                  # self-test загрузч
 ui_preview strutil                                    # self-test строковых утилит (KMeaStringUtil: split/trim/конверсии — неинтуитивная семантика)
 ENDO_ROOT=<tmp> ui_preview examno                     # self-test генератора номеров осмотра (KExamNoGenerate — пишет файл, брать tmp-root!)
 ENDO_ROOT=$ER ui_preview templatelib                  # self-test библиотеки шаблонов (KTemplateLibCfg + report_template::Merge*/ID — 11 блоков, 5 групп)
+ui_preview templateparam                              # self-test параметров шаблона (KTemplateParamCfg — в прошивке мёртвый класс, фикстура своя)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 50  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 51  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -461,14 +462,32 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **50 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **51 self-test-режим** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 55 классов / 582 метода (9.0%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 56 классов / 587 методов (9.1%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KTemplateLibCfg` + `report_template::*`** (`app/src/report/`,
+**ПОСЛЕДНЕЕ (эта сессия): `KTemplateParamCfg`** (`app/src/report/`, self-test
+`templateparam`) — 3-й и последний наследник KMeaXMLBase. **СЕМЕЙСТВО KMeaXMLBase ЗАКРЫТО
+ЦЕЛИКОМ: KTemplateCfg ✅, KTemplateLibCfg ✅, KTemplateParamCfg ✅** (наследников больше нет —
+исчерпывающе по xref на typeinfo).
+⚠️ В ПРОШИВКЕ ЭТОТ КЛАСС МЁРТВЫЙ (вестигиальный): ни одного xref (ctor/Check/LoadCache/
+GetTemplateParam не вызываются нигде), InitModule создаёт только два других наследника,
+файла `ReportTemplateParam.xml` и каталога `report/ReportTemplate/` в прошивке НЕТ →
+self-test на своей фикстуре. Реализован для полноты покрытия, на рантайм не влияет.
+Хранит плоский двухуровневый key-value (группа → Name→Value), схема СВОЯ:
+`<root><ЛюбоеИмяГруппы><Item Name Value/></ЛюбоеИмяГруппы></root>` — имя группы
+произвольно (фильтра нет), внутри группы учитываются только элементы `Item`, и лишь если
+ОБА атрибута Name/Value непустые; пустые группы отбрасываются.
+ОТЛИЧИЯ ОТ СИБЛИНГОВ: `Check` РЕАЛЬНО ИСПОЛЬЗУЕТ arg1 как базовый каталог (два других
+игнорируют оба аргумента и берут пути из KEnvConfig; здесь KEnvConfig не вызывается вовсе),
+arg2 игнорируется; `GetTemplateParam` при промахе — честный 0 и out НЕ трогает (в отличие
+от KTemplateLibCfg::GetTemplateLib, отдающего m_data); доп. слотов vtable нет.
+Странность реф. 1:1: STR_REPORT_LIB_DIR уже с '/', но разделитель добавляется ещё раз →
+двойной слэш в пути (Linux нормализует).
+РАНЕЕ (эта сессия): `KTemplateLibCfg` + `report_template::*`** (`app/src/report/`,
 self-test `templatelib`) — ВТОРАЯ ветка шаблонов (заводские «кирпичи»), закрывает
 KMeaXMLBase-семейство (наследники: KTemplateCfg ✅, KTemplateLibCfg ✅, KTemplateParamCfg ⏳).
 `KReportTemplateCommonDef.h/.cpp` — GenerateIDByPath (JOIN), RevertPathByID (SPLIT:
