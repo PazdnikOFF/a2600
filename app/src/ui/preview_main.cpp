@@ -42,6 +42,8 @@
 #include "db/KEntityPatient.h"
 #include "db/KEntityDoctor.h"
 #include "db/KDbStrHandler.h"
+#include "sys/KSessionInfo.h"
+#include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
@@ -1578,6 +1580,49 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test состояния облачной сессии (KSessionInfo — синглтон в памяти).
+    if (screen == "session") {
+        KSessionInfo &s = KSessionInfo::GetInstance();
+
+        // 1. Дефолты: флаги 0, строки пусты.
+        const bool defOk = s.GetManuLoginFlag() == 0 && s.GetServiceLoginFlag() == 0
+            && s.GetManuUid().isEmpty() && s.GetServiceAccessToken().isEmpty();
+
+        // 2. Manu-логин: сеттеры → геттеры.
+        s.SetManuUid("u123"); s.SetManuUserName("platform_user");
+        s.SetManuAccessToken("tok_manu"); s.SetManuLoginFlag(1);
+        const bool manuOk = s.GetManuUid() == "u123" && s.GetManuUserName() == "platform_user"
+            && s.GetManuAccessToken() == "tok_manu" && s.GetManuLoginFlag() == 1;
+
+        // 3. Service-канал независим от Manu.
+        s.SetServiceUid("svc9"); s.SetServiceUserName("engineer");
+        s.SetServiceAccessToken("tok_svc"); s.SetServiceLoginFlag(1);
+        const bool svcOk = s.GetServiceUid() == "svc9" && s.GetServiceUserName() == "engineer"
+            && s.GetServiceAccessToken() == "tok_svc" && s.GetServiceLoginFlag() == 1
+            && s.GetManuUid() == "u123";   // Manu не затронут
+
+        // 4. Синглтон: другой GetInstance() видит то же состояние.
+        const bool singletonOk = &KSessionInfo::GetInstance() == &s
+            && KSessionInfo::GetInstance().GetManuAccessToken() == "tok_manu";
+
+        // 5. getManager() — единый NAM, не null, стабильный.
+        QNetworkAccessManager *m1 = s.getManager();
+        QNetworkAccessManager *m2 = s.getManager();
+        const bool mgrOk = m1 != nullptr && m1 == m2;
+
+        // 6. Логаут: флаги → 0 (строки реф. не чистит).
+        s.SetManuLoginFlag(0); s.SetServiceLoginFlag(0);
+        const bool logoutOk = s.GetManuLoginFlag() == 0 && s.GetServiceLoginFlag() == 0
+            && s.GetManuUid() == "u123";   // uid остаётся
+
+        qInfo() << "дефолты:" << defOk << "manu:" << manuOk << "service:" << svcOk
+                << "синглтон:" << singletonOk << "NAM:" << mgrOk << "логаут:" << logoutOk;
+
+        const bool ok = defOk && manuOk && svcOk && singletonOk && mgrOk && logoutOk;
+        qInfo() << (ok ? "session: PASS" : "session: FAIL");
+        return ok ? 0 : 45;
     }
 
     // Self-test построителя SQL-условий (KDbStrHandler) + факта SQLCipher-ключа.

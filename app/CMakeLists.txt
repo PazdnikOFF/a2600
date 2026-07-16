@@ -71,6 +71,7 @@ set(SOURCES
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
     src/sys/KManuPwdMng.cpp
+    src/sys/KSessionInfo.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
@@ -176,6 +177,7 @@ add_executable(ui_preview
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
     src/sys/KManuPwdMng.cpp
+    src/sys/KSessionInfo.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
@@ -242,7 +244,7 @@ add_executable(ui_preview
     src/video/KVideoProxy.cpp   # off-device-логика (gst-тракт спрятан за HAVE_GST)
 )
 target_include_directories(ui_preview PRIVATE src)
-target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml)
+target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml Qt5::Network)
 # iconv: на macOS отдельная libiconv, на Xilinx-target — в glibc (линкуется через libc).
 find_library(ICONV_LIB NAMES iconv)
 if(ICONV_LIB)

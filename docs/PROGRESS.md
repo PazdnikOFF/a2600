@@ -120,13 +120,14 @@ ui_preview stopwatch                                  # self-test экранно
 ui_preview patient                                    # self-test сущности/CRUD пациента (KEntityPatient+KPatientListDBTableHandler, tb_PatientList)
 ui_preview doctor                                     # self-test сущности/CRUD врача (KEntityDoctor+KDoctorDBTableHandler, tb_Doctor + недавние по time/count)
 ui_preview dbstr                                      # self-test построителя SQL-условий (KDbStrHandler) + факт SQLCipher-ключа
+ui_preview session                                    # self-test состояния облачной сессии (KSessionInfo: Manu/Service каналы + NAM)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 59  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 60  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -470,14 +471,21 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **59 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **60 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 67 классов / 696 методов (10.8%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 68 классов / 706 методов (11.0%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KDbStrHandler` + SQLCipher-ключ.** `app/src/db/KDbStrHandler`
+**ПОСЛЕДНЕЕ (эта сессия): `KSessionInfo`** (`app/src/sys/`, self-test `session`) — синглтон
+состояния облачной login-сессии SonoScape В ПАМЯТИ (персиста нет, обнуляется при рестарте).
+НЕ UI/device/БД. Два независимых канала: Manu (производитель, KPUserLoginDlg::Login) и
+Service (сервис-инженер, KScopeInfoEdit/KCameraInfoEdit::ServiceUserLogin), каждый —
+Uid/UserName/AccessToken(bearer)/LoginFlag; + единый QNetworkAccessManager (getManager).
+Класс пассивный: логин/таймаут — в диалогах-потребителях (аплоад авторизации эндоскопа/
+камеры/аппарата в облако). Токенов времени/expiry НЕТ. Потребовал линк Qt5::Network в
+ui_preview (уже был в find_package). РАНЕЕ (эта сессия): `KDbStrHandler` + SQLCipher-ключ.** `app/src/db/KDbStrHandler`
 (self-test `dbstr`) — построитель SQL-условий генерик-слоя реф.: SqliteReplace,
 SqliteCharsEscape (' → ''), BuildSimpleCondition ("field op 'value'", порядок (field,value,op),
 value СЫРОЙ без escape — особенность реф.!), BuildAndCondition "(a) and (b)",
