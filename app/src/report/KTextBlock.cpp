@@ -77,7 +77,8 @@ std::string KTextBlock::Title() const
 {
     if (!m_pTemplateItem)
         return std::string();
-    const std::string raw = report_template::QueryTemplateItemRealTitle(*m_pTemplateItem);
+    std::string raw;
+    report_template::QueryTemplateItemRealTitle(*m_pTemplateItem, raw);
     const std::string t = QObject::tr(raw.c_str()).toUtf8().constData();
     // Реф.: если заголовок непуст и не совпадает с Data → "title : ".
     if (t.empty() || t == Data())

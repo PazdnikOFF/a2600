@@ -1,10 +1,23 @@
 #include "report/KReportTemplateCommonDef.h"
+#include "report/KMeaStringUtil.h"
 
 #include <map>
+#include <vector>
 
 namespace report_template {
 
 const std::string STR_PATH_SEPARATOR = "/";
+
+namespace {
+// Форматы сериализации (реф. .bss-глобалы, собираются конкатенацией в static-init).
+const char *FMT_ATTR      = "%s|%s;";   // STR_ATTR_FORMAT — пара key|value;
+const char *FMT_SOURCE_ID = "%s,%s";    // STR_SOURCE_ID_FORMAT — src,mapString
+const char *SEP_PAIR      = ";";
+const char *SEP_KV        = "|";
+// Маркеры IsPatientInfoTitleBold (реф. литералы).
+const char *MARK_PATIENT_INFO = "RT_PATIENT_INFO";
+const char *MARK_HOSPITAL_OTHER = "HOSPITAL_OTHER";
+} // namespace
 
 std::string GenerateIDByPath(const std::vector<std::string> &path, const std::string &sep)
 {
@@ -93,16 +106,66 @@ bool MergeData(KReportTemplateDataNew &dst, const KReportTemplateDataNew &src,
     return true;
 }
 
-std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item)
+std::string ConvertMapToString(const std::map<std::string, std::string> &m)
 {
-    return item.m_strTitle;   // реф. @0x595688 — точный резолв не декодирован
+    std::string result;   // стартует пустой
+    KMeaStringUtil util;
+    for (const auto &kv : m) {
+        if (kv.first.empty())      // реф.: пары с пустым КЛЮЧОМ пропускаются
+            continue;
+        result += util.FormatStr(FMT_ATTR, kv.first.c_str(), kv.second.c_str());
+    }
+    return result;   // "key1|value1;key2|value2;" — завершающий ';' всегда
 }
 
-std::string ConvertToSourceID(const std::string &src,
-                              const std::map<std::string, std::string> &param)
+void ConvertStringToMap(const std::string &s, std::map<std::string, std::string> &out)
 {
-    (void)param;   // реф. @0x5954b0 — тело не декодировано; off-device: src без ремапа
-    return src;
+    // out НЕ очищается (merge). Split(";") → пары, Split("|") → key/value.
+    KMeaStringUtil util;
+    for (const std::string &pair : util.SplitStr(s, SEP_PAIR)) {
+        if (pair.empty())
+            continue;
+        const std::vector<std::string> kv = util.SplitStr(pair, SEP_KV);
+        // реф.: РОВНО 2 токена И непустое значение.
+        if (kv.size() == 2 && !kv[1].empty())
+            out[kv[0]] = kv[1];
+    }
+}
+
+bool QueryTemplateItemRealTitle(const KReportTemplateItem &item, std::string &out)
+{
+    // реф. @0x595688: out ← m_strTitle (дефолт). Динамический резолв для 4 маркеров
+    // m_strName (RT_RESERVED1/2, RT_CUSTOM_FIELD1/2_TITLE) идёт через device-only
+    // конфиги (KPatientListConfigSetupHandler / KReportEditUIConfig) — off-device не
+    // воспроизводим, потому всегда падаем в дефолт и возвращаем false.
+    out = item.m_strTitle;
+    return false;
+}
+
+bool ConvertToSourceID(const std::string &src,
+                       const std::map<std::string, std::string> &param, std::string &out)
+{
+    // реф. @0x5954b0: out = src + "," + ConvertMapToString(param). Завершающая ',' всегда.
+    const std::string mapStr = ConvertMapToString(param);
+    KMeaStringUtil util;
+    out = util.FormatStr(FMT_SOURCE_ID, src.c_str(), mapStr.c_str());
+    return true;
+}
+
+std::string GenerateIDByString(const std::string &a, const std::string &b,
+                               const std::string &sep)
+{
+    if (a.empty() || b.empty())
+        return a + b;         // реф.: без sep, если любой конец пуст
+    return a + sep + b;
+}
+
+bool IsPatientInfoTitleBold(const KReportTemplateItem &item)
+{
+    // реф. @0x5955e8: substring-поиск двух маркеров в m_strID.
+    const std::string &id = item.m_strID;
+    return id.find(MARK_PATIENT_INFO) != std::string::npos
+        || id.find(MARK_HOSPITAL_OTHER) != std::string::npos;
 }
 
 } // namespace report_template

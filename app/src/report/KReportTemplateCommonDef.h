@@ -44,14 +44,38 @@ bool MergeSubItem(std::list<KReportTemplateItem> &dst, const std::list<KReportTe
 bool MergeData(KReportTemplateDataNew &dst, const KReportTemplateDataNew &src,
                std::list<std::string> &outIDs);
 
-// Заголовок элемента для показа (реф. QueryTemplateItemRealTitle @0x595688). Точная
-// логика резолва из дизасма не декодирована — принято: возврат m_strTitle элемента.
-std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item);
+// Сериализация map атрибутов в строку (реф. ConvertMapToString @0x595398). Формат
+// "%s|%s;" на пару → "key1|value1;key2|value2;" (ЗАВЕРШАЮЩИЙ ';' всегда). Ключи с
+// пустой строкой ПРОПУСКАЮТСЯ; порядок — сортировка std::map по ключу.
+std::string ConvertMapToString(const std::map<std::string, std::string> &m);
 
-// Ремап source-id по параметрам блока (реф. ConvertToSourceID @0x5954b0). Тело из
-// дизасма не декодировано — off-device-заглушка: возврат src без изменений при пустом
-// param, иначе — как есть (точная логика подстановки не восстановлена).
-std::string ConvertToSourceID(const std::string &src,
-                              const std::map<std::string, std::string> &param);
+// Обратный парсер (реф. ConvertStringToMap @0x597978). Split(";") → пары, каждую
+// Split("|") → ключ/значение; берётся ТОЛЬКО пара из РОВНО 2 токенов с НЕПУСТЫМ
+// значением. out НЕ очищается (merge-семантика). Точный инверс ConvertMapToString
+// (пустые значения при round-trip теряются — как в реф.).
+void ConvertStringToMap(const std::string &s, std::map<std::string, std::string> &out);
+
+// Заголовок элемента для показа (реф. QueryTemplateItemRealTitle @0x595688). out ←
+// m_strTitle (дефолт), return false. Динамические ветки для 4 маркеров m_strName
+// (RT_RESERVED1/2, RT_CUSTOM_FIELD1/2_TITLE) резолвят заголовок через DEVICE-only
+// конфиги (KPatientListConfigSetupHandler/KReportEditUIConfig) — off-device НЕ
+// воспроизводимы, потому для всех элементов возвращаем m_strTitle + false.
+bool QueryTemplateItemRealTitle(const KReportTemplateItem &item, std::string &out);
+
+// Формирование source-id (реф. ConvertToSourceID @0x5954b0). out = src + "," +
+// ConvertMapToString(param) (формат "%s,%s"; ЗАВЕРШАЮЩАЯ ',' всегда, даже при пустом
+// param). Возвращает true. Это НЕ подстановка плейсхолдеров — просто конкатенация
+// src с сериализованной map параметров.
+bool ConvertToSourceID(const std::string &src,
+                       const std::map<std::string, std::string> &param, std::string &out);
+
+// JOIN двух строк через sep (реф. GenerateIDByString @0x595b78). Если a ИЛИ b пусты →
+// a+b (без sep); иначе a+sep+b. Соответствует m_strID = parentPath + "/" + Name.
+std::string GenerateIDByString(const std::string &a, const std::string &b,
+                               const std::string &sep);
+
+// Предикат «жирный заголовок инфо-о-пациенте» (реф. IsPatientInfoTitleBold @0x5955e8).
+// true, если m_strID СОДЕРЖИТ "RT_PATIENT_INFO" ИЛИ "HOSPITAL_OTHER" (substring).
+bool IsPatientInfoTitleBold(const KReportTemplateItem &item);
 
 } // namespace report_template

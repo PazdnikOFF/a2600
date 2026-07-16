@@ -48,6 +48,7 @@
 #include "report/KImageBlock.h"
 #include "report/KTableBlock.h"
 #include "report/KTitleTableBlock.h"
+#include "report/KReportTemplateCommonDef.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1797,6 +1798,64 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    // Self-test свободных функций report_template (сериализация map ⇄ строка, source-id,
+    // генерация ID, предикат bold, резолв заголовка).
+    if (screen == "reporttmpl") {
+        using namespace report_template;
+
+        // ConvertMapToString: сорт по ключу, "%s|%s;", пустой ключ пропущен.
+        std::map<std::string, std::string> m;
+        m["b"] = "2"; m["a"] = "1"; m[""] = "skip";   // "" — пропускается
+        const std::string s = ConvertMapToString(m);
+        const bool m2sOk = s == "a|1;b|2;";            // сортировка + завершающий ';'
+
+        // ConvertStringToMap: инверс; РОВНО 2 токена, непустое значение.
+        std::map<std::string, std::string> back;
+        ConvertStringToMap(s, back);
+        const bool s2mOk = back.size() == 2 && back["a"] == "1" && back["b"] == "2";
+        // Мусор отбрасывается: пустое значение ("x|;"), 3 токена ("p|q|r").
+        std::map<std::string, std::string> bad;
+        ConvertStringToMap("x|;p|q|r;ok|v;", bad);
+        const bool badOk = bad.size() == 1 && bad.count("ok") && bad["ok"] == "v";
+        // out не очищается (merge).
+        std::map<std::string, std::string> merge; merge["keep"] = "0";
+        ConvertStringToMap("a|1;", merge);
+        const bool mergeOk = merge.size() == 2 && merge["keep"] == "0" && merge["a"] == "1";
+
+        // ConvertToSourceID: out = src + "," + ConvertMapToString(param).
+        std::string sid; const bool sidRet = ConvertToSourceID("SRC", m, sid);
+        const bool sidOk = sidRet && sid == "SRC,a|1;b|2;";
+        std::string sidEmpty; ConvertToSourceID("SRC", {}, sidEmpty);
+        const bool sidEmptyOk = sidEmpty == "SRC,";   // завершающая ',' всегда
+
+        // GenerateIDByString: a/sep/b; пустой конец → без sep.
+        const bool genOk = GenerateIDByString("/RT_A", "B", "/") == "/RT_A/B"
+            && GenerateIDByString("", "B", "/") == "B"
+            && GenerateIDByString("A", "", "/") == "A";
+
+        // IsPatientInfoTitleBold: substring m_strID.
+        KReportTemplateItem pi; pi.m_strID = "/RT_HEADER/RT_PATIENT_INFO/x";
+        KReportTemplateItem ho; ho.m_strID = "/HOSPITAL_OTHER_LOGO";
+        KReportTemplateItem no; no.m_strID = "/RT_DIAGNOSIS";
+        const bool boldOk = IsPatientInfoTitleBold(pi) && IsPatientInfoTitleBold(ho)
+            && !IsPatientInfoTitleBold(no);
+
+        // QueryTemplateItemRealTitle: off-device → out=m_strTitle, false.
+        KReportTemplateItem ti; ti.m_strTitle = "TR_X"; ti.m_strName = "RT_RESERVED1";
+        std::string rt; const bool rtRet = QueryTemplateItemRealTitle(ti, rt);
+        const bool rtOk = !rtRet && rt == "TR_X";
+
+        qInfo() << "map→str:" << m2sOk << s.c_str() << "| str→map:" << s2mOk << "мусор:" << badOk
+                << "merge:" << mergeOk;
+        qInfo() << "sourceId:" << sidOk << sid.c_str() << "| пустой:" << sidEmptyOk
+                << "| genId:" << genOk << "bold:" << boldOk << "title:" << rtOk;
+
+        const bool ok = m2sOk && s2mOk && badOk && mergeOk && sidOk && sidEmptyOk
+            && genOk && boldOk && rtOk;
+        qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
+        return ok ? 0 : 51;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).

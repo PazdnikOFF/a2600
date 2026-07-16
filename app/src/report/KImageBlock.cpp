@@ -63,8 +63,11 @@ QString KImageBlock::Url(bool &valid) const
         return QString();
 
     std::string str = m_pTemplateItem->m_strDataSrc;
-    if (!m_mapTextParam.empty())
-        str = report_template::ConvertToSourceID(str, m_mapTextParam);
+    if (!m_mapTextParam.empty()) {
+        std::string converted;
+        report_template::ConvertToSourceID(str, m_mapTextParam, converted);
+        str = converted;
+    }
 
     KMeaStringUtil u;
     const std::vector<std::string> tokens = u.SplitStr(str, ",");
