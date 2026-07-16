@@ -29,6 +29,9 @@
 #include "dicom/KEntityDicom.h"
 #include "dicom/KDicomDatasetFormat.h"
 #include "dicom/KSysDICOMData.h"
+#include "kernel/KConfig.h"
+#include "db/KPatientListConfigSetupHandler.h"
+#include "db/KWorklistConfigSetupHandler.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -1556,6 +1559,216 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test конфигов списков пациентов/worklist (фасады над KConfig).
+    // Пишет файлы в <root>/data/protected → брать временный ENDO_ROOT!
+    if (screen == "listsetup") {
+        KPatientListConfigSetupHandler *p = KPatientListConfigSetupHandler::GetInstance();
+        KWorkListConfigSetupHandler    *w = KWorkListConfigSetupHandler::GetInstance();
+        const QString pIni = QDir(KSystem::ProtectedPath()).absoluteFilePath("patientsetup.ini");
+        const QString wIni = QDir(KSystem::ProtectedPath()).absoluteFilePath("worklistsetup.ini");
+        // Реф. ctor создаёт пустой файл, если его нет.
+        const bool created = QFile::exists(pIni) && QFile::exists(wIni);
+
+        // 1. Дефолты: у Patient ВСЕ bool-колонки true (в отличие от KExamListConfigHandler),
+        //    заголовки self-define полей — "".
+        const bool pDefOk = p->IsShowPatietID() && p->IsShowApplicant() && p->IsShowApplicantDate()
+            && p->IsShowBirthday() && p->IsShowTelephone() && p->IsShowSickbedNum()
+            && p->IsShowRegisterNumer() && p->IsShowSelfDefineField1() && p->IsShowSelfDefineField2()
+            && p->GetSelfDefineField1Title().empty() && p->GetSelfDefineField2Title().empty();
+        // Worklist: bool → true, строки → "", Equipment → 0.
+        const bool wDefOk = w->IsShowPatientID() && w->IsShowPatientName()
+            && w->IsShowRegisterNumber() && w->IsShowPlantime() && w->IsShowInspectEquipment()
+            && w->GetShowPatientID().empty() && w->GetShowPatientName().empty()
+            && w->GetShowRegisterNumber().empty() && w->GetShowInspectEquipment() == 0;
+
+        // 2. GetColumnIsShow — ровно 7 записей, имена колонок ≠ ключам .ini.
+        p->SetIsShowTelephone(false);
+        std::map<std::string, int> cols;
+        p->GetColumnIsShow(cols);
+        const bool colsOk = cols.size() == 7 && cols["PatientID"] == 1
+            && cols["TelephoneNumber"] == 0 && cols["SickBedId"] == 1
+            && cols.count("PatientBirthday") == 1 && cols.count("RegisterNumber") == 1
+            && cols.count("Applicants") == 1 && cols.count("ApplicantDate") == 1
+            && cols.count("userdefined1") == 0;   // self-define полей тут нет
+
+        // 3. Запись без SaveConfig на диск не летит (KConfig правит только память).
+        p->SetIsShowBirthday(false);
+        p->SetIsShowSelfDefineField2(true);       // явный true → в файле "True"
+        p->SetSelfDefineField1Title("Отделение");
+        const bool notYet = KConfig(pIni.toStdString()).ReadBool("ShowOnMainUi", "birthday", true);
+        p->SaveConfig();
+
+        w->SetIsShowPatientID(false);
+        w->SetShowPatientID("P-42");
+        w->SetShowInspectEquipment(3);
+        const QDate d1(2026, 7, 1), d2(2026, 7, 15);
+        w->SetShowPlantime(d1, d2);
+        w->SaveConfig();
+
+        // 4. Персист: перечитать файлы независимым KConfig.
+        KConfig pc(pIni.toStdString());
+        const bool pSaveOk = !pc.ReadBool("ShowOnMainUi", "birthday", true)
+            && !pc.ReadBool("ShowOnMainUi", "telephone", true)
+            && pc.ReadBool("ShowOnMainUi", "userdefined2", false)
+            && pc.ReadString("ShowOnMainUi", "userdefinedtitle1", "") == "Отделение"
+            // Дефолты НЕ персистятся: в файле только явно записанные ключи —
+            // нетронутый patientid отсутствует и читается как дефолт.
+            && !pc.HasItem("ShowOnMainUi", "patientid")
+            && p->IsShowPatietID();
+        KConfig wc(wIni.toStdString());
+        const bool wSaveOk = !wc.ReadBool("ShowOnMainUi", "IsPatientidOn", true)
+            && wc.ReadString("ShowOnMainUi", "patientid", "") == "P-42"
+            && wc.ReadInt("ShowOnMainUi", "Equipment", 0) == 3
+            && wc.ReadString("ShowOnMainUi", "plantimestart", "") == "2026-07-01"
+            && wc.ReadString("ShowOnMainUi", "plantimeend", "") == "2026-07-15";
+
+        // 5. Формат на диске — движок KConfig: секция [ShowOnMainUi], bool как True/False.
+        QFile pf(pIni);
+        pf.open(QIODevice::ReadOnly);
+        const QString ptext = QString::fromUtf8(pf.readAll());
+        pf.close();
+        const bool fmtOk = ptext.contains("[ShowOnMainUi]")
+            && ptext.contains("birthday=False") && ptext.contains("userdefined2=True")
+            && !ptext.contains("patientid");   // нетронутый ключ в файл не попадает
+
+        // 6. Plantime — обратный разбор в QDate ("yyyy-MM-dd").
+        QDate g1, g2;
+        w->GetShowPlantime(g1, g2);
+        const bool dateOk = g1 == d1 && g2 == d2;
+
+        qInfo() << "файлы созданы:" << created << "| дефолты patient:" << pDefOk
+                << "worklist:" << wDefOk << "| колонки:" << colsOk
+                << "| до SaveConfig на диске старое:" << notYet;
+        qInfo() << "персист patient:" << pSaveOk << "worklist:" << wSaveOk
+                << "| формат True/False:" << fmtOk << "| даты:" << dateOk;
+
+        const bool ok = created && pDefOk && wDefOk && colsOk && notYet && pSaveOk
+            && wSaveOk && fmtOk && dateOk;
+        qInfo() << (ok ? "listsetup: PASS" : "listsetup: FAIL");
+        return ok ? 0 : 30;
+    }
+
+    // Self-test INI-движка ядра (KConfig) — семантика 1:1 с дизасмом.
+    if (screen == "kconfig") {
+        QTemporaryDir tmp;
+        const std::string path = QDir(tmp.path()).absoluteFilePath("t.ini").toStdString();
+
+        // 1. Несуществующий файл: ctor молчит, всё читается как дефолт.
+        {
+            KConfig c(path);
+            const bool missOk = !c.IsFileExisted()
+                && c.ReadBool("No", "Key", true) && !c.ReadBool("No", "Key", false)
+                && c.ReadInt("No", "Key", 42) == 42
+                && c.ReadString("No", "Key", "def") == "def"
+                && !c.HasItem("No", "Key")
+                && c.GetKeysFromSection("No").empty();
+            if (!missOk) { qInfo() << "kconfig: FAIL (дефолты)"; return 29; }
+        }
+
+        // 2. Запись + Save: bool → "True"/"False" (НЕ 1/0 и не true/false),
+        //    числа — ostringstream (6 знач. цифр), пробелов вокруг '=' нет.
+        {
+            KConfig c(path);
+            c.WriteData("Sec", "flagT", true);
+            c.WriteData("Sec", "flagF", false);
+            c.WriteData("Sec", "num", 7);
+            c.WriteData("Sec", "pi", 3.14159265);      // → 3.14159 (6 знач. цифр)
+            c.WriteData("Sec", "big", 1234567.0);      // → 1.23457e+06
+            c.WriteData("Sec", "str", "hello");
+            c.WriteData("Alpha", "k", "v");            // проверка лексикогр. порядка
+            const bool notYet = !c.IsFileExisted();    // WriteData на диск не пишет
+            if (!c.Save()) { qInfo() << "kconfig: FAIL (Save)"; return 29; }
+            if (!notYet)   { qInfo() << "kconfig: FAIL (WriteData писал на диск)"; return 29; }
+        }
+
+        QFile f(QString::fromStdString(path));
+        f.open(QIODevice::ReadOnly);
+        const QString text = QString::fromUtf8(f.readAll());
+        f.close();
+
+        // Формат файла: секции лексикографически (Alpha < Sec), пустая строка
+        // после каждой секции (включая последнюю), 'key=value' без пробелов.
+        const QString expect =
+            "[Alpha]\nk=v\n\n"
+            "[Sec]\nbig=1.23457e+06\nflagF=False\nflagT=True\nnum=7\npi=3.14159\nstr=hello\n\n";
+        const bool fmtOk = text == expect;
+        if (!fmtOk) qInfo() << "формат разошёлся:\n" << text.toUtf8().constData();
+
+        // 3. Roundtrip + парсинг bool: false ТОЛЬКО для FALSE/F/NO/N/0 (регистронезав.),
+        //    всё прочее — включая "" и "2" — true.
+        {
+            KConfig c(path);
+            const bool rtOk = c.ReadBool("Sec", "flagT", false) && !c.ReadBool("Sec", "flagF", true)
+                && c.ReadInt("Sec", "num", 0) == 7
+                && c.ReadString("Sec", "str", "") == "hello"
+                && qAbs(c.ReadDouble("Sec", "pi", 0.0) - 3.14159) < 1e-9;
+            const std::vector<std::string> keys = c.GetKeysFromSection("Sec");
+            const bool keysOk = keys.size() == 6 && keys[0] == "big" && keys[5] == "str";
+            if (!rtOk || !keysOk) { qInfo() << "kconfig: FAIL (roundtrip)"; return 29; }
+        }
+
+        // 4. Парсинг: '#'-комментарий (вместе с \n), trim, дубликат ключа (побеждает
+        //    последний), текст до первой '[' игнорируется, ';' и '//' — НЕ комментарии.
+        const std::string p2 = QDir(tmp.path()).absoluteFilePath("p.ini").toStdString();
+        {
+            QFile g(QString::fromStdString(p2));
+            g.open(QIODevice::WriteOnly);
+            g.write("мусор до секции\n"       // текст до первой '[' игнорируется
+                    "[S]\n"
+                    "  a  =  1  \n"          // trim обоих концов ключа и значения
+                    "b=first\n"
+                    "b=second\n"             // дубликат → побеждает последний
+                    "f=;notcomment\n"        // ';' — НЕ комментарий (только '#')
+                    "# c=commented\n"        // строка-комментарий целиком
+                    "d=x#y\n"                // '#' в значении съедается вместе с \n…
+                    "e=tail\n");             // …→ эта строка склеивается с 'd'
+            g.close();
+
+            KConfig c(p2);
+            const bool parseOk = c.ReadString("S", "a", "") == "1"
+                && c.ReadString("S", "b", "") == "second"
+                && c.ReadString("S", "f", "") == ";notcomment"
+                && !c.HasItem("S", "c")
+                // Особенность реф.: EraseComment срезает и '\n', поэтому 'd' поглощает
+                // следующую строку, а ключа 'e' не возникает вовсе.
+                && c.ReadString("S", "d", "") == "xe=tail"
+                && !c.HasItem("S", "e")
+                && c.ReadBool("S", "nokey", true);           // отсутствует → дефолт
+            // Регистрозависимость секций/ключей (std::map).
+            const bool caseOk = !c.HasItem("s", "a") && !c.HasItem("S", "A");
+            // FromStringToBool: "" и "2" → true; "no"/"F" → false.
+            KConfig d(p2);
+            d.WriteData("B", "empty", "");
+            d.WriteData("B", "two", "2");
+            d.WriteData("B", "no", "no");
+            d.WriteData("B", "eff", "F");
+            const bool boolOk = d.ReadBool("B", "empty", false) && d.ReadBool("B", "two", false)
+                && !d.ReadBool("B", "no", true) && !d.ReadBool("B", "eff", true);
+            if (!parseOk || !caseOk || !boolOk) {
+                qInfo() << "разбор:" << parseOk << "регистр:" << caseOk << "bool:" << boolOk;
+                qInfo() << "kconfig: FAIL (парсинг)";
+                return 29;
+            }
+        }
+
+        // 5. ReadDataWithoutDefaultValue: при отсутствии ключа out НЕ трогается.
+        {
+            KConfig c(path);
+            int keep = 555;
+            const bool miss = c.ReadDataWithoutDefaultValue("Sec", "nokey", keep);
+            int got = 0;
+            const bool hit = c.ReadDataWithoutDefaultValue("Sec", "num", got);
+            if (miss || keep != 555 || !hit || got != 7) {
+                qInfo() << "kconfig: FAIL (ReadDataWithoutDefaultValue)";
+                return 29;
+            }
+        }
+
+        qInfo() << "формат ок:" << fmtOk;
+        qInfo() << (fmtOk ? "kconfig: PASS" : "kconfig: FAIL");
+        return fmtOk ? 0 : 29;
     }
 
     // Self-test конфига DICOM-сервисов (link-dicom.json, KSysDICOMData/KDICOMConf).

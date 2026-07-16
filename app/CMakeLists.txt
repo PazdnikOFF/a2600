@@ -87,10 +87,13 @@ set(SOURCES
     src/db/KEntityManage.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
+    src/db/KPatientListConfigSetupHandler.cpp
+    src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp
+    src/kernel/KConfig.cpp
     src/alg/AlgParaManager.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
@@ -172,10 +175,13 @@ add_executable(ui_preview
     src/db/KEntityManage.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
+    src/db/KPatientListConfigSetupHandler.cpp
+    src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
     src/db/KFileBackup.cpp
     src/db/KSaveFile.cpp
     src/db/KEntityService.cpp
+    src/kernel/KConfig.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp

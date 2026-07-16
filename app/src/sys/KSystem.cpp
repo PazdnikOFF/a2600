@@ -17,6 +17,7 @@ QString VideoConfPath()      { return QDir(SystemPath()).absoluteFilePath("video
 // Реф.: SetDataPath = DataPath + "setdata/", UserSetPath = SetDataPath + "userset/".
 QString SetDataPath()        { return QDir(DataPath()).absoluteFilePath("setdata"); }
 QString UserSetPath()        { return QDir(SetDataPath()).absoluteFilePath("userset"); }
+QString ProtectedPath()      { return QDir(DataPath()).absoluteFilePath("protected"); }
 
 QString ProductDisplayConfigPath(const QString &model)
 {
