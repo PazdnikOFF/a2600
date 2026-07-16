@@ -50,6 +50,7 @@
 #include "report/KTitleTableBlock.h"
 #include "report/KReportTemplateCommonDef.h"
 #include "db/KPatientExamData.h"
+#include "report/XmlParser.h"
 #include <QTemporaryDir>
 #include "kernel/KObject.h"
 #include "kernel/KMessage.h"
@@ -2210,6 +2211,57 @@ int main(int argc, char **argv)
             && reqOk && postOk && msgOk;
         qInfo() << (ok ? "kobject: PASS" : "kobject: FAIL");
         return ok ? 0 : 53;
+    }
+
+    // Self-test обёртки XML-документа (XmlParser — load/save/root/декларация на QDomDocument).
+    if (screen == "xmlparser") {
+        QTemporaryDir tmp;
+        const QString qdir = tmp.path() + "/";
+        auto writeFile = [&](const char *name, const QByteArray &data) {
+            QFile f(qdir + name); f.open(QIODevice::WriteOnly); f.write(data); f.close();
+        };
+        writeFile("good.xml", "<root a=\"1\"><child>hello</child></root>");
+        writeFile("bad.xml", "<root><unclosed></root>");
+
+        // Загрузка + доступ к корню/атрибутам/тексту.
+        XmlParser p;
+        const bool loadOk = p.LoadFromFile((qdir + "good.xml").toStdString())
+            && p.GetParseResult().empty();
+        const bool rootOk = p.GetRoot().tagName() == "root"
+            && p.GetRoot().attribute("a") == "1"
+            && p.GetRoot().firstChildElement("child").text() == "hello";
+
+        // Некорректный XML → false + непустое описание.
+        XmlParser pb;
+        const bool badOk = !pb.LoadFromFile((qdir + "bad.xml").toStdString())
+            && !pb.GetParseResult().empty();
+        // Отсутствующий файл → false.
+        XmlParser pm;
+        const bool missOk = !pm.LoadFromFile((qdir + "nope.xml").toStdString());
+
+        // Round-trip: save → load → тот же корень.
+        const bool saveOk = p.SaveToFile((qdir + "out.xml").toStdString());
+        XmlParser p2;
+        const bool rtOk = p2.LoadFromFile((qdir + "out.xml").toStdString())
+            && p2.GetRoot().tagName() == "root"
+            && p2.GetRoot().firstChildElement("child").text() == "hello";
+
+        // Декларация: <?xml version="1.0" encoding="utf-8"?> (lowercase).
+        XmlParser pd;
+        pd.SetDeclaration();
+        pd.SaveToFile((qdir + "decl.xml").toStdString());
+        QFile df(qdir + "decl.xml"); df.open(QIODevice::ReadOnly);
+        const QByteArray declOut = df.readAll(); df.close();
+        const bool declOk = declOut.contains("version=\"1.0\"")
+            && declOut.contains("encoding=\"utf-8\"");
+
+        qInfo() << "load:" << loadOk << "root:" << rootOk << "bad:" << badOk << pb.GetParseResult().c_str()
+                << "miss:" << missOk;
+        qInfo() << "save:" << saveOk << "roundtrip:" << rtOk << "decl:" << declOk << declOut.trimmed();
+
+        const bool ok = loadOk && rootOk && badOk && missOk && saveOk && rtOk && declOk;
+        qInfo() << (ok ? "xmlparser: PASS" : "xmlparser: FAIL");
+        return ok ? 0 : 55;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).

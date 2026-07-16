@@ -118,6 +118,7 @@ set(SOURCES
     src/dicom/KDbStringOperation.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
+    src/report/XmlParser.cpp
     src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KTemplateLibCfg.cpp
@@ -237,6 +238,7 @@ add_executable(ui_preview
     src/dicom/KDbStringOperation.cpp
     src/dicom/KSysDICOMData.cpp
     src/report/KMeaXMLBase.cpp
+    src/report/XmlParser.cpp
     src/report/KMeaStringUtil.cpp
     src/report/KTemplateCfg.cpp
     src/report/KTemplateLibCfg.cpp
