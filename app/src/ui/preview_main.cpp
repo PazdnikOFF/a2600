@@ -50,6 +50,7 @@
 #include "report/KTitleTableBlock.h"
 #include "report/KReportTemplateCommonDef.h"
 #include "db/KPatientExamData.h"
+#include "db/KDbSqlite.h"
 #include "report/XmlParser.h"
 #include <QTemporaryDir>
 #include "kernel/KObject.h"
@@ -2262,6 +2263,49 @@ int main(int argc, char **argv)
         const bool ok = loadOk && rootOk && badOk && missOk && saveOk && rtOk && declOk;
         qInfo() << (ok ? "xmlparser: PASS" : "xmlparser: FAIL");
         return ok ? 0 : 55;
+    }
+
+    // Self-test низкоуровневой обёртки SQLite (KDbSqlite — ЯДРО: open/close/exec/error на
+    // системном libsqlite3; SQLCipher-шифрование опущено off-device). Временная БД.
+    if (screen == "dbsqlite") {
+        QTemporaryDir tmp;
+        const std::string db = (tmp.path() + "/test.db").toStdString();
+
+        KDbSqlite s;
+        const bool preOk = !s.IsOpen();                       // до открытия закрыта
+        const int rc = s.Open(db);
+        const bool openOk = rc == SQLITE_OK && s.IsOpen() && s.GetDbPath() == db;
+
+        // DDL/DML через Exec.
+        const bool ddlOk = s.Exec("CREATE TABLE t(id INTEGER, name TEXT);") == SQLITE_OK
+            && s.Exec("INSERT INTO t VALUES(1,'alice');") == SQLITE_OK
+            && s.Exec("INSERT INTO t VALUES(2,'bob');") == SQLITE_OK;
+
+        // Битый SQL → ненулевой rc + непустой GetLastErrorMsg.
+        const int bad = s.Exec("SELECT * FROM no_such_table;");
+        const bool errOk = bad != SQLITE_OK && !s.GetLastErrorMsg().empty();
+
+        // Нулевой sql → -4102 (реф. -0x1006).
+        const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
+
+        // Exec без открытой БД → SQLITE_ERROR.
+        KDbSqlite s2;
+        const bool notOpenExecOk = s2.Exec("SELECT 1;") == SQLITE_ERROR;
+
+        // Close → закрыта; повторный Close безопасен.
+        const bool closeOk = s.Close() == SQLITE_OK && !s.IsOpen() && s.Close() == SQLITE_OK;
+
+        // SetLogEnabled (статик) — без падений.
+        KDbSqlite::SetLogEnabled(true);
+        KDbSqlite::SetLogEnabled(false);
+
+        qInfo() << "pre:" << preOk << "open:" << openOk << rc << "ddl:" << ddlOk
+                << "err:" << errOk << s.GetLastErrorMsg().c_str();
+        qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
+
+        const bool ok = preOk && openOk && ddlOk && errOk && nullOk && notOpenExecOk && closeOk;
+        qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
+        return ok ? 0 : 56;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).

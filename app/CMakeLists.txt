@@ -93,6 +93,7 @@ set(SOURCES
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp
+    src/db/KDbSqlite.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp
@@ -209,6 +210,7 @@ add_executable(ui_preview
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp
+    src/db/KDbSqlite.cpp
     src/db/KEntityQuickInput.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp
@@ -264,7 +266,7 @@ add_executable(ui_preview
     src/video/KVideoProxy.cpp   # off-device-логика (gst-тракт спрятан за HAVE_GST)
 )
 target_include_directories(ui_preview PRIVATE src)
-target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml Qt5::Network)
+target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml Qt5::Network sqlite3)
 # iconv: на macOS отдельная libiconv, на Xilinx-target — в glibc (линкуется через libc).
 find_library(ICONV_LIB NAMES iconv)
 if(ICONV_LIB)
