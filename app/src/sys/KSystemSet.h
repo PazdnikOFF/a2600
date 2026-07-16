@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QDate>
+#include <QList>
 #include <QString>
 #include <QVariant>
 
@@ -26,6 +28,17 @@ public:
     bool AutoLogin() const;                 void SetAutoLogin(bool v);
     bool ForceLogout() const;               void SetForceLogout(bool v);
     int  ForceLogoutTime() const;           void SetForceLogoutTime(int minutes);
+
+    // Контур доступа производителя (реф. [Manu], делегаты KManuPwdMng).
+    // Подтверждён дизасмом ключ Manu/enable; остальные имена ключей в бинарнике
+    // не декодированы (реф. эти геттеры/сеттеры живут в KSystemSet) — приняты по смыслу.
+    bool GetManuEnable() const;             void SetManuEnable(bool v);
+    int  GetManuLeftTime() const;           void SetManuLeftTime(int days);
+    QDate GetManuMarkTime() const;          void SetManuMarkTime(const QDate &d);
+    QList<int> GetManuLicenseKeyList() const;   void SetManuLicenseKey(int code); // добавляет в список
+
+    // Серийник процессора (реф. GetProcessorSN — на устройстве из EEPROM; здесь из ini).
+    QString GetProcessorSN() const;
 
 private:
     KSystemSet() = default;

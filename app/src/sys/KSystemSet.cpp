@@ -53,3 +53,42 @@ void KSystemSet::SetForceLogout(bool v) { write("Account/forcelogout", v); }
 
 int  KSystemSet::ForceLogoutTime() const      { return read("Account/forcelogoutTime", 30).toInt(); }
 void KSystemSet::SetForceLogoutTime(int m)    { write("Account/forcelogoutTime", m); }
+
+// --- [Manu] (реф. делегаты KManuPwdMng). Подтверждён ключ Manu/enable; прочие
+// имена (leftTime/markTime/licenseKey) из бинарника не декодированы — по смыслу. ---
+bool KSystemSet::GetManuEnable() const   { return read("Manu/enable", false).toBool(); }
+void KSystemSet::SetManuEnable(bool v)   { write("Manu/enable", v); }
+
+int  KSystemSet::GetManuLeftTime() const { return read("Manu/leftTime", 0).toInt(); }
+void KSystemSet::SetManuLeftTime(int d)  { write("Manu/leftTime", d); }
+
+QDate KSystemSet::GetManuMarkTime() const
+{
+    return QDate::fromString(read("Manu/markTime", "").toString(), "yyyy-MM-dd");
+}
+void KSystemSet::SetManuMarkTime(const QDate &d)
+{
+    write("Manu/markTime", d.toString("yyyy-MM-dd"));
+}
+
+QList<int> KSystemSet::GetManuLicenseKeyList() const
+{
+    QList<int> out;
+    const QString s = read("Manu/licenseKey", "").toString();
+    for (const QString &tok : s.split(',', Qt::SkipEmptyParts))
+        out.append(tok.toInt());
+    return out;
+}
+void KSystemSet::SetManuLicenseKey(int code)
+{
+    // Антиповтор: добавляем код, если его ещё нет (реф. — реестр использованных ключей).
+    QList<int> list = GetManuLicenseKeyList();
+    if (!list.contains(code))
+        list.append(code);
+    QStringList parts;
+    for (int c : list)
+        parts << QString::number(c);
+    write("Manu/licenseKey", parts.join(','));
+}
+
+QString KSystemSet::GetProcessorSN() const { return read("Common/ProcessorSN", "").toString(); }

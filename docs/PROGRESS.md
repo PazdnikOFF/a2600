@@ -112,13 +112,14 @@ ui_preview strutil                                    # self-test строков
 ENDO_ROOT=<tmp> ui_preview examno                     # self-test генератора номеров осмотра (KExamNoGenerate — пишет файл, брать tmp-root!)
 ENDO_ROOT=$ER ui_preview templatelib                  # self-test библиотеки шаблонов (KTemplateLibCfg + report_template::Merge*/ID — 11 блоков, 5 групп)
 ui_preview templateparam                              # self-test параметров шаблона (KTemplateParamCfg — в прошивке мёртвый класс, фикстура своя)
+ENDO_ROOT=<tmp> ui_preview manupwd                    # self-test доступа производителя (KManuPwdMng: пароли от даты + лицензия + countdown; пишет [Manu], tmp-root!)
 ```
 
 **Регрессия всех режимов одной командой** (`tools/selftest.sh`, режимы, пишущие файлы,
 сами получают временный ENDO_ROOT):
 
 ```bash
-tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 51  FAIL: 0"
+tools/selftest.sh "$SCR/uibuild/ui_preview"     # → "PASS: 52  FAIL: 0"
 ```
 
 - `ui_preview` — Qt-only цель (Core/Gui/Widgets/Sql), собирается и проверяется на Mac.
@@ -462,14 +463,34 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **51 self-test-режим** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **52 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 56 классов / 587 методов (9.1%)**. Это нижняя оценка (считает совпадение имён;
+затронуто 57 классов / 602 метода (9.4%)**. Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
 Off-device-ядро Фаз A/B/C/D закрыто в основном. KVideoProxy 57/116.
-**ПОСЛЕДНЕЕ (эта сессия): `KTemplateParamCfg`** (`app/src/report/`, self-test
+**ПОСЛЕДНЕЕ (эта сессия): `KManuPwdMng`** (`app/src/sys/`, self-test `manupwd`) — контур
+доступа производителя/сервиса. НЕ UI, НЕ синглтон-с-состоянием (sizeof==1, полей нет — всё
+в KSystemSet [Manu]). Пароли производителя/админа/сервиса — ПРОИЗВОДНЫЕ ОТ ТЕКУЩЕЙ ДАТЫ
+(меняются помесячно), простая арифметика БЕЗ хеша/шифра: getPwd(n) = a*month*n, где
+a=год%100 (или 55, если год кратен 100), затем 4 цифры результата (со 2-й снизу, старшая
+первой, ведущие нули сохранены). GetPassWord="se"+getPwd(51647)+"mnf",
+GetAdmPassWord="hd"+getPwd(32711)+"adm", GetServicePassWord="se"+getPwd(6911)+"srv".
+(Пример: июль-2026 → se9975mnf.) GenerateLicense(sn,code): таблица простых T[10], пустой
+sn→"201707182011", '/'→'-'. CheckPermission — countdown оставшихся дней от отметки
+(активация=59 дней, истёк→гасит); UpdateSystemTime — двигает отметку только при включённом
+доступе (антиобман по часам). Персист — КSystemSet (QSettings [Manu]); подтверждён ключ
+Manu/enable, остальные (leftTime/markTime/licenseKey) не декодированы — приняты по смыслу.
+С KAccount НЕ пересекается (отдельный контур; связаны лишь через общий KLogin).
+ОТЛОЖЕНЫ device/крипто-части: ActiveAccount (читает лиценз-файл `SN` с USB → KUsbDevice),
+GenerateLicenseFile. И **KControlProc** (прототип-/лиценз-контроль прибора, НЕ UI) —
+висит на DES-классе yxyDES2 (расшифровка лицензий) + компаньоне KControlINI
+(control.ini/plain.ini/matchprolist.ini/licensehistory.ini под ProtectedPath+kmachinecontrol/,
+через QSettings — НЕ наш KConfig!); ini в прошивке нет (рантайм на приборе). Крупная
+крипто-цепочка, отложена. ДОБАВЛЕНО в KSystemSet: Get/Set Manu{Enable,LeftTime,MarkTime,
+LicenseKey} + GetProcessorSN.
+РАНЕЕ (эта сессия): `KTemplateParamCfg`** (`app/src/report/`, self-test
 `templateparam`) — 3-й и последний наследник KMeaXMLBase. **СЕМЕЙСТВО KMeaXMLBase ЗАКРЫТО
 ЦЕЛИКОМ: KTemplateCfg ✅, KTemplateLibCfg ✅, KTemplateParamCfg ✅** (наследников больше нет —
 исчерпывающе по xref на typeinfo).

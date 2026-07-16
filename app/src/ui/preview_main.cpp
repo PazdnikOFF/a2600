@@ -33,6 +33,8 @@
 #include "report/KMeaXMLBase.h"
 #include "report/KMeaStringUtil.h"
 #include "db/KExamNoGenerate.h"
+#include "sys/KManuPwdMng.h"
+#include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
 #include "report/KTemplateLibCfg.h"
 #include "report/KTemplateParamCfg.h"
@@ -1568,6 +1570,86 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test доступа производителя (KManuPwdMng) — пишет [Manu] в system.ini,
+    // брать временный ENDO_ROOT!
+    if (screen == "manupwd") {
+        KManuPwdMng &m = KManuPwdMng::GetInstance();
+
+        // 1. getPwd на ФИКСИРОВАННОЙ дате — сверка формулы a*month*n → 4 цифры.
+        //    2026-07: a=26, m=7. n=51647 → S=26*7*51647=9399754 → цифры d5d4d3d2=9975.
+        const QDate d(2026, 7, 1);
+        const bool pwdOk = KManuPwdMng::getPwd(51647, d) == "9975"
+            && KManuPwdMng::getPwd(32711, d) == QStringLiteral("%1%2%3%4")
+                   .arg((26*7*32711/10000)%10).arg((26*7*32711/1000)%10)
+                   .arg((26*7*32711/100)%10).arg((26*7*32711/10)%10)
+            // ведущие нули сохраняются (ровно 4 символа)
+            && KManuPwdMng::getPwd(1, d).length() == 4;
+        // Год, кратный 100 → a=55 (реф.).
+        const bool centuryOk = KManuPwdMng::getPwd(51647, QDate(2100, 7, 1))
+            == QStringLiteral("%1%2%3%4").arg((55*7*51647/10000)%10).arg((55*7*51647/1000)%10)
+                   .arg((55*7*51647/100)%10).arg((55*7*51647/10)%10);
+
+        // 2. Полные пароли: префикс + getPwd(currentDate) + суффикс.
+        const QString today4 = KManuPwdMng::getPwd(51647);
+        const bool fullOk = m.GetPassWord() == "se" + today4 + "mnf"
+            && m.GetAdmPassWord().startsWith("hd") && m.GetAdmPassWord().endsWith("adm")
+            && m.GetServicePassWord().startsWith("se") && m.GetServicePassWord().endsWith("srv")
+            && m.GetPassWord().length() == 9;
+
+        // 3. GenerateLicense: детерминирован, пустой sn → дефолт, '/' → '-'.
+        const QString lic = m.GenerateLicense("AB/12", 37);
+        const bool licOk = !lic.isEmpty()
+            && lic == m.GenerateLicense("AB-12", 37)          // '/' и '-' эквивалентны
+            && m.GenerateLicense("", 5) == m.GenerateLicense("201707182011", 5)  // дефолтный sn
+            && m.GenerateLicense("X", 40) != m.GenerateLicense("X", 41);          // код влияет
+
+        // 4. CheckPermission: отсчёт оставшихся дней от отметки.
+        KSystemSet &ss = KSystemSet::GetInstance();
+        const QDate today = QDate::currentDate();
+        ss.SetManuEnable(true);
+        ss.SetManuLeftTime(59);
+        ss.SetManuMarkTime(today.addDays(-10));   // прошло 10 дней
+        m.CheckPermission();
+        const bool countOk = ss.GetManuEnable() && ss.GetManuLeftTime() == 49
+            && ss.GetManuMarkTime() == today;
+        // Истечение: осталось меньше прошедшего → гасим доступ.
+        ss.SetManuLeftTime(3);
+        ss.SetManuMarkTime(today.addDays(-10));
+        m.CheckPermission();
+        const bool expireOk = !ss.GetManuEnable() && ss.GetManuLeftTime() == 0;
+        // Выключенный доступ CheckPermission не трогает.
+        ss.SetManuEnable(false);
+        ss.SetManuLeftTime(42);
+        m.CheckPermission();
+        const bool offOk = ss.GetManuLeftTime() == 42;
+
+        // 5. UpdateSystemTime: двигает отметку только при включённом доступе.
+        ss.SetManuEnable(true);
+        ss.SetManuMarkTime(today);
+        m.UpdateSystemTime(today.addDays(5));
+        const bool updOk = ss.GetManuMarkTime() == today.addDays(5);
+        ss.SetManuEnable(false);
+        ss.SetManuMarkTime(today);
+        m.UpdateSystemTime(today.addDays(5));
+        const bool updOffOk = ss.GetManuMarkTime() == today;   // выключен → не трогает
+
+        // 6. Реестр ключей: антиповтор.
+        ss.SetManuLicenseKey(100);
+        ss.SetManuLicenseKey(200);
+        ss.SetManuLicenseKey(100);   // дубль игнорируется
+        const bool keyOk = ss.GetManuLicenseKeyList() == QList<int>{100, 200};
+
+        qInfo() << "getPwd:" << pwdOk << "век:" << centuryOk << "| пароли:" << fullOk
+                << m.GetPassWord() << "| лицензия:" << licOk;
+        qInfo() << "countdown:" << countOk << "истечение:" << expireOk << "выкл:" << offOk
+                << "| время:" << updOk << updOffOk << "| ключи:" << keyOk;
+
+        const bool ok = pwdOk && centuryOk && fullOk && licOk && countOk && expireOk && offOk
+            && updOk && updOffOk && keyOk;
+        qInfo() << (ok ? "manupwd: PASS" : "manupwd: FAIL");
+        return ok ? 0 : 37;
     }
 
     // Self-test параметров шаблона (KTemplateParamCfg — 3-й наследник KMeaXMLBase).

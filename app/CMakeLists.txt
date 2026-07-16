@@ -69,6 +69,7 @@ set(SOURCES
     src/sys/KUserSet.cpp
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
+    src/sys/KManuPwdMng.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
@@ -165,6 +166,7 @@ add_executable(ui_preview
     src/sys/KUserSet.cpp
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
+    src/sys/KManuPwdMng.cpp
     src/sys/KSystemSet.cpp
     src/sys/KUpdateConf.cpp
     src/sys/KUpdateManifest.cpp
