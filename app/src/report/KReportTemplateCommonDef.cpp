@@ -98,4 +98,11 @@ std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item)
     return item.m_strTitle;   // реф. @0x595688 — точный резолв не декодирован
 }
 
+std::string ConvertToSourceID(const std::string &src,
+                              const std::map<std::string, std::string> &param)
+{
+    (void)param;   // реф. @0x5954b0 — тело не декодировано; off-device: src без ремапа
+    return src;
+}
+
 } // namespace report_template

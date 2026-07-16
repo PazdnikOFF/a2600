@@ -120,6 +120,7 @@ set(SOURCES
     src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
     src/report/KTextBlock.cpp
+    src/report/KImageBlock.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp
@@ -232,6 +233,7 @@ add_executable(ui_preview
     src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
     src/report/KTextBlock.cpp
+    src/report/KImageBlock.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp

@@ -3,6 +3,7 @@
 #include "report/KReportTemplateData.h"
 
 #include <list>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -46,5 +47,11 @@ bool MergeData(KReportTemplateDataNew &dst, const KReportTemplateDataNew &src,
 // Заголовок элемента для показа (реф. QueryTemplateItemRealTitle @0x595688). Точная
 // логика резолва из дизасма не декодирована — принято: возврат m_strTitle элемента.
 std::string QueryTemplateItemRealTitle(const KReportTemplateItem &item);
+
+// Ремап source-id по параметрам блока (реф. ConvertToSourceID @0x5954b0). Тело из
+// дизасма не декодировано — off-device-заглушка: возврат src без изменений при пустом
+// param, иначе — как есть (точная логика подстановки не восстановлена).
+std::string ConvertToSourceID(const std::string &src,
+                              const std::map<std::string, std::string> &param);
 
 } // namespace report_template

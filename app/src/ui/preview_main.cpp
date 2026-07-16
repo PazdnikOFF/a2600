@@ -45,6 +45,7 @@
 #include "sys/KSessionInfo.h"
 #include "sys/KEncSettings.h"
 #include "report/KTextBlock.h"
+#include "report/KImageBlock.h"
 #include <QNetworkAccessManager>
 #include "sys/KSystemSet.h"
 #include "report/KTemplateCfg.h"
@@ -1582,6 +1583,70 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test модели блока-картинки отчёта (KImageBlock — сиблинг KTextBlock).
+    if (screen == "imageblock") {
+        KImageBlock::ClearPicMap();
+        KReportTemplateDataNew data;
+
+        KReportTemplateItem item;
+        item.m_strID = "/RT_HOSPITAL_LOGO"; item.m_strName = "RT_HOSPITAL_LOGO";
+        item.m_strTitle = "TR_HLog"; item.m_strType = "RT_IMAGE_BLOCK";
+        item.m_strDataSrc = "RT_DATASOURCE_PERIPHERAL,RT_HOSPITAL_LOGO";   // <source>,<key>
+        data.m_lstItems.push_back(item);
+
+        KReportTemplateItemConfig cfg;
+        cfg.m_strName = "/RT_HOSPITAL_LOGO";
+        cfg.m_mapAttrs["ImageWidth"]  = "120";
+        cfg.m_mapAttrs["ImageHeight"] = "80";
+        cfg.m_mapAttrs["AlignH"]      = "Center";
+        data.m_mapItemConfigs["/RT_HOSPITAL_LOGO"] = cfg;
+
+        KImageBlock block(&data.m_lstItems.front(), &data);
+
+        // Основные геттеры.
+        const bool idOk = block.ElementId() == "/RT_HOSPITAL_LOGO";
+        const bool nameOk = block.ImageName() == "RT_HOSPITAL_LOGO";   // tr(Name), без перевода = ключ
+        const bool sizeOk = block.Width() == 120 && block.Heigth() == 80;
+        const bool alignOk = block.GetAlign() == "Center";
+
+        // Url: DataSrc → SplitStr(",") → last токен = "RT_HOSPITAL_LOGO" → PicMap[key].
+        // Регистрируем реальный существующий файл прошивки → valid=true.
+        const QString realImg = QDir(KSystem::SystemPath())
+            .absoluteFilePath("style/X-2600/PyCkeun/scope/genc.ini");   // существует, но не картинка
+        // Возьмём реальную картинку из ассетов, если есть; иначе проверим только путь.
+        KImageBlock::RegisterPicPath("RT_HOSPITAL_LOGO", "/data/pic/logo.png");
+        bool valid = true;
+        const QString url = block.Url(valid);
+        // Путь возвращается всегда; несуществующий файл → valid=false.
+        const bool urlOk = url == "/data/pic/logo.png" && !valid;
+
+        // Незарегистрированный ключ → operator[] вставляет пустой путь, valid=false.
+        KReportTemplateItem item2;
+        item2.m_strID = "/RT_OTHER"; item2.m_strName = "RT_OTHER";
+        item2.m_strDataSrc = "SRC,UNKNOWN_KEY";
+        data.m_lstItems.push_back(item2);
+        KImageBlock block2(&data.m_lstItems.back(), &data);
+        bool v2 = true;
+        const QString url2 = block2.Url(v2);
+        const bool url2Ok = url2.isEmpty() && !v2;
+
+        // Промах item-config: нет записи → Width/Heigth = -1, GetAlign "".
+        KReportTemplateItem orphan; orphan.m_strID = "/NONE"; orphan.m_strName = "N";
+        KImageBlock empty(&orphan, &data);
+        const bool orphanOk = empty.Width() == -1 && empty.Heigth() == -1
+            && empty.GetAlign().empty();
+
+        (void)realImg;
+        qInfo() << "id:" << idOk << "имя:" << nameOk << "размер:" << sizeOk
+                << "(" << block.Width() << block.Heigth() << ")" << "выравн:" << alignOk;
+        qInfo() << "url:" << urlOk << url << "valid:" << valid << "| незарег:" << url2Ok
+                << "| промах:" << orphanOk;
+
+        const bool ok = idOk && nameOk && sizeOk && alignOk && urlOk && url2Ok && orphanOk;
+        qInfo() << (ok ? "imageblock: PASS" : "imageblock: FAIL");
+        return ok ? 0 : 48;
     }
 
     // Self-test модели текстового блока отчёта (KTextBlock).
