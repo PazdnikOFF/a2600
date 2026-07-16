@@ -1847,13 +1847,47 @@ int main(int argc, char **argv)
         std::string rt; const bool rtRet = QueryTemplateItemRealTitle(ti, rt);
         const bool rtOk = !rtRet && rt == "TR_X";
 
+        // Дерево для FindRefItem/HasSameNameInGroup: /A → {/A/B(TB), /A/C(TB — дубль)}.
+        KReportTemplateDataNew tree;
+        KReportTemplateItem A; A.m_strID = "/A"; A.m_strName = "A"; A.m_strTitle = "TA";
+        KReportTemplateItem B; B.m_strID = "/A/B"; B.m_strName = "B"; B.m_strTitle = "TB";
+        KReportTemplateItem C; C.m_strID = "/A/C"; C.m_strName = "C"; C.m_strTitle = "TB";
+        A.m_lstSubItems.push_back(B); A.m_lstSubItems.push_back(C);
+        tree.m_lstItems.push_back(A);
+
+        const KReportTemplateItem *fb = FindConstRefItem(tree, "/A/B");
+        const KReportTemplateItem *fa = FindConstRefItem(tree, "/A");
+        KReportTemplateItem *fc = FindRefItem(tree, "/A/C");
+        const bool findOk = fb && fb->m_strName == "B" && fa && fa->m_strName == "A"
+            && fc && fc->m_strName == "C" && FindConstRefItem(tree, "/A/X") == nullptr;
+
+        // UpdateItemID: пересчёт ID поддерева от пустого родителя.
+        KReportTemplateItem U; U.m_strName = "ROOT"; U.m_strID = "stale";
+        KReportTemplateItem UC; UC.m_strName = "CH"; UC.m_strID = "stale2";
+        U.m_lstSubItems.push_back(UC);
+        UpdateItemID(U, "");
+        const bool updOk = U.m_strID == "ROOT"                       // пустой parent → без sep
+            && U.m_lstSubItems.front().m_strID == "ROOT/CH";        // ребёнок от нового ID
+
+        // GetSubData: заглушка → false.
+        KReportTemplateDataNew subOut;
+        const bool subDataOk = !GetSubData(tree, "k", subOut);
+
+        // HasSameNameInGroup: сравнение с m_strTitle сиблинга, сам себя не считаем.
+        const bool dupOk = HasSameNameInGroup(tree, "/A/B", "TB");   // C имеет TB → true
+        const bool noDupOk = !HasSameNameInGroup(tree, "/A/B", "TZ")
+            && !HasSameNameInGroup(tree, "/A", "TA");                // корень, один сиблинг=сам
+        const bool groupOk = dupOk && noDupOk;
+
         qInfo() << "map→str:" << m2sOk << s.c_str() << "| str→map:" << s2mOk << "мусор:" << badOk
                 << "merge:" << mergeOk;
         qInfo() << "sourceId:" << sidOk << sid.c_str() << "| пустой:" << sidEmptyOk
                 << "| genId:" << genOk << "bold:" << boldOk << "title:" << rtOk;
+        qInfo() << "find:" << findOk << "update:" << updOk << "subData:" << subDataOk
+                << "group:" << groupOk;
 
         const bool ok = m2sOk && s2mOk && badOk && mergeOk && sidOk && sidEmptyOk
-            && genOk && boldOk && rtOk;
+            && genOk && boldOk && rtOk && findOk && updOk && subDataOk && groupOk;
         qInfo() << (ok ? "reporttmpl: PASS" : "reporttmpl: FAIL");
         return ok ? 0 : 51;
     }

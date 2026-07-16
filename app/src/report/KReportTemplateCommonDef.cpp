@@ -168,4 +168,76 @@ bool IsPatientInfoTitleBold(const KReportTemplateItem &item)
         || id.find(MARK_HOSPITAL_OTHER) != std::string::npos;
 }
 
+namespace {
+// Рекурсивная реализация коммит-спуска FindConstRefItem (реф. итеративная с переброской
+// end-регистра на sentinel детей = отбрасывание сиблингов при уходе в поддерево).
+const KReportTemplateItem *findIn(const std::list<KReportTemplateItem> &level,
+                                  const std::string &id)
+{
+    for (const KReportTemplateItem &node : level) {
+        if (node.m_strID == id)
+            return &node;
+        // node — предок id? тогда КОММИТИМСЯ в его детей (сиблинги не смотрим).
+        if (id.find(node.m_strID + STR_PATH_SEPARATOR) != std::string::npos)
+            return findIn(node.m_lstSubItems, id);
+    }
+    return nullptr;
+}
+} // namespace
+
+const KReportTemplateItem *FindConstRefItem(const KReportTemplateDataNew &data,
+                                            const std::string &id)
+{
+    return findIn(data.m_lstItems, id);
+}
+
+KReportTemplateItem *FindRefItem(KReportTemplateDataNew &data, const std::string &id)
+{
+    // реф. — хвостовой b в FindConstRefItem; non-const data сужается до const&.
+    return const_cast<KReportTemplateItem *>(FindConstRefItem(data, id));
+}
+
+bool UpdateItemID(KReportTemplateItem &item, const std::string &parentId)
+{
+    // Pre-order: сперва свой ID, затем детям передаём НОВЫЙ item.m_strID.
+    item.m_strID = GenerateIDByString(parentId, item.m_strName, STR_PATH_SEPARATOR);
+    for (KReportTemplateItem &child : item.m_lstSubItems)
+        UpdateItemID(child, item.m_strID);
+    return true;
+}
+
+bool GetSubData(const KReportTemplateDataNew &data, const std::string &key,
+                KReportTemplateDataNew &out)
+{
+    // реф. @0x595388 — скомпилированная заглушка `mov w0,#0; ret`. Логики нет.
+    (void)data; (void)key; (void)out;
+    return false;
+}
+
+bool HasSameNameInGroup(KReportTemplateDataNew &data, const std::string &id,
+                        const std::string &name)
+{
+    // Родитель = id без последнего "/"-сегмента (find_last_of; miss → parent==id).
+    const std::size_t p = id.find_last_of(STR_PATH_SEPARATOR);
+    const std::string parent = id.substr(0, p);   // p==npos → весь id
+
+    const std::list<KReportTemplateItem> *group = nullptr;
+    if (parent.empty()) {
+        group = &data.m_lstItems;                 // верхний уровень
+    } else {
+        KReportTemplateItem *pParent = FindRefItem(data, parent);
+        if (!pParent)
+            return false;                         // реф. — "not find p_ref_parent"
+        group = &pParent->m_lstSubItems;
+    }
+
+    for (const KReportTemplateItem &sib : *group) {
+        if (sib.m_strID == id)                    // сам себя не считаем
+            continue;
+        if (sib.m_strTitle == name)               // sic: сравнение с m_strTitle
+            return true;
+    }
+    return false;
+}
+
 } // namespace report_template

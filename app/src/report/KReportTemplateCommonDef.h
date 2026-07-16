@@ -78,4 +78,30 @@ std::string GenerateIDByString(const std::string &a, const std::string &b,
 // true, если m_strID СОДЕРЖИТ "RT_PATIENT_INFO" ИЛИ "HOSPITAL_OTHER" (substring).
 bool IsPatientInfoTitleBold(const KReportTemplateItem &item);
 
+// Поиск элемента дерева по m_strID (реф. FindConstRefItem @0x595d60). Спуск ПО ПУТИ, не
+// плоский обход: на уровне ищет точное совпадение m_strID==id; иначе, если id содержит
+// "<node.m_strID>/" — КОММИТИТСЯ в поддерево node (сиблинги отбрасываются). nullptr, если
+// уровень исчерпан. Указатель валиден, пока живо дерево.
+const KReportTemplateItem *FindConstRefItem(const KReportTemplateDataNew &data,
+                                            const std::string &id);
+// Non-const близнец (реф. FindRefItem @0x595e68 — хвостовой b в FindConstRefItem).
+KReportTemplateItem *FindRefItem(KReportTemplateDataNew &data, const std::string &id);
+
+// Пересчёт m_strID поддерева от родительского ID (реф. UpdateItemID @0x595c70). Pre-order:
+// item.m_strID = GenerateIDByString(parentId, item.m_strName, "/"); затем рекурсия в детей
+// с НОВЫМ item.m_strID как их parentId. Возврат true.
+bool UpdateItemID(KReportTemplateItem &item, const std::string &parentId);
+
+// реф. GetSubData @0x595388 — В БИНАРНИКЕ ЭТО СКОМПИЛИРОВАННАЯ ЗАГЛУШКА (`return false`,
+// out не трогается; сосед AppendSubData — такая же). Реальной логики нет — воспроизводим 1:1.
+bool GetSubData(const KReportTemplateDataNew &data, const std::string &key,
+                KReportTemplateDataNew &out);
+
+// Проверка дубля в группе-сиблингах (реф. HasSameNameInGroup @0x561df0). ВНИМАНИЕ: несмотря
+// на имя аргумента, сравнивается с m_strTitle сиблинга (НЕ m_strName!). Родитель = id без
+// последнего "/"-сегмента (find_last_of); пустой → корень m_lstItems, иначе FindRefItem(parent)
+// (miss → false). true, если у сиблинга с ДРУГИМ m_strID найден m_strTitle == name.
+bool HasSameNameInGroup(KReportTemplateDataNew &data, const std::string &id,
+                        const std::string &name);
+
 } // namespace report_template
