@@ -8,11 +8,17 @@
 
 namespace KSystem {
 
-QString AppPath()            { return theme::root(); }
-QString SystemPath()         { return QDir(theme::root()).absoluteFilePath("system"); }
-QString DataPath()           { return QDir(theme::root()).absoluteFilePath("data"); }
+// Реф.: RootPath — литерал "/home/root/", остальное — конкатенация от него.
+// У нас корень подменяется через ENDO_ROOT (theme::root()) для отладки на Mac.
+QString RootPath()           { return theme::root(); }
+QString SystemPath()         { return QDir(RootPath()).absoluteFilePath("system"); }
+QString DataPath()           { return QDir(RootPath()).absoluteFilePath("data"); }
+QString AppPath()            { return QDir(DataPath()).absoluteFilePath("app"); }
 QString DisplayConfigPath()  { return QDir(SystemPath()).absoluteFilePath("display"); }
-QString UserPresetPath()     { return QDir(SystemPath()).absoluteFilePath("presetdata/userpreset"); }
+QString SystemPresetPath()   { return QDir(SystemPath()).absoluteFilePath("presetdata"); }
+QString ProjectPresetPath()  { return QDir(SystemPresetPath()).absoluteFilePath("syspreset"); }
+QString ProjectUserPresetPath() { return QDir(SystemPresetPath()).absoluteFilePath("userpreset"); }
+QString UserPresetPath()     { return ProjectUserPresetPath(); }
 QString VideoConfPath()      { return QDir(SystemPath()).absoluteFilePath("videoconf"); }
 // Реф.: SetDataPath = DataPath + "setdata/", UserSetPath = SetDataPath + "userset/".
 QString SetDataPath()        { return QDir(DataPath()).absoluteFilePath("setdata"); }

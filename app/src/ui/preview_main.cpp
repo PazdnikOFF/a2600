@@ -30,6 +30,8 @@
 #include "dicom/KDicomDatasetFormat.h"
 #include "dicom/KSysDICOMData.h"
 #include "kernel/KConfig.h"
+#include "report/KMeaXMLBase.h"
+#include "sys/KEnvConfig.h"
 #include "db/KPatientListConfigSetupHandler.h"
 #include "db/KWorklistConfigSetupHandler.h"
 #include <QJsonArray>
@@ -1559,6 +1561,114 @@ int main(int argc, char **argv)
         const bool ok = jpg == 3 && imgs == 4 && vids == 3 && none == 0;
         qInfo() << (ok ? "recfiles: PASS" : "recfiles: FAIL");
         return ok ? 0 : 27;
+    }
+
+    // Self-test фундамента XML-подсистемы (KMeaXMLBase + KEnvConfig).
+    if (screen == "meaxml") {
+        // Тестовый наследник: реф. контракт — Check/LoadCache чисто виртуальные.
+        struct TestCfg : public KMeaXMLBase {
+            std::string lib, usr;
+            int Check(const std::string &a, const std::string &b) override {
+                // 1:1 с KTemplateCfg::Check: lib — от RO-корня (с "mainapp/"),
+                // usr — от user-корня (БЕЗ "mainapp/" — асимметрия оригинала).
+                lib = KEnvConfig::GetInstance().GetReadOnlyBaseDir()
+                    + "/mainapp/patient/report/template/FullTemplate/" + a;
+                usr = KEnvConfig::GetInstance().GetUsrDir()
+                    + "/patient/report/template/FullTemplate/" + b;
+                return 1;
+            }
+            int LoadCache() override { return 1; }   // реф. — заглушка return 1
+        };
+        TestCfg cfg;
+
+        // 1. KEnvConfig: RO-корень = syspreset, user-корень = userpreset.
+        const std::string ro = KEnvConfig::GetInstance().GetReadOnlyBaseDir();
+        const std::string usr = KEnvConfig::GetInstance().GetUsrDir();
+        const bool envOk = QString::fromStdString(ro).endsWith("system/presetdata/syspreset")
+            && QString::fromStdString(usr).endsWith("system/presetdata/userpreset")
+            && QString::fromStdString(KEnvConfig::GetInstance().GetBaseDir()).endsWith("data");
+
+        // 2. Реальный файл прошивки: syspreset/mainapp/.../FullTemplate/Template(NP-1x4).xml
+        cfg.Check("Template(NP-1x4).xml", "Template(NP-1x4).xml");
+        const bool libExists = KMeaXMLBase::IsFileExist(cfg.lib);
+        QDomDocument doc;
+        const int loadRet = KMeaXMLBase::LoadXMLFile(cfg.lib, doc);
+        const bool parseOk = KMeaXMLBase::ParseXML(cfg.lib) == 1;
+
+        // Схема реф.: <root> с детьми TemplateConfig / Content / ItemConfig.
+        const QDomElement root = doc.documentElement();
+        QDomElement tcfg, content, icfg;
+        const bool schemaOk = cfg.FindByName(root, "TemplateConfig", tcfg)
+            && cfg.FindByName(root, "Content", content)
+            && cfg.FindByName(root, "ItemConfig", icfg)
+            && !cfg.FindByName(root, "NoSuchNode", tcfg);
+
+        // 3. Коды ошибок: отсутствующий файл и битый XML → -40 (реф. — не отдельный код).
+        const int missRet = KMeaXMLBase::LoadXMLFile("/no/such/file.xml", doc);
+        QTemporaryDir tmp;
+        const QString badPath = QDir(tmp.path()).absoluteFilePath("bad.xml");
+        { QFile b(badPath); b.open(QIODevice::WriteOnly); b.write("<root><unclosed>"); b.close(); }
+        const int badRet = KMeaXMLBase::ParseXML(badPath.toStdString());
+        const bool errOk = missRet == -40 && badRet == -40
+            && !KMeaXMLBase::IsFileExist("/no/such/file.xml");
+
+        // 4. GetModuleVersion == -1 → CheckVersion сводится к загрузке (реф.).
+        const bool verOk = cfg.GetModuleVersion() == -1
+            && cfg.CheckVersion(cfg.lib) == 1
+            && cfg.CheckVersion("/no/such/file.xml") == -40
+            && cfg.IsValid();
+
+        // 5. Хелперы обхода на своём документе: whitespace-only текст игнорируется
+        //    (у реф. pugi таких узлов нет), CDATA не считается данными.
+        QDomDocument d2;
+        d2.setContent(QString("<Root>\n  <A x=\"1\">text</A>\n  <A x=\"2\"/>\n"
+                              "  <B>\n  </B>\n  <C><![CDATA[cdata]]></C>\n</Root>"));
+        const QDomElement r2 = d2.documentElement();
+        QDomElement found;
+        const bool helpOk = cfg.FindByProperty(r2, "A", "x", "2", found)
+            && found.attribute("x") == "2"
+            && cfg.FindByValue(r2, "A", "text", found) && found.attribute("x") == "1"
+            && !cfg.FindByValue(r2, "A", "нет", found);
+        QDomElement bEl, cEl;
+        cfg.FindByName(r2, "B", bEl);
+        cfg.FindByName(r2, "C", cEl);
+        const bool wsOk = cfg.FindDataNode(bEl).isNull()    // только пробелы → нет данных
+            && cfg.FindDataNode(cEl).isNull();             // CDATA данными не считается
+
+        // 6. SetNodeValue/SetNodeProperty: создание и перезапись.
+        cfg.SetNodeValue(bEl, "новое");
+        cfg.SetNodeProperty(bEl, "attr", "v");
+        QDomElement aEl;
+        cfg.FindByName(r2, "A", aEl);
+        cfg.SetNodeValue(aEl, "изменено");
+        const bool setOk = !cfg.FindDataNode(bEl).isNull()
+            && cfg.FindDataNode(bEl).toText().data() == "новое"
+            && bEl.attribute("attr") == "v"
+            && cfg.FindDataNode(aEl).toText().data() == "изменено";
+
+        // 7. ReplaceUserByLib: каталог создаётся, user получает копию, старый → .bak.
+        const QString uDir = QDir(tmp.path()).absoluteFilePath("deep/user");
+        const QString uFile = QDir(uDir).absoluteFilePath("Template(NP-1x4).xml");
+        { QDir().mkpath(uDir); QFile o(uFile); o.open(QIODevice::WriteOnly); o.write("old"); o.close(); }
+        const int repRet = KMeaXMLBase::ReplaceUserByLib(cfg.lib, uFile.toStdString());
+        const bool repOk = repRet == 1 && QFile::exists(uFile) && QFile::exists(uFile + ".bak")
+            && QFileInfo(uFile).size() == QFileInfo(QString::fromStdString(cfg.lib)).size()
+            && KMeaXMLBase::ParseXML(uFile.toStdString()) == 1;
+        // Тот же вызов, когда user-файла нет (rename провалится — реф. игнорирует).
+        const QString uNew = QDir(tmp.path()).absoluteFilePath("fresh/dir/t.xml");
+        const bool freshOk = KMeaXMLBase::ReplaceUserByLib(cfg.lib, uNew.toStdString()) == 1
+            && QFile::exists(uNew);
+
+        qInfo() << "KEnvConfig:" << envOk << "| lib на месте:" << libExists
+                << "load:" << loadRet << "parse:" << parseOk << "| схема root:" << schemaOk;
+        qInfo() << "коды ошибок:" << errOk << "| версия:" << verOk << "| поиск:" << helpOk
+                << "| whitespace/CDATA:" << wsOk << "| set:" << setOk
+                << "| ReplaceUserByLib:" << repOk << "новый:" << freshOk;
+
+        const bool ok = envOk && libExists && loadRet == 1 && parseOk && schemaOk && errOk
+            && verOk && helpOk && wsOk && setOk && repOk && freshOk;
+        qInfo() << (ok ? "meaxml: PASS" : "meaxml: FAIL");
+        return ok ? 0 : 31;
     }
 
     // Self-test конфигов списков пациентов/worklist (фасады над KConfig).

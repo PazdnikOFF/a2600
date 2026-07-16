@@ -65,6 +65,7 @@ set(SOURCES
     src/ui/KImgList.cpp
     src/ui/Theme.cpp
     src/sys/KSystem.cpp
+    src/sys/KEnvConfig.cpp
     src/sys/KUserSet.cpp
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
@@ -100,6 +101,7 @@ set(SOURCES
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/dicom/KSysDICOMData.cpp
+    src/report/KMeaXMLBase.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp
@@ -153,6 +155,7 @@ add_executable(ui_preview
     src/ui/KDisplayOption.cpp
     src/ui/KImgList.cpp
     src/sys/KSystem.cpp
+    src/sys/KEnvConfig.cpp
     src/sys/KUserSet.cpp
     src/sys/KUserOsdSet.cpp
     src/sys/KAccount.cpp
@@ -192,6 +195,7 @@ add_executable(ui_preview
     src/dicom/KEntityDicom.cpp
     src/dicom/KDicomInterface.cpp
     src/dicom/KSysDICOMData.cpp
+    src/report/KMeaXMLBase.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
     src/report/KReportDataSource.cpp

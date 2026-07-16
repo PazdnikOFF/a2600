@@ -9,11 +9,16 @@
 // Базой служит корень прошивки (устройство: /home/root; отладка: ENDO_ROOT).
 namespace KSystem {
 
-QString AppPath();               // корень приложения (/home/root)
+// Цепочка путей сверена с дизасмом (реф. строит их конкатенацией от RootPath).
+QString RootPath();              // /home/root                (реф. литерал; у нас ENDO_ROOT)
+QString AppPath();               // /home/root/data/app       (реф. = DataPath + "app/")
 QString SystemPath();            // /home/root/system
 QString DataPath();              // /home/root/data
 QString DisplayConfigPath();     // /home/root/system/display
-QString UserPresetPath();        // /home/root/system/presetdata/userpreset
+QString SystemPresetPath();      // /home/root/system/presetdata
+QString ProjectPresetPath();     // /home/root/system/presetdata/syspreset   (KEnvConfig RO-корень)
+QString ProjectUserPresetPath(); // /home/root/system/presetdata/userpreset  (KEnvConfig user-корень)
+QString UserPresetPath();        // синоним ProjectUserPresetPath (наше имя, прижилось у вызывающих)
 QString SetDataPath();           // /home/root/data/setdata/
 QString UserSetPath();           // /home/root/data/setdata/userset/
 QString ProtectedPath();         // /home/root/data/protected/
