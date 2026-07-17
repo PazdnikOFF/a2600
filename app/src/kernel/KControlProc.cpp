@@ -257,3 +257,64 @@ bool KControlProc::IsOutofControl()
         return false;                      // текущий эндоскоп разрешён
     return true;                           // endo-контроль вкл., текущий не в списке
 }
+
+// ============================================================================
+// Машинный контроль: время (control.ini + даты) и эндоскопы (блочная запись).
+// EEPROM-методы (GetEndoRemainTimes/GetEndoDeadline/GetMatchProcessorList/
+// IsStartMatchProcessorCtrl/IsStartEndoUseTimeCtrl/IsEndoPowerOn) — DEVICE-BOUND, не реализованы.
+// ============================================================================
+
+void KControlProc::StartTimeMc(const _MC_Time *t)
+{
+    if (!t)
+        return;   // реф. — тихий no-op, даже без лога
+    // реф. логирует deadline и пишет структуру КАК ЕСТЬ. Флаг controlTime сам НЕ ставит.
+    KControlINI::WriteMcTime(*t);
+}
+
+void KControlProc::StopTimeMc()
+{
+    _MC_Time t;
+    t.controlTime = false;
+    t.deadline    = "2099-01-01";   // дефолт KControlINI::GetDeadline, не пустая строка
+    t.remainDays  = -1;             // sic: НЕ 0 — «разоружено», IsOutofControl сверяет ==0
+    KControlINI::WriteMcTime(t);
+}
+
+void KControlProc::UpdateMcDays()
+{
+    if (!KControlINI::IsStartTimeControl())
+        return;
+    int remain = KControlINI::GetRemainDays();
+    if (remain <= 0)
+        return;                     // -1 от StopTimeMc так и не нормализуется в 0 (реф.)
+
+    const QDate deadline = QDate::fromString(KControlINI::GetDeadline(), "yyyy-MM-dd");
+    const int days = QDate::currentDate().daysTo(deadline);   // СИСТЕМНЫЕ ЧАСЫ
+    if (remain > days)                                        // храповик: только вниз
+        remain = (days >= 0) ? days : 0;                      // просрочка/битая дата → 0
+    KControlINI::SetRemainDays(remain);
+}
+
+void KControlProc::StartEndoMc(QStringList endos)
+{
+    // Одна блочная запись: флаг и список не могут разойтись (реф. не через Set* по отдельности).
+    _MC_Endo e;
+    e.controlEndo = true;
+    e.endos = endos;
+    KControlINI::WriteMcEndo(e);    // реф. лога здесь НЕТ (асимметрия со StopEndoMc)
+}
+
+void KControlProc::StopEndoMc()
+{
+    _MC_Endo e;
+    e.controlEndo = false;
+    e.endos.clear();
+    KControlINI::WriteMcEndo(e);
+}
+
+bool KControlProc::IsEndoMatch()
+{
+    // реф. дублирует это тело внутри IsOutofControl (не вызывает) — у нас так же.
+    return KControlINI::GetMatchEndos().contains(GetCurEndoSN(), Qt::CaseSensitive);
+}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "kernel/KControlINI.h"   // _MC_Time / _MC_Endo + статический API ini
+
 #include <QString>
 #include <QStringList>
 
@@ -83,7 +85,37 @@ public:
     // ЛИБО включён endo-контроль и текущий эндоскоп НЕ в списке разрешённых.
     bool IsOutofControl();
 
+    // --- контроль времени (control.ini + арифметика дат) ---
+    // Лог + СКВОЗНАЯ запись KControlINI::WriteMcTime(t). ВНИМАНИЕ: сам НЕ ставит controlTime —
+    // поля (включая флаг и remainDays) целиком на совести вызывающего. nullptr → тихий no-op.
+    void StartTimeMc(const _MC_Time *t);
+    // Снятие контроля: controlTime=false, deadline="2099-01-01", **remainDays = -1** (sic —
+    // не 0: IsOutofControl проверяет ==0, поэтому -1 это «разоружено», а не «истекло»).
+    void StopTimeMc();
+    // Ежедневный пересчёт остатка — МОНОТОННЫЙ ХРАПОВИК: remain = min(remain, max(0, daysTo(deadline))).
+    // Только уменьшается: перевод часов НАЗАД не возвращает дни (запись просто не делается),
+    // перевод ВПЕРЁД сжигает их безвозвратно. Непарсимый deadline → remain=0 (fail-closed).
+    // no-op при выключенном контроле либо remain<=0. ЧИТАЕТ СИСТЕМНЫЕ ЧАСЫ (QDate::currentDate).
+    void UpdateMcDays();
+
+    // --- контроль эндоскопов (control.ini, блочная запись) ---
+    // controlEndo=true + список → ОДНА запись WriteMcEndo (флаг и список не могут разойтись).
+    // Реф. лога НЕ пишет (асимметрия со StopEndoMc — так в оригинале).
+    void StartEndoMc(QStringList endos);
+    void StopEndoMc();                              // лог + controlEndo=false, список пуст
+    // Текущий эндоскоп в списке разрешённых? Сравнение Qt::CaseSensitive (явно в реф.).
+    bool IsEndoMatch();
+
     // Off-device-параметризация DEVICE-зависимостей (реф. USB/эндоскоп).
     static void SetImportRoot(const QString &dir);   // корень импорта (реф. KSystem::ImportPath)
     static void SetCurEndoSN(const QString &sn);     // текущий серийник эндоскопа
+
+    // НЕ РЕАЛИЗОВАНО — DEVICE-BOUND (реф. GetEndoScope()->GetEepromData()/IsEndoReady(),
+    // KEndoScope в app/src отсутствует; EEPROM живого эндоскопа):
+    //   GetEndoRemainTimes()  — EEPROM +0x24 (u16)
+    //   GetEndoDeadline()     — EEPROM +0x28 (QString)
+    //   GetMatchProcessorList() — EEPROM +0x30 (QStringList) — NB: имя врёт, matchprolist.ini НЕ читает
+    //   IsStartMatchProcessorCtrl() — KEndoScope::IsOpenMatchProControl()
+    //   IsStartEndoUseTimeCtrl()    — IsEndoPowerOn() && KEndoScope::IsOpenEndoControl() (бит 6 флагов)
+    //   IsEndoPowerOn()             — KEndoScope::IsEndoReady() (поле состояния +0x10 == 4)
 };

@@ -2396,13 +2396,79 @@ int main(int argc, char **argv)
         const bool inCtrl = !proc.IsOutofControl();                    // в списке → false
         const bool oocOk = oocTime && oocEndo && inCtrl;
 
+        // --- контроль времени/эндоскопов ---
+        // StopTimeMc: флаг снят, deadline="2099-01-01", remainDays = -1 (НЕ 0).
+        proc.StopTimeMc();
+        _MC_Time rt; KControlINI::ReadMcTime(rt);
+        const bool stopTimeOk = !rt.controlTime && rt.deadline == "2099-01-01"
+            && rt.remainDays == -1;
+
+        // StartTimeMc: СКВОЗНАЯ запись (флаг НЕ ставит сам); nullptr → no-op.
+        _MC_Time wt; wt.controlTime = true; wt.deadline = "2030-01-01"; wt.remainDays = 5;
+        proc.StartTimeMc(&wt);
+        _MC_Time rt2; KControlINI::ReadMcTime(rt2);
+        const bool startTimeOk = rt2.controlTime && rt2.deadline == "2030-01-01"
+            && rt2.remainDays == 5;
+        proc.StartTimeMc(nullptr);                       // no-op, состояние не меняется
+        _MC_Time rt3; KControlINI::ReadMcTime(rt3);
+        const bool nullTimeOk = rt3.remainDays == 5;
+
+        // UpdateMcDays — МОНОТОННЫЙ ХРАПОВИК (проверки относительно currentDate → не зависят от часов).
+        const QDate today = QDate::currentDate();
+        KControlINI::StartTimeControl(true);
+        KControlINI::SetRemainDays(10);
+        KControlINI::SetDeadline(today.addDays(5).toString("yyyy-MM-dd"));
+        proc.UpdateMcDays();
+        const bool ratchetDown = KControlINI::GetRemainDays() == 5;      // 10 → min(10,5)=5
+        // Продление дедлайна НЕ возвращает дни (ключевое анти-tamper-свойство).
+        KControlINI::SetDeadline(today.addDays(100).toString("yyyy-MM-dd"));
+        proc.UpdateMcDays();
+        const bool noInflate = KControlINI::GetRemainDays() == 5;        // остаётся 5, не 100
+        // Просроченный дедлайн → 0 (блокировка).
+        KControlINI::SetDeadline(today.addDays(-1).toString("yyyy-MM-dd"));
+        proc.UpdateMcDays();
+        const bool expiredOk = KControlINI::GetRemainDays() == 0;
+        // Битый дедлайн → fail-closed (0).
+        KControlINI::SetRemainDays(7); KControlINI::SetDeadline("не-дата");
+        proc.UpdateMcDays();
+        const bool failClosed = KControlINI::GetRemainDays() == 0;
+        // Контроль выключен → no-op.
+        KControlINI::StartTimeControl(false); KControlINI::SetRemainDays(3);
+        KControlINI::SetDeadline(today.addDays(1).toString("yyyy-MM-dd"));
+        proc.UpdateMcDays();
+        const bool offNoOp = KControlINI::GetRemainDays() == 3;
+        const bool updOk = ratchetDown && noInflate && expiredOk && failClosed && offNoOp;
+
+        // StartEndoMc/StopEndoMc — одна блочная запись (флаг+список согласованы).
+        proc.StartEndoMc(QStringList() << "E1" << "E2");
+        _MC_Endo re; KControlINI::ReadMcEndo(re);
+        const bool startEndoOk = re.controlEndo && re.endos.size() == 2 && re.endos.contains("E1");
+        proc.StopEndoMc();
+        _MC_Endo re2; KControlINI::ReadMcEndo(re2);
+        const bool stopEndoOk = !re2.controlEndo && re2.endos.isEmpty();
+
+        // IsEndoMatch — Qt::CaseSensitive (точное совпадение серийника).
+        proc.StartEndoMc(QStringList() << "ENDO_A");
+        KControlProc::SetCurEndoSN("ENDO_A");
+        const bool matchOk = proc.IsEndoMatch();
+        KControlProc::SetCurEndoSN("endo_a");                            // регистр важен
+        const bool caseOk = !proc.IsEndoMatch();
+        const bool endoOk = startEndoOk && stopEndoOk && matchOk && caseOk;
+
         qInfo() << "license: path:" << pathOk << "list:" << listOk << "check:" << checkOk
                 << rc1 << rc2 << rcNoFile << "noPath:" << noPathOk;
         qInfo() << "md5:" << md5Ok << "outOfControl:" << oocOk;
+        qInfo() << "timeMc: stop(-1):" << stopTimeOk << "start(сквозь):" << startTimeOk
+                << "null:" << nullTimeOk << "| храповик:" << updOk
+                << "(вниз/не-растёт/просроч/битый/off:" << ratchetDown << noInflate
+                << expiredOk << failClosed << offNoOp << ")";
+        qInfo() << "endoMc:" << endoOk << "(start/stop/match/регистр:" << startEndoOk
+                << stopEndoOk << matchOk << caseOk << ")";
 
         const bool ok = lfnOk && cryptoOk && convOk && offOk && dateOk && zeroOk
             && c2pOk && c2pMissOk
-            && pathOk && listOk && checkOk && noPathOk && md5Ok && oocOk;
+            && pathOk && listOk && checkOk && noPathOk && md5Ok && oocOk
+            && stopTimeOk && startTimeOk && nullTimeOk && updOk && endoOk;
         qInfo() << (ok ? "kcontrolproc: PASS" : "kcontrolproc: FAIL");
         return ok ? 0 : 59;
     }

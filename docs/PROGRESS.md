@@ -487,7 +487,7 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **73 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 81 класс / 814 методов (12.7%)** (report_template 28/36 = 78% — свободные функции
+затронуто 81 класс / 820 методов (12.8%)** (report_template 28/36 = 78% — свободные функции
 namespace по сути закрыты, остаток «36» — Qt-виджет KLineEdit). Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
@@ -531,8 +531,21 @@ KSystemSet::GetProcessorSN), **GetDeadline/GetDelayTime** (plain.ini ключи 
 от KControlINI одноимённых), **IsStartTimeMc/IsStartEndoMc** (→KControlINI), **IsOutofControl**
 (время истекло remain==0 ЛИБО endo-контроль+текущий не в GetMatchEndos; GetCurEndoSN — DEVICE,
 off-device settable SetCurEndoSN). Тест: CheckLicense end-to-end на СИНТЕЗИРОВАННОМ DES-шифрованном
-файле (0/повтор→4/нет→2/нет-каталога→1). ОСТАЛОСЬ (~18 методов, часть device): Start/StopEndoMc/
-StartTimeMc, IsEndoMatch, ImportMatchLicense, DispEndoList, GetEndoRemainTimes, UpdateMcDays и др.
+файле (0/повтор→4/нет→2/нет-каталога→1). ДОБАВЛЕН машинный контроль (сверено дизасмом, вердикт по каждому методу): **StartTimeMc(const
+_MC_Time*)** — лог+СКВОЗНАЯ WriteMcTime, флаг controlTime САМ НЕ СТАВИТ (на вызывающем), nullptr→
+тихий no-op; **StopTimeMc** — controlTime=false, deadline="2099-01-01", **remainDays=-1** (sic, НЕ 0:
+IsOutofControl сверяет ==0 → -1 это «разоружено», а не «истекло»); **UpdateMcDays** — МОНОТОННЫЙ
+ХРАПОВИК remain=min(remain,max(0,daysTo(deadline))): часы НАЗАД дни не возвращают (записи просто нет),
+ВПЕРЁД — сжигают безвозвратно; битый/пустой deadline → remain=0 (FAIL-CLOSED); ЧИТАЕТ СИСТЕМНЫЕ ЧАСЫ;
+**StartEndoMc/StopEndoMc** — ОДНА блочная WriteMcEndo (флаг+список не разойдутся; Start лога НЕ пишет
+— асимметрия реф.); **IsEndoMatch** — GetMatchEndos().contains(GetCurEndoSN(), Qt::CaseSensitive)
+(регистр важен). Тест: храповик проверен относительно currentDate (не зависит от часов) — продление
+дедлайна НЕ инфлирует остаток.
+**НЕ РЕАЛИЗОВАНО — DEVICE-BOUND (EEPROM живого эндоскопа, KEndoScope в app/src НЕТ):**
+GetEndoRemainTimes (EEPROM+0x24 u16), GetEndoDeadline (+0x28), GetMatchProcessorList (+0x30 — NB имя
+ВРЁТ: matchprolist.ini НЕ читает!), IsStartMatchProcessorCtrl (IsOpenMatchProControl),
+IsStartEndoUseTimeCtrl (IsEndoPowerOn && IsOpenEndoControl — бит 6 флагов), IsEndoPowerOn
+(KEndoScope::IsEndoReady — поле +0x10 == 4). Плюс ImportMatchLicense/DispEndoList (UI/USB).
 
 РАНЕЕ (эта сессия): `yxyDES2` — DES (self-test `des`, `app/src/kernel/`)** — РАЗБЛОКИРУЕТ
 крипто-ветку KControlProc/KControlINI (в §10 значилась блокером «DES yxyDES2» — оказалась чистой
