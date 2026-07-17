@@ -2334,8 +2334,75 @@ int main(int argc, char **argv)
                 << KControlINI::GetDeadline() << "remain0:" << zeroOk;
         qInfo() << "Cipher2Plain:" << c2pOk << "miss:" << c2pMissOk;
 
+        // --- лицензирование ---
+        // Хелпер: зашифровать текст ключом "ZXYuio12" → UPPERCASE-hex (симметрично DecryptionStr).
+        auto encHex = [](const QString &text) -> QString {
+            yxyDES2 e; char k[32] = {0}; memcpy(k, "ZXYuio12", 8); e.InitializeKey(k, 0);
+            QByteArray b = text.toLatin1();
+            e.EncryptAnyLength(b.data(), static_cast<unsigned>(b.size()), 0);
+            const char *cy = e.GetCipherAnyLength();
+            const int clen = static_cast<int>(strlen(cy));
+            // Cipher-байты → hex (яркий регистр) через yxyDES2::Bits2Hex по 8-байтным блокам.
+            QString hex; yxyDES2 h;
+            for (int i = 0; i < clen; i += 8) {
+                char blk[8] = {0}; memcpy(blk, cy + i, qMin(8, clen - i));
+                char bits[64]; h.Bytes2Bits(blk, bits, 64);
+                char hx[17] = {0}; h.Bits2Hex(hx, bits, 64);
+                hex += QString::fromLatin1(hx, 16);
+            }
+            return hex;
+        };
+
+        // Каталог лицензий → временный.
+        QDir().mkpath(tmp.path() + "/imp/license");
+        KControlProc::SetImportRoot(tmp.path() + "/imp/");
+        const bool pathOk = proc.IsLicensePathExist();
+
+        // Синтез валидной processor_release-лицензии для SN "PROC001".
+        // plain-ini текст → шифруем → пишем в <license>/PROC001_release.ini.
+        const QString licPlain =
+            "md5sum=aaa111\nSN=PROC001\nControlState=release\n";
+        { QFile lf(tmp.path() + "/imp/license/PROC001_release.ini");
+          lf.open(QIODevice::WriteOnly | QIODevice::Text);
+          QTextStream(&lf) << encHex(licPlain); lf.close(); }
+        const QStringList fl = proc.GetMcFilenameList();
+        const bool listOk = fl.contains("PROC001_release.ini");
+
+        // CheckLicense: валидная → 0; повтор (md5 использован) → 4; нет файла → 2; нет каталога → 1.
+        const int rc1 = proc.CheckLicense("PROC001", KCT_PROCESSOR_RELEASE);
+        const int rc2 = proc.CheckLicense("PROC001", KCT_PROCESSOR_RELEASE);   // md5 уже израсходован
+        const int rcNoFile = proc.CheckLicense("NOPE", KCT_PROCESSOR_RELEASE);
+        const bool checkOk = rc1 == 0 && rc2 == 4 && rcNoFile == 2;
+        KControlProc::SetImportRoot(tmp.path() + "/none/");
+        const bool noPathOk = proc.CheckLicense("PROC001", KCT_PROCESSOR_RELEASE) == 1;
+
+        // IsMd5sumUsed напрямую: первый — false (и помечает), повтор — true; type>=6 — true.
+        const bool md5Ok = !proc.IsMd5sumUsed("z9", KCT_ENDO_DELAY)
+            && proc.IsMd5sumUsed("z9", KCT_ENDO_DELAY)
+            && proc.IsMd5sumUsed("q", static_cast<_KControlType>(9));
+
+        // GetDeadline/GetDelayTime читают plain.ini (Cipher2Plain уже записал туда licPlain).
+        // (значения зависят от последней расшифровки; проверяем лишь что не падает.)
+        proc.GetDeadline(); proc.GetDelayTime();
+
+        // IsOutofControl: время истекло → true; endo-контроль + неразрешённый эндоскоп → true.
+        KControlINI::StartTimeControl(true); KControlINI::SetRemainDays(0);
+        const bool oocTime = proc.IsOutofControl();                    // remain==0
+        KControlINI::StartTimeControl(false); KControlINI::StartEndoControl(true);
+        KControlINI::SetMatchEndos(QStringList() << "ENDO_OK");
+        KControlProc::SetCurEndoSN("ENDO_BAD");
+        const bool oocEndo = proc.IsOutofControl();                    // не в списке
+        KControlProc::SetCurEndoSN("ENDO_OK");
+        const bool inCtrl = !proc.IsOutofControl();                    // в списке → false
+        const bool oocOk = oocTime && oocEndo && inCtrl;
+
+        qInfo() << "license: path:" << pathOk << "list:" << listOk << "check:" << checkOk
+                << rc1 << rc2 << rcNoFile << "noPath:" << noPathOk;
+        qInfo() << "md5:" << md5Ok << "outOfControl:" << oocOk;
+
         const bool ok = lfnOk && cryptoOk && convOk && offOk && dateOk && zeroOk
-            && c2pOk && c2pMissOk;
+            && c2pOk && c2pMissOk
+            && pathOk && listOk && checkOk && noPathOk && md5Ok && oocOk;
         qInfo() << (ok ? "kcontrolproc: PASS" : "kcontrolproc: FAIL");
         return ok ? 0 : 59;
     }

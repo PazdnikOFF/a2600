@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 class yxyDES2;
 
@@ -51,4 +52,38 @@ public:
     // no-op, если контроль времени выключен либо остаток дней <= 0. Формат — "yyyy-MM-dd"
     // (и разбор, и вывод). Непарсимая дата → невалидный QDate → в SetDeadline уйдёт пустая строка.
     void SystemDate2MCDate(QString date);
+
+    // --- лицензирование (ini/файлы поверх DES) ---
+    // Каталог лицензий: реф. KSystem::ImportPath() + "license/" (ImportPath — USB-корень,
+    // DEVICE). Off-device: settable override (SetImportRoot) + "license/".
+    QString McDirLicense() const;
+    bool    IsLicensePathExist() const;           // QDir(McDirLicense()).exists()
+    QStringList GetMcFilenameList() const;        // *.ini в каталоге лицензий (реф. USB-gate опущен)
+
+    // Анти-повтор md5 (реф. IsMd5sumUsed): по ИМЕНИ ТИПА как ключу в licensehistory.ini хранится
+    // QStringList уже израсходованных md5. Уже есть → true; иначе ДОБАВЛЯЕТ и пишет (side-effect) →
+    // false. type>=6 → true без обращения к файлу. Аргумент — сам md5 (не серийник, sic).
+    bool IsMd5sumUsed(QString md5, _KControlType type);
+
+    // Проверка лицензии (реф. CheckLicense → int-код): 1 нет каталога; 2 нет файла; 3 расшифровка
+    // не удалась; 4 md5 использован ИЛИ поля не совпали; 0 OK. Файл LicenseFileName(sn,type) в
+    // каталоге → Cipher2Plain → plain.ini: md5sum (анти-повтор) + SN/ControlState/ProcessorSN/
+    // EndoSN по типу (см. .cpp). ProcessorSN машины — KSystemSet::GetProcessorSN().
+    int CheckLicense(QString sn, _KControlType type);
+
+    // Читают plain.ini (KControlINI::PlainINIpath()) — ОТЛИЧНЫ от одноимённых KControlINI (control.ini):
+    QString GetDeadline() const;    // ключ "deadline", дефолт ""
+    int     GetDelayTime() const;   // ключ "addNum", дефолт 0
+
+    bool IsStartTimeMc() const;     // → KControlINI::IsStartTimeControl()
+    bool IsStartEndoMc() const;     // → KControlINI::IsStartEndoControl()
+    QString GetCurEndoSN() const;   // DEVICE (живой эндоскоп); off-device — settable (SetCurEndoSN)
+
+    // Заблокирована ли машина (реф. IsOutofControl): истёк лимит времени (IsStartTimeMc && remain==0)
+    // ЛИБО включён endo-контроль и текущий эндоскоп НЕ в списке разрешённых.
+    bool IsOutofControl();
+
+    // Off-device-параметризация DEVICE-зависимостей (реф. USB/эндоскоп).
+    static void SetImportRoot(const QString &dir);   // корень импорта (реф. KSystem::ImportPath)
+    static void SetCurEndoSN(const QString &sn);     // текущий серийник эндоскопа
 };
