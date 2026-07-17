@@ -57,6 +57,7 @@
 #include "kernel/KMessage.h"
 #include "kernel/KPublishManager.h"
 #include "kernel/yxyDES2.h"
+#include "kernel/KControlProc.h"
 
 // Тестовый подкласс KObject для self-test kobject: фиксирует доставку обработчиков.
 namespace {
@@ -2261,6 +2262,82 @@ int main(int argc, char **argv)
         const bool ok = vectorOk && binOk && rtOk && slotOk && anyOk;
         qInfo() << (ok ? "des: PASS" : "des: FAIL");
         return ok ? 0 : 58;
+    }
+
+    // Self-test процедур машинного контроля (KControlProc: крипто поверх yxyDES2 + хелперы).
+    // TMP_MODE: SystemDate2MCDate/Cipher2Plain пишут в ENDO_ROOT → временный корень.
+    if (screen == "kcontrolproc") {
+        KControlProc proc;
+
+        // LicenseFileName: суффикс по типу (0,3→release; 1,4→delay; 2,5→import; >=6 → пусто).
+        const bool lfnOk =
+               proc.LicenseFileName("SN1", KCT_PROCESSOR_RELEASE) == "SN1_release.ini"
+            && proc.LicenseFileName("SN1", KCT_ENDO_RELEASE)      == "SN1_release.ini"
+            && proc.LicenseFileName("SN1", KCT_PROCESSOR_DELAY)   == "SN1_delay.ini"
+            && proc.LicenseFileName("SN1", KCT_ENDO_DELAY)        == "SN1_delay.ini"
+            && proc.LicenseFileName("SN1", KCT_IMPORT_ENDO)       == "SN1_import.ini"
+            && proc.LicenseFileName("SN1", KCT_IMPORT_PROCESSOR)  == "SN1_import.ini"
+            && proc.LicenseFileName("SN1", static_cast<_KControlType>(6)).isEmpty();
+
+        // Крипто round-trip ЧЕРЕЗ РЕАЛЬНЫЙ DecryptionStr: шифруем тем же ключом "ZXYuio12"
+        // (в прошивке ЕСТЬ только расшифровка — encrypt строим симметрично из yxyDES2).
+        yxyDES2 des;
+        char key[32] = { 0 };
+        memcpy(key, "ZXYuio12", 8);
+        des.InitializeKey(key, 0);
+        char plain8[8] = { 'H','e','l','l','o','1','2','3' };
+        des.EncryptData(plain8, 0);
+        QString cipherHex(des.GetCiphertextInHex());        // 16 hex-символов UPPERCASE
+        const QString back = proc.DecryptionStr(cipherHex);
+        const bool cryptoOk = back == "Hello123";
+
+        // ConvertOtherFormat2Ciphertext: hex(16) → 8 байт; nullptr → -1.
+        char outBytes[64] = { 0 };
+        QByteArray hexBa = cipherHex.toLatin1();
+        const int n = proc.ConvertOtherFormat2Ciphertext(&des, outBytes, hexBa.data());
+        const bool convOk = n == 8
+            && memcmp(outBytes, des.GetCiphertextInBytes(), 8) == 0
+            && proc.ConvertOtherFormat2Ciphertext(nullptr, outBytes, hexBa.data()) == -1;
+
+        // SystemDate2MCDate: no-op при выключенном контроле; при включённом — дедлайн +remain.
+        KControlINI::StartTimeControl(false);
+        KControlINI::SetDeadline("2099-01-01");
+        proc.SystemDate2MCDate("2026-07-16");
+        const bool offOk = KControlINI::GetDeadline() == "2099-01-01";   // не тронут
+        KControlINI::StartTimeControl(true);
+        KControlINI::SetRemainDays(10);
+        proc.SystemDate2MCDate("2026-07-16");
+        const bool dateOk = KControlINI::GetDeadline() == "2026-07-26";  // +10 дней
+        // remain<=0 → no-op.
+        KControlINI::SetRemainDays(0);
+        proc.SystemDate2MCDate("2020-01-01");
+        const bool zeroOk = KControlINI::GetDeadline() == "2026-07-26";  // не тронут
+
+        // Cipher2Plain: файл шифртекста → plain.ini; возвращает ПУТЬ (не текст).
+        QTemporaryDir tmp;
+        const QString cipherPath = tmp.path() + "/cipher.txt";
+        { QFile cf(cipherPath); cf.open(QIODevice::WriteOnly | QIODevice::Text);
+          QTextStream cs(&cf); cs << cipherHex; cf.close(); }
+        QString cp(cipherPath);
+        const QString outPath = proc.Cipher2Plain(cp);
+        bool c2pOk = outPath == KControlINI::PlainINIpath() && !outPath.isEmpty();
+        if (c2pOk) {   // содержимое plain.ini = расшифровка
+            QFile pf(outPath); pf.open(QIODevice::ReadOnly | QIODevice::Text);
+            c2pOk = QTextStream(&pf).readAll() == "Hello123";
+        }
+        QString missing(tmp.path() + "/nope.txt");
+        const bool c2pMissOk = proc.Cipher2Plain(missing).isEmpty();   // нет файла → ""
+
+        qInfo() << "licenseFileName:" << lfnOk << "| crypto round-trip:" << cryptoOk
+                << back << "| convert:" << convOk << n;
+        qInfo() << "SystemDate2MCDate: off:" << offOk << "+10дн:" << dateOk
+                << KControlINI::GetDeadline() << "remain0:" << zeroOk;
+        qInfo() << "Cipher2Plain:" << c2pOk << "miss:" << c2pMissOk;
+
+        const bool ok = lfnOk && cryptoOk && convOk && offOk && dateOk && zeroOk
+            && c2pOk && c2pMissOk;
+        qInfo() << (ok ? "kcontrolproc: PASS" : "kcontrolproc: FAIL");
+        return ok ? 0 : 59;
     }
 
     // Self-test обёртки XML-документа (XmlParser — load/save/root/декларация на QDomDocument).

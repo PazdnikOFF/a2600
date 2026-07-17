@@ -12,15 +12,15 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **80** (16%) |
-| Методов реализовано (совпало по имени) | **798** (12.4%) |
+| Классов затронуто у нас | **81** (17%) |
+| Методов реализовано (совпало по имени) | **803** (12.5%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
 | **UI** | 167 | 2410 | 47 | 2.0% | 6 |
-| **CORE** | 60 | 1216 | 383 | 31.5% | 23 |
+| **CORE** | 60 | 1216 | 388 | 31.9% | 24 |
 | **REPORT** | 72 | 752 | 62 | 8.2% | 11 |
 | **HW** | 40 | 598 | 4 | 0.7% | 1 |
 | **MISC** | 27 | 543 | 130 | 23.9% | 11 |
@@ -45,7 +45,6 @@
 | `KFactoryOptions` | UPDATE | 45 | `testenv.ini` | не начат |
 | `KTemplateEditDocument` | REPORT | 38 | — | не начат |
 | `KDocumentGenerator` | REPORT | 31 | — | есть заголовок, но свой API — сверить имена |
-| `KControlProc` | CORE | 30 | `_delay.ini`, `_import.ini`, `_release.ini` | не начат |
 | `KSysReportTempletControl` | REPORT | 24 | — | не начат |
 | `KExamBussinessHandler` | CORE | 21 | — | не начат |
 | `KReportEditDataSource` | REPORT | 17 | — | не начат |
@@ -82,6 +81,7 @@
 | `KThreadPoolMsg` | CORE | 7 | — | не начат |
 | `KHalUpdateClass` | UPDATE | 7 | — | не начат |
 | `KThreadMessageQueue` | CORE | 7 | — | не начат |
+| `KReportTemplateConfig` | REPORT | 7 | `ReportTemplateConfig.xml` | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
@@ -101,6 +101,7 @@
 | `KUpdateConf` | UPDATE | 28 | 1 | 4% |
 | `KUserOsdSet` | CORE | 34 | 7 | 21% |
 | `KVideoParam` | CORE | 42 | 16 | 38% |
+| `KControlProc` | CORE | 30 | 5 | 17% |
 | `KUserSet` | CORE | 27 | 3 | 11% |
 | `KDicomInterface` | DICOM | 27 | 8 | 30% |
 | `KSaveFile` | DB | 20 | 2 | 10% |
@@ -111,7 +112,6 @@
 | `KSysReportTempletCfg` | REPORT | 18 | 5 | 28% |
 | `KPlControl` | CORE | 71 | 60 | 85% |
 | `KManuPwdMng` | CORE | 16 | 6 | 38% |
-| `KUIDesktop` | UI | 15 | 6 | 40% |
 
 ### 5.1 Оговорка о точности метрики
 

@@ -107,6 +107,7 @@ set(SOURCES
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
     src/kernel/yxyDES2.cpp
+    src/kernel/KControlProc.cpp
     src/kernel/KMessage.cpp
     src/kernel/KObject.cpp
     src/kernel/KPublishManager.cpp
@@ -225,6 +226,7 @@ add_executable(ui_preview
     src/db/KEntityService.cpp
     src/kernel/KConfig.cpp
     src/kernel/yxyDES2.cpp
+    src/kernel/KControlProc.cpp
     src/kernel/KMessage.cpp
     src/kernel/KObject.cpp
     src/kernel/KPublishManager.cpp

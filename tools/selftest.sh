@@ -18,7 +18,7 @@ remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg
 PLAIN_MODES="cornercut quickinput examcfg exam filebackup update reportdb
 savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop patstr stopwatch patient doctor dbstr session textblock tableblock titletableblock reporttmpl examdata kobject xmlparser dbsqlite des"
 # Режимы, пишущие в ENDO_ROOT → временный каталог.
-TMP_MODES="dccu account dcmconf listsetup examno manupwd controlini"
+TMP_MODES="dccu account dcmconf listsetup examno manupwd controlini kcontrolproc"
 
 pass=0; fail=0; failed=""
 
