@@ -2661,6 +2661,66 @@ int main(int argc, char **argv)
         return ok ? 0 : 57;
     }
 
+    // Self-test записи каталога шаблонов (KSysReportTempletCfg: реф.-схема TempletInfo.xml +
+    // мутаторы KTempletBaseInfo с map-семантикой). TMP_MODE — пишет в userpreset.
+    if (screen == "templetsave") {
+        // --- мутаторы KTempletBaseInfo: map-семантика (уникальность + сортировка по имени) ---
+        KTempletBaseInfo info;
+        info.SetTempletName("NP-2x2");
+        info.SetModifyDate("2026-07-17");
+        info.SetFactory(false);
+        info.AddDept("KW_B", false);
+        info.AddDept("KW_A", true);          // вставка ДО KW_B (сортировка по имени)
+        info.AddDept("KW_B", true);          // существующий → ПЕРЕЗАПИСЬ флага, не дубль
+        const bool mapSemOk = info.depts.size() == 2                       // без дублей
+            && info.depts[0].name == "KW_A" && info.depts[1].name == "KW_B"  // отсортировано
+            && info.IsDefault("KW_B") && info.IsDefault("KW_A")             // флаг перезаписан
+            && info.HasDept("KW_A") && !info.IsDefault("KW_NONE");
+        info.DeleteDept("KW_A");
+        const bool delDeptOk = info.depts.size() == 1 && !info.HasDept("KW_A");
+        info.AddDept("KW_A", true);          // вернём для round-trip
+
+        // --- SaveTempletInfos → USER TempletInfo.xml, затем LoadUserXML обратно ---
+        KTempletBaseInfo fact;
+        fact.SetTempletName("NP-nx3"); fact.SetModifyDate("factory"); fact.SetFactory(true);
+        fact.AddDept("KW_ALLDEPT", false);
+
+        QVector<KTempletBaseInfo> infos; infos << info << fact;
+        KSysReportTempletCfg &cfg = KSysReportTempletCfg::GetInstance();
+        cfg.SaveTempletInfos(infos);
+
+        // Файл лёг по реф.-пути (userpreset), а не в reportRoot_.
+        const QString rw = QDir(QString::fromStdString(KEnvConfig::GetInstance().GetUsrDir()))
+            .absoluteFilePath("patient/report/config/TempletInfo.xml");
+        const bool fileOk = QFile::exists(rw);
+
+        // РАУНД-ТРИП: LoadUserXML читает ровно то, что записали (схема совместима с парсером).
+        cfg.LoadUserXML();
+        const QVector<KTempletBaseInfo> &back = cfg.TempletInfos();
+        const bool rtOk = back.size() == 2
+            && back[0].name == "NP-2x2" && back[0].modifyDate == "2026-07-17"
+            && !back[0].factory
+            && back[0].depts.size() == 2
+            && back[0].depts[0].name == "KW_A" && back[0].depts[0].isDefault
+            && back[1].name == "NP-nx3" && back[1].factory && back[1].modifyDate == "factory";
+
+        // Схема: bool сериализуется РОВНО как "1"/"0" (не true/false) — проверяем сырой XML.
+        QFile xf(rw); xf.open(QIODevice::ReadOnly);
+        const QByteArray raw = xf.readAll(); xf.close();
+        const bool schemaOk = raw.contains("<Root>") && raw.contains("<Templet")
+            && raw.contains("factory=\"1\"") && raw.contains("factory=\"0\"")
+            && raw.contains("default=\"1\"") && raw.contains("<Dept")
+            && !raw.contains("true") && !raw.contains("false");
+
+        qInfo() << "map-семантика:" << mapSemOk << "delDept:" << delDeptOk
+                << "| файл(userpreset):" << fileOk;
+        qInfo() << "round-trip:" << rtOk << back.size() << "| схема 1/0:" << schemaOk;
+
+        const bool ok = mapSemOk && delDeptOk && fileOk && rtOk && schemaOk;
+        qInfo() << (ok ? "templetsave: PASS" : "templetsave: FAIL");
+        return ok ? 0 : 60;
+    }
+
     // Self-test модели текстового блока отчёта (KTextBlock).
     if (screen == "textblock") {
         // Собираем шаблон-данные: элемент "/RT_DIAGNOSIS" + его item-config (с TemplateData/

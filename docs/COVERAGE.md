@@ -12,8 +12,8 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **81** (17%) |
-| Методов реализовано (совпало по имени) | **820** (12.8%) |
+| Классов затронуто у нас | **82** (17%) |
+| Методов реализовано (совпало по имени) | **831** (12.9%) |
 
 ## 2. По доменам
 
@@ -21,7 +21,7 @@
 |---|---:|---:|---:|---:|---:|
 | **UI** | 167 | 2410 | 47 | 2.0% | 6 |
 | **CORE** | 60 | 1216 | 405 | 33.3% | 24 |
-| **REPORT** | 72 | 752 | 62 | 8.2% | 11 |
+| **REPORT** | 72 | 752 | 73 | 9.7% | 12 |
 | **HW** | 40 | 598 | 4 | 0.7% | 1 |
 | **MISC** | 27 | 543 | 130 | 23.9% | 11 |
 | **DICOM** | 60 | 423 | 53 | 12.5% | 10 |
@@ -108,10 +108,10 @@
 | `KColdLightConfig` | CORE | 18 | 2 | 11% |
 | `KSystemStatus` | CORE | 45 | 30 | 67% |
 | `KThesaurusOpt` | REPORT | 15 | 2 | 13% |
-| `KSysReportTempletCfg` | REPORT | 18 | 5 | 28% |
 | `KPlControl` | CORE | 71 | 60 | 85% |
 | `KManuPwdMng` | CORE | 16 | 6 | 38% |
 | `KUIDesktop` | UI | 15 | 6 | 40% |
+| `KControlProc` | CORE | 30 | 22 | 73% |
 
 ### 5.1 Оговорка о точности метрики
 
@@ -119,7 +119,7 @@
 оценка**. Там, где мы сознательно переосмыслили API (свои имена вместо оригинальных),
 метрика показывает 0 при фактически рабочем коде:
 
-- **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KTempletBaseInfo`
+- **Свой API при наличии класса-референса (7):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KRTDataSourceDemo`, `KRTDataSourceReal`
 
 - **Наши абстракции без класса-референса (15):** `Application`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`, `yxyDES2`
 
