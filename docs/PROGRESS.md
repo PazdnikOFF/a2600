@@ -484,7 +484,7 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **70 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
-затронуто 79 классов / 786 методов (12.2%)** (report_template 28/36 = 78% — свободные функции
+затронуто 79 классов / 787 методов (12.2%)** (report_template 28/36 = 78% — свободные функции
 namespace по сути закрыты, остаток «36» — Qt-виджет KLineEdit). Это нижняя оценка (считает совпадение имён;
 ~9 наших классов имеют свой API и показывают 0% при рабочем коде). По доменам:
 CORE 26.2%, DICOM 12.5%, MISC 9.0%, UPDATE 5.1%, DB 4.8%, UI 1.9%, REPORT 1.6%, HW 0.7%.
@@ -519,9 +519,13 @@ sqlite3_snprintf("%Q"); "insert into %s (%s) values(%s)" через mprintf→Ex
 from tb_DcmWorklist` без ключа → при ошибке `sqlite3_key(m_pDb,"SONOSCOPE_X2000_KEY",19)`+повтор
 (plain libsqlite3 без sqlite3_key). **GetRecordsNumber**("select count(*) from %s [where %s]" →
 sqlite3_get_table → strtol azResult[ncol]); **QuerySingleRecord**("select * from %s [where (%s)]
-limit 1" → get_table → map колонка→значение первой строки). **KDbSqlite 11/12 методов готовы**;
-НЕ РЕАЛИЗОВАН последний — **QueryRecords** @0x447be0 (WHERE из map + get_table → vector<map>,
-самый сложный, частичный декод в task-чипе). IDatabase-база (чистый
+limit 1" → get_table → map колонка→значение первой строки); **QueryRecords** @0x447be0 —
+QUERY-BUILDER: map это НЕ произвольные условия, а СТРУКТУРА запроса по спец-ключам (все имена
+сверены из .rodata): **"Column"** колонки SELECT (дефолт **"*"**@0x864f70), **"Where"** условие
+(оборачивается в скобки "("@0x842728/")"@0x8a2e30), **"Group"**@0x85ce28 → " group by ",
+**"Order"**@0x8548f8 → " order by ", **"Limit"**@0x862748 → " limit "; SQL "select %s from %s
+[where (..)][ group by ..][ order by ..][ limit ..]" → get_table (ретрай BUSY) → НА КАЖДУЮ строку
+map(колонка→значение) в out (az[(r+1)*ncol+j]). **KDbSqlite ЗАКРЫТ 12/12 методов.** IDatabase-база (чистый
 интерфейс) — off-device standalone, методы virtual как в реф.
 
 РАНЕЕ (эта сессия): `XmlParser` (self-test `xmlparser`, `app/src/report/`)** — тонкая

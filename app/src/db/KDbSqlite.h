@@ -51,6 +51,14 @@ public:
     // out[имя_колонки]=значение первой строки. out не очищается.
     int QuerySingleRecord(const std::string &table, const std::string &where,
                           std::map<std::string, std::string> &out);
+    // Выборка записей (реф. @0x447be0) — QUERY-BUILDER: map `spec` это НЕ произвольные условия,
+    // а СТРУКТУРА запроса по спец-ключам (сверено дизасмом):
+    //   "Column" → колонки SELECT (дефолт "*"); "Where" → условие (оборачивается в скобки);
+    //   "Group" → group by; "Order" → order by; "Limit" → limit.
+    // SQL: "select %s from %s[ where (<Where>)][ group by ..][ order by ..][ limit ..]" →
+    // sqlite3_get_table → на КАЖДУЮ строку map(колонка→значение) в out (out не очищается).
+    int QueryRecords(const std::map<std::string, std::string> &spec, const std::string &table,
+                     std::vector<std::map<std::string, std::string>> &out);
 
     std::string GetLastErrorMsg() const { return m_strLastError; }   // копия [0x08]
     std::string GetDbPath() const { return m_strDbPath; }            // копия [0x38]

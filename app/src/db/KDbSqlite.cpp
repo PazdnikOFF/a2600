@@ -282,3 +282,66 @@ int KDbSqlite::QuerySingleRecord(const std::string &table, const std::string &wh
     sqlite3_mutex_leave(m_pMutex);
     return rc;
 }
+
+int KDbSqlite::QueryRecords(const std::map<std::string, std::string> &spec,
+                            const std::string &table,
+                            std::vector<std::map<std::string, std::string>> &out)
+{
+    // реф. @0x447be0 — query-builder по спец-ключам map (все имена сверены из .rodata):
+    // "Column"@0x8626f0 (дефолт "*"@0x864f70), "Where"@0x840078 (в скобках "("@0x842728/")"@0x8a2e30),
+    // "Group"@0x85ce28, "Order"@0x8548f8, "Limit"@0x862748.
+    auto find = [&spec](const char *k) -> const std::string * {
+        const auto it = spec.find(k);
+        return it != spec.end() ? &it->second : nullptr;
+    };
+    const std::string *pCol = find("Column");
+    const std::string cols = pCol ? *pCol : "*";
+    const std::string *pWhere = find("Where");
+
+    std::vector<char> buf(SQL_BUF_SIZE);
+    std::string sql;
+    if (pWhere) {
+        snprintf(buf.data(), SQL_BUF_SIZE - 1, "select %s from %s where ",
+                 cols.c_str(), table.c_str());
+        sql = buf.data();
+        sql += "(";                    // условие оборачивается в скобки
+        sql += *pWhere;
+        sql += ")";
+    } else {
+        snprintf(buf.data(), SQL_BUF_SIZE - 1, "select %s from %s", cols.c_str(), table.c_str());
+        sql = buf.data();
+    }
+    if (const std::string *g = find("Group")) { sql += " group by "; sql += *g; }
+    if (const std::string *o = find("Order")) { sql += " order by "; sql += *o; }
+    if (const std::string *l = find("Limit")) { sql += " limit "; sql += *l; }
+    // реф. ConvertCharactersetToUTF8(sql) — у нас стаб→true (no-op).
+
+    sqlite3_mutex_enter(m_pMutex);
+    char **az = nullptr;
+    int nrow = 0, ncol = 0;
+    char *errmsg = nullptr;
+    int rc = sqlite3_get_table(m_pDb, sql.c_str(), &az, &nrow, &ncol, &errmsg);
+    while (rc == SQLITE_BUSY) {        // реф. — второй get_table (ретрай BUSY)
+        sqlite3_sleep(100);
+        if (az) { sqlite3_free_table(az); az = nullptr; }
+        if (errmsg) { sqlite3_free(errmsg); errmsg = nullptr; }
+        rc = sqlite3_get_table(m_pDb, sql.c_str(), &az, &nrow, &ncol, &errmsg);
+    }
+    if (rc == SQLITE_OK && az) {
+        for (int r = 0; r < nrow; ++r) {           // строка r → az[(r+1)*ncol + j]
+            std::map<std::string, std::string> row;
+            for (int j = 0; j < ncol; ++j) {
+                const char *c = az[j];
+                const char *v = az[(r + 1) * ncol + j];
+                row[c ? c : ""] = v ? v : "";
+            }
+            out.push_back(row);
+        }
+    }
+    if (az)
+        sqlite3_free_table(az);
+    if (errmsg)
+        sqlite3_free(errmsg);
+    sqlite3_mutex_leave(m_pMutex);
+    return rc;   // реф. — лог "Query database: get %d records!"
+}

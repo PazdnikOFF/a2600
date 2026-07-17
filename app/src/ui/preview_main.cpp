@@ -2313,6 +2313,28 @@ int main(int argc, char **argv)
         const bool qsrOk = s.QuerySingleRecord("t", "id=10", row) == SQLITE_OK
             && row["id"] == "10" && row["name"] == "all" && row.count("age");
 
+        // QueryRecords — query-builder по спец-ключам. Добавим 2-ю строку для выборок.
+        s.Exec("INSERT INTO t(id,name) VALUES(20,'zed');");
+        std::vector<std::map<std::string, std::string>> rows;
+        const bool qrAllOk = s.QueryRecords({}, "t", rows) == SQLITE_OK && rows.size() == 2;
+        // "Where" → условие в скобках.
+        std::vector<std::map<std::string, std::string>> rw;
+        const bool qrWhereOk = s.QueryRecords({{"Where", "id=20"}}, "t", rw) == SQLITE_OK
+            && rw.size() == 1 && rw[0]["name"] == "zed";
+        // "Column" → только указанные колонки (дефолт "*").
+        std::vector<std::map<std::string, std::string>> rc2;
+        const bool qrColOk = s.QueryRecords({{"Column", "id"}}, "t", rc2) == SQLITE_OK
+            && rc2.size() == 2 && rc2[0].size() == 1 && rc2[0].count("id");
+        // "Order" + "Limit".
+        std::vector<std::map<std::string, std::string>> ro;
+        const bool qrOrdOk = s.QueryRecords({{"Order", "id desc"}, {"Limit", "1"}}, "t", ro)
+                == SQLITE_OK && ro.size() == 1 && ro[0]["id"] == "20";
+        // "Group" — группировка.
+        std::vector<std::map<std::string, std::string>> rg;
+        const bool qrGrpOk = s.QueryRecords({{"Column", "name"}, {"Group", "name"}}, "t", rg)
+                == SQLITE_OK && rg.size() == 2;
+        const bool qrOk = qrAllOk && qrWhereOk && qrColOk && qrOrdOk && qrGrpOk;
+
         // Нулевой sql → -4102 (реф. -0x1006).
         const bool nullOk = s.Exec(static_cast<const char *>(nullptr)) == -4102;
 
@@ -2331,10 +2353,13 @@ int main(int argc, char **argv)
                 << "err:" << errOk << "field:" << fieldOk << "delete:" << delOk;
         qInfo() << "fieldList:" << fnlOk << cols.size() << "insertRec:" << insRecOk
                 << "updateRec:" << updOk << "count:" << cntOk << "single:" << qsrOk;
+        qInfo() << "queryRecords:" << qrOk << "(all/where/column/order+limit/group:"
+                << qrAllOk << qrWhereOk << qrColOk << qrOrdOk << qrGrpOk << ")";
         qInfo() << "null:" << nullOk << "notOpenExec:" << notOpenExecOk << "close:" << closeOk;
 
         const bool ok = preOk && openOk && ddlOk && errOk && fieldOk && delOk
-            && fnlOk && insRecOk && updOk && cntOk && qsrOk && nullOk && notOpenExecOk && closeOk;
+            && fnlOk && insRecOk && updOk && cntOk && qsrOk && qrOk
+            && nullOk && notOpenExecOk && closeOk;
         qInfo() << (ok ? "dbsqlite: PASS" : "dbsqlite: FAIL");
         return ok ? 0 : 56;
     }
