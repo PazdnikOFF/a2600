@@ -32,4 +32,8 @@ QSize GetSystemResolution();
 // Текущая модель продукта (из display/.../project.ini). По умолчанию X-2600.
 QString ProductModel();
 
+// Рекурсивное копирование дерева файлов src → dst (реф. KSystem::CopyDirectoryFiles).
+// Создаёт dst; при overwrite=true перезаписывает существующие файлы. Возврат — успех.
+bool CopyDirectoryFiles(const QString &src, const QString &dst, bool overwrite);
+
 } // namespace KSystem

@@ -1,10 +1,17 @@
 #include "report/KReportTemplate.h"
+#include "report/KTemplateCfg.h"
+#include "report/KTemplateLibCfg.h"
+#include "report/KRTDataSourceDemo.h"
+#include "report/KRTDataSourceReal.h"
+#include "sys/KEnvConfig.h"
 #include "sys/KSystem.h"
 
 #include <QDir>
 #include <QFile>
 #include <QDomDocument>
 #include <QHash>
+
+#include <cassert>
 
 QString ReportItem::dataSource() const
 {
@@ -123,4 +130,122 @@ QVector<ReportItem> KReportTemplateManager::LoadTemplate(const QString &name) co
             result += loadSubContent(ref);
     }
     return result;
+}
+
+// ============================================================================
+// Фейтфул-API референса KReportTemplateManager (синглтон + InitModule/части).
+// Пути-литералы сверены из дизасма (анонимные .bss-строки TU):
+//   REPORT_TEMPLATE_RO = "mainapp/patient/report/"   REPORT_TEMPLATE_RW = "patient/report/"
+//   REPORT_RW_BACKUP   = "mainapp/patient/report/rw/report"  (заводское дерево для провизии)
+// ============================================================================
+
+KReportTemplateManager::~KReportTemplateManager()
+{
+    UninitModule();
+}
+
+KReportTemplateManager *KReportTemplateManager::GetInstance()
+{
+    // реф. — heap shared_ptr + std::call_once; Meyers-static эквивалентен и потокобезопасен.
+    // GetInstance НЕ инициализирует модуль (реф.).
+    static KReportTemplateManager s_instance;
+    return &s_instance;
+}
+
+void KReportTemplateManager::InitTempletsInfos()
+{
+    // Каталог шаблонов — RO-дерево прошивки (config/TempletInfo.xml).
+    const QString roReport =
+        QString::fromStdString(KEnvConfig::GetInstance().GetReadOnlyBaseDir())
+        + "/mainapp/patient/report";
+    KSysReportTempletCfg &cfg = KSysReportTempletCfg::GetInstance();
+    cfg.SetReportRoot(roReport);
+    cfg.Reload();
+    m_vecTempletInfos = cfg.TempletInfos();
+}
+
+void KReportTemplateManager::InitTempletLibInfos()
+{
+    // Reload уже выполнен в InitTempletsInfos — забираем библиотечный каталог.
+    m_vecTempletLibInfos = KSysReportTempletCfg::GetInstance().TempletLibInfos();
+}
+
+int KReportTemplateManager::InitModule()
+{
+    if (m_bInited)
+        return 1;
+
+    const std::string roBase = KEnvConfig::GetInstance().GetReadOnlyBaseDir();
+    const std::string usrBase = KEnvConfig::GetInstance().GetUsrDir();
+    const QString ro = QString::fromStdString(roBase);
+    const QString usr = QString::fromStdString(usrBase);
+    const QString usrReport = usr + "/patient/report/";
+    const QString provSrc = ro + "/mainapp/patient/report/rw/report";
+
+    // Первичная провизия: заводское RO-дерево → userpreset (реф.; userpreset gitignored).
+    if (!QDir(usrReport).exists()) {
+        KSystem::CopyDirectoryFiles(provSrc, usrReport, true);
+    } else {
+        const bool need = !QFile::exists(usrReport + "config/TempletInfo.xml")
+            || !QFile::exists(usrReport + "config/TempletLibInfo.xml")
+            || !QFile::exists(usrReport + "config/ReportTemplateConfig.xml");
+        if (need)
+            KSystem::CopyDirectoryFiles(provSrc, usrReport, true);
+    }
+
+    InitTempletsInfos();
+    InitTempletLibInfos();
+
+    m_pTemplateCfg = new KTemplateCfg();
+    m_pTemplateLibCfg = new KTemplateLibCfg();
+    m_pDemoDataSource = new KRTDataSourceDemo();
+    m_pDataSourceReal = new KRTDataSourceReal();
+
+    // Аргументы Check реф. игнорирует (строит пути из KEnvConfig) — передаём faithful-значения.
+    const std::string roArg = roBase + "/mainapp/patient/report/";
+    const std::string usrArg = usrBase + "/patient/report/";
+
+    m_pTemplateCfg->Check(roArg, usrArg);
+    m_pTemplateCfg->LoadCache();
+
+    m_pTemplateLibCfg->Check(roArg, usrArg);
+    m_pTemplateLibCfg->LoadCache();
+    m_pTemplateLibCfg->LoadCacheGroup();
+    m_pTemplateLibCfg->UpdateTemplateLib(m_pTemplateLibCfg->Data());
+
+    m_bInited = true;
+    return 1;
+}
+
+int KReportTemplateManager::UninitModule()
+{
+    delete m_pTemplateCfg;    m_pTemplateCfg = nullptr;
+    delete m_pTemplateLibCfg; m_pTemplateLibCfg = nullptr;
+    delete m_pDemoDataSource; m_pDemoDataSource = nullptr;
+    delete m_pDataSourceReal; m_pDataSourceReal = nullptr;
+    m_bInited = false;   // реф. — векторы НЕ чистит (только dtor)
+    return 1;
+}
+
+KTemplateCfg *KReportTemplateManager::GetTemplateCfg() const
+{
+    assert(m_pTemplateCfg);
+    return m_pTemplateCfg;
+}
+
+KTemplateLibCfg *KReportTemplateManager::GetTemplateLibCfg() const
+{
+    assert(m_pTemplateLibCfg);
+    return m_pTemplateLibCfg;
+}
+
+KRTDataSourceDemo *KReportTemplateManager::GetDemoDataSource() const
+{
+    assert(m_pDemoDataSource);
+    return m_pDemoDataSource;
+}
+
+KRTDataSourceReal *KReportTemplateManager::GetDataSourceReal() const
+{
+    return m_pDataSourceReal;   // реф. — БЕЗ assert (null-safe)
 }

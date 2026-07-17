@@ -4,6 +4,8 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 
 namespace KSystem {
@@ -49,6 +51,32 @@ QString ProductModel()
                   QSettings::IniFormat);
     const QString name = ini.value("Option/ProjectName").toString();
     return name.isEmpty() ? QStringLiteral("X-2600") : name;
+}
+
+bool CopyDirectoryFiles(const QString &src, const QString &dst, bool overwrite)
+{
+    QDir srcDir(src);
+    if (!srcDir.exists())
+        return false;
+    QDir().mkpath(dst);
+
+    for (const QFileInfo &fi :
+         srcDir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
+        const QString target = QDir(dst).absoluteFilePath(fi.fileName());
+        if (fi.isDir()) {
+            if (!CopyDirectoryFiles(fi.absoluteFilePath(), target, overwrite))
+                return false;
+        } else {
+            if (QFile::exists(target)) {
+                if (!overwrite)
+                    continue;
+                QFile::remove(target);
+            }
+            if (!QFile::copy(fi.absoluteFilePath(), target))
+                return false;
+        }
+    }
+    return true;
 }
 
 } // namespace KSystem

@@ -2364,6 +2364,44 @@ int main(int argc, char **argv)
         return ok ? 0 : 56;
     }
 
+    // Self-test капстоуна отчётного модуля (KReportTemplateManager — фейтфул-API референса:
+    // синглтон + InitModule связывает KTemplateCfg/KTemplateLibCfg/KRTDataSource*). ENDO_ROOT.
+    if (screen == "reporttmplmgr") {
+        KReportTemplateManager *m = KReportTemplateManager::GetInstance();
+        const bool singletonOk = m == KReportTemplateManager::GetInstance();
+        // До InitModule: не inited; null-safe геттер отдаёт nullptr.
+        const bool preInitOk = !m->IsInited() && m->GetDataSourceReal() == nullptr;
+
+        const bool initOk = m->InitModule() == 1 && m->IsInited();
+        const bool partsOk = m->GetTemplateCfg() && m->GetTemplateLibCfg()
+            && m->GetDemoDataSource() && m->GetDataSourceReal();
+        const bool infosOk = m->GetTempletsInfos().size() > 0;
+
+        // Идемпотентность: повторный InitModule — гейт, части те же.
+        KTemplateCfg *before = m->GetTemplateCfg();
+        const bool idemOk = m->InitModule() == 1 && m->GetTemplateCfg() == before;
+
+        // UninitModule → части удалены, флаг сброшен; повторная инициализация работает.
+        const bool uninitOk = m->UninitModule() == 1 && !m->IsInited()
+            && m->GetDataSourceReal() == nullptr;
+        const bool reinitOk = m->InitModule() == 1 && m->GetTemplateCfg() != nullptr;
+        m->UninitModule();
+
+        // Существующий упрощённый загрузчик по-прежнему работает (совмещение двух API).
+        KReportTemplateManager loader;
+        const bool loaderOk = loader.TemplateNames().size() > 0;
+
+        qInfo() << "singleton:" << singletonOk << "preInit:" << preInitOk << "init:" << initOk
+                << "parts:" << partsOk << "infos:" << infosOk << m->GetTempletsInfos().size();
+        qInfo() << "idem:" << idemOk << "uninit:" << uninitOk << "reinit:" << reinitOk
+                << "loader-API:" << loaderOk;
+
+        const bool ok = singletonOk && preInitOk && initOk && partsOk && infosOk
+            && idemOk && uninitOk && reinitOk && loaderOk;
+        qInfo() << (ok ? "reporttmplmgr: PASS" : "reporttmplmgr: FAIL");
+        return ok ? 0 : 57;
+    }
+
     // Self-test модели текстового блока отчёта (KTextBlock).
     if (screen == "textblock") {
         // Собираем шаблон-данные: элемент "/RT_DIAGNOSIS" + его item-config (с TemplateData/

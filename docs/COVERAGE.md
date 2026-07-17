@@ -12,16 +12,16 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **79** (16%) |
-| Методов реализовано (совпало по имени) | **787** (12.2%) |
+| Классов затронуто у нас | **80** (16%) |
+| Методов реализовано (совпало по имени) | **798** (12.4%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
 | **UI** | 167 | 2410 | 47 | 2.0% | 6 |
-| **CORE** | 60 | 1216 | 382 | 31.4% | 23 |
-| **REPORT** | 72 | 752 | 52 | 6.9% | 10 |
+| **CORE** | 60 | 1216 | 383 | 31.5% | 23 |
+| **REPORT** | 72 | 752 | 62 | 8.2% | 11 |
 | **HW** | 40 | 598 | 4 | 0.7% | 1 |
 | **MISC** | 27 | 543 | 130 | 23.9% | 11 |
 | **DICOM** | 60 | 423 | 53 | 12.5% | 10 |
@@ -62,7 +62,6 @@
 | `KEntityService` | DB | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KRTAbsDataSource` | REPORT | 11 | — | не начат |
 | `KRTDataSourceReal` | REPORT | 11 | — | есть заголовок, но свой API — сверить имена |
-| `KReportTemplateManager` | REPORT | 11 | `ReportTemplateConfig.xml` | есть заголовок, но свой API — сверить имена |
 | `KRTCreatorContext` | REPORT | 10 | — | не начат |
 | `KImportRules` | DB | 9 | — | не начат |
 | `KReportDBTableHandler` | REPORT | 9 | — | не начат |
@@ -82,6 +81,7 @@
 | `KNetWorkSet` | MISC | 7 | `system.ini` | не начат |
 | `KThreadPoolMsg` | CORE | 7 | — | не начат |
 | `KHalUpdateClass` | UPDATE | 7 | — | не начат |
+| `KThreadMessageQueue` | CORE | 7 | — | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
@@ -95,7 +95,7 @@
 | `KImgList` | UI | 49 | 8 | 16% |
 | `KVideoSet` | CORE | 58 | 18 | 31% |
 | `KDccuParam` | CORE | 93 | 54 | 58% |
-| `KSystem` | CORE | 51 | 14 | 27% |
+| `KSystem` | CORE | 51 | 15 | 29% |
 | `KEncStyle` | CORE | 38 | 4 | 11% |
 | `KVideoCal` | UI | 34 | 3 | 9% |
 | `KUpdateConf` | UPDATE | 28 | 1 | 4% |
@@ -119,7 +119,7 @@
 оценка**. Там, где мы сознательно переосмыслили API (свои имена вместо оригинальных),
 метрика показывает 0 при фактически рабочем коде:
 
-- **Свой API при наличии класса-референса (9):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KReportTemplateManager`, `KTempletBaseInfo`
+- **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KTempletBaseInfo`
 
 - **Наши абстракции без класса-референса (14):** `Application`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`
 
