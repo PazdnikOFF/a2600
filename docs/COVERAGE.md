@@ -121,7 +121,7 @@
 
 - **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KTempletBaseInfo`
 
-- **Наши абстракции без класса-референса (14):** `Application`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`
+- **Наши абстракции без класса-референса (15):** `Application`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 

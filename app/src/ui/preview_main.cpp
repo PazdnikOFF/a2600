@@ -56,6 +56,7 @@
 #include "kernel/KObject.h"
 #include "kernel/KMessage.h"
 #include "kernel/KPublishManager.h"
+#include "kernel/yxyDES2.h"
 
 // Тестовый подкласс KObject для self-test kobject: фиксирует доставку обработчиков.
 namespace {
@@ -2212,6 +2213,54 @@ int main(int argc, char **argv)
             && reqOk && postOk && msgOk;
         qInfo() << (ok ? "kobject: PASS" : "kobject: FAIL");
         return ok ? 0 : 53;
+    }
+
+    // Self-test DES (yxyDES2). ГЛАВНАЯ ПРОВЕРКА — КАНОНИЧЕСКИЙ ВЕКТОР DES: таблицы сверены
+    // с бинарником и совпали со стандартом, поэтому корректность проверяется эталоном.
+    if (screen == "des") {
+        yxyDES2 des;
+        // Классический вектор: key=133457799BBCDFF1, plain=0123456789ABCDEF
+        //                      → cipher=85E813540F0AB405
+        char key[8]   = { '\x13','\x34','\x57','\x79','\x9B','\xBC','\xDF','\xF1' };
+        char plain[8] = { '\x01','\x23','\x45','\x67','\x89','\xAB','\xCD','\xEF' };
+        des.InitializeKey(key, 0);
+        des.EncryptData(plain, 0);
+        const QByteArray hex(des.GetCiphertextInHex());
+        const bool vectorOk = hex == "85E813540F0AB405";       // эталонный DES-вектор
+
+        // Бинарное представление того же шифртекста согласовано с hex.
+        const QByteArray bin(des.GetCiphertextInBinary());
+        const bool binOk = bin.size() == 64 && bin.count('0') + bin.count('1') == 64;
+
+        // Round-trip: decrypt(cipher) == plain (data не модифицируется).
+        char cipher[8]; memcpy(cipher, des.GetCiphertextInBytes(), 8);
+        des.DecryptData(cipher, 0);
+        const bool rtOk = memcmp(des.GetPlaintext(), plain, 8) == 0
+            && memcmp(plain, "\x01\x23\x45\x67\x89\xAB\xCD\xEF", 8) == 0;   // вход не тронут
+
+        // «DES2» = ДВА слота расписания: uint — это НЕ длина, а номер слота.
+        char key2[8] = { '\x01','\x01','\x01','\x01','\x01','\x01','\x01','\x01' };
+        des.InitializeKey(key2, 1);
+        des.EncryptData(plain, 1);
+        const QByteArray hex1(des.GetCiphertextInHex());
+        des.EncryptData(plain, 0);                              // слот 0 не затёрт
+        const bool slotOk = hex1 != hex && QByteArray(des.GetCiphertextInHex()) == hex;
+
+        // EncryptAnyLength: len==8 → 8 байт; len>8 → ВСЕГДА лишний блок ((len/8+1)*8).
+        char data16[16]; memcpy(data16, plain, 8); memcpy(data16 + 8, plain, 8);
+        des.InitializeKey(key, 0);
+        des.EncryptAnyLength(data16, 16, 0);
+        char enc16[24]; memcpy(enc16, des.GetCipherAnyLength(), 24);
+        des.DecryptAnyLength(enc16, 24, 0);                     // выход ровно len=24
+        const bool anyOk = memcmp(des.GetPlainAnyLength(), data16, 16) == 0;   // первые 16 — исходные
+
+        qInfo() << "DES-вектор:" << vectorOk << hex.constData() << "| bin:" << binOk
+                << "| round-trip:" << rtOk;
+        qInfo() << "2 слота ключа:" << slotOk << "| AnyLength:" << anyOk;
+
+        const bool ok = vectorOk && binOk && rtOk && slotOk && anyOk;
+        qInfo() << (ok ? "des: PASS" : "des: FAIL");
+        return ok ? 0 : 58;
     }
 
     // Self-test обёртки XML-документа (XmlParser — load/save/root/декларация на QDomDocument).
