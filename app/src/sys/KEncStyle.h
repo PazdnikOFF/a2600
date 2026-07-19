@@ -91,6 +91,13 @@ public:
     // затем getScopeInfoPath() + ConvertSrc2Enc(модель) + ".png".
     QString getBiopsyImg(const QString &scope) const;
 
+    // Реф. GetEndoDisplayModel — ini НЕ читает: возвращает модель КАК ЕСТЬ, и только при
+    // KAccount::CurrentRole() <= 1 (RoleNone/RoleAdmin) И бренде "PyCkeun" подменяет её
+    // по таблице из 5 записей (EG-X20→G, EC-X20→C, EC-X20L→C, EB-X20→B, EB-X20T→B).
+    // Реф. берёт стиль глобально (getCurrentStyle → system.ini Product/ProductStyle);
+    // у нас — brand_ этого экземпляра (тот же смысл, задаётся SetStyle/LoadForStyle).
+    QString GetEndoDisplayModel(const QString &scope) const;
+
     // Реф. getScopeType — video.ini НЕ читает: сканирует 8 enc-файлов в scope/ в фикс.
     // порядке через KEncSettings::getStringList(), сравнивая СЫРУЮ (не hex) модель.
     int getScopeType(const QString &scope) const;

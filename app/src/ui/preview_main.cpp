@@ -1601,12 +1601,23 @@ int main(int argc, char **argv)
         // EB-X20 числится в benc.ini → 2 (бронхоскоп); неизвестная модель → 0.
         const bool stOk = st == 2 && es.getScopeType("NOPE-000") == 0;
 
+        // GetEndoDisplayModel: подмена ТОЛЬКО при бренде PyCkeun и роли <= 1 (по умолчанию
+        // RoleNone=0); при другом бренде — модель как есть.
+        const bool dispPlainOk = es.GetEndoDisplayModel("EB-X20") == "EB-X20";   // бренд SonoScape
+        KEncStyle esp;
+        esp.SetStyle("X-2600", "PyCkeun");
+        const bool dispMapOk = esp.GetEndoDisplayModel("EB-X20") == "B"
+            && esp.GetEndoDisplayModel("EC-X20L") == "C"
+            && esp.GetEndoDisplayModel("EG-X20") == "G"
+            && esp.GetEndoDisplayModel("NOPE-000") == "NOPE-000";   // нет в таблице → как есть
+
         qInfo() << "video.ini: hex:" << encOk << "size:" << szOk << es.getScopeSize("EB-X20")
                 << "sensor:" << sensOk << "fw:" << fwOk << "endo:" << etOk << "shape:" << shOk;
         qInfo() << "  rot:" << rotOk << "roundCut:" << rcOk << "octCut:" << ocOk
                 << "zoom:" << zrOk << zr << "| зашитые дефолты:" << zrDefOk << shDefOk;
         qInfo() << "  para(4 ключа):" << paraOk << pp.channelDiameter << pp.distalEndDiameter
                 << pp.workLength << "| biopsyImg:" << bioOk << "| scopeType:" << stOk << st;
+        qInfo() << "  displayModel: plain:" << dispPlainOk << "PyCkeun-map:" << dispMapOk;
 
         const bool ok = loaded &&
             scopes.size() == 30 && cams.size() == 4 &&
@@ -1618,7 +1629,8 @@ int main(int argc, char **argv)
             !es.IsCameraValid("99-999-999") &&         // нет
             fbOk &&                                     // фолбэк [Default]
             encOk && szOk && sensOk && fwOk && etOk && shOk && rotOk && rcOk && ocOk
-            && zrOk && zrDefOk && shDefOk && paraOk && bioOk && stOk;
+            && zrOk && zrDefOk && shDefOk && paraOk && bioOk && stOk
+            && dispPlainOk && dispMapOk;
         qInfo() << "scopeValid EG-X20:" << es.IsScopeValid("EG-X20")
                 << "camValid 10-110-201:" << es.IsCameraValid("10-110-201")
                 << "fallback:" << fbOk;

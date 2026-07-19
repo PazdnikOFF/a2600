@@ -1,6 +1,7 @@
 #include "sys/KEncStyle.h"
 #include "sys/KStyleConfig.h"
 #include "sys/KEncSettings.h"
+#include "sys/KAccount.h"
 
 #include <QSettings>
 #include <QFileInfo>
@@ -218,6 +219,19 @@ QString KEncStyle::getBiopsyImg(const QString &scope) const
     QString model = scope;
     model.replace("/", "");
     return getScopeInfoPath() + ConvertSrc2Enc(model) + ".png";
+}
+
+QString KEncStyle::GetEndoDisplayModel(const QString &scope) const
+{
+    // Реф.: гейт — роль <= 1 (RoleNone/RoleAdmin) И бренд "PyCkeun"; иначе модель как есть.
+    if (KAccount::GetInstance().CurrentRole() > KAccount::RoleAdmin)
+        return scope;
+    if (brand_ != QLatin1String("PyCkeun"))
+        return scope;
+    static const QMap<QString, QString> kDisp{
+        {"EG-X20", "G"}, {"EC-X20", "C"}, {"EC-X20L", "C"},
+        {"EB-X20", "B"}, {"EB-X20T", "B"}};
+    return kDisp.value(scope, scope);   // не в таблице → модель как есть
 }
 
 int KEncStyle::getScopeType(const QString &scope) const
