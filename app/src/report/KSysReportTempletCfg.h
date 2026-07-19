@@ -72,6 +72,8 @@ public:
     // Все шаблоны каталога (реф. GetTempletInfos) — config/TempletInfo.xml,
     // короткие имена ("NP-2x2").
     const QVector<KTempletBaseInfo> &TempletInfos() const { return infos_; }
+    // Реф. GetTempletInfos(vector&) — заполняет out каталогом (KSysReportTempletModel::Init/Reload).
+    void GetTempletInfos(QVector<KTempletBaseInfo> &out) const;
     QStringList TempletNames() const;
 
     // Библиотека шаблонов (реф. GetTempletLibInfos) — config/TempletLibInfo.xml,

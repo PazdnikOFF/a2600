@@ -140,6 +140,12 @@ bool KSysReportTempletCfg::Reload()
     return parseTempletFile("TempletInfo.xml", infos_);
 }
 
+void KSysReportTempletCfg::GetTempletInfos(QVector<KTempletBaseInfo> &out) const
+{
+    ensureLoaded();
+    out = infos_;
+}
+
 QStringList KSysReportTempletCfg::TempletNames() const
 {
     ensureLoaded();

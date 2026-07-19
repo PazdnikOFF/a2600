@@ -88,6 +88,8 @@ public:
 #include <QJsonObject>
 #include "report/KReportTemplate.h"
 #include "report/KSysReportTempletCfg.h"
+#include "report/KSysReportTempletModel.h"
+#include "report/KSysReportTempletControl.h"
 #include "report/KReportDataSource.h"
 #include "report/KReportDisplayParam.h"
 #include "report/KDocumentGenerator.h"
@@ -5023,6 +5025,169 @@ int main(int argc, char **argv)
     }
 
     QWidget *w = nullptr;
+    // Self-test модели+контроллера каталога шаблонов отчёта (KSysReportTempletModel/
+    // KSysReportTempletControl). Гермётичен: временный reportRoot с контролируемым
+    // TempletInfo.xml; проверяет квирки реф. (GetDefalutTempletNameByDept возвращает
+    // аргумент; SetDefault(имя,деп,флаг)+clear; DeleteTemplate только при наличии в cfg-кэше;
+    // Rename миграция кэша+delList; GetCopyTempletInfo без уникализации; GetSelectedDept сырой).
+    if (screen == "templetmodel") {
+        // --- временный каталог ---
+        const QString tmpRoot = QDir(QDir::tempPath())
+            .absoluteFilePath("a2600_templetmodel");
+        QDir().mkpath(tmpRoot + "/config");
+        {
+            QFile f(tmpRoot + "/config/TempletInfo.xml");
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            QTextStream ts(&f);
+            ts << "<?xml version=\"1.0\"?>\n<Root>\n"
+               << "  <Templet name=\"NP-2x2\" modifydate=\"factory\" factory=\"1\">"
+                  "<Dept name=\"KW_A\" default=\"1\"/></Templet>\n"
+               << "  <Templet name=\"NP-4x1\" modifydate=\"factory\" factory=\"1\">"
+                  "<Dept name=\"KW_A\" default=\"0\"/><Dept name=\"KW_B\" default=\"1\"/></Templet>\n"
+               << "  <Templet name=\"NP-nx3\" modifydate=\"factory\" factory=\"1\">"
+                  "<Dept name=\"KW_C\" default=\"0\"/></Templet>\n"
+               << "  <Templet name=\"General\" modifydate=\"2026-01-01\" factory=\"0\"/>\n"
+               << "</Root>\n";
+            f.close();
+        }
+        KSysReportTempletCfg::GetInstance().SetReportRoot(tmpRoot);
+
+        // ================= MODEL =================
+        KSysReportTempletModel model;
+        model.Init();
+        const bool catOk = model.IsExist("NP-2x2") && model.IsExist("General")
+            && !model.IsExist("ZZZ");
+
+        KTempletBaseInfo bi;
+        const bool giOk = model.GetTempletInfoByName("NP-4x1", bi)
+            && bi.name == "NP-4x1" && bi.HasDept("KW_B");
+
+        QVector<KTempletBaseInfo> byA, byAll;
+        model.GetTempletInfosByDept("KW_A", byA);
+        model.GetTempletInfosByDept("REPORT_DEPT_ALL", byAll);   // Model-сентинел
+        const bool deptOk = byA.size() == 2 && byAll.size() == 4;
+
+        // QUIRK: возвращает АРГУМЕНТ dept, а не имя шаблона.
+        const bool quirkRetOk = model.GetDefalutTempletNameByDept("KW_A") == "KW_A";
+        // Побочный эффект: у KW_C дефолта не было → NP-nx3 назначен дефолтом.
+        const std::string d2 = model.GetDefalutTempletNameByDept("KW_C");
+        KTempletBaseInfo nx3; model.GetTempletInfoByName("NP-nx3", nx3);
+        const bool sideFxOk = d2 == "KW_C" && nx3.IsDefault("KW_C");
+
+        // SetDefault(имя, департамент, флаг) + clear-цикл.
+        model.SetDefault("NP-4x1", "KW_A", true);
+        KTempletBaseInfo t22, t41;
+        model.GetTempletInfoByName("NP-2x2", t22);
+        model.GetTempletInfoByName("NP-4x1", t41);
+        const bool setDefOk = !t22.IsDefault("KW_A") && t41.IsDefault("KW_A");
+
+        // AddUserDefineDept → цепляется к "General" (реф. STR_GENERAL_TEMPLATE="General").
+        const bool addOk = model.AddUserDefineDept("KW_NEW");
+        KTempletBaseInfo gen; model.GetTempletInfoByName("General", gen);
+        const bool addDeptOk = addOk && gen.HasDept("KW_NEW") && gen.ModifyDate() != "2026-01-01";
+
+        // DeleteTemplate QUIRK: без cfg-кэша НЕ удаляет.
+        model.DeleteTemplate("NP-2x2");
+        const bool delNoCacheOk = model.IsExist("NP-2x2");
+        KTempletBaseInfo si; model.GetTempletInfoByName("NP-2x2", si);
+        model.SaveSingleTemplatetCfg(si, KReportTemplateDataNew());   // прайм кэша
+        model.DeleteTemplate("NP-2x2");
+        const bool delOk = !model.IsExist("NP-2x2");
+
+        // SaveSingleTemplatetCfg (новый) + GetTemplateCfgByName (кэш-хит).
+        KTempletBaseInfo ni; ni.SetTempletName("MYTPL"); ni.SetFactory(false);
+        KReportTemplateDataNew nd; nd.m_mapConfigs["k"] = "v";
+        model.SaveSingleTemplatetCfg(ni, nd);
+        KReportTemplateDataNew got;
+        const bool cfgHitOk = model.GetTemplateCfgByName("MYTPL", got)
+            && got.m_mapConfigs.count("k") && got.m_mapConfigs["k"] == "v";
+        const bool saveNewOk = model.IsExist("MYTPL");
+
+        // SaveSingleTemplatetCfg (обновление существующего).
+        KTempletBaseInfo ui2; ui2.SetTempletName("MYTPL"); ui2.SetModifyDate("Z"); ui2.SetFactory(false);
+        KReportTemplateDataNew ud; ud.m_mapConfigs["k2"] = "v2";
+        model.SaveSingleTemplatetCfg(ui2, ud);
+        KTempletBaseInfo chk; model.GetTempletInfoByName("MYTPL", chk);
+        KReportTemplateDataNew got2; model.GetTemplateCfgByName("MYTPL", got2);
+        const bool updCfgOk = chk.ModifyDate() == "Z" && got2.m_mapConfigs.count("k2");
+
+        // RenameTemplate: cached → миграция ключа + delList; non-cached → нет переименования.
+        model.RenameTemplate("MYTPL", "MYTPL2");
+        KReportTemplateDataNew gr;
+        const bool renOk = !model.IsExist("MYTPL") && model.IsExist("MYTPL2")
+            && model.GetTemplateCfgByName("MYTPL2", gr) && gr.m_mapConfigs.count("k2");
+        model.RenameTemplate("NP-4x1", "NP-4x1R");   // NP-4x1 не в кэше
+        const bool renNoCacheOk = model.IsExist("NP-4x1") && !model.IsExist("NP-4x1R");
+
+        // GetDelUserDefineItem: неизвестный элемент → user-define (добавлен);
+        // эталонный с полностью удаляемыми детьми → тоже добавлен.
+        KReportTemplateDataNew tree;
+        KReportTemplateItem unknown; unknown.m_strID = "/X"; unknown.m_strName = "X";
+        std::vector<KReportTemplateItem *> dv;
+        const bool delItemLeafOk = model.GetDelUserDefineItem(&unknown, dv, tree)
+            && dv.size() == 1 && dv[0] == &unknown;
+
+        KReportTemplateDataNew tree2;   // содержит только "/P" (без детей)
+        KReportTemplateItem P; P.m_strID = "/P"; P.m_strName = "P";
+        tree2.m_lstItems.push_back(P);
+        KReportTemplateItem item2; item2.m_strID = "/P"; item2.m_strName = "P";
+        KReportTemplateItem c1; c1.m_strID = "/P/C1"; c1.m_strName = "C1";
+        KReportTemplateItem c2; c2.m_strID = "/P/C2"; c2.m_strName = "C2";
+        item2.m_lstSubItems.push_back(c1);
+        item2.m_lstSubItems.push_back(c2);
+        std::vector<KReportTemplateItem *> dv2;
+        const bool delItemAllOk = model.GetDelUserDefineItem(&item2, dv2, tree2)
+            && dv2.size() == 3;   // C1, C2 и сам P
+
+        // UpdateUserDefineItem: проход по НЕ-заводским (General, MYTPL2), кэш подготовлен → true.
+        KTempletBaseInfo genI; model.GetTempletInfoByName("General", genI);
+        model.SaveSingleTemplatetCfg(genI, KReportTemplateDataNew());   // прайм кэша "General"
+        const bool updItemOk = model.UpdateUserDefineItem(KReportTemplateDataNew());
+
+        // ================= CONTROL =================
+        KSysReportTempletControl *ctrl = KSysReportTempletControl::GetInstance();
+        const bool ctrlSingletonOk = ctrl == KSysReportTempletControl::GetInstance();
+        ctrl->Init();   // читает исходный каталог из cfg (модель выше правила только СВОЮ копию)
+
+        ctrl->OnDeptChanged("KW_A");
+        const bool ctrlDeptOk = ctrl->GetSelectedDept() == "KW_A";
+        ctrl->OnDeptChanged("KW_ALL");                       // сентинел Control
+        const bool ctrlAllOk = ctrl->GetSelectedDept() == "KW_ALL";   // сырой (QUIRK)
+
+        ctrl->OnSelectedTempletChanged("NP-2x2");
+        const bool ctrlSelOk = ctrl->GetSelectedTempletInfo().name == "NP-2x2";
+
+        ctrl->DeleteSelectedTemplet();                       // QUIRK: no-op
+        const bool ctrlDelNoopOk = ctrl->IsExist("NP-2x2");
+
+        // GetCopyTempletInfo: имя не уникализируется, per-dept default сброшен в false.
+        KTempletBaseInfo src; src.SetTempletName("NP-4x1");
+        src.AddDept("KW_A", true); src.AddDept("KW_B", true);
+        const KTempletBaseInfo cp = ctrl->GetCopyTempletInfo(src, "NP-2x2");
+        const bool ctrlCopyOk = cp.TempletName() == "NP-2x2" && !cp.IsFactory()
+            && cp.HasDept("KW_A") && cp.HasDept("KW_B")
+            && !cp.IsDefault("KW_A") && !cp.IsDefault("KW_B");
+
+        qInfo() << "MODEL  cat:" << catOk << "gi:" << giOk << "dept:" << deptOk
+                << "quirkRet:" << quirkRetOk << "sideFx:" << sideFxOk << "setDef:" << setDefOk;
+        qInfo() << "       addDept:" << addDeptOk << "delNoCache:" << delNoCacheOk << "del:" << delOk
+                << "cfgHit:" << cfgHitOk << "saveNew:" << saveNewOk << "updCfg:" << updCfgOk;
+        qInfo() << "       ren:" << renOk << "renNoCache:" << renNoCacheOk
+                << "delItemLeaf:" << delItemLeafOk << "delItemAll:" << delItemAllOk
+                << "updItem:" << updItemOk;
+        qInfo() << "CONTROL singleton:" << ctrlSingletonOk << "dept:" << ctrlDeptOk
+                << "all(KW_ALL raw):" << ctrlAllOk << "sel:" << ctrlSelOk
+                << "delNoop:" << ctrlDelNoopOk << "copy(no-uniq):" << ctrlCopyOk;
+
+        const bool ok = catOk && giOk && deptOk && quirkRetOk && sideFxOk && setDefOk
+            && addDeptOk && delNoCacheOk && delOk && cfgHitOk && saveNewOk && updCfgOk
+            && renOk && renNoCacheOk && delItemLeafOk && delItemAllOk && updItemOk
+            && ctrlSingletonOk && ctrlDeptOk && ctrlAllOk && ctrlSelOk && ctrlDelNoopOk
+            && ctrlCopyOk;
+        qInfo() << (ok ? "templetmodel: PASS" : "templetmodel: FAIL");
+        return ok ? 0 : 61;
+    }
+
     if (screen == "desktop") {
         auto *desktop = new KUIDesktop;
         // Для проверки списка снимков: папка осмотра из ENDO_EXAM.

@@ -133,6 +133,8 @@ set(SOURCES
     src/report/KTitleTableBlock.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
+    src/report/KSysReportTempletModel.cpp
+    src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
     src/report/KDocumentGenerator.cpp
@@ -256,6 +258,8 @@ add_executable(ui_preview
     src/report/KTitleTableBlock.cpp
     src/report/KReportTemplate.cpp
     src/report/KSysReportTempletCfg.cpp
+    src/report/KSysReportTempletModel.cpp
+    src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
     src/report/KDocumentGenerator.cpp
