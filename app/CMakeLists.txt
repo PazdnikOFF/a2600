@@ -85,6 +85,7 @@ set(SOURCES
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/sys/KSysPrintData.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
@@ -206,6 +207,7 @@ add_executable(ui_preview
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/sys/KSysPrintData.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp

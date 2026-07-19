@@ -114,6 +114,7 @@ public:
 #include "sys/languageConfig.h"
 #include "sys/KLoadUnicodeText.h"
 #include "sys/KEncStyle.h"
+#include "sys/KSysPrintData.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
 
@@ -5342,6 +5343,114 @@ int main(int argc, char **argv)
         const bool ok = rtOk && rawOk && defOk && sanOk && apOk;
         qInfo() << (ok ? "dimmer: PASS" : "dimmer: FAIL");
         return ok ? 0 : 62;
+    }
+
+    // Self-test персистентного слоя принтеров (KSysPrintData). TMP_MODE — пишет XML.
+    // Проверяет реф.-квирки: AddPrinter без дедупа, DelPrinter не переназначает дефолт,
+    // безусловные save, приоритет дефолта в RefreshCurrentPrinterNameInCache,
+    // SaveUrlDriverInfo «обновление на месте», FindDriverPath — только карта.
+    if (screen == "printdata") {
+        KSysPrintData pd;
+        QDir().mkpath(QFileInfo(KSysPrintData::ServiceXmlFile()).absolutePath());
+
+        // Пустой кэш: геттеры не падают и дают дефолты.
+        const bool emptyOk = !pd.IsPrinterExist("nope")
+            && !pd.GetPrinterDefaultStatus("nope")
+            && pd.FindDriverPath("nope").empty();
+
+        KPrintServiceInfo img;
+        img.name = "ImgPrn"; img.type = PRINTER_SERVICE_IMAGE;
+        img.connect_type = PRINTER_CONNECT_NETWORK; img.device_or_ip = "192.168.8.226";
+        img.paper_size = 2; img.gamma = 1500; img.brightness = 50; img.optimization = true;
+        pd.AddPrinter(img);
+
+        KPrintServiceInfo rpt;
+        rpt.name = "RptPrn"; rpt.type = PRINTER_SERVICE_REPORT;
+        rpt.connect_type = PRINTER_CONNECT_USB; rpt.device_or_ip = "usb://HP";
+        pd.AddPrinter(rpt);
+
+        // Слоты текущих принтеров заполнились по типу.
+        const bool refreshOk = pd.CurrentImagePrinter() == "ImgPrn"
+            && pd.CurrentReportPrinter() == "RptPrn";
+
+        // Перезагрузка из XML даёт те же записи (round-trip всех 11 атрибутов).
+        KSysPrintData pd2;
+        pd2.QueryAllPrinters();
+        KPrintServiceInfo back;
+        const bool rtOk = pd2.GetPrinterInfo("ImgPrn", back)
+            && back.type == PRINTER_SERVICE_IMAGE
+            && back.connect_type == PRINTER_CONNECT_NETWORK
+            && back.device_or_ip == "192.168.8.226"
+            && back.paper_size == 2 && back.gamma == 1500 && back.brightness == 50
+            && back.optimization && !back.default_printer
+            && pd2.Printers().size() == 2;
+
+        // КВИРК: AddPrinter не проверяет дубликаты — то же имя добавится повторно.
+        pd2.AddPrinter(img);
+        const bool dupOk = pd2.Printers().size() == 3;
+
+        // Переключение дефолта: включение снимает дефолт с того же типа.
+        KSysPrintData pd3;
+        pd3.QueryAllPrinters();
+        pd3.ChangeDefaultPrinterStatus("ImgPrn");            // -> true (первый ImgPrn)
+        const bool defOnOk = pd3.GetPrinterDefaultStatus("ImgPrn");
+        pd3.ChangeDefaultPrinterStatus("ImgPrn");            // тумблер -> false
+        const bool defOffOk = !pd3.GetPrinterDefaultStatus("ImgPrn");
+        // Несуществующий принтер — тихий выход.
+        pd3.ChangeDefaultPrinterStatus("NoSuch");
+        const bool defMissOk = !pd3.GetPrinterDefaultStatus("NoSuch");
+
+        // UpdatePrintSettings: XML + кэш; GetPrintSettings отдаёт хвост структуры.
+        KPrintSettings st; st.paper_size = 7; st.gamma = 999; st.brightness = 11;
+        st.optimization = false;
+        pd3.UpdatePrintSettings("RptPrn", st);
+        KPrintSettings got;
+        const bool setOk = pd3.GetPrintSettings("RptPrn", got) && got.paper_size == 7
+            && got.gamma == 999 && got.brightness == 11 && !got.optimization;
+        KSysPrintData pd4; pd4.QueryAllPrinters();
+        KPrintSettings got2;
+        const bool setPersistOk = pd4.GetPrintSettings("RptPrn", got2) && got2.gamma == 999;
+
+        // DelPrinter: удаляет ВСЕ совпадения по имени; дефолт не переназначается.
+        pd4.DelPrinter("ImgPrn");
+        const bool delOk = !pd4.IsPrinterExist("ImgPrn") && pd4.IsPrinterExist("RptPrn");
+        KSysPrintData pd5; pd5.QueryAllPrinters();
+        const bool delPersistOk = !pd5.IsPrinterExist("ImgPrn");
+
+        // url→driver: добавление, обновление НА МЕСТЕ (без дубля), поиск по карте.
+        KSysPrintData ud;
+        ud.SaveUrlDriverInfo("HP Color Laserjet Pro M252n", "/usr/share/sonoscape/ppd/a.ppd");
+        ud.SaveUrlDriverInfo("HP Color Laserjet Pro M252n", "/usr/share/sonoscape/ppd/b.ppd");
+        KSysPrintData ud2;
+        ud2.GetAllUrlDriverInfo();
+        const bool udOk = ud2.FindDriverPath("HP Color Laserjet Pro M252n")
+                              == "/usr/share/sonoscape/ppd/b.ppd"          // обновлён на месте
+            && ud2.FindDriverPath("unknown").empty();
+        QFile uf(KSysPrintData::UrlDriverXmlFile()); uf.open(QIODevice::ReadOnly);
+        const QString udRaw = QString::fromUtf8(uf.readAll()); uf.close();
+        const bool udNoDupOk = udRaw.count("<item") == 1                    // дубля НЕТ
+            && udRaw.contains("url=") && udRaw.contains("driver=");
+
+        // Схема сервис-файла: элемент "item" строчными, 11 атрибутов, <PrinterList>.
+        QFile sf(KSysPrintData::ServiceXmlFile()); sf.open(QIODevice::ReadOnly);
+        const QString sRaw = QString::fromUtf8(sf.readAll()); sf.close();
+        const bool schemaOk = sRaw.contains("<PrinterList>") && sRaw.contains("<item")
+            && sRaw.contains("connect_type=") && sRaw.contains("device_or_ip=")
+            && sRaw.contains("default_printer=") && sRaw.contains("optimization=")
+            && !sRaw.contains("<Item");   // мёртвый легаси-блок мы НЕ пишем
+
+        qInfo() << "empty:" << emptyOk << "refresh:" << refreshOk << "round-trip:" << rtOk
+                << "no-dedup:" << dupOk;
+        qInfo() << "default on/off/miss:" << defOnOk << defOffOk << defMissOk
+                << "| settings:" << setOk << setPersistOk;
+        qInfo() << "del:" << delOk << delPersistOk << "| urlDriver:" << udOk
+                << "no-dup:" << udNoDupOk << "| схема:" << schemaOk;
+
+        const bool ok = emptyOk && refreshOk && rtOk && dupOk && defOnOk && defOffOk
+            && defMissOk && setOk && setPersistOk && delOk && delPersistOk && udOk
+            && udNoDupOk && schemaOk;
+        qInfo() << (ok ? "printdata: PASS" : "printdata: FAIL");
+        return ok ? 0 : 63;
     }
 
     if (screen == "desktop") {
