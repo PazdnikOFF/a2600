@@ -1571,6 +1571,43 @@ int main(int argc, char **argv)
         const bool fbOk = es.getSupportedScopeList().size() == scopes.size();
         es.SetProductModel("X-2600");
 
+        // ---------- scope/video.ini: реф. per-scope геттеры ----------
+        // Эталон — реальная секция [45422d583230] (= hex "EB-X20") в X-2600/SonoScape.
+        es.SetStyle("X-2600", "SonoScape");
+        const bool encOk = KEncStyle::ConvertSrc2Enc("EB-X20") == "45422d583230";
+        const bool szOk   = es.getScopeSize("EB-X20") == QRect(0, 0, 864, 1056);
+        const bool sensOk = es.GetEndoSensorType("EB-X20") == 1;   // OH01A
+        const bool fwOk   = es.GetFirmwareType("EB-X20") == 3;     // OH01A_768X928
+        const bool etOk   = es.GetEndoType("EB-X20") == 10;        // OH01A_EB_768X928
+        const bool shOk   = es.GetEndoShapeType("EB-X20") == 0;    // OCTANGLE_AND_ROUND
+        const bool rotOk  = es.getScopeRotateType("EB-X20") == 0;
+        const bool rcOk   = es.getScopeDefaultRoundCut("EB-X20") == 458;
+        const bool ocOk   = es.getScopeDefaultOctangleCut("EB-X20") == 3932220;
+        const float zr    = es.GetScopeZoomRatio("EB-X20");
+        const bool zrOk   = qAbs(zr - 1.14f) < 0.01f;
+        // Зашитые дефолты БЕЗ фолбэка [Default] (квирк реф.): неизвестная модель.
+        const bool zrDefOk = qAbs(es.GetScopeZoomRatio("NOPE-000") - 1.0f) < 0.001f;
+        const bool shDefOk = es.GetEndoShapeType("NOPE-000") == 0;
+        // Пакет из 4 ключей (workLength — 16-битный).
+        const KEncStyle::_SCOPE_PARA pp = es.getScopeParaDefault("EB-X20");
+        const bool paraOk = qAbs(pp.channelDiameter - 2.0f) < 0.01f
+            && qAbs(pp.distalEndDiameter - 4.9f) < 0.05f
+            && qAbs(pp.insertionTubeDiameter - 4.9f) < 0.05f
+            && pp.workLength == 600;
+        // getBiopsyImg — сборка пути: <scope-dir>/<hex>.png (файл реально существует).
+        const bool bioOk = QFileInfo::exists(es.getBiopsyImg("EB-X20"));
+        // getScopeType — скан 8 enc-файлов; неизвестная модель → 0.
+        const int st = es.getScopeType("EB-X20");
+        // EB-X20 числится в benc.ini → 2 (бронхоскоп); неизвестная модель → 0.
+        const bool stOk = st == 2 && es.getScopeType("NOPE-000") == 0;
+
+        qInfo() << "video.ini: hex:" << encOk << "size:" << szOk << es.getScopeSize("EB-X20")
+                << "sensor:" << sensOk << "fw:" << fwOk << "endo:" << etOk << "shape:" << shOk;
+        qInfo() << "  rot:" << rotOk << "roundCut:" << rcOk << "octCut:" << ocOk
+                << "zoom:" << zrOk << zr << "| зашитые дефолты:" << zrDefOk << shDefOk;
+        qInfo() << "  para(4 ключа):" << paraOk << pp.channelDiameter << pp.distalEndDiameter
+                << pp.workLength << "| biopsyImg:" << bioOk << "| scopeType:" << stOk << st;
+
         const bool ok = loaded &&
             scopes.size() == 30 && cams.size() == 4 &&
             es.IsScopeValid("EG-X20") &&               // есть в списке
@@ -1579,7 +1616,9 @@ int main(int argc, char **argv)
             es.IsCameraValid("10-110-201") &&          // есть
             es.IsCameraValid("10-100-201") &&          // есть
             !es.IsCameraValid("99-999-999") &&         // нет
-            fbOk;                                       // фолбэк [Default]
+            fbOk &&                                     // фолбэк [Default]
+            encOk && szOk && sensOk && fwOk && etOk && shOk && rotOk && rcOk && ocOk
+            && zrOk && zrDefOk && shDefOk && paraOk && bioOk && stOk;
         qInfo() << "scopeValid EG-X20:" << es.IsScopeValid("EG-X20")
                 << "camValid 10-110-201:" << es.IsCameraValid("10-110-201")
                 << "fallback:" << fbOk;
