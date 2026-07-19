@@ -23,6 +23,7 @@ QString SetDataPath();           // /home/root/data/setdata/
 QString UserSetPath();           // /home/root/data/setdata/userset/
 QString ProtectedPath();         // /home/root/data/protected/
 QString VideoConfPath();         // /home/root/system/videoconf
+QString ColdlightConfigPath();   // /home/root/system/coldlight/  (реф. = SystemPath + "coldlight/")
 QString ProductDisplayConfigPath(const QString &model);  // .../display/<model>/<model>
 QString ProductDisplayConfigFile(const QString &model);  // .../<model>/product.ini
 

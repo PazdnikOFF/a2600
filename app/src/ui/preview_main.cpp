@@ -4723,11 +4723,45 @@ int main(int argc, char **argv)
         qInfo() << "EB-X20/WL параметров:" << p.size()
                 << "первые:" << (p.size() >= 3 ? QString("%1,%2,%3").arg(p[0]).arg(p[1]).arg(p[2]) : "");
 
+        // --- _KAutomaticDimmerParam: ЧТЕНИЕ реального coldlightCamera2aPara.ini ---
+        // Эталон "10-100-201\EWL": …, 22, -3, 10, -0.15, 2, 1.5, 0.25, 4
+        _KAutomaticDimmerParam dp;
+        cl.GetCameraManuDimmerParam("10-100-201", "EWL", dp);
+        const bool dpOk = qAbs(dp.f04 - 0.2f) < 1e-4 && qAbs(dp.f10 - 0.45f) < 1e-4
+            && dp.i48 == 22 && dp.i49 == -3 && dp.u4a == 10          // знаковые/беззнаковый
+            && qAbs(dp.f4c - (-0.15f)) < 1e-4 && qAbs(dp.f50 - 2.0f) < 1e-4
+            // ПЕРЕСТАНОВКА: токен23→f58=1.5, токен24→f5c=0.25, токен25→f54=4
+            && qAbs(dp.f58 - 1.5f) < 1e-4 && qAbs(dp.f5c - 0.25f) < 1e-4
+            && qAbs(dp.f54 - 4.0f) < 1e-4;
+
+        // Пустая модель → "DefaultParam", пустой режим → "default" (подстановка ТОЛЬКО при пустом).
+        _KAutomaticDimmerParam ddp;
+        cl.GetCameraManuDimmerParam("", "", ddp);
+        const bool defOk = ddp.i48 == 12 && ddp.u4a == 15 && qAbs(ddp.f50 - 1.8f) < 1e-4
+            && qAbs(ddp.f54 - 4.0f) < 1e-4;
+
+        // Отсутствующий ключ → param НЕ ТРОГАЕТСЯ (реф. выход по гейту count<26).
+        _KAutomaticDimmerParam untouched;
+        untouched.f00 = 42.0f;
+        cl.GetCameraManuDimmerParam("NO-SUCH-MODEL", "NOPE", untouched);
+        const bool guardOk = qAbs(untouched.f00 - 42.0f) < 1e-4;
+
+        // Automatic-пара читает ДРУГОЙ файл (coldlightCommPara.ini) той же схемы.
+        _KAutomaticDimmerParam ap;
+        cl.GetAutomaticDimmerParam("EB-X20", "WL", ap);
+        const bool apOk = qAbs(ap.f04 - 0.2f) < 1e-4;
+
+        qInfo() << "dimmer(camera2a): read:" << dpOk << "i48/i49/u4a:" << dp.i48 << dp.i49 << dp.u4a
+                << "perm(f58/f5c/f54):" << dp.f58 << dp.f5c << dp.f54;
+        qInfo() << "  DefaultParam-подстановка:" << defOk << "| гейт count<26:" << guardOk
+                << "| commPara-пара:" << apOk;
+
         const bool ok = vlsOk && cl.VLSConfigNum() == 4 &&
                         combos[0] == QStringList{"WL","SFI","VIST"} &&
                         combos[2] == QStringList{"SFI","VIST"} &&   // "SFI,NULL,VIST" → NULL убран
                         cl.CurrentMode() == "SFI" &&
-                        cpOk && p.size() == 26 && qAbs(p[1] - 0.2f) < 1e-4;
+                        cpOk && p.size() == 26 && qAbs(p[1] - 0.2f) < 1e-4 &&
+                        dpOk && defOk && guardOk && apOk;
         qInfo() << (ok ? "coldlight: PASS" : "coldlight: FAIL");
         return ok ? 0 : 15;
     }
@@ -5237,6 +5271,77 @@ int main(int argc, char **argv)
             && ctrlCopyOk;
         qInfo() << (ok ? "templetmodel: PASS" : "templetmodel: FAIL");
         return ok ? 0 : 61;
+    }
+
+    // Self-test ЗАПИСИ параметров авто-диммирования (KColdLightConfig::Set*DimmerParam).
+    // TMP_MODE — пишет в <ENDO_ROOT>/system/coldlight/, брать временный корень!
+    if (screen == "dimmer") {
+        KColdLightConfig &cl = KColdLightConfig::GetInstance();
+        QDir().mkpath(KSystem::ColdlightConfigPath());
+
+        // Различимые значения на каждый из 26 токенов.
+        _KAutomaticDimmerParam w;
+        w.f00 = 1.5f;  w.f04 = 2.25f; w.f44 = 17.5f;
+        w.i48 = -3;    w.i49 = 22;    w.u4a = 200;     // границы знаковости/беззнаковости
+        w.f4c = -0.15f; w.f50 = 2.0f;
+        w.f58 = 23.0f; w.f5c = 24.0f; w.f54 = 25.0f;   // токены 23/24/25 (перестановка)
+        cl.SetCameraManuDimmerParam("10-100-201", "EWL", w);
+
+        _KAutomaticDimmerParam r;
+        cl.GetCameraManuDimmerParam("10-100-201", "EWL", r);
+        const bool rtOk = qAbs(r.f00 - 1.5f) < 1e-4 && qAbs(r.f04 - 2.25f) < 1e-4
+            && qAbs(r.f44 - 17.5f) < 1e-4
+            && r.i48 == -3 && r.i49 == 22 && r.u4a == 200
+            && qAbs(r.f4c - (-0.15f)) < 1e-4 && qAbs(r.f50 - 2.0f) < 1e-4
+            && qAbs(r.f58 - 23.0f) < 1e-4 && qAbs(r.f5c - 24.0f) < 1e-4
+            && qAbs(r.f54 - 25.0f) < 1e-4;
+
+        // Сырой файл: секция [V01], ключ "10-100-201\EWL", хвост в ПЕРЕСТАВЛЕННОМ порядке
+        // (…, 23, 24, 25) — т.е. на диске идут f58, f5c, f54.
+        const QString file = QDir(KSystem::ColdlightConfigPath())
+            .absoluteFilePath("coldlightCamera2aPara.ini");
+        QFile rf(file); rf.open(QIODevice::ReadOnly);
+        const QString raw = QString::fromUtf8(rf.readAll()); rf.close();
+        const bool rawOk = raw.contains("[V01]")
+            && raw.contains("10-100-201\\EWL=")
+            && raw.contains("-3, 22, 200")             // знаковые/беззнаковый как целые
+            && raw.contains("23, 24, 25");             // перестановка на диске
+
+        // Пустые аргументы → ключ DefaultParam\default (подстановка при пустом аргументе).
+        _KAutomaticDimmerParam d; d.f00 = 7.5f; d.u4a = 9;
+        cl.SetCameraManuDimmerParam("", "", d);
+        _KAutomaticDimmerParam d2;
+        cl.GetCameraManuDimmerParam("", "", d2);
+        QFile rf2(file); rf2.open(QIODevice::ReadOnly);
+        const QString raw2 = QString::fromUtf8(rf2.readAll()); rf2.close();
+        const bool defOk = qAbs(d2.f00 - 7.5f) < 1e-4 && d2.u4a == 9
+            && raw2.contains("DefaultParam\\default=");
+
+        // '/' в модели заменяется на "__" (реф. санитайзер).
+        _KAutomaticDimmerParam s; s.f00 = 3.5f;
+        cl.SetCameraManuDimmerParam("10/100/201", "WL", s);
+        QFile rf3(file); rf3.open(QIODevice::ReadOnly);
+        const QString raw3 = QString::fromUtf8(rf3.readAll()); rf3.close();
+        _KAutomaticDimmerParam s2;
+        cl.GetCameraManuDimmerParam("10/100/201", "WL", s2);   // тот же санитайзер на чтении
+        const bool sanOk = raw3.contains("10__100__201\\WL=") && qAbs(s2.f00 - 3.5f) < 1e-4;
+
+        // Automatic-пара пишет ДРУГОЙ файл (coldlightCommPara.ini).
+        _KAutomaticDimmerParam a; a.f00 = 5.5f;
+        cl.SetAutomaticDimmerParam("EB-X20", "WL", a);
+        const bool fileSplitOk = QFile::exists(
+            QDir(KSystem::ColdlightConfigPath()).absoluteFilePath("coldlightCommPara.ini"));
+        _KAutomaticDimmerParam a2;
+        cl.GetAutomaticDimmerParam("EB-X20", "WL", a2);
+        const bool apOk = fileSplitOk && qAbs(a2.f00 - 5.5f) < 1e-4;
+
+        qInfo() << "round-trip:" << rtOk << "| сырой файл (перестановка):" << rawOk;
+        qInfo() << "DefaultParam:" << defOk << "| санитайзер '/'→'__':" << sanOk
+                << "| раздельные файлы:" << apOk;
+
+        const bool ok = rtOk && rawOk && defOk && sanOk && apOk;
+        qInfo() << (ok ? "dimmer: PASS" : "dimmer: FAIL");
+        return ok ? 0 : 62;
     }
 
     if (screen == "desktop") {

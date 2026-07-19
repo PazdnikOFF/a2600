@@ -22,6 +22,8 @@ QString ProjectPresetPath()  { return QDir(SystemPresetPath()).absoluteFilePath(
 QString ProjectUserPresetPath() { return QDir(SystemPresetPath()).absoluteFilePath("userpreset"); }
 QString UserPresetPath()     { return ProjectUserPresetPath(); }
 QString VideoConfPath()      { return QDir(SystemPath()).absoluteFilePath("videoconf"); }
+// Реф. KSystem::ColdlightConfigPath @0x673e80 = SystemPath() + "coldlight/".
+QString ColdlightConfigPath() { return QDir(SystemPath()).absoluteFilePath("coldlight"); }
 // Реф.: SetDataPath = DataPath + "setdata/", UserSetPath = SetDataPath + "userset/".
 QString SetDataPath()        { return QDir(DataPath()).absoluteFilePath("setdata"); }
 QString UserSetPath()        { return QDir(SetDataPath()).absoluteFilePath("userset"); }
