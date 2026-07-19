@@ -116,6 +116,7 @@ public:
 #include "sys/KEncStyle.h"
 #include "sys/KSysPrintData.h"
 #include "sys/KThirdPartyLegalNotices.h"
+#include "autotest/KAutoTestScript.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
 
@@ -5475,6 +5476,106 @@ int main(int argc, char **argv)
         const bool ok = readOk && guardOk && dirOk;
         qInfo() << (ok ? "legalnotice: PASS" : "legalnotice: FAIL");
         return ok ? 0 : 64;
+    }
+
+    // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/
+    // AnalyseLineCase/ResetKeyValue/GetCaseValue + таблица stKeyValueStr).
+    // TMP_MODE — рекурсия Script читает AutotestDir() под ENDO_ROOT.
+    if (screen == "autotest") {
+        const QString dir = KAutoTestScript::AutotestDir();
+        QDir().mkpath(dir);
+        auto write = [&](const QString &name, const QString &body) {
+            QFile f(dir + name);
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            QTextStream(&f) << body;
+            f.close();
+        };
+
+        // --- таблица кодов (ground truth клавиш) ---
+        const bool tblOk = KAutoTestScript::KeyValueFromName("F1") == 0x1000030
+            && KAutoTestScript::KeyValueFromName("Tab") == 0x1000001
+            && KAutoTestScript::KeyValueFromName("Esc") == 0x1000000
+            && KAutoTestScript::KeyValueFromName("LAMP") == 0x0e
+            && KAutoTestScript::KeyValueFromName("FOOTSWICH_LEFT") == 0x211   // sic
+            && KAutoTestScript::KeyValueFromName("Script") == AUTOTEST_CODE_SCRIPT
+            && KAutoTestScript::KeyValueFromName("Sleep") == AUTOTEST_CODE_SLEEP
+            && KAutoTestScript::KeyValueFromName("NoSuchKey") == -1;
+
+        // --- GetCaseValue: пробелы после '=', отсутствие '=' ---
+        bool found = false;
+        const bool gcvOk = KAutoTestScript::GetCaseValue("code=  F1", &found) == "F1" && found
+            && (KAutoTestScript::GetCaseValue("no-equals-here", &found), !found);
+
+        // --- AnalyseLineCase: коды строк + РЕГИСТРОНЕЗАВИСИМОСТЬ префиксов ---
+        KEY_CONFIG k; INI_CONFIG ini;
+        KAutoTestScript::ResetKeyValue(k);
+        const bool alcOk =
+            KAutoTestScript::AnalyseLineCase("[Key12]", k, ini) == LINE_KEY
+            && KAutoTestScript::AnalyseLineCase("[KeyEnd]", k, ini) == LINE_KEY   // тоже flush
+            && KAutoTestScript::AnalyseLineCase("[Confiure]", k, ini) == LINE_CONFIURE
+            && KAutoTestScript::AnalyseLineCase("env=aging", k, ini) == LINE_ENV
+            && KAutoTestScript::AnalyseLineCase("num=165", k, ini) == LINE_NUM && ini.num == 165
+            && KAutoTestScript::AnalyseLineCase("TIME=1000", k, ini) == LINE_TIME && ini.time == 1000
+            && KAutoTestScript::AnalyseLineCase("CODE=F1", k, ini) == LINE_FIELD  // верхний регистр
+            && k.code == 0x1000030
+            && KAutoTestScript::AnalyseLineCase("мусор", k, ini) == LINE_UNKNOWN;
+        // дефолты ResetKeyValue: code=-1, cnt=1
+        KAutoTestScript::ResetKeyValue(k);
+        const bool rstOk = k.code == -1 && k.cnt == 1 && k.value == 0 && k.cmd.empty();
+
+        // --- разбор файла: заголовок сбрасывает ПРЕДЫДУЩИЙ шаг ---
+        write("simple.ini",
+              "[Confiure]\nenv=aging\nnum=3\ntime=1000\n\n"
+              "[Key1]\ncode=F1\n\n[Key2]\ncode=Tab\nsleep=50\n\n"
+              "[Key3]\ncode=Esc\nvalue=7\nevent=2\n\n[KeyEnd]\n");
+        QVector<KEY_CONFIG> keys; INI_CONFIG fi;
+        const bool parsed = KAutoTestScript::INIFileCaseExec(dir + "simple.ini", keys, fi);
+        const bool parseOk = parsed && keys.size() == 3 && fi.num == 3 && fi.time == 1000
+            && keys[0].code == 0x1000030
+            && keys[1].code == 0x1000001 && keys[1].sleep == 50
+            && keys[2].code == 0x1000000 && keys[2].value == 7 && keys[2].event == 2;
+
+        // --- КВИРК: без завершающего [KeyEnd] ПОСЛЕДНИЙ шаг теряется ---
+        write("noend.ini", "[Confiure]\nnum=2\n\n[Key1]\ncode=F1\n\n[Key2]\ncode=Tab\n");
+        QVector<KEY_CONFIG> k2; INI_CONFIG i2;
+        KAutoTestScript::INIFileCaseExec(dir + "noend.ini", k2, i2);
+        const bool lostOk = k2.size() == 1 && k2[0].code == 0x1000030;   // Tab потерян
+
+        // --- рекурсия Script: cmd → под-скрипт, cnt раз ---
+        write("sub.ini", "[Key1]\ncode=LAMP\n\n[KeyEnd]\n");
+        write("top.ini", "[Confiure]\nnum=1\n\n[Key1]\ncode=Script\ncmd=sub.ini\ncnt=3\n\n[KeyEnd]\n");
+        QVector<KEY_CONFIG> k3; INI_CONFIG i3;
+        KAutoTestScript::INIFileCaseExec(dir + "top.ini", k3, i3);
+        const bool recOk = k3.size() == 3 && k3[0].code == 0x0e && k3[2].code == 0x0e;
+
+        // Script с несуществующим под-скриптом — просто ничего не добавляет.
+        write("badsub.ini", "[Key1]\ncode=Script\ncmd=nope.ini\ncnt=2\n\n[KeyEnd]\n");
+        QVector<KEY_CONFIG> k4; INI_CONFIG i4;
+        const bool badOk = KAutoTestScript::INIFileCaseExec(dir + "badsub.ini", k4, i4)
+            && k4.isEmpty();
+
+        // --- инвариант реальной прошивки: N заголовков [Key…] + [KeyEnd] → N шагов == num.
+        // (Реальный keyboard.ini: num=165, 166 заголовков → 165 шагов. Реплика — гермётичная.)
+        QString big = "[Confiure]\nenv=aging\nnum=165\ntime=1000\n\n";
+        for (int i = 1; i <= 165; ++i)
+            big += QString("[Key%1]\ncode=%2\n\n").arg(i).arg(i % 2 ? "F1" : "Esc");
+        big += "[KeyEnd]";                       // без завершающего перевода строки — как в прошивке
+        write("big.ini", big);
+        QVector<KEY_CONFIG> kb; INI_CONFIG ib;
+        KAutoTestScript::INIFileCaseExec(dir + "big.ini", kb, ib);
+        const bool bigOk = kb.size() == 165 && ib.num == 165 && kb.size() == ib.num
+            && kb[0].code == 0x1000030 && kb[164].code == 0x1000030;
+
+        qInfo() << "инвариант 166 заголовков → 165 шагов == num:" << bigOk << kb.size();
+        qInfo() << "таблица:" << tblOk << "GetCaseValue:" << gcvOk << "AnalyseLineCase:" << alcOk
+                << "Reset:" << rstOk;
+        qInfo() << "разбор:" << parseOk << keys.size() << "| квирк потери хвоста:" << lostOk
+                << "| рекурсия Script:" << recOk << k3.size() << "| битый под-скрипт:" << badOk;
+
+        const bool ok = tblOk && gcvOk && alcOk && rstOk && parseOk && lostOk && recOk
+            && badOk && bigOk;
+        qInfo() << (ok ? "autotest: PASS" : "autotest: FAIL");
+        return ok ? 0 : 65;
     }
 
     if (screen == "desktop") {

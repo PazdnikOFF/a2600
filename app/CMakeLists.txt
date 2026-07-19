@@ -87,6 +87,7 @@ set(SOURCES
     src/sys/KEncStyle.cpp
     src/sys/KSysPrintData.cpp
     src/sys/KThirdPartyLegalNotices.cpp
+    src/autotest/KAutoTestScript.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
@@ -210,6 +211,7 @@ add_executable(ui_preview
     src/sys/KEncStyle.cpp
     src/sys/KSysPrintData.cpp
     src/sys/KThirdPartyLegalNotices.cpp
+    src/autotest/KAutoTestScript.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
