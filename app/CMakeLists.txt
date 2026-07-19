@@ -86,6 +86,7 @@ set(SOURCES
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
     src/sys/KSysPrintData.cpp
+    src/sys/KThirdPartyLegalNotices.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp
@@ -208,6 +209,7 @@ add_executable(ui_preview
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
     src/sys/KSysPrintData.cpp
+    src/sys/KThirdPartyLegalNotices.cpp
     src/sys/KEncSettings.cpp
     src/db/KExamListRecordFileUpdate.cpp
     src/db/KExamNoGenerate.cpp

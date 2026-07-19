@@ -115,6 +115,7 @@ public:
 #include "sys/KLoadUnicodeText.h"
 #include "sys/KEncStyle.h"
 #include "sys/KSysPrintData.h"
+#include "sys/KThirdPartyLegalNotices.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
 
@@ -5451,6 +5452,29 @@ int main(int argc, char **argv)
             && udNoDupOk && schemaOk;
         qInfo() << (ok ? "printdata: PASS" : "printdata: FAIL");
         return ok ? 0 : 63;
+    }
+
+    // Self-test чтения уведомлений о стороннем ПО (KThirdPartyLegalNotices::ReadLegalNoticeText).
+    if (screen == "legalnotice") {
+        QString text;
+        KThirdPartyLegalNotices::ReadLegalNoticeText(text, "thirdPartyLegalNotices.txt");
+        const bool readOk = !text.isEmpty() && text.contains("qt5")
+            && text.contains("LGPLv3.0") && text.count('\n') > 300;
+
+        // Файла нет → out НЕ ТРОГАЕТСЯ (реф. выход по неудачному open).
+        QString keep = "UNTOUCHED";
+        KThirdPartyLegalNotices::ReadLegalNoticeText(keep, "no-such-file.txt");
+        const bool guardOk = keep == "UNTOUCHED";
+
+        // Путь строится от SystemPath() + presetdata/thirdpartylegalnotice.
+        const bool dirOk = KThirdPartyLegalNotices::LegalNoticeDir()
+                               .endsWith("presetdata/thirdpartylegalnotice");
+
+        qInfo() << "read:" << readOk << "символов:" << text.size()
+                << "| out не тронут:" << guardOk << "| каталог:" << dirOk;
+        const bool ok = readOk && guardOk && dirOk;
+        qInfo() << (ok ? "legalnotice: PASS" : "legalnotice: FAIL");
+        return ok ? 0 : 64;
     }
 
     if (screen == "desktop") {
