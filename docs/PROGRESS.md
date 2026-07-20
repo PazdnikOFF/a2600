@@ -613,8 +613,17 @@ KRTCreatorContext* m_pContext, +0x10 KReportTemplateDataNew* m_pData, +0x18 std:
   (есть? проверить), `InsertSplitLine` (только при PageCount>1 → для min no-op).
 Творцы Image/ImageGroup/Table/SubData (0x536240/0x535a08/0x53a400/0x537438) — ВНЕ min-итерации
 (тянут QTextTable/QTextTableCell/QImage, но тоже чистый Qt) — добавлять после каркаса.
-ИТОГО min InitDocument для TEXT_BLOCK: ~7 своих методов + KScreenMng-заглушка. Начинать с
-KScreenMng (дизасм GetRatioTo1K) → KRTTextItemCreator → KRTCreatorContext render → InitDocument.
+ИТОГО min InitDocument для TEXT_BLOCK: ~7 своих методов. ✅ KScreenMng + KRTTextItemCreator
+СДЕЛАНЫ. ОСТАЛОСЬ: `GetTextDocument` (тривиальная фабрика), `InitDocument` (опорный),
+`GetFontSize` (упростить до фикс-шрифта, пометить), `PutFooterOnBottom` (Qt via
+InsertBlockLineAfterItem).
+⚠️ **ПЕРЕД InitDocument РЕШИТЬ РАСХОЖДЕНИЕ РАСКЛАДКИ:** разведка указала `m_pData +0x40 int
+PageCount, +0x48 map SplitLineInfo`, но это КОНФЛИКТУЕТ с нашим `KReportTemplateDataNew`
+(+0x30 m_lstItems, +0x48 m_mapItemConfigs — PageCount-поля НЕТ). Нужен точечный дизасм
+InitDocument @0x53e108: где реально берётся PageCount (поле m_pData? отдельный источник?
+число элементов списка?) и SplitLineInfo — иначе InitDocument сломает раскладку. Это первый
+шаг следующего захода. Диспетчер `KRTCreatorContext::CreateBlock(type,item,frame)` УЖЕ
+вызывает творца (проверено `rttext`: рендер через него работает).
 
 **ПОСЛЕДНЕЕ (эта сессия): KDocumentGenerator итерация 2 — слой синхронизации колонок
 image-text-map** (self-test `docgen` расширен, `app/src/report/KDocumentGenerator.*`).
