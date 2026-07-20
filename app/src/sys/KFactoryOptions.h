@@ -21,7 +21,10 @@
 //   • DataPath() + "presetdata/syspreset/testenv.ini" — [Env] Scope (bool, дефолт true).
 //     Читает ReadTestEnv, пишет SaveTestEnv.
 //   • DataPath() + "protected/syspreset/testenv.ini"  — [AgeTest] IsAgeTest = true.
-//     ТОЛЬКО пишется (StopTest); ни один путь кода этот ключ не читает.
+//     Пишется здесь (StopTest), а ЧИТАЕТСЯ KSelfTest::checkProcessor @0x714d00
+//     (дефолт false): при true самотестирование добавляет в отчёт предупреждение
+//     TR_IPATestNE. Т.е. это межмодульный флаг «прибор побывал на стенде старения»,
+//     а не мёртвая запись.
 class KFactoryOptions
 {
 public:

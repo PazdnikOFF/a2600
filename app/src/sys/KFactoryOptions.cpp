@@ -137,7 +137,9 @@ void KFactoryOptions::StopTest()
 
     QDir().mkpath(QFileInfo(AgeTestFile()).absolutePath());
     QSettings s(AgeTestFile(), QSettings::IniFormat);
-    s.setValue("AgeTest/IsAgeTest", true);   // реф. пишет жёсткое true
+    // Реф. пишет жёсткое true. Читатель — KSelfTest::checkProcessor @0x714d00
+    // (value("AgeTest/IsAgeTest", false)): при true самотест выдаёт TR_IPATestNE.
+    s.setValue("AgeTest/IsAgeTest", true);
     s.sync();
 }
 

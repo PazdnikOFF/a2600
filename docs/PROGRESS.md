@@ -2264,9 +2264,13 @@ UpdateReleaseVersion, OpenDebug/DebugLevel, коды возврата RESULT_* (
   проверяет и имена, и соответствие «существует ⇔ ожидается» по всем 8.
 • ДВА РАЗНЫХ testenv.ini (важно, легко спутать): `data/presetdata/syspreset/testenv.ini`
   — [Env] Scope (bool, дефолт true), читает ReadTestEnv / пишет SaveTestEnv; и
-  `data/protected/syspreset/testenv.ini` — [AgeTest] IsAgeTest, ТОЛЬКО пишется в StopTest
-  (жёсткое true), ни один путь кода его не читает. В поставке обоих файлов НЕТ — создаются
-  в рантайме самим QSettings.
+  `data/protected/syspreset/testenv.ini` — [AgeTest] IsAgeTest, пишется в StopTest (жёсткое
+  true). В поставке обоих файлов НЕТ — создаются в рантайме самим QSettings.
+  ИСПРАВЛЕНО ПОЗЖЕ (разведка KSelfTest): первоначальное утверждение «IsAgeTest никто не
+  читает» ОШИБОЧНО. Читатель — **KSelfTest::checkProcessor @0x714d00**, дефолт false: при
+  true самотестирование добавляет в отчёт TR_IPATestNE. Это межмодульный флаг «прибор
+  побывал на стенде старения». Урок: «читателя не нашёл» ≠ «читателя нет» — разведку
+  соседних классов делать ДО вывода о мёртвых данных.
 • Смоделировано (нет носителя): глобалы рантайма g_euTestType + свободные функции
   SetAutoTestOpen(mode,mask)/SetUITestRecordOpen(mode) → namespace KFactoryOptionsState.
   Реф. маска стенда всегда 2048 (0x800); ветка `g_euTestType & 0x400` уводит StopTest
