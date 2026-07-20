@@ -20,14 +20,17 @@ struct KPatientEntry {
     QString patientBirthday;  // PatientBirthday
     QString applicantDate;    // ApplicantDate
     QString applicants;       // Applicants
+    QString planDate;         // PlanDate (реф. 0xc8; добавлено при реверсе KExamBussinessHandler)
     QString userItem1;        // UserItem1
     QString userItem2;        // UserItem2
     QString sickBedId;        // SickBedId
     QString telephoneNumber;  // TelephoneNumber
     QString registerNumber;   // RegisterNumber
     QString worklistUID;      // WorklistUID
-    QString patientAge;       // PatientAge
-    QString examStatus;       // ExamStatus (в реф. тоже строка)
+    QString patientAge;       // PatientAge (в реф. int, сентинел -1)
+    QString examStatus;       // ExamStatus (в реф. int, сентинел -1)
+    QString examType;         // ExamType  (реф. 0x84, int; добавлено при реверсе
+                              //            KExamBussinessHandler::FinishSaveDataAction)
 };
 
 // Сущность (реф. KEntityPatient : KEntityBase, таблица tb_PatientList, вид VPatientList).

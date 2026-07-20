@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QString>
+
+#include <string>
+#include <vector>
 #include <QStringList>
 #include <QList>
 
@@ -53,6 +56,18 @@ public:
     // MPPS N-CREATE/N-SET — реф. DicomMPPS. Storage Commitment — реф. DicomCommit.
     DicomResult DicomMPPS(const DicomSetting &s, const QString &examId);
     DicomResult DicomCommit(const DicomSetting &s, const QString &examId);
+
+    // --- серии осмотра (реф. вызовы из KExamBussinessHandler) ---------------
+    // Сеть/DCMTK — DEVICE-часть; off-device ведём журнал вызовов, чтобы
+    // self-test проверял ПОСЛЕДОВАТЕЛЬНОСТЬ ровно как в оригинале.
+    void ActivateSeries(const std::string &worklistUID, const std::string &examId);
+    void EndSeries(const std::string &examId);
+    void RebindWorklist(const std::string &examId, const std::string &worklistUID);
+    void DicomStore(const std::string &examId);
+
+    struct SeriesCall { std::string op, a, b; };
+    std::vector<SeriesCall> TakeSeriesCalls() const;
+    void ClearSeriesCalls();
 
 private:
     KDicomInterface() = default;

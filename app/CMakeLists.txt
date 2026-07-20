@@ -102,6 +102,14 @@ set(SOURCES
     src/db/KPatientListConfigSetupHandler.cpp
     src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
+    src/db/KExamListDBTableHandler.cpp
+    src/db/KExamBussinessHandler.cpp
+    src/db/KExamDataFileNameGenerator.cpp
+    src/db/KPatientMngExamStatus.cpp
+    src/sys/KTimeInfo.cpp
+    src/hal/KUsbDevice.cpp
+    src/kernel/KSystemLog.cpp
+    src/kernel/KThreadPoolMsg.cpp
     src/db/KEntityPatient.cpp
     src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp
@@ -226,6 +234,14 @@ add_executable(ui_preview
     src/db/KPatientListConfigSetupHandler.cpp
     src/db/KWorklistConfigSetupHandler.cpp
     src/db/KEntityExam.cpp
+    src/db/KExamListDBTableHandler.cpp
+    src/db/KExamBussinessHandler.cpp
+    src/db/KExamDataFileNameGenerator.cpp
+    src/db/KPatientMngExamStatus.cpp
+    src/sys/KTimeInfo.cpp
+    src/hal/KUsbDevice.cpp
+    src/kernel/KSystemLog.cpp
+    src/kernel/KThreadPoolMsg.cpp
     src/db/KEntityPatient.cpp
     src/db/KEntityDoctor.cpp
     src/db/KFileBackup.cpp

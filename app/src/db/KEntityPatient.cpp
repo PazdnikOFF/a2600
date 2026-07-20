@@ -9,8 +9,8 @@
 namespace {
 // Порядок — как в реф. KPatientEntry::ConvertToMap.
 const char *kCols = "PatientID, PatientName, PatientSex, PatientBirthday, ApplicantDate, "
-                    "Applicants, UserItem1, UserItem2, SickBedId, TelephoneNumber, "
-                    "RegisterNumber, WorklistUID, PatientAge, ExamStatus";
+                    "Applicants, PlanDate, UserItem1, UserItem2, SickBedId, TelephoneNumber, "
+                    "RegisterNumber, WorklistUID, PatientAge, ExamStatus, ExamType";
 }
 
 KEntityPatient::KEntityPatient(const QString &connectionName) : conn_(connectionName) {}
@@ -22,9 +22,9 @@ bool KEntityPatient::CreateTable() const
         "CREATE TABLE IF NOT EXISTS tb_PatientList ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "PatientID TEXT, PatientName TEXT, PatientSex TEXT, PatientBirthday TEXT, "
-        "ApplicantDate TEXT, Applicants TEXT, UserItem1 TEXT, UserItem2 TEXT, "
+        "ApplicantDate TEXT, Applicants TEXT, PlanDate TEXT, UserItem1 TEXT, UserItem2 TEXT, "
         "SickBedId TEXT, TelephoneNumber TEXT, RegisterNumber TEXT, WorklistUID TEXT, "
-        "PatientAge TEXT, ExamStatus TEXT)");
+        "PatientAge TEXT, ExamStatus TEXT, ExamType TEXT)");
     if (!ok) qWarning() << "KEntityPatient::CreateTable:" << q.lastError().text();
     return ok;
 }
@@ -39,14 +39,16 @@ KPatientEntry KEntityPatient::fromQuery(const QSqlQuery &q) const
     e.patientBirthday = q.value(4).toString();
     e.applicantDate   = q.value(5).toString();
     e.applicants      = q.value(6).toString();
-    e.userItem1       = q.value(7).toString();
-    e.userItem2       = q.value(8).toString();
-    e.sickBedId       = q.value(9).toString();
-    e.telephoneNumber = q.value(10).toString();
-    e.registerNumber  = q.value(11).toString();
-    e.worklistUID     = q.value(12).toString();
-    e.patientAge      = q.value(13).toString();
-    e.examStatus      = q.value(14).toString();
+    e.planDate        = q.value(7).toString();
+    e.userItem1       = q.value(8).toString();
+    e.userItem2       = q.value(9).toString();
+    e.sickBedId       = q.value(10).toString();
+    e.telephoneNumber = q.value(11).toString();
+    e.registerNumber  = q.value(12).toString();
+    e.worklistUID     = q.value(13).toString();
+    e.patientAge      = q.value(14).toString();
+    e.examStatus      = q.value(15).toString();
+    e.examType        = q.value(16).toString();
     return e;
 }
 
@@ -54,14 +56,16 @@ bool KEntityPatient::CreateEntity(const KPatientEntry &e)
 {
     QSqlQuery q(QSqlDatabase::database(conn_));
     q.prepare("INSERT INTO tb_PatientList (" + QString(kCols) +
-              ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+              ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     q.addBindValue(e.patientID);      q.addBindValue(e.patientName);
     q.addBindValue(e.patientSex);     q.addBindValue(e.patientBirthday);
     q.addBindValue(e.applicantDate);  q.addBindValue(e.applicants);
+    q.addBindValue(e.planDate);
     q.addBindValue(e.userItem1);      q.addBindValue(e.userItem2);
     q.addBindValue(e.sickBedId);      q.addBindValue(e.telephoneNumber);
     q.addBindValue(e.registerNumber); q.addBindValue(e.worklistUID);
     q.addBindValue(e.patientAge);     q.addBindValue(e.examStatus);
+    q.addBindValue(e.examType);
     if (!q.exec()) { qWarning() << "KEntityPatient::CreateEntity:" << q.lastError().text(); return false; }
     return true;
 }
@@ -70,16 +74,18 @@ bool KEntityPatient::UpdateEntity(const QString &id, const KPatientEntry &e)
 {
     QSqlQuery q(QSqlDatabase::database(conn_));
     q.prepare("UPDATE tb_PatientList SET PatientID=?, PatientName=?, PatientSex=?, "
-              "PatientBirthday=?, ApplicantDate=?, Applicants=?, UserItem1=?, UserItem2=?, "
-              "SickBedId=?, TelephoneNumber=?, RegisterNumber=?, WorklistUID=?, "
-              "PatientAge=?, ExamStatus=? WHERE id=?");
+              "PatientBirthday=?, ApplicantDate=?, Applicants=?, PlanDate=?, UserItem1=?, "
+              "UserItem2=?, SickBedId=?, TelephoneNumber=?, RegisterNumber=?, WorklistUID=?, "
+              "PatientAge=?, ExamStatus=?, ExamType=? WHERE id=?");
     q.addBindValue(e.patientID);      q.addBindValue(e.patientName);
     q.addBindValue(e.patientSex);     q.addBindValue(e.patientBirthday);
     q.addBindValue(e.applicantDate);  q.addBindValue(e.applicants);
+    q.addBindValue(e.planDate);
     q.addBindValue(e.userItem1);      q.addBindValue(e.userItem2);
     q.addBindValue(e.sickBedId);      q.addBindValue(e.telephoneNumber);
     q.addBindValue(e.registerNumber); q.addBindValue(e.worklistUID);
     q.addBindValue(e.patientAge);     q.addBindValue(e.examStatus);
+    q.addBindValue(e.examType);
     q.addBindValue(id);
     if (!q.exec()) { qWarning() << "KEntityPatient::UpdateEntity:" << q.lastError().text(); return false; }
     return true;

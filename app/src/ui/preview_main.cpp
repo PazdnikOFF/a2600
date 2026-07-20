@@ -117,6 +117,17 @@ public:
 #include "sys/KSysPrintData.h"
 #include "sys/KThirdPartyLegalNotices.h"
 #include "autotest/KAutoTestScript.h"
+#include <QThread>
+
+#include "dicom/KDicomInterface.h"
+#include "db/KExamBussinessHandler.h"
+#include "db/KExamListDBTableHandler.h"
+#include "db/KExamNoGenerate.h"
+#include "hal/KUsbDevice.h"
+#include "kernel/KSystemLog.h"
+#include "kernel/KThreadPoolMsg.h"
+#include "db/KExamDataFileNameGenerator.h"
+#include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
 
@@ -5575,6 +5586,221 @@ int main(int argc, char **argv)
         const bool ok = tblOk && gcvOk && alcOk && rstOk && parseOk && lostOk && recOk
             && badOk && bigOk;
         qInfo() << (ok ? "autotest: PASS" : "autotest: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "exambiz") {
+        // Реф. KExamBussinessHandler — жизненный цикл осмотра поверх tb_ExamList.
+        const QString dir = "/tmp/endo_exambiz";
+        QDir(dir).removeRecursively();
+        QDir().mkpath(dir);
+        const QString dbPath = dir + "/HD-2000.dat";
+        const char *conn = "endo_exambiz";
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", conn);
+        db.setDatabaseName(dbPath);
+        db.open();
+        KEntityPatient(conn).CreateTable();
+        KExamListDBTableHandler::CreateTable(conn);
+
+        KSystemLog::EnableCapture(true);
+        KSystemLog::ClearCapture();
+        KThreadPoolMsg::ClearPosted();
+        KDicomInterface::GetInstance().ClearSeriesCalls();
+        KTimeInfo::SetFixedTime(QDateTime(QDate(2026, 7, 20), QTime(14, 5, 33)).toSecsSinceEpoch());
+        KExamBussinessHandler::SetEndoInfo("EG-500", "SN-ENDO-1");
+        KExamBussinessHandler::SetCameraInfo("CAM-100", "SN-CAM-9");
+
+        auto *h = KExamBussinessHandler::GetInstance();
+
+        // 1. GetGender — БАГ ПОЛЯРНОСТИ ОРИГИНАЛА воспроизведён 1:1.
+        const bool genderOk = KExamBussinessHandler::GetGender("1") == "TR_F"
+                           && KExamBussinessHandler::GetGender("0") == "TR_M"
+                           && KExamBussinessHandler::GetGender("2") == "TR_M"
+                           && KExamBussinessHandler::GetGender("")  == "TR_M";
+
+        // 2. ctor/ClearData: PatientSex == "2", строки записей — "INVALID_STRING".
+        const bool clearOk = h->MainUiInfo().PatientSex == "2"
+                          && h->MainUiInfo().PatientAge == -1
+                          && h->MainUiInfo().PatientName.empty()
+                          && h->ExamEntry().PatientName == exambiz::kInvalidString
+                          && h->ExamEntry().PatientAge == -1;
+
+        // 3. Power-on → временный номер создан, но счётчик на диск НЕ ушёл.
+        const int idxBefore = KExamNoGenerate::GetExamIdIndex();
+        h->EndoPowerOnAction();
+        const std::string tmpId = h->TempExamId();
+        const bool tmpOk = !tmpId.empty() && h->ExamId().empty()
+                        && KExamNoGenerate::GetExamIdIndex() == idxBefore
+                        && h->ExamState() == 2;
+
+        // 4. Пациент из tb_PatientList → триггер осмотра ДО начала (в БД не пишем).
+        KPatientEntry p;
+        p.patientID = "P001"; p.patientName = "Ivanov"; p.patientSex = "1";
+        p.patientBirthday = "1980-02-03"; p.applicants = "Petrov";
+        p.planDate = "2026-07-19"; p.sickBedId = "B7"; p.telephoneNumber = "555";
+        p.registerNumber = "R42"; p.worklistUID = "1.2.3.4"; p.applicantDate = "2026-07-18";
+        p.userItem1 = "u1"; p.userItem2 = "u2"; p.patientAge = "46"; p.examType = "3";
+        KPatientListDBTableHandler(conn).AddNewPatientEntity(p);
+        const int trigRc = h->PatientListTriggerExamAction(std::string("1"));
+        // UpdatePatientInfoFrmoDB: 7 строк + возраст; ExamId/DrExamName НЕ трогаются.
+        const bool trigOk = trigRc == 0 && h->MainUiInfo().PatientName == "Ivanov"
+                         && h->MainUiInfo().PatientAge == 46
+                         && h->MainUiInfo().ExamId.empty()
+                         && KDicomInterface::GetInstance().TakeSeriesCalls().empty();
+
+        // 5. Каталог данных осмотра + USB-префикс.
+        KUsbDevice::GetInstance()->SetUsbPath("/media/usb0");
+        const QString examDir = dir + "/" + QString::fromStdString(tmpId) + "-";
+        QDir().mkpath(examDir);
+        h->SetDataPath(examDir.toStdString());
+        // Префикса USB в пути нет → реф. возвращает ПОЛНЫЙ путь (квирк).
+        const bool sdpQuirkOk = h->GetSaveDataPath() == examDir.toStdString();
+        h->SetDataPath("/media/usb0/endodata/x");
+        const bool sdpOk = h->GetSaveDataPath() == "/endodata/x";
+        h->SetDataPath(examDir.toStdString());
+
+        // 6. FinishSaveDataAction — номер вступает в силу, запись в БД.
+        h->StartSaveDataAction();
+        const bool st3Ok = h->ExamState() == 3;
+        h->FinishSaveDataAction();
+        const bool finishOk = h->ExamState() == 4 && h->IsExaming()
+                           && h->ExamId() == tmpId
+                           && h->MainUiInfo().ExamId == tmpId
+                           && KExamNoGenerate::GetExamIdIndex() != idxBefore;
+
+        KExamEntry got;
+        const bool rowOk = KExamListDBTableHandler::GetExamEntity(tmpId, got) == 0
+                        && got.PatientName == "Ivanov"
+                        && got.ReportStatus == "Eg"          // строка-enum реф.
+                        && got.PatientID == "P001"
+                        && got.ExamDate == "2026-07-20"      // sep "-"
+                        && got.ExamTime == "14:05:33"        // sep ":"
+                        && got.ExamType == 3
+                        && got.PatientListTableKey == 1
+                        && got.SickBedId == "B7"
+                        && got.WorklistUID == "1.2.3.4"
+                        && got.Device == "EG-500"            // ViewType 0 → эндоскоп
+                        && got.DeviceSN == "SN-ENDO-1";
+
+        // 7. IsCurrentExamIdExaming / IsExamEnd.
+        const bool examingOk = h->IsCurrentExamIdExaming(tmpId)
+                            && !h->IsCurrentExamIdExaming("other")
+                            && !h->IsExamEnd(tmpId)
+                            && h->IsExamEnd("other");        // чужой всегда «завершён»
+
+        // 8. SaveMainUiPatientInfo: DrReportName тянется за DrExamName, пока совпадают.
+        MainUiPatientInfo mi = h->MainUiInfo();
+        mi.DrExamName = "Dr.House";
+        h->SaveMainUiPatientInfo(mi);
+        KExamEntry e2;
+        KExamListDBTableHandler::GetExamEntity(tmpId, e2);
+        const bool drOk = e2.DrExamName == "Dr.House" && e2.DrReportName == "Dr.House";
+        // Пользователь переопределил врача отчёта → он больше не тянется.
+        e2.DrReportName = "Dr.Wilson";
+        KExamListDBTableHandler::UpdateExamEntity(tmpId, e2);
+        mi.DrExamName = "Dr.Chase";
+        h->SaveMainUiPatientInfo(mi);
+        KExamEntry e3;
+        KExamListDBTableHandler::GetExamEntity(tmpId, e3);
+        const bool drKeepOk = e3.DrExamName == "Dr.Chase" && e3.DrReportName == "Dr.Wilson";
+
+        // 9. Пустой ExamId → в БД не пишем, только лог.
+        MainUiPatientInfo empty;
+        h->SaveMainUiPatientInfo(empty);
+        const bool emptyOk = h->MainUiInfo().ExamId.empty();
+        // восстановить ExamId для следующих шагов
+        h->SaveMainUiPatientInfo(mi);
+
+        // 10. UpdateExamDataPathName: <parent>/<tempId>-<PatientName>.
+        MainUiPatientInfo mi2 = h->MainUiInfo();
+        mi2.PatientName = "Ivanov";
+        h->SaveMainUiPatientInfo(mi2);
+        h->SetDataPath(examDir.toStdString());
+        h->UpdateExamDataPathName();
+        const QString wantDir = dir + "/" + QString::fromStdString(tmpId) + "-Ivanov";
+        const bool renameOk = h->DataPath() == wantDir.toStdString()
+                           && QDir(wantDir).exists();
+        // Сообщение UI 12044 после успешного переименования.
+        bool msg44Ok = false, msg41Ok = false;
+        for (const auto &m : KThreadPoolMsg::TakePosted()) {
+            if (m.id == 12041) msg41Ok = true;
+            if (m.id == 12044) msg44Ok = true;
+        }
+
+        // 11. Анонимный фолбэк имени каталога.
+        MainUiPatientInfo mi3 = h->MainUiInfo();
+        mi3.PatientName.clear();
+        h->SaveMainUiPatientInfo(mi3);
+        h->SetDataPath(wantDir.toStdString());
+        h->UpdateExamDataPathName();
+        const QString anonDir = dir + "/" + QString::fromStdString(tmpId) + "-Anonymity";
+        const bool anonOk = h->DataPath() == anonDir.toStdString();
+
+        // 12. Power-off: защёлка снята, состояние 5, EndSeries отправлен.
+        h->EndoPowerOffAction();
+        QThread::msleep(50);                  // detached-поток DICOM
+        const bool offOk = !h->IsExaming() && h->ExamState() == 5;
+        bool endOk = false, actOk = false, storeOk = false;
+        for (const auto &c : KDicomInterface::GetInstance().TakeSeriesCalls()) {
+            if (c.op == "ActivateSeries" && c.a == "1.2.3.4" && c.b == tmpId) actOk = true;
+            if (c.op == "EndSeries" && c.a == tmpId) endOk = true;
+            if (c.op == "DicomStore") storeOk = true;
+        }
+
+        // 12b. KTimeInfo — снимок: разделитель между компонентами, слитная форма,
+        //      зашитый '_' в YYYYMMDD_HHMMSS.
+        const KTimeInfo ti;
+        const bool timeOk = ti.GetCurrentTimeYYYY() == "2026"
+                         && ti.GetCurrentTimeYYYYMM("-") == "2026-07"
+                         && ti.GetCurrentTimeYYYYMMDD("") == "20260720"
+                         && ti.GetCurrentTimeHHMMSS("") == "140533"
+                         && ti.GetCurrentTimeYYYYMMDD_HHMMSS("-", ":")
+                                == "2026-07-20_14:05:33";
+
+        // 12c. KExamDataFileNameGenerator: 3-значный счётчик и квирк переполнения
+        //      "%d^%03d" с ЛИТЕРАЛЬНОЙ 999 в первом %d.
+        Generator().ResetData();
+        const bool ser1Ok = Generator().GetFileSerialNum() == "001"
+                         && Generator().GetFileSerialNum() == "002";
+        const std::string nameGen = Generator().GenerateFileName("E1", "20260720", "jpg");
+        const bool genOk = nameGen == "E120260720_003.jpg";
+        for (int i = 3; i < 998; ++i) Generator().GetFileSerialNum();   // подвести к 998
+        const bool ser999Ok = Generator().GetFileSerialNum() == "999";
+        const bool serOvfOk = Generator().GetFileSerialNum() == "999^001";
+        Generator().ResetData();
+        const bool resetOk = Generator().GetFileSerialNum() == "001";
+
+        // 13. Логи: квирки тегов реф. ([I] у AddExamEntity failed — не проверяем,
+        //     проверяем наличие ключевых строк).
+        bool logTmpOk = false;
+        for (const auto &l : KSystemLog::Captured())
+            if (l.find("Temporary exam id: ") != std::string::npos) logTmpOk = true;
+        KSystemLog::EnableCapture(false);
+
+        QSqlDatabase::database(conn).close();
+        QSqlDatabase::removeDatabase(conn);
+
+        qInfo() << "gender(баг реф.):" << genderOk << "| ClearData:" << clearOk
+                << "| temp id:" << tmpOk << QString::fromStdString(tmpId);
+        qInfo() << "trigger:" << trigOk << "| GetSaveDataPath:" << sdpOk
+                << "квирк:" << sdpQuirkOk << "| state3:" << st3Ok;
+        qInfo() << "finish:" << finishOk << "| строка БД:" << rowOk
+                << "| examing:" << examingOk;
+        qInfo() << "врач отчёта:" << drOk << drKeepOk << "| пустой ExamId:" << emptyOk;
+        qInfo() << "rename:" << renameOk << "| Anonymity:" << anonOk
+                << "| msg 12041/12044:" << msg41Ok << msg44Ok;
+        qInfo() << "power-off:" << offOk << "| DICOM Activate/End/Store:"
+                << actOk << endOk << storeOk << "| лог:" << logTmpOk;
+        qInfo() << "KTimeInfo:" << timeOk << "| серийник:" << ser1Ok << ser999Ok
+                << "переполнение 999^:" << serOvfOk << "| имя:" << genOk
+                << QString::fromStdString(nameGen) << "| reset:" << resetOk;
+
+        const bool ok = genderOk && clearOk && tmpOk && trigOk && sdpOk && sdpQuirkOk
+                     && st3Ok && finishOk && rowOk && examingOk && drOk && drKeepOk
+                     && emptyOk && renameOk && anonOk && msg41Ok && msg44Ok && offOk
+                     && actOk && endOk && storeOk && logTmpOk
+                     && timeOk && ser1Ok && ser999Ok && serOvfOk && genOk && resetOk;
+        qInfo() << (ok ? "exambiz: PASS" : "exambiz: FAIL");
         return ok ? 0 : 65;
     }
 

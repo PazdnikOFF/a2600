@@ -49,3 +49,40 @@ DicomResult KDicomInterface::DownloadWorklist(const DicomSetting &, const QStrin
 DicomResult KDicomInterface::DicomMPPS(const DicomSetting &, const QString &) { return noDcmtk("DicomMPPS"); }
 DicomResult KDicomInterface::DicomCommit(const DicomSetting &, const QString &) { return noDcmtk("DicomCommit"); }
 #endif
+
+// --- серии осмотра ----------------------------------------------------------
+// Реальная работа — DCMTK по сети (DEVICE). Off-device фиксируем вызовы.
+
+namespace {
+std::vector<KDicomInterface::SeriesCall> g_seriesCalls;
+}
+
+void KDicomInterface::ActivateSeries(const std::string &worklistUID, const std::string &examId)
+{
+    g_seriesCalls.push_back(SeriesCall{"ActivateSeries", worklistUID, examId});
+}
+
+void KDicomInterface::EndSeries(const std::string &examId)
+{
+    g_seriesCalls.push_back(SeriesCall{"EndSeries", examId, std::string()});
+}
+
+void KDicomInterface::RebindWorklist(const std::string &examId, const std::string &worklistUID)
+{
+    g_seriesCalls.push_back(SeriesCall{"RebindWorklist", examId, worklistUID});
+}
+
+void KDicomInterface::DicomStore(const std::string &examId)
+{
+    g_seriesCalls.push_back(SeriesCall{"DicomStore", examId, std::string()});
+}
+
+std::vector<KDicomInterface::SeriesCall> KDicomInterface::TakeSeriesCalls() const
+{
+    return g_seriesCalls;
+}
+
+void KDicomInterface::ClearSeriesCalls()
+{
+    g_seriesCalls.clear();
+}
