@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <string>
 
 struct KReportTemplateItem;
@@ -11,8 +12,10 @@ class KRTCreatorContext;
 class QTextTableCell;
 class QTextFrame;
 class QTextCursor;
+class QTextTable;
 class KTextBlock;
 class KImageBlock;
+class KTableBlock;
 
 // База иерархии «творцов» блоков отчёта (реф. KRTAbsItemCreator, sizeof 0x30).
 // Раскладка реф.: +0x00 vptr, +0x08 std::string m_strType (SSO-буфер @0x18),
@@ -63,6 +66,10 @@ public:
     // зовёт рисующую перегрузку, затем m_context.HideInvalidBlock(inner) и (frame).
     bool CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame) override;
 
+    // Реф. CreateBlock(item*, QTextTableCell&) @0x53b798 — текст ПРЯМО в ячейку таблицы
+    // (без вложенного фрейма): cell.lastCursorPosition() → рисующая перегрузка.
+    bool CreateBlock(KReportTemplateItem *pItem, QTextTableCell &cell) override;
+
 private:
     // Реф. CreateBlock(KTextBlock const&, QTextCursor&) @0x53b3b0 — РИСОВАНИЕ:
     // QTextCharFormat (Bold→FontWeight 75, Italic, FontPointSize=Size×KScreenMng::
@@ -105,6 +112,22 @@ class KRTTableItemCreator : public KRTAbsItemCreator
 {
 public:
     KRTTableItemCreator(const std::string &type, KRTCreatorContext &ctx);
+
+    // Реф. CreateBlock(item*, QTextFrame*) @0x53a400 — обёртка: KTableBlock → QTextTable
+    // (rows×cols из Size, +1 строка при ShowTitle) → заполнение ячеек рекурсией в творцов.
+    // МИНИМУМ: single-column-фрейм-ветка (CreateFrame) опущена (всегда таблица, помечено).
+    bool CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame) override;
+
+private:
+    // Реф. CreateTable @0x53a6f0: QTextTableFormat (border/borderColor/colWidth) →
+    // cursor.insertTable(rows,cols); при ShowTitle — merge строки 0 + insertTitle.
+    QTextTable *createTable(QTextCursor &cur, const KTableBlock &blk);
+    // Реф. CreateChild(list, table, hasTitle) @0x539d08: проход по дочерним item-ам,
+    // позиция idx/cols × idx%cols (+1 строка при hasTitle), CreateBlock(type,item,cell).
+    void createChild(std::list<KReportTemplateItem> &items, QTextTable *pTable,
+                     bool hasTitle);
+    // Реф. InsertTitle @0x539448: заголовок таблицы в курсор (min: insertText(FullText)).
+    void insertTitle(QTextCursor &cur, const KTextBlock &title);
 };
 
 class KRTSubDataItemCreator : public KRTAbsItemCreator

@@ -108,6 +108,9 @@ public:
 #include <QTextDocument>
 #include <QTextFrame>
 #include <QTextImageFormat>
+#include <QTextTable>
+#include <QTextTableCell>
+#include <QTextTableFormat>
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -6080,6 +6083,108 @@ int main(int argc, char **argv)
             && colorOk && alignOk && elemIdOk;
         qInfo() << (ok ? "rttext: PASS" : "rttext: FAIL");
         return ok ? 0 : 70;
+    }
+
+    // Self-test творца таблицы (реф. KRTTableItemCreator @0x539ab0). Строит QTextTable из
+    // KTableBlock, заполняет ячейки рекурсией в творцов (текст-в-ячейку). Чистый Qt Gui.
+    if (screen == "rttable") {
+        // Хелпер: текст ячейки таблицы по (row,col).
+        auto cellText = [](QTextTable *t, int r, int c) -> QString {
+            QTextTableCell cell = t->cellAt(r, c);
+            if (!cell.isValid()) return QString();
+            QTextCursor a = cell.firstCursorPosition();
+            QTextCursor b = cell.lastCursorPosition();
+            a.setPosition(b.position(), QTextCursor::KeepAnchor);
+            return a.selectedText();
+        };
+        auto findTable = [](QTextFrame *root) -> QTextTable * {
+            for (QTextFrame *f : root->childFrames())
+                if (QTextTable *t = qobject_cast<QTextTable *>(f)) return t;
+            return nullptr;
+        };
+
+        // Данные: таблица 2 столбца × 4 ячейки (2 строки), каждая ячейка — текстовый блок.
+        KReportTemplateDataNew data;
+        const char *vals[4] = {"Alpha", "Beta", "Gamma", "Delta"};
+        KReportTemplateItem item;
+        item.m_strID = "/RT_TBL"; item.m_strName = "RT_TBL";
+        item.m_strType = "RT_TABLE_BLOCK";
+        item.m_strColumn = "2"; item.m_strShowTitle = "0";
+        for (int i = 0; i < 4; ++i) {
+            KReportTemplateItem ch;
+            ch.m_strID = "/RT_TBL/c" + std::to_string(i);
+            ch.m_strName = "c" + std::to_string(i);
+            ch.m_strType = "RT_TEXT_BLOCK";
+            item.m_lstSubItems.push_back(ch);
+            data.m_mapConfigs["V" + std::to_string(i)] = vals[i];
+            KReportTemplateItemConfig cc;
+            cc.m_strName = ch.m_strID;
+            cc.m_mapAttrs["TemplateData"] = "V" + std::to_string(i);
+            data.m_mapItemConfigs[ch.m_strID] = cc;
+        }
+        data.m_lstItems.push_back(item);
+        KReportTemplateItemConfig cfg;
+        cfg.m_strName = "/RT_TBL";
+        cfg.m_mapAttrs["BorderWidth"] = "2";
+        cfg.m_mapAttrs["BorderColor"] = "black";
+        cfg.m_mapAttrs["ColumnRatio"] = "50,50";
+        data.m_mapItemConfigs["/RT_TBL"] = cfg;
+
+        KRTCreatorContext ctx(&data);
+        QTextDocument doc; QTextFrame *root = doc.rootFrame();
+        const bool created = ctx.CreateBlock("RT_TABLE_BLOCK", &data.m_lstItems.front(), root);
+
+        QTextTable *t = findTable(root);
+        const bool gridOk = t && t->rows() == 2 && t->columns() == 2;
+        // Ячейки заполнены текстом в порядке idx/cols × idx%cols.
+        bool cellsOk = false;
+        if (gridOk) {
+            cellsOk = cellText(t, 0, 0).contains("Alpha")
+                && cellText(t, 0, 1).contains("Beta")
+                && cellText(t, 1, 0).contains("Gamma")
+                && cellText(t, 1, 1).contains("Delta");
+        }
+        // Формат таблицы: бордюр = BorderWidth, кол-во ограничений ширины = 2.
+        bool fmtOk = false;
+        if (t) {
+            QTextTableFormat tf = t->format().toTableFormat();
+            fmtOk = qFuzzyCompare(tf.border(), 2.0)
+                && tf.columnWidthConstraints().size() == 2;
+        }
+
+        // Вариант с заголовком: ShowTitle="1" → строка-заголовок сверху (merged), rows+1.
+        KReportTemplateDataNew data2;
+        data2.m_mapConfigs["VT"] = "CellX";
+        KReportTemplateItem it2;
+        it2.m_strID = "/RT_TT"; it2.m_strName = "RT_TT"; it2.m_strTitle = "TR_Head";
+        it2.m_strType = "RT_TITLE_TABLE_BLOCK";
+        it2.m_strColumn = "1"; it2.m_strShowTitle = "1";
+        KReportTemplateItem ch;
+        ch.m_strID = "/RT_TT/c0"; ch.m_strName = "c0"; ch.m_strType = "RT_TEXT_BLOCK";
+        it2.m_lstSubItems.push_back(ch);
+        data2.m_lstItems.push_back(it2);
+        KReportTemplateItemConfig cc2; cc2.m_strName = "/RT_TT/c0";
+        cc2.m_mapAttrs["TemplateData"] = "VT";
+        data2.m_mapItemConfigs["/RT_TT/c0"] = cc2;
+        KReportTemplateItemConfig tcfg; tcfg.m_strName = "/RT_TT";
+        data2.m_mapItemConfigs["/RT_TT"] = tcfg;
+
+        KRTCreatorContext ctx2(&data2);
+        QTextDocument doc2; QTextFrame *root2 = doc2.rootFrame();
+        ctx2.CreateBlock("RT_TITLE_TABLE_BLOCK", &data2.m_lstItems.front(), root2);
+        QTextTable *t2 = findTable(root2);
+        // 1 столбец × 1 ячейка → 1 строка данных + 1 строка заголовка = 2 строки.
+        const bool titleOk = t2 && t2->rows() == 2 && t2->columns() == 1
+            && cellText(t2, 0, 0).contains("TR_Head")     // заголовок сверху
+            && cellText(t2, 1, 0).contains("CellX");       // данные ниже
+
+        qInfo() << "rttable: created:" << created << "grid2x2:" << gridOk
+                << "cells:" << cellsOk << "fmt(border/colw):" << fmtOk
+                << "| title-variant:" << titleOk;
+
+        const bool ok = created && gridOk && cellsOk && fmtOk && titleOk;
+        qInfo() << (ok ? "rttable: PASS" : "rttable: FAIL");
+        return ok ? 0 : 73;
     }
 
     // Self-test творца блока изображения (реф. KRTImageItemCreator @0x535bd0). Рисует

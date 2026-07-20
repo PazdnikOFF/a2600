@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **99 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **100 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -591,8 +591,22 @@ insertImage. GetRatioTo1K НЕ применяется (размеры в device-
 PNG) → изображение вставлено (name/160/120); несуществующий файл → гейт (не вставлено).
 ⚠ В прошивке KRTImageItemCreator наследует KRTTableItemCreator (child-frame таблицы); у нас
 иерархия уплощена — фрейм-формат как у текста + ElementId (на визуал min не влияет).
-ОСТАЛОСЬ по творцам: Table/TitleTable (KRTTableItemCreator, QTextTable), SubData
-(KRTSubDataItemCreator), ImageGroup (KRTImageGroupCreator, сетка).
+**✅ ТВОРЕЦ ТАБЛИЦЫ (итерация 7): `KRTTableItemCreator`** (self-test `rttable`) —
+обслуживает RT_TABLE_BLOCK + RT_TITLE_TABLE_BLOCK (самые частые: 93+89 в поставке).
+CreateBlock(item*,frame*) @0x53a400 → createTable @0x53a6f0 (QTextTableFormat: border=
+BorderWidth [0x4000], borderBrush=BorderColor [0x4009], colWidthConstraints [0x4101],
+ElementId [0x100001]; insertTable(rows,cols); ShowTitle→rows+1 + mergeCells(0,0,1,cols) +
+insertTitle в строку 0) → createChild @0x539d08 (проход по m_lstSubItems, позиция idx/cols ×
+idx%cols, +1 строка при hasTitle, cellAt → m_context.CreateBlock(type,item,cell) РЕКУРСИЯ в
+творцов). Добавлена перегрузка `KRTTextItemCreator::CreateBlock(item*, QTextTableCell&)`
+@0x53b798 (текст прямо в ячейку). Тест: 2×2 grid с Alpha/Beta/Gamma/Delta в порядке +
+формат (border/colw) + title-вариант (merged-строка заголовка сверху, данные ниже).
+ОПУЩЕНО для min (помечено): single-column CreateFrame-ветка (всегда таблица), cellSpacing/
+margins, cellat-переопределение, split-line, модель в UserProperty, removeRows-обрезка,
+полное форматирование заголовка (insertTitle=insertText(FullText)).
+**ОСТАЛОСЬ по творцам:** SubData (KRTSubDataItemCreator, вложенный фрейм-таблица), ImageGroup
+(KRTImageGroupCreator, сетка снимков), image/table-в-ячейку перегрузки, KTableBlock/KImageBlock
+метатипы. ТРИ из 5 типов блоков рендерятся (text/image/table = 481 из ~500 вхождений поставки).
 
 **ОСТАВШАЯСЯ разведка (для истории; каркас уже закрыт выше):**
 

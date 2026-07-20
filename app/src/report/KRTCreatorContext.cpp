@@ -3,6 +3,7 @@
 #include "KRTAbsItemCreator.h"
 #include "KTextBlock.h"
 #include "KImageBlock.h"
+#include "KTableBlock.h"
 #include "KMeaStringUtil.h"
 #include "ui/KScreenMng.h"
 
@@ -20,6 +21,9 @@
 #include <QTextFrame>
 #include <QTextFrameFormat>
 #include <QTextImageFormat>
+#include <QTextTable>
+#include <QTextTableCell>
+#include <QTextTableFormat>
 
 namespace report_template {
 const std::string STR_RT_ELEMENT_TEXT_BLOCK        = "RT_TEXT_BLOCK";
@@ -379,4 +383,112 @@ bool KRTImageItemCreator::renderImage(const KImageBlock &img, QTextCursor &cur)
     cur.insertImage(fmt);
     cur.endEditBlock();
     return true;
+}
+
+// --- KRTTextItemCreator: текст в ячейку таблицы (реф. @0x53b798) --------------
+
+bool KRTTextItemCreator::CreateBlock(KReportTemplateItem *pItem, QTextTableCell &cell)
+{
+    // Реф. @0x53b798: как frame-обёртка, но БЕЗ вложенного фрейма — текст рисуется прямо
+    // в курсор ячейки. Используется творцом таблиц для содержимого ячеек.
+    if (!pItem || !cell.isValid())
+        return false;
+    KTextBlock block(pItem, m_context.GetData(), /*hideKey=*/false);
+    QTextCursor cur = cell.lastCursorPosition();
+    return renderBlock(block, cur);
+}
+
+// --- KRTTableItemCreator: рендер таблицы (реф. TU @0x539ab0) -------------------
+
+bool KRTTableItemCreator::CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame)
+{
+    // Реф. @0x53a400: строит QTextTable из KTableBlock и заполняет ячейки рекурсией.
+    if (!pItem || !pFrame) {
+        m_context.HideInvalidBlock(pFrame);
+        return false;
+    }
+    KTableBlock blk(pItem, m_context.GetData());
+    const QSize sz = blk.Size();               // width=строки, height=столбцы
+
+    // Гейт реф.: есть строки ИЛИ есть заголовок. (Ветка single-column CreateFrame опущена —
+    // всегда строим таблицу; для сетки 1 колонки это визуально эквивалентно, помечено.)
+    if (sz.width() > 0 || blk.ShowTitle()) {
+        QTextCursor cur = pFrame->lastCursorPosition();
+        cur.beginEditBlock();
+        QTextTable *t = createTable(cur, blk);
+        cur.endEditBlock();
+        if (!t) {
+            m_context.HideInvalidBlock(pFrame);
+            return false;
+        }
+        createChild(pItem->m_lstSubItems, t, blk.ShowTitle());
+    }
+    m_context.HideInvalidBlock(pFrame);
+    return true;
+}
+
+QTextTable *KRTTableItemCreator::createTable(QTextCursor &cur, const KTableBlock &blk)
+{
+    // Реф. @0x53a6f0. МИНИМУМ: border/borderColor/colWidth + ElementId. Опущены (помечено)
+    // cellSpacing, margins, хранение модели в UserProperty.
+    QTextTableFormat fmt;
+    fmt.setProperty(QTextFormat::UserProperty + 1, QVariant(blk.ElementId()));  // 0x100001
+    fmt.setBorder(blk.BorderWidth());                       // FrameBorder 0x4000
+    QColor bc;
+    bc.setNamedColor(blk.BorderColor());                    // дефолт "black"
+    if (bc.isValid())
+        fmt.setBorderBrush(QBrush(bc, Qt::SolidPattern));   // FrameBorderBrush 0x4009
+    const QVector<QTextLength> cw = blk.ColWidthContraints();
+    if (!cw.isEmpty())
+        fmt.setColumnWidthConstraints(cw);                  // 0x4101
+
+    int rows = blk.Size().width();
+    if (blk.ShowTitle())
+        rows += 1;                                          // строка-заголовок сверху
+    const int cols = blk.Size().height();
+    if (rows <= 0 || cols <= 0)
+        return nullptr;
+
+    QTextTable *t = cur.insertTable(rows, cols, fmt);
+    if (t && blk.ShowTitle()) {
+        t->mergeCells(0, 0, 1, t->columns());               // объединить всю строку 0
+        QTextTableCell c = t->cellAt(0, 0);
+        if (c.isValid()) {
+            QTextCursor cc = c.lastCursorPosition();
+            insertTitle(cc, blk.TitleTextBlock());
+        }
+    }
+    if (t)
+        m_context.HideInvalidBlock(t);   // QTextTable — подкласс QTextFrame
+    return t;
+}
+
+void KRTTableItemCreator::createChild(std::list<KReportTemplateItem> &items,
+                                      QTextTable *pTable, bool hasTitle)
+{
+    // Реф. @0x539d08. МИНИМУМ: последовательная раскладка idx/cols × idx%cols; опущены
+    // (помечено) cellat-переопределение позиции, ElementId на ячейках и removeRows-обрезка.
+    if (!pTable)
+        return;
+    const int cols = pTable->columns();
+    int idx = 0;
+    for (KReportTemplateItem &node : items) {
+        int row = cols ? idx / cols : 0;
+        const int col = cols ? idx - row * cols : 0;
+        if (hasTitle)
+            row += 1;                                       // пропустить строку-заголовок
+        if (row < pTable->rows() && col < pTable->columns()) {
+            QTextTableCell cell = pTable->cellAt(row, col);
+            if (cell.isValid())
+                m_context.CreateBlock(node.m_strType, &node, cell);   // рекурсия в творцов
+        }
+        ++idx;
+    }
+}
+
+void KRTTableItemCreator::insertTitle(QTextCursor &cur, const KTextBlock &title)
+{
+    // Реф. InsertTitle @0x539448. МИНИМУМ: текст заголовка (полное форматирование —
+    // char/block-формат — при развитии; на структуру таблицы не влияет).
+    cur.insertText(title.FullText());
 }
