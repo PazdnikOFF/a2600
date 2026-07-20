@@ -90,6 +90,7 @@ set(SOURCES
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/sys/KFactoryOptions.cpp
     src/sys/KSysPrintData.cpp
     src/sys/KThirdPartyLegalNotices.cpp
     src/autotest/KAutoTestScript.cpp
@@ -229,6 +230,7 @@ add_executable(ui_preview
     src/sys/languageConfig.cpp
     src/sys/KLoadUnicodeText.cpp
     src/sys/KEncStyle.cpp
+    src/sys/KFactoryOptions.cpp
     src/sys/KSysPrintData.cpp
     src/sys/KThirdPartyLegalNotices.cpp
     src/autotest/KAutoTestScript.cpp

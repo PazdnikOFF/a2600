@@ -147,6 +147,7 @@ public:
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
+#include "sys/KFactoryOptions.h"
 
 #include <QDir>
 #include <QFile>
@@ -5529,6 +5530,130 @@ int main(int argc, char **argv)
         const bool ok = readOk && guardOk && dirOk;
         qInfo() << (ok ? "legalnotice: PASS" : "legalnotice: FAIL");
         return ok ? 0 : 64;
+    }
+
+    // Self-test заводских опций / стенда старения (реф. KFactoryOptions).
+    // Ядро — GetTestConfPath: 8 комбинаций (check_scope × PanelType × ViewType).
+    // Ground truth — реальные каталоги system/autotest/aging-* в поставке прошивки.
+    // TMP_MODE: SaveTestEnv/StopTest/StartTest пишут в ENDO_ROOT → временный корень.
+    if (screen == "factoryopt") {
+        KSystemStatus &st = KSystemStatus::GetInstance();
+
+        // --- 1. Сверка формулы с ПОСТАВКОЙ (ещё на реальном ENDO_ROOT) ---
+        // Реф. семантика: PanelType 0=кнопочная→"-1", 1=ЖК→"-2";
+        //                 ViewType  0=мягкий→"-softendo", 1=жёсткий→"-hardendo".
+        struct Combo { bool scope; int panel; int view; const char *name; };
+        const Combo combos[8] = {
+            {false, 0, 0, "aging-1-softendo"},        {false, 0, 1, "aging-1-hardendo"},
+            {false, 1, 0, "aging-2-softendo"},        {false, 1, 1, "aging-2-hardendo"},
+            {true,  0, 0, "aging-scope-1-softendo"},  {true,  0, 1, "aging-scope-1-hardendo"},
+            {true,  1, 0, "aging-scope-2-softendo"},  {true,  1, 1, "aging-scope-2-hardendo"},
+        };
+        bool nameOk = true, shippedOk = true;
+        int shipped = 0;
+        for (const Combo &c : combos) {
+            KFactoryOptions fo;
+            fo.SetCheckScope(c.scope);
+            st.SetPanelType(c.panel);
+            st.SetViewType(c.view);
+            const QString path = fo.GetTestConfPath();
+
+            // Имя каталога совпадает с формулой реф. и путь оканчивается на '/'.
+            if (!path.endsWith(QString("autotest/") + c.name + "/"))
+                nameOk = false;
+
+            // Ground truth: в поставке есть ровно 6 из 8 — нет *-1-hardendo
+            // (кнопочная панель + жёсткий эндоскоп не выпускается).
+            const bool exists = QDir(path).exists();
+            const bool expectShipped = !(c.panel == 0 && c.view == 1);
+            if (exists != expectShipped) shippedOk = false;
+            if (exists) ++shipped;
+        }
+
+        // --- 2. Переезд на временный корень (дальше идут записи) ---
+        QTemporaryDir tmp;
+        qputenv("ENDO_ROOT", tmp.path().toUtf8());
+        KFactoryOptionsState::Reset();
+
+        // --- 3. testenv.ini: дефолт true при отсутствии файла, затем roundtrip ---
+        KFactoryOptions fo;
+        fo.SetCheckScope(false);
+        fo.ReadTestEnv();
+        const bool defOk = fo.CheckScope() == true;   // реф. дефолт value("Env/Scope", true)
+
+        fo.SetCheckScope(false);
+        fo.SaveTestEnv();
+        KFactoryOptions fo2;
+        fo2.ReadTestEnv();
+        const bool rtOk = fo2.CheckScope() == false
+            && QFile::exists(KFactoryOptions::TestEnvFile());
+
+        // --- 4. StopTest: обычная ветка пишет [AgeTest] IsAgeTest=true ---
+        KFactoryOptionsState::SetTestType(0);
+        fo.StopTest();
+        QSettings age(KFactoryOptions::AgeTestFile(), QSettings::IniFormat);
+        const bool stopOk = age.value("AgeTest/IsAgeTest").toBool() == true
+            && KFactoryOptionsState::AutoTestMode() == 2
+            && KFactoryOptionsState::AutoTestMask() == 2048
+            // Два testenv.ini — РАЗНЫЕ файлы (data/presetdata/... и data/protected/...).
+            && KFactoryOptions::AgeTestFile() != KFactoryOptions::TestEnvFile();
+
+        // --- 5. StopTest: ветка g_euTestType & 0x400 → только SetUITestRecordOpen(2) ---
+        KFactoryOptionsState::Reset();
+        KFactoryOptionsState::SetTestType(0x400);
+        fo.StopTest();
+        const bool uiBranchOk = KFactoryOptionsState::UITestRecordMode() == 2
+            && KFactoryOptionsState::AutoTestMode() == 0;   // до SetAutoTestOpen не дошло
+
+        // --- 6. CopyConf: посев → копия, повторный вызов затирает существующий dst ---
+        const QString src = tmp.path() + "/src";
+        const QString dst = tmp.path() + "/dst";
+        QDir().mkpath(src + "/sub");
+        { QFile f(src + "/a.ini"); f.open(QIODevice::WriteOnly); f.write("x=1\n"); }
+        { QFile f(src + "/sub/b.ini"); f.open(QIODevice::WriteOnly); f.write("y=2\n"); }
+        const bool copy1 = KFactoryOptions::CopyConf(src, dst)
+            && QFile::exists(dst + "/a.ini") && QFile::exists(dst + "/sub/b.ini");
+        // Файл-сирота в dst должен исчезнуть (реф. DeleteDirectory перед копированием).
+        { QFile f(dst + "/stale.ini"); f.open(QIODevice::WriteOnly); f.write("z=3\n"); }
+        const bool copy2 = KFactoryOptions::CopyConf(src, dst)
+            && QFile::exists(dst + "/a.ini") && !QFile::exists(dst + "/stale.ini");
+
+        // --- 7. StartTest: набор из GetTestConfPath копируется в AppPath()/autotest/ ---
+        KFactoryOptionsState::Reset();
+        st.SetPanelType(1);
+        st.SetViewType(0);
+        fo.SetCheckScope(true);   // → aging-scope-2-softendo
+        QDir().mkpath(fo.GetTestConfPath());
+        { QFile f(fo.GetTestConfPath() + "case.ini"); f.open(QIODevice::WriteOnly); f.write("k=1\n"); }
+        const bool startOk = fo.StartTest()
+            && QFile::exists(QDir(KSystem::AppPath()).absoluteFilePath("autotest/case.ini"))
+            && KFactoryOptionsState::AutoTestMode() == 1
+            && KFactoryOptionsState::AutoTestMask() == 2048
+            // StartTest обязан сперва сохранить env (реф. порядок: SaveTestEnv → CopyConf).
+            && QSettings(KFactoryOptions::TestEnvFile(), QSettings::IniFormat)
+                   .value("Env/Scope").toBool() == true;
+
+        // --- 8. Мелочи: UpdateReleaseVersion, коды возврата, OpenDebug ---
+        const bool verOk = KFactoryOptions::UpdateReleaseVersion("PyCkeun") == "V1.0"
+            && KFactoryOptions::UpdateReleaseVersion("X-2600") == "V2.0";
+        const bool codeOk = KFactoryOptions::RESULT_VIDEO_CAL == 0x11
+            && KFactoryOptions::RESULT_TEMPERATURE == 0x16;
+        KFactoryOptions::OpenDebug(2);
+        const bool dbgOk = KFactoryOptions::DebugLevel() == 2;
+        KFactoryOptions::OpenDebug(5);   // не 1 и не 2 → приоритет 0
+        const bool dbgClampOk = KFactoryOptions::DebugLevel() == 0;
+
+        qInfo() << "имена:" << nameOk << "| в поставке:" << shipped << "/8 ожидаемо:" << shippedOk
+                << "| дефолт:" << defOk << "roundtrip:" << rtOk;
+        qInfo() << "stop:" << stopOk << "ui-ветка:" << uiBranchOk
+                << "| copy:" << copy1 << copy2 << "| start:" << startOk;
+        qInfo() << "версия:" << verOk << "коды:" << codeOk
+                << "| debug:" << dbgOk << dbgClampOk;
+
+        const bool ok = nameOk && shippedOk && shipped == 6 && defOk && rtOk && stopOk
+            && uiBranchOk && copy1 && copy2 && startOk && verOk && codeOk && dbgOk && dbgClampOk;
+        qInfo() << (ok ? "factoryopt: PASS" : "factoryopt: FAIL");
+        return ok ? 0 : 66;
     }
 
     // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/
