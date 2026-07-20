@@ -533,6 +533,21 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **106 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
+**⚠️ ВЫВОД СЕССИИ 2026-07-21: ЧИСТЫЙ OFF-DEVICE-БАКЕТ ИСЧЕРПАН.** После закрытия
+KDocumentGenerator + всей render-подсистемы прощупаны следующие кандидаты ROADMAP — ВСЕ
+оказались device/UI/ловушки (детали в ROADMAP §C/§D):
+- `KEntityBase` (B3) — абстрактный базовый класс, все методы-заглушки (ICF-folded), IDatabase
+  не реверсирован, ERR_NOT_SUPPORT рантайм-.bss, подклассы коллизируют → ЛОВУШКА (ROADMAP C4).
+- `KUpdateAction`/`KUpdatePrepare` (B2) — оба Qt-ДИАЛОГИ (setupUi/keyPressEvent).
+- `KFunTest` (B5) — Qt-диалог; `KTimeMng` (B5) — QObject с QTimer (рантайм).
+- `KDataFileOpr` (B3) — USB/fs-утилиты (GetUsb*, device); чистые fs-методы (rm -r) — низкая
+  реверс-ценность.
+- IRIS/*.txt (D3) — читаются через `KIrisSetting`/`KIrisMenu` (OSD-меню панели, device UI).
+**СЛЕДУЮЩИЙ ЗАХОД ТРЕБУЕТ РЕШЕНИЯ ПОЛЬЗОВАТЕЛЯ О НАПРАВЛЕНИИ** (см. ниже «осталось device-bound»):
+UI-порт (131 Qt-Widgets-класс, тестируется скриншотами, не self-test), OSD-меню панели 8″
+(нужно решение по железу), DCMTK-сеть, GStreamer live-video, HAL/HW. Все — не чисто-off-device;
+либо нужен реверс IDatabase + разрешение коллизий для реф.-DB-слоя (парал. существующему).
+
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
 (self-test `docgen` расширен, класс **12/33**). Два Qt-free метода-ядра (четыре UI-обёртки
 Add/Delete/Update/ClickSubItem — Qt через InitDocument/ChangeItemSelected, ждут документной

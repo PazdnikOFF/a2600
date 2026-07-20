@@ -422,7 +422,7 @@ offscreen (как KUIDesktop). Порядок по важности:
 | B2 | `KUpdateAction` (17), `KUpdatePrepare` (13) | 30 | UPDATE — слабейший домен после UI (17.1%). Есть **читаемый ground truth**: `system/update/update_start` и `auto_update` — обычные shell-скрипты, по ним сверяется весь пайплайн. |
 | B3 | `KDataOprEventDeal` (16), `KEntityBase` (14), `KDataFileOpr` (12), `KImportRules` (10), `KRecordItem` (10) | 62 | DB-слой, домен 38%. Все «не начаты», коллизий имён нет. |
 | B4 | `KRTTeCreatorContext` (16), `KRTAbsDataSource` (11) | 27 | REPORT, продолжение линии B1. |
-| B5 | `KTimeMng` (10), `KFunTest` (10) | 20 | CORE. По `KFunTest` разведка уже сделана (см. PROGRESS §10) — можно брать сразу. |
+| B5 | `KTimeMng` (10), `KFunTest` (10) | 20 | CORE. ⚠️ ПРОЩУПАНО 2026-07-21: `KFunTest` — Qt-ДИАЛОГ (Ui_KFunTest::setupUi, ClickStart/ClickToTest handlers), device-автотест. `KTimeMng` — QObject с QTimer (StartRecTimer/EachDayMC/Timedisplay), рантайм/таймеры. ОБА не чисто-off-device (UI/таймеры) — не «брать сразу». |
 
 ### C. ЛОВУШКИ — разгрести до того, как наступишь
 
@@ -439,7 +439,7 @@ offscreen (как KUIDesktop). Порядок по важности:
 |---|---|---|---|
 | D1 | `system/update/dbupdate.ini` | 12 КБ | **История схемы БД**: секция = версия, ключ = таблица → колонки. ⚠️ ЧИТАТЕЛЬ ДО СИХ ПОР НЕ НАЙДЕН — нет ни в X2000, ни в трёх малых бинарниках, ни в `update_start`/`auto_update`. Без читателя нельзя взять реф.-имена. Проверить: не читается ли внешним скриптом с USB-пакета. |
 | D2 | `system/platform/statistic.py` | 36 КБ | **Читаемый Python3** — лучшая документация формата APPlog и семантики `statistic.ini` (который мы уже парсим). Даром достаётся. |
-| D3 | `system/videoconf/IRIS/*.txt` | 27 файлов | Таблицы настройки диафрагмы по сенсорам (`OH01A_EB_768X928`, `OV2740_EC_1280X960` и др.). У нас НЕ читаются вообще. Привязаны к типу сенсора → частично device, но сам парсинг off-device. |
+| D3 | `system/videoconf/IRIS/*.txt` | 27 файлов | Таблицы настройки диафрагмы по сенсорам (`OH01A_EB_768X928`, `OV2740_EC_1280X960` и др.) — просто списки int (LUT диафрагмы по уровню). ⚠️ ПРОЩУПАНО 2026-07-21: читаются через `KIrisSetting`/`KIrisMenu` (KOsdSubMenu-меню панели, DEVICE UI/OSD) — не чистый off-device-ридер; реф.-загрузчик tied к OSD-меню. Ценность парсинга низкая (int-список). Брать вместе с OSD-фазой. |
 | D4 | `presetdata/userpreset/dicom/dicom.dic` | 5006 строк | Словарь DCMTK. Утилитарно полезен (расшифрует DCM_*-имена в наших XML), но это upstream-данные OFFIS, не код вендора — реверс-ценность низкая. |
 | D5 | `system/update/update_start`, `auto_update` | 2.4 + 1.8 КБ | Shell-скрипты пайплайна обновления. **Читаемый исходник** — использовать как эталон при B2. |
 
