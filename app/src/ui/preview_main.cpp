@@ -6252,6 +6252,65 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Self-test примитива поиска блока в документе (реф. KDocumentGenerator::FindFrameOrCell
+    // @0x53ca28 + GetSelectFrame/GetSelectCell). Строит документ (текст-блок + таблица с
+    // ячейками) и ищет элементы по ElementId. Чистый Qt Gui.
+    if (screen == "findcell") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["V"] = "CellText";
+        // Текстовый блок верхнего уровня.
+        KReportTemplateItem txt;
+        txt.m_strID = "/RT_TXT"; txt.m_strName = "RT_TXT"; txt.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(txt);
+        // Таблица с одной ячейкой-блоком.
+        KReportTemplateItem tbl;
+        tbl.m_strID = "/RT_TBL"; tbl.m_strName = "RT_TBL"; tbl.m_strType = "RT_TABLE_BLOCK";
+        tbl.m_strColumn = "1"; tbl.m_strShowTitle = "0";
+        KReportTemplateItem cell0;
+        cell0.m_strID = "/RT_TBL/c0"; cell0.m_strName = "c0"; cell0.m_strType = "RT_TEXT_BLOCK";
+        tbl.m_lstSubItems.push_back(cell0);
+        data.m_lstItems.push_back(tbl);
+        KReportTemplateItemConfig cc; cc.m_strName = "/RT_TBL/c0";
+        cc.m_mapAttrs["TemplateData"] = "V";
+        data.m_mapItemConfigs["/RT_TBL/c0"] = cc;
+        data.m_mapItemConfigs["/RT_TBL"].m_strName = "/RT_TBL";
+
+        QObject parent;
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+        QTextFrame *root = doc->rootFrame();
+
+        // Найти текстовый блок (фрейм с ElementId "/RT_TXT").
+        QTextFrame *fr = nullptr; QTextTableCell ce;
+        const bool findText = gen.FindFrameOrCell(root, "/RT_TXT", &fr, ce) && fr != nullptr;
+
+        // Найти таблицу (фрейм с ElementId "/RT_TBL").
+        fr = nullptr;
+        const bool findTable = gen.FindFrameOrCell(root, "/RT_TBL", &fr, ce)
+            && qobject_cast<QTextTable *>(fr) != nullptr;
+
+        // Найти ЯЧЕЙКУ (ElementId "/RT_TBL/c0" на формате ячейки).
+        fr = nullptr; QTextTableCell foundCell;
+        const bool findCell = gen.FindFrameOrCell(root, "/RT_TBL/c0", &fr, foundCell)
+            && foundCell.isValid() && fr == nullptr;
+
+        // Промах: несуществующий id → false, out не тронут.
+        QTextFrame *frMiss = nullptr; QTextTableCell ceMiss;
+        const bool missOk = !gen.FindFrameOrCell(root, "/НЕТ", &frMiss, ceMiss)
+            && frMiss == nullptr && !ceMiss.isValid();
+
+        // GetSelectFrame/GetSelectCell при стартовом m_strCurItemId ("Invalid ID") → пусто.
+        const bool selSentinel = gen.GetSelectFrame() == nullptr
+            && !gen.GetSelectCell().isValid();
+
+        qInfo() << "findcell: text:" << findText << "table:" << findTable
+                << "cell:" << findCell << "| miss:" << missOk << "sentinel:" << selSentinel;
+
+        const bool ok = findText && findTable && findCell && missOk && selSentinel;
+        qInfo() << (ok ? "findcell: PASS" : "findcell: FAIL");
+        return ok ? 0 : 75;
+    }
+
     // Интеграционный self-test: полный render-конвейер на РЕАЛЬНОМ шаблоне прошивки.
     // Загружает группу ReportTemplateNP-1x4 (HospitalTop/PatientInfo/Image1x4/ExamInfo/
     // Signature/Addition) и строит из неё QTextDocument — проверяет, что text/image/table

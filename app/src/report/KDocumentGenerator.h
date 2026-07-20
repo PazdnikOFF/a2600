@@ -5,6 +5,8 @@
 #include "KReportTemplateData.h"
 
 class QTextDocument;
+class QTextFrame;
+class QTextTableCell;
 class QObject;
 class KRTCreatorContext;
 
@@ -171,6 +173,22 @@ public:
     // элемента id, пока высота < editMaxHeight-9 (выравнивание футера по низу). Для min
     // без футера — документированный no-op (тянет FindFrameOrCell + метрики layout).
     void InsertBlockLineAfterItem(const std::string &id);
+
+    // --- примитивы поиска блока в документе (Qt; редакторная половина) ---
+
+    // Реф. FindFrameOrCell @0x53ca28: рекурсивный обход дерева фреймов от frame; ищет элемент
+    // с ElementId==id (property UserProperty+1 на frameFormat фрейма ИЛИ на format ячейки
+    // таблицы). Совпал фрейм → *outFrame=frame; совпала ячейка → outCell=cell (взаимоисключимо).
+    // Таблицы (qobject_cast<QTextTable*>) обходятся по ячейкам + рекурсия во вложенные фреймы
+    // ячеек; обычные фреймы — по childFrames. true при находке. Qt-чистый.
+    bool FindFrameOrCell(QTextFrame *frame, const std::string &id,
+                         QTextFrame **outFrame, QTextTableCell &outCell) const;
+
+    // Реф. GetSelectFrame @0x53d1b0 / GetSelectCell @0x53d160: найти по m_strCurItemId от
+    // rootFrame документа. GetSelectFrame → фрейм (nullptr если это ячейка/не найдено);
+    // GetSelectCell → ячейка (невалидна если это фрейм/не найдено). Guard: m_pDoc != null.
+    QTextFrame    *GetSelectFrame() const;
+    QTextTableCell GetSelectCell() const;
 
     // --- состояние ---
     const std::string &CurItemId() const { return m_strCurItemId; }

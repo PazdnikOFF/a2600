@@ -14,6 +14,8 @@
 #include <QTextFrame>
 #include <QTextFrameFormat>
 #include <QTextLength>
+#include <QTextTable>
+#include <QTextTableCell>
 
 #include <iterator>
 
@@ -516,6 +518,75 @@ void KDocumentGenerator::PutFooterOnBottom()
     const std::string preId = FindItmeIdofPreFooter();   // опечатка "Itme" — реф.
     if (!preId.empty())
         InsertBlockLineAfterItem(preId);
+}
+
+bool KDocumentGenerator::FindFrameOrCell(QTextFrame *frame, const std::string &id,
+                                         QTextFrame **outFrame,
+                                         QTextTableCell &outCell) const
+{
+    // Реф. @0x53ca28. Рекурсивный обход дерева фреймов; ElementId в property UserProperty+1.
+    if (!frame)
+        return false;
+
+    // 1. Совпадает ли сам фрейм.
+    if (frame->frameFormat().property(QTextFormat::UserProperty + 1).toString().toStdString()
+        == id) {
+        if (outFrame)
+            *outFrame = frame;
+        return true;
+    }
+
+    if (QTextTable *tbl = qobject_cast<QTextTable *>(frame)) {
+        // 2. Таблица — обход ячеек.
+        for (int r = 0; r < tbl->rows(); ++r) {
+            for (int c = 0; c < tbl->columns(); ++c) {
+                QTextTableCell cell = tbl->cellAt(r, c);
+                if (!cell.isValid())
+                    continue;
+                if (cell.format().property(QTextFormat::UserProperty + 1)
+                        .toString().toStdString() == id) {
+                    outCell = cell;
+                    return true;
+                }
+                // 2b. Рекурсия во вложенные фреймы ячейки.
+                for (QTextFrame::iterator it = cell.begin(); !it.atEnd(); ++it) {
+                    if (QTextFrame *child = it.currentFrame())
+                        if (FindFrameOrCell(child, id, outFrame, outCell))
+                            return true;
+                }
+            }
+        }
+    } else {
+        // 3. Обычный фрейм — рекурсия по дочерним фреймам.
+        for (QTextFrame::iterator it = frame->begin(); !it.atEnd(); ++it) {
+            if (QTextFrame *child = it.currentFrame())
+                if (FindFrameOrCell(child, id, outFrame, outCell))
+                    return true;
+        }
+    }
+    return false;
+}
+
+QTextFrame *KDocumentGenerator::GetSelectFrame() const
+{
+    // Реф. @0x53d1b0: поиск по m_strCurItemId от корня; отдаёт фрейм (не ячейку).
+    if (!m_pDoc)
+        return nullptr;
+    QTextFrame *out = nullptr;
+    QTextTableCell dummy;
+    FindFrameOrCell(m_pDoc->rootFrame(), m_strCurItemId, &out, dummy);
+    return out;
+}
+
+QTextTableCell KDocumentGenerator::GetSelectCell() const
+{
+    // Реф. @0x53d160: поиск по m_strCurItemId от корня; отдаёт ячейку (не фрейм).
+    QTextTableCell result;
+    if (!m_pDoc)
+        return result;
+    QTextFrame *dummy = nullptr;
+    FindFrameOrCell(m_pDoc->rootFrame(), m_strCurItemId, &dummy, result);
+    return result;
 }
 
 void KDocumentGenerator::InsertBlockLineAfterItem(const std::string & /*id*/)

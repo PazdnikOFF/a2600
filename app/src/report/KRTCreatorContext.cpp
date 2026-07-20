@@ -479,8 +479,15 @@ void KRTTableItemCreator::createChild(std::list<KReportTemplateItem> &items,
             row += 1;                                       // пропустить строку-заголовок
         if (row < pTable->rows() && col < pTable->columns()) {
             QTextTableCell cell = pTable->cellAt(row, col);
-            if (cell.isValid())
+            if (cell.isValid()) {
+                // Реф. GetCellWithID @0x539c20: штамп ElementId на формат ячейки (по нему
+                // FindFrameOrCell/выделение находят ячейку-блок).
+                QTextCharFormat cf = cell.format();
+                cf.setProperty(QTextFormat::UserProperty + 1,
+                               QVariant(QString::fromStdString(node.m_strID)));   // 0x100001
+                cell.setFormat(cf);
                 m_context.CreateBlock(node.m_strType, &node, cell);   // рекурсия в творцов
+            }
         }
         ++idx;
     }

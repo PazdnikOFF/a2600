@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **101 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **102 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -607,6 +607,22 @@ margins, cellat-переопределение, split-line, модель в User
 **ОСТАЛОСЬ по творцам:** SubData (KRTSubDataItemCreator, вложенный фрейм-таблица), ImageGroup
 (KRTImageGroupCreator, сетка снимков), image/table-в-ячейку перегрузки, KTableBlock/KImageBlock
 метатипы. ТРИ из 5 типов блоков рендерятся (text/image/table = 481 из ~500 вхождений поставки).
+
+**✅ РЕДАКТОРНАЯ ПОЛОВИНА, примитивы поиска (итерация 8): `FindFrameOrCell` +
+`GetSelectFrame`/`GetSelectCell`** (self-test `findcell`, класс **19/33 = 58%**).
+`FindFrameOrCell` @0x53ca28 — рекурсивный обход дерева фреймов QTextDocument, ищет элемент с
+ElementId==id (property UserProperty+1 на frameFormat фрейма ИЛИ format ячейки). Таблицы
+(qobject_cast<QTextTable*>) — по ячейкам + рекурсия во вложенные фреймы ячеек; обычные фреймы —
+по childFrames (QTextFrame::iterator). Совпал фрейм → *outFrame; ячейка → outCell (взаимоискл.).
+`GetSelectFrame`/`GetSelectCell` @0x53d1b0/@0x53d160 — поиск по m_strCurItemId от rootFrame.
+Заодно доставлена штамповка ElementId на ЯЧЕЙКИ в createChild (реф. GetCellWithID @0x539c20,
+ранее опущено) → ячейки теперь находимы. Тест: находит текст-фрейм/таблицу/ячейку, промах,
+сентинел. Всё Qt-чистое.
+**ОСТАЛОСЬ по редактору (следующие заходы):** `ChangeFrameSelected`/`ChangeCellSelected`
+(ПОКРАСКА выделения — фон/бордюр; НЕ декомпилированы) → `ChangeSingleItemSelected` (диспетчер +
+пишет m_strCurItemId) → `ChangeItemSelected` (расширяет id до набора через GetAllItemIDs +
+SynColumnID) → UI-обёртки Add/Delete/Update/ClickSubItem → `Move*`/`InsertBlockLineAfterItem`
+(футер-падинг, нужны метрики QTextDocumentLayout) → `UpdateBlock`.
 
 **ОСТАВШАЯСЯ разведка (для истории; каркас уже закрыт выше):**
 
