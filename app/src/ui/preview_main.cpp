@@ -95,6 +95,8 @@ public:
 #include "report/KReportHtmlGenerator.h"
 #include "report/KDocumentGenerator.h"
 #include "monitor/X2000Monitor.h"
+#include "report/KRTCreatorContext.h"
+#include "report/KRTAbsItemCreator.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -5878,6 +5880,85 @@ int main(int argc, char **argv)
             && reviveOk && resetOk && vDeadOk && vWorksOk && fmtOk && pathOk && timeOk;
         qInfo() << (ok ? "monitor: PASS" : "monitor: FAIL");
         return ok ? 0 : 68;
+    }
+
+    // Self-test диспетчера творцов блоков отчёта (реф. KRTCreatorContext).
+    // Проверяется реестр и ФОЛБЭКИ — они разные у CreateBlock и UpdateBlock.
+    // Qt не участвует.
+    if (screen == "rtcreator") {
+        using namespace report_template;
+
+        KReportTemplateDataNew data;
+        KRTCreatorContext ctx(&data);
+
+        // 1. Реестр: ровно 6 типов (дизасм InitCreator — 6 new + 6 вставок).
+        const bool countOk = ctx.CreatorCount() == 6;
+
+        // 2. Каждый зарегистрированный тип отдаёт творца ИМЕННО своего типа.
+        const bool textOk  = ctx.FindCreator(STR_RT_ELEMENT_TEXT_BLOCK)
+                                ->GetType() == STR_RT_ELEMENT_TEXT_BLOCK;
+        const bool imgOk   = ctx.FindCreator(STR_RT_ELEMENT_IMAGE_BLOCK)
+                                ->GetType() == STR_RT_ELEMENT_IMAGE_BLOCK;
+        const bool grpOk   = ctx.FindCreator(STR_RT_ELEMENT_IMAGEGROUP_BLOCK)
+                                ->GetType() == STR_RT_ELEMENT_IMAGEGROUP_BLOCK;
+        const bool subOk   = ctx.FindCreator(STR_RT_ELEMENT_SUB_DATA_BLOCK)
+                                ->GetType() == STR_RT_ELEMENT_SUB_DATA_BLOCK;
+
+        // 3. ОДИН класс KRTTableItemCreator обслуживает ДВА типа — но это
+        //    ДВА РАЗНЫХ объекта с разными m_strType (в реф. ctor зовётся дважды).
+        KRTAbsItemCreator *tbl   = ctx.FindCreator(STR_RT_ELEMENT_TABLE_BLOCK);
+        KRTAbsItemCreator *title = ctx.FindCreator(STR_RT_ELEMENT_TITLE_TABLE_BLOCK);
+        const bool twinOk = tbl != title
+            && tbl->GetType() == STR_RT_ELEMENT_TABLE_BLOCK
+            && title->GetType() == STR_RT_ELEMENT_TITLE_TABLE_BLOCK;
+
+        // 4. ФОЛБЭК CreateBlock: неизвестный тип → TEXT_BLOCK.
+        //    В бинарнике 23 константы STR_RT_ELEMENT_*, в карту попадают 6 —
+        //    остальные 17 идут именно этим путём.
+        const bool fbCreateOk =
+            ctx.FindCreator("RT_WMS_BLOCK")->GetType() == STR_RT_ELEMENT_TEXT_BLOCK
+            && ctx.FindCreator("RT_TIRADS_BLOCK")->GetType() == STR_RT_ELEMENT_TEXT_BLOCK
+            && ctx.FindCreator("")->GetType() == STR_RT_ELEMENT_TEXT_BLOCK;
+
+        // 5. ФОЛБЭК UpdateBlock — ДРУГОЙ: TABLE_BLOCK, а не TEXT_BLOCK.
+        const bool fbUpdateOk =
+            ctx.FindCreatorForUpdate("RT_WMS_BLOCK")->GetType() == STR_RT_ELEMENT_TABLE_BLOCK
+            && ctx.FindCreatorForUpdate(STR_RT_ELEMENT_IMAGE_BLOCK)
+                   ->GetType() == STR_RT_ELEMENT_IMAGE_BLOCK;   // точное совпадение важнее фолбэка
+
+        // 6. AddNewCreatorType: повторная регистрация типа ИГНОРИРУЕТСЯ,
+        //    объект не подменяется (реф. insert-if-absent).
+        KRTAbsItemCreator *before = ctx.FindCreator(STR_RT_ELEMENT_TEXT_BLOCK);
+        const bool dupRejected =
+            !ctx.AddNewCreatorType(STR_RT_ELEMENT_TEXT_BLOCK,
+                                   new KRTTextItemCreator(ctx));
+        const bool addOk = dupRejected
+            && ctx.FindCreator(STR_RT_ELEMENT_TEXT_BLOCK) == before
+            && ctx.CreatorCount() == 6;
+
+        // 7. Новый тип регистрируется и находится без фолбэка.
+        const bool newOk =
+            ctx.AddNewCreatorType("RT_ROW_TABLE_BLOCK",
+                                  new KRTTableItemCreator("RT_ROW_TABLE_BLOCK", ctx))
+            && ctx.CreatorCount() == 7
+            && ctx.FindCreator("RT_ROW_TABLE_BLOCK")->GetType() == "RT_ROW_TABLE_BLOCK";
+
+        // 8. Диспетчеризация доходит до творца (базовые реализации → true).
+        KReportTemplateItem item;
+        item.m_strType = STR_RT_ELEMENT_TEXT_BLOCK;
+        const bool dispatchOk = ctx.CreateBlock(item.m_strType, &item, nullptr)
+            && ctx.UpdateBlock("RT_WMS_BLOCK", &item, nullptr);
+
+        qInfo() << "реестр 6:" << countOk << "| типы:" << textOk << imgOk << grpOk << subOk
+                << "| таблица-близнецы:" << twinOk;
+        qInfo() << "фолбэк create→TEXT:" << fbCreateOk << "update→TABLE:" << fbUpdateOk
+                << "| дубль отклонён:" << addOk << "новый тип:" << newOk
+                << "диспетч.:" << dispatchOk;
+
+        const bool ok = countOk && textOk && imgOk && grpOk && subOk && twinOk
+            && fbCreateOk && fbUpdateOk && addOk && newOk && dispatchOk;
+        qInfo() << (ok ? "rtcreator: PASS" : "rtcreator: FAIL");
+        return ok ? 0 : 69;
     }
 
     // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/
