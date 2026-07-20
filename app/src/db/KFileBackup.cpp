@@ -13,6 +13,26 @@ bool KFileBackup::copyFile(const QString &src, const QString &dst)
     return QFile::copy(src, dst);
 }
 
+int KFileBackup::copyFile(QString src, QString dst, bool overwrite)
+{
+    // Коды возврата реф.: 1 — успех; отрицательные — ошибки.
+    // -1 нет исходного файла, -2 не создан каталог назначения,
+    // -3 назначение существует и overwrite == false, -4 не удалось удалить
+    // старый файл, -5 сбой копирования. (Точное распределение -1..-5 по
+    // причинам в реф. восстановлено частично — помечено как допущение.)
+    if (!QFile::exists(src))
+        return -1;
+    if (!QDir().mkpath(QFileInfo(dst).absolutePath()))
+        return -2;
+    if (QFile::exists(dst)) {
+        if (!overwrite)
+            return -3;
+        if (!QFile::remove(dst))
+            return -4;
+    }
+    return QFile::copy(src, dst) ? 1 : -5;
+}
+
 bool KFileBackup::copyDirectoryFiles(const QString &src, const QString &dst, bool includeSub)
 {
     // реф.: QDir::mkpath dst; обход entryInfoList; файлы → copyFile, каталоги → рекурсия.

@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include "hal/KUsbDevice.h"
 
 namespace KSystem {
 
@@ -79,6 +80,15 @@ bool CopyDirectoryFiles(const QString &src, const QString &dst, bool overwrite)
         }
     }
     return true;
+}
+
+QString ExportPath()
+{
+    // Реф.: пустой путь USB → пустая строка (без "Export/").
+    const QString usb = KUsbDevice::GetInstance()->GetUsbPath();
+    if (usb.isEmpty())
+        return QString();
+    return usb + "Export/";
 }
 
 } // namespace KSystem

@@ -26,6 +26,11 @@ void LogPrintfEx(bool bEnable, const char *tag, const char *fmt, ...);
 void LogPrintfx(const char *tag, const char *file, int line, const char *func,
                 const char *fmt, ...);
 
+// Реф.: snprintf(buf,256,"%s%s%s\n", timeStr, tag, msg.toLocal8Bit().constData()) —
+// перевод строки ДОБАВЛЯЕТСЯ ВСЕГДА (в отличие от LogPrintf).
+void QStringLogPrintf(const char *tag, const class QString &msg);
+void QStringLogPrintfEx(bool bEnable, const char *tag, const class QString &msg);
+
 void SetLogPriority(int p);
 int  GetLogPriority();
 

@@ -1,5 +1,7 @@
 #include "kernel/KSystemLog.h"
 
+#include <QString>
+
 #include <cstdarg>
 #include <cstdio>
 #include <ctime>
@@ -85,6 +87,16 @@ void LogPrintfx(const char *tag, const char *file, int line, const char *func,
     va_start(ap, fmt);
     emitLine(head, fmt, ap);
     va_end(ap);
+}
+
+void QStringLogPrintf(const char *tag, const QString &msg)
+{
+    LogPrintf(tag, "%s\n", msg.toLocal8Bit().constData());
+}
+
+void QStringLogPrintfEx(bool bEnable, const char *tag, const QString &msg)
+{
+    LogPrintfEx(bEnable, tag, "%s\n", msg.toLocal8Bit().constData());
 }
 
 void SetLogPriority(int p) { g_euLogPriority = p; }

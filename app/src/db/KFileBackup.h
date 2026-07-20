@@ -19,6 +19,10 @@ public:
     // заходить в подкаталоги. Возвращает успех.
     bool copyDirectoryFiles(const QString &src, const QString &dst, bool includeSub = true);
     bool copyFile(const QString &src, const QString &dst);          // реф. copyFile/FileCopy
+    // Реф. сигнатура (0x61f8e0): int copyFile(QString, QString, bool overwrite),
+    // где 1 — успех, отрицательные (-1..-5) — различные ошибки. Именно её
+    // сравнивает с 1 KExportRecord::ExportFiles.
+    int  copyFile(QString src, QString dst, bool overwrite);
     // Рекурсивно удалить каталог с содержимым (реф. removeDirWithContent).
     bool removeDirWithContent(const QString &dir);
     bool clearFolder(const QString &dir);                           // очистить (оставить сам каталог)

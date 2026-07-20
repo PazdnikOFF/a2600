@@ -127,6 +127,7 @@ public:
 #include "kernel/KSystemLog.h"
 #include "kernel/KThreadPoolMsg.h"
 #include "db/KExamDataFileNameGenerator.h"
+#include "db/KExportRecord.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -5801,6 +5802,119 @@ int main(int argc, char **argv)
                      && actOk && endOk && storeOk && logTmpOk
                      && timeOk && ser1Ok && ser999Ok && serOvfOk && genOk && resetOk;
         qInfo() << (ok ? "exambiz: PASS" : "exambiz: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "exportrec") {
+        // Реф. KExportRecord — экспорт данных осмотра на USB.
+        const QString base = "/tmp/endo_exportrec";
+        QDir(base).removeRecursively();
+        const QString usb = base + "/usb/";
+        const QString srcDir = base + "/src";
+        QDir().mkpath(usb);
+        QDir().mkpath(srcDir);
+        KUsbDevice::GetInstance()->SetUsbPath(usb);
+
+        auto mkfile = [](const QString &path, int bytes) {
+            QFile f(path);
+            f.open(QIODevice::WriteOnly);
+            f.write(QByteArray(bytes, 'x'));
+            f.close();
+        };
+        mkfile(srcDir + "/001.jpg", 1000);
+        mkfile(srcDir + "/002.jpg", 2000);
+        mkfile(srcDir + "/PicInfo.ini", 50);
+
+        bool stop = false;
+        KExportRecord rec(&stop);
+
+        // 1. ExportPath + makeNameDirPath.
+        const bool expPathOk = KSystem::ExportPath() == usb + "Export/";
+        QString nm = "Ivanov";
+        const bool nameDirOk = rec.makeNameDirPath(nm) == usb + "Export/Ivanov/"
+                            && QDir(usb + "Export/Ivanov").exists();
+
+        // 2. makeExamIDPath — КВИРК: аргумент подставляется ДВАЖДЫ.
+        const QString examPath = rec.makeExamIDPath("E42");
+        const bool examPathOk = examPath == usb + "Export/E42/E42/"
+                             && QDir(examPath).exists();
+
+        // 3. needCopy — КВИРК: PicInfo.ini НЕ исключается (сравнение отброшено).
+        QString sd = srcDir;
+        QList<QFileInfo> need = rec.needCopy(sd);
+        const bool needOk = need.count() == 3;
+        const bool sizeOk = rec.filesSize(need) == 3050;
+
+        // 4. IsSpaceEnough — запас ровно 1024 байта, строгое сравнение.
+        const bool spaceOk = rec.IsSpaceEnough(need);   // на /tmp места хватает
+        QList<QFileInfo> huge;                          // пустой список: 0+1024 < free
+        const bool spaceEmptyOk = rec.IsSpaceEnough(huge);
+
+        // 5. ExportFiles — PicInfo.ini копируется, но НЕ считается успехом.
+        QString dst = examPath;
+        rec.ExportFiles(need, dst, QString(), QString());
+        const bool copiedOk = QFile::exists(examPath + "001.jpg")
+                           && QFile::exists(examPath + "002.jpg")
+                           && QFile::exists(examPath + "PicInfo.ini");
+        const bool cntOk = rec.GetSuccessFileNum() == 2;     // 3 файла, но PicInfo.ini не в счёт
+        const bool idsOk = rec.GetExamIdsNum() == 0;         // КВИРК: всегда 0
+        const bool statOk = rec.ExportStatus() == K_EXPORT_IDLE;  // успех не выставляется
+        const bool fnOk = rec.filename() == "PicInfo.ini";   // последний обработанный
+
+        // 6. delExistFile — удаление по СОВПАДЕНИЮ ИМЕНИ.
+        QStringList srcList;
+        srcList << srcDir + "/001.jpg";
+        rec.delExistFile(dst, srcList);
+        const bool delOk = !QFile::exists(examPath + "001.jpg")
+                        && QFile::exists(examPath + "002.jpg");
+
+        // 7. cleanDir — не рекурсивно, каталог остаётся.
+        QDir().mkpath(examPath + "sub");
+        rec.cleanDir(dst);
+        const bool cleanOk = QDir(examPath).exists()
+                          && !QFile::exists(examPath + "002.jpg")
+                          && QDir(examPath + "sub").exists();   // подкаталог НЕ удаляется
+
+        // 8. Флаг отмены прерывает цикл.
+        KExportRecord rec2(&stop);
+        stop = true;
+        rec2.ExportFiles(need, dst, QString(), QString());
+        const bool stopOk = rec2.GetSuccessFileNum() == 0;
+        stop = false;
+
+        // 9. USB отключён → статус 2 и немедленный выход.
+        KUsbDevice::GetInstance()->SetUsbPath(QString());
+        KExportRecord rec3(&stop);
+        QList<QFileInfo> one;
+        one << QFileInfo(srcDir + "/001.jpg");
+        rec3.ExportFiles(one, dst, QString(), QString());
+        // freeSize()==0 при пустом пути USB ⇒ места «не хватает» раньше проверки USB.
+        const bool noUsbOk = rec3.ExportStatus() == K_EXPORT_NO_SPACE
+                          && !rec3.getIsEnoughSpace();
+        KUsbDevice::GetInstance()->SetUsbPath(usb);
+
+        // 10. makeAllPath — каталоги существуют и пусты.
+        QStringList ids;
+        ids << "A1" << "A2";
+        rec.makeAllPath(ids);
+        const bool allOk = QDir(usb + "Export/A1/A1/").exists()
+                        && QDir(usb + "Export/A2/A2/").exists();
+
+        qInfo() << "ExportPath:" << expPathOk << "| makeNameDirPath:" << nameDirOk
+                << "| makeExamIDPath (двойной id):" << examPathOk << examPath;
+        qInfo() << "needCopy (PicInfo не исключён):" << needOk << need.count()
+                << "| filesSize:" << sizeOk << "| место:" << spaceOk << spaceEmptyOk;
+        qInfo() << "копирование:" << copiedOk << "| счётчик (без PicInfo):" << cntOk
+                << rec.GetSuccessFileNum() << "| examIds всегда 0:" << idsOk
+                << "| статус:" << statOk << "| filename:" << fnOk;
+        qInfo() << "delExistFile:" << delOk << "| cleanDir (не рекурсивно):" << cleanOk
+                << "| отмена:" << stopOk << "| без USB:" << noUsbOk
+                << "| makeAllPath:" << allOk;
+
+        const bool ok = expPathOk && nameDirOk && examPathOk && needOk && sizeOk
+                     && spaceOk && spaceEmptyOk && copiedOk && cntOk && idsOk
+                     && statOk && fnOk && delOk && cleanOk && stopOk && noUsbOk && allOk;
+        qInfo() << (ok ? "exportrec: PASS" : "exportrec: FAIL");
         return ok ? 0 : 65;
     }
 

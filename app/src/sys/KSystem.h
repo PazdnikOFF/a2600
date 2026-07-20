@@ -22,6 +22,9 @@ QString UserPresetPath();        // синоним ProjectUserPresetPath (наш
 QString SetDataPath();           // /home/root/data/setdata/
 QString UserSetPath();           // /home/root/data/setdata/userset/
 QString ProtectedPath();         // /home/root/data/protected/
+// Реф. KSystem::ExportPath (0x674918): GetUsbDevice()->GetUsbPath() + "Export/";
+// при пустом пути USB возвращает "" (GetUsbPath уже оканчивается на '/').
+QString ExportPath();
 QString VideoConfPath();         // /home/root/system/videoconf
 QString ColdlightConfigPath();   // /home/root/system/coldlight/  (реф. = SystemPath + "coldlight/")
 QString ProductDisplayConfigPath(const QString &model);  // .../display/<model>/<model>
