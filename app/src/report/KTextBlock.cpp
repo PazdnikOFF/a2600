@@ -12,6 +12,7 @@ const char *ATTR_SIZE          = "Size";
 const char *ATTR_BOLD          = "Bold";
 const char *ATTR_ITALIC        = "Italic";
 const char *ATTR_ALIGN_H       = "AlignH";
+const char *ATTR_FONT_COLOR    = "FontColor";   // реф. литерал (не "Color"/"Colour")
 const char *VALUE_TRUE         = "1";
 const char *ALIGN_CENTER       = "Center";
 const char *ALIGN_RIGHT        = "Right";
@@ -108,6 +109,15 @@ int KTextBlock::FontSize(int &out) const
     KMeaStringUtil u;
     out = u.ConvertStringToInt(s);   // pt (DPI-масштаб pt→px опущен — device-рендер)
     return out;
+}
+
+bool KTextBlock::FontColor(QColor &out) const
+{
+    // Реф. @0x555030: styleAttr("FontColor") → QColor::setNamedColor (имена/hex Qt,
+    // НЕ разбор "r,g,b"). ВСЕГДА возвращает true (реф. все ветки return 1) — при пустом/
+    // непарсимом значении QColor остаётся невалидным, проверка isValid() на вызывающем.
+    out.setNamedColor(QString::fromStdString(styleAttr(ATTR_FONT_COLOR)));
+    return true;
 }
 
 bool KTextBlock::Alignment(QFlags<Qt::AlignmentFlag> &out) const

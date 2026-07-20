@@ -97,7 +97,14 @@ public:
 #include "monitor/X2000Monitor.h"
 #include "report/KRTCreatorContext.h"
 #include "report/KRTAbsItemCreator.h"
+#include "ui/KScreenMng.h"
 #include "video/KMessageManager.h"
+
+#include <QFont>
+#include <QTextBlock>
+#include <QTextCharFormat>
+#include <QTextDocument>
+#include <QTextFrame>
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -5999,6 +6006,79 @@ int main(int argc, char **argv)
         return ok ? 0 : 69;
     }
 
+    // Self-test творца текстового блока (реф. KRTTextItemCreator @0x53b330). Рисует
+    // KTextBlock в РЕАЛЬНЫЙ QTextDocument через диспетчер KRTCreatorContext::CreateBlock,
+    // затем инспектирует формат вставленного блока. Чистый Qt Gui (+KScreenMng для масштаба).
+    if (screen == "rttext") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["DIAG_KEY"] = "Chronic gastritis";   // значение блока
+
+        KReportTemplateItem item;
+        item.m_strID = "/RT_DIAGNOSIS"; item.m_strName = "RT_DIAGNOSIS";
+        item.m_strTitle = "TR_Diagnosis"; item.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(item);
+
+        KReportTemplateItemConfig cfg;
+        cfg.m_strName = "/RT_DIAGNOSIS";
+        cfg.m_mapAttrs["TemplateData"] = "DIAG_KEY";
+        cfg.m_mapAttrs["AlignH"]       = "Center";
+        cfg.m_mapAttrs["FontType"]     = "ThirdTitle";
+        data.m_mapItemConfigs["/RT_DIAGNOSIS"] = cfg;
+
+        KReportTemplateItemConfig style;   // стиль: Bold+Italic+Size+FontColor
+        style.m_strName = "ThirdTitle";
+        style.m_mapAttrs["Size"]      = "18";
+        style.m_mapAttrs["Bold"]      = "1";
+        style.m_mapAttrs["Italic"]    = "1";
+        style.m_mapAttrs["FontColor"] = "red";
+        data.m_mapItemConfigs["ThirdTitle"] = style;
+
+        KRTCreatorContext ctx(&data);      // регистрирует творцов, включая KRTTextItemCreator
+        QTextDocument doc;
+        QTextFrame *root = doc.rootFrame();
+        const bool created = ctx.CreateBlock("RT_TEXT_BLOCK", &data.m_lstItems.front(), root);
+
+        // Текст вставлен: FullText = "TR_Diagnosis : Chronic gastritis".
+        const bool textOk = doc.toPlainText().contains("Chronic gastritis");
+
+        // Найти блок с нашим текстом и проверить его формат.
+        const double ratio = KScreenMng::GetInstance()->GetRatioTo1K();
+        bool boldOk = false, italicOk = false, sizeOk = false, colorOk = false, alignOk = false;
+        for (QTextBlock b = doc.begin(); b.isValid(); b = b.next()) {
+            if (!b.text().contains("Chronic gastritis"))
+                continue;
+            QTextCharFormat cf;
+            for (QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it) {
+                cf = it.fragment().charFormat();
+                break;
+            }
+            boldOk   = cf.fontWeight() == QFont::Bold;              // Bold → weight 75
+            italicOk = cf.fontItalic();                            // Italic → true
+            sizeOk   = qFuzzyCompare(cf.fontPointSize(), 18.0 * ratio);  // Size×ratio
+            colorOk  = cf.foreground().style() == Qt::SolidPattern
+                    && cf.foreground().color() == QColor("red");   // FontColor "red"
+            alignOk  = bool(b.blockFormat().alignment() & Qt::AlignHCenter);  // AlignH Center
+            break;
+        }
+
+        // ElementId в frame-property (UserProperty+1) — по нему идёт выделение блока.
+        bool elemIdOk = false;
+        for (QTextFrame *f : root->childFrames()) {
+            if (f->frameFormat().property(QTextFormat::UserProperty + 1).toString()
+                == "/RT_DIAGNOSIS") { elemIdOk = true; break; }
+        }
+
+        qInfo() << "rttext: created:" << created << "text:" << textOk
+                << "| bold:" << boldOk << "italic:" << italicOk << "size:" << sizeOk
+                << "(pt" << 18.0 * ratio << ") color:" << colorOk
+                << "align:" << alignOk << "elemId:" << elemIdOk;
+
+        const bool ok = created && textOk && boldOk && italicOk && sizeOk
+            && colorOk && alignOk && elemIdOk;
+        qInfo() << (ok ? "rttext: PASS" : "rttext: FAIL");
+        return ok ? 0 : 70;
+    }
+
     // Self-test оркестратора KDocumentGenerator::SyncRefresnImageItemData (реф. @0x53efa0)
     // на РЕАЛЬНЫХ синглтонах прошивки. Группа ReportTemplateNP-1x4 включает Image1x4.xml →
     // поддерево /RT_IMAGE_TEXT_MAP с колонками MAP0..MAP3. Проверяем: оркестратор
@@ -6260,10 +6340,13 @@ int main(int argc, char **argv)
             && ctx.CreatorCount() == 7
             && ctx.FindCreator("RT_ROW_TABLE_BLOCK")->GetType() == "RT_ROW_TABLE_BLOCK";
 
-        // 8. Диспетчеризация доходит до творца (базовые реализации → true).
+        // 8. Диспетчеризация доходит до творца. KRTTextItemCreator ТЕПЕРЬ рисует (реф.):
+        //    CreateBlock с nullptr-фреймом → false (ранний выход творца `if(!frame)`),
+        //    что как раз ДОКАЗЫВАЕТ, что диспетч. дошёл до реального творца, а не базовой
+        //    заглушки (та возвращала true). UpdateBlock не переопределён → заглушка → true.
         KReportTemplateItem item;
         item.m_strType = STR_RT_ELEMENT_TEXT_BLOCK;
-        const bool dispatchOk = ctx.CreateBlock(item.m_strType, &item, nullptr)
+        const bool dispatchOk = !ctx.CreateBlock(item.m_strType, &item, nullptr)
             && ctx.UpdateBlock("RT_WMS_BLOCK", &item, nullptr);
 
         qInfo() << "реестр 6:" << countOk << "| типы:" << textOk << imgOk << grpOk << subOk

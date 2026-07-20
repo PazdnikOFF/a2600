@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **96 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **97 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -585,12 +585,20 @@ KRTCreatorContext* m_pContext, +0x10 KReportTemplateDataNew* m_pData, +0x18 std:
 - `KRTCreatorContext::CreateBlock(type,item,QTextFrame*)` @0x5466e8 — ДИСПЕТЧЕР: m_creators.find(type),
   фолбэк на TEXT_BLOCK, `creator->CreateBlock(item, frame)` (виртуальный). ✅ (реестр/скелет
   KRTCreatorContext УЖЕ ЕСТЬ — коммит 730823e; нужен только render-путь).
-- `KRTTextItemCreator` — НЕ СОЗДАН, создать. Обёртка `CreateBlock(item*, QTextFrame*)` @0x53b8b0
-  строит QTextCursor/QTextCharFormat из item → `CreateBlock(KTextBlock const&, QTextCursor&)`
-  @0x53b3b0 рисует: QTextCharFormat (Bold→weight 0x4b, Italic, FontSize→**KScreenMng::
-  GetRatioTo1K()**×size, FontColor→QBrush), QTextBlockFormat (Alignment), item как QVariant-
-  property (registerNormalizedType "KTextBlock"), `cur.insertBlock(bf,cf); cur.insertText(FullText())`.
-  ⚠️ KScreenMng.
+- `KRTTextItemCreator` — ✅ СДЕЛАН (self-test `rttext`, в `app/src/report/KRTCreatorContext.cpp`).
+  Обёртка `CreateBlock(item*, QTextFrame*)` @0x53b8b0: KTextBlock + вложенный QTextFrame с
+  ElementId в property UserProperty+1 → рисующая `renderBlock(KTextBlock const&, QTextCursor&)`
+  @0x53b3b0: QTextCharFormat (Bold→setFontWeight(75), Italic, FontPointSize=Size×KScreenMng::
+  GetRatioTo1K, ForegroundBrush из FontColor), QTextBlockFormat (Alignment), insertBlock+
+  insertText(FullText); затем HideInvalidBlock(inner)+(frame). property-id (FontWeight 0x2003,
+  Italic 0x2004, PointSize 0x2001, Foreground 0x821, BlockAlign 0x1010, ElementId 0x100001)
+  сверены сырым asm — ставятся высокоуровневыми Qt-сеттерами. ✅ добавлены `KTextBlock::FontColor`
+  (@0x555030: styleAttr "FontColor"→setNamedColor, всегда true) и `KRTCreatorContext::
+  HideInvalidBlock` (@0x546168: setVisible(false) для пустых/невалидных блоков без keep-флага
+  UserProperty+2). ОТСТУПЛЕНИЕ (помечено): KTextBlock-как-QVariant-метатип в property
+  UserProperty(0x100000) опущен — round-trip-машинерия редактора, на визуал не влияет,
+  требует Q_DECLARE_METATYPE (добавить при Change*Selected). Тест rttext рисует блок в
+  QTextDocument и сверяет weight/italic/pointSize(18×1.333=24)/color/align/ElementId.
 - `KRTCreatorContext::GetFontSize` @0x547690/@0x547400 — QFont("Source Han Sans CN",16,0x32);
   без спец-конфига QGuiApplication::primaryScreen()->physicalDotsPerInch()+setPointSize; иначе
   attr FONTTYPE. ❌ экран/DPI — для min можно упростить до фикс-шрифта (пометить отступление).

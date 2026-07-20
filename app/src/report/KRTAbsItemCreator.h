@@ -10,6 +10,8 @@ class KRTCreatorContext;
 // метода допустима). Рендер появится в следующей итерации вместе с творцами.
 class QTextTableCell;
 class QTextFrame;
+class QTextCursor;
+class KTextBlock;
 
 // База иерархии «творцов» блоков отчёта (реф. KRTAbsItemCreator, sizeof 0x30).
 // Раскладка реф.: +0x00 vptr, +0x08 std::string m_strType (SSO-буфер @0x18),
@@ -54,6 +56,18 @@ class KRTTextItemCreator : public KRTAbsItemCreator
 {
 public:
     explicit KRTTextItemCreator(KRTCreatorContext &ctx);
+
+    // Реф. CreateBlock(item*, frame*) @0x53b8b0 — ОБЁРТКА: строит KTextBlock, вкладывает
+    // блок в отдельный QTextFrame (frame-формат несёт ElementId в property UserProperty+1),
+    // зовёт рисующую перегрузку, затем m_context.HideInvalidBlock(inner) и (frame).
+    bool CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame) override;
+
+private:
+    // Реф. CreateBlock(KTextBlock const&, QTextCursor&) @0x53b3b0 — РИСОВАНИЕ:
+    // QTextCharFormat (Bold→FontWeight 75, Italic, FontPointSize=Size×KScreenMng::
+    // GetRatioTo1K, ForegroundBrush из FontColor), QTextBlockFormat (Alignment),
+    // insertBlock + insertText(FullText). Имя наше (реф. — перегрузка CreateBlock).
+    bool renderBlock(const KTextBlock &block, QTextCursor &cur);
 };
 
 class KRTImageItemCreator : public KRTAbsItemCreator

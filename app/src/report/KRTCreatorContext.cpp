@@ -1,6 +1,18 @@
 #include "KRTCreatorContext.h"
 
 #include "KRTAbsItemCreator.h"
+#include "KTextBlock.h"
+#include "ui/KScreenMng.h"
+
+#include <QBrush>
+#include <QColor>
+#include <QFont>
+#include <QTextBlock>
+#include <QTextBlockFormat>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QTextFrame>
+#include <QTextFrameFormat>
 
 namespace report_template {
 const std::string STR_RT_ELEMENT_TEXT_BLOCK        = "RT_TEXT_BLOCK";
@@ -144,4 +156,91 @@ bool KRTCreatorContext::UpdateBlock(const std::string &type,
     // вместе с рендером; здесь — только диспетчеризация с TABLE-фолбэком.
     KRTAbsItemCreator *p = FindCreatorForUpdate(type);
     return p ? p->UpdateBlock(pItem, pFrame) : false;
+}
+
+void KRTCreatorContext::HideInvalidBlock(QTextFrame *pFrame)
+{
+    // Реф. @0x546168: скрыть пустые/невалидные блоки фрейма, кроме помеченных keep-флагом
+    // (property UserProperty+2). Скрытие — QTextBlock::setVisible(false) (drop из layout,
+    // без удаления/правки курсора). void.
+    if (!pFrame)
+        return;
+    const int keepProp = QTextFormat::UserProperty + 2;   // 0x100002
+    for (QTextFrame::iterator it = pFrame->begin(); it != pFrame->end(); ++it) {
+        QTextBlock b = it.currentBlock();
+        if (b.blockFormat().property(keepProp).toBool())
+            continue;                       // явно помечен «оставить»
+        if (!b.isValid())
+            b.setVisible(false);
+        if (b.text().isEmpty())
+            b.setVisible(false);
+    }
+}
+
+// --- KRTTextItemCreator: рендер текстового блока (реф. TU @0x53b330) ----------
+
+bool KRTTextItemCreator::CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame)
+{
+    // Реф. @0x53b8b0: обёртка. Вкладывает блок в отдельный QTextFrame, на frame-формат
+    // вешает ElementId (UserProperty+1) — по нему потом идёт выделение блока.
+    if (!pItem || !pFrame)
+        return false;
+
+    KTextBlock block(pItem, m_context.GetData(), /*hideKey=*/false);
+
+    QTextCursor cur = pFrame->lastCursorPosition();
+    cur.beginEditBlock();
+    QTextFrameFormat frameFmt = pFrame->frameFormat();
+    frameFmt.setProperty(QTextFormat::UserProperty + 1,          // 0x100001
+                         QVariant(block.ElementId()));
+    QTextFrame *inner = cur.insertFrame(frameFmt);
+    cur.endEditBlock();
+
+    QTextCursor innerCur = inner->lastCursorPosition();
+    const bool ok = renderBlock(block, innerCur);
+
+    // Спрятать пустые плейсхолдер-блоки внутреннего и внешнего фреймов.
+    m_context.HideInvalidBlock(inner);
+    m_context.HideInvalidBlock(pFrame);
+    return ok;
+}
+
+bool KRTTextItemCreator::renderBlock(const KTextBlock &block, QTextCursor &cur)
+{
+    // Реф. @0x53b3b0. Высокоуровневые Qt-сеттеры ставят РОВНО те property-id, что сверены
+    // дизасмом: setFontWeight→FontWeight(0x2003)=75, setFontItalic→FontItalic(0x2004),
+    // setFontPointSize→FontPointSize(0x2001), setForeground→ForegroundBrush(0x821),
+    // setAlignment→BlockAlignment(0x1010).
+    QTextCharFormat charFmt = cur.charFormat();
+    if (block.Bold())
+        charFmt.setFontWeight(QFont::Bold);        // 75
+    if (block.Italic())
+        charFmt.setFontItalic(true);
+
+    int sz = -1;
+    if (block.FontSize(sz)) {   // возвращает pt; 0 → размер не задан, пропуск
+        // Масштаб pt под фактический экран (реф. size×KScreenMng::GetRatioTo1K).
+        const double pt = static_cast<double>(sz) * KScreenMng::GetInstance()->GetRatioTo1K();
+        charFmt.setFontPointSize(pt);
+    }
+
+    QColor col;
+    if (block.FontColor(col) && col.isValid())     // FontColor всегда true → гейт по isValid
+        charFmt.setForeground(QBrush(col, Qt::SolidPattern));
+
+    QTextBlockFormat blockFmt = cur.blockFormat();
+    QFlags<Qt::AlignmentFlag> al = Qt::AlignLeft;
+    if (block.Alignment(al))                        // только если AlignH задан явно
+        blockFmt.setAlignment(al);
+
+    // ОТСТУПЛЕНИЕ ОТ РЕФ. (помечено): реф. дополнительно кладёт САМ KTextBlock в property
+    // UserProperty(0x100000) как QVariant-метатип "KTextBlock" — машинерия round-trip для
+    // редактора (retrieve блока из документа). На ВИЗУАЛЬНЫЙ рендер не влияет; требует
+    // Q_DECLARE_METATYPE(KTextBlock) — добавим при реализации Change*Selected/редактора.
+
+    cur.beginEditBlock();
+    cur.insertBlock(blockFmt, charFmt);
+    cur.insertText(block.FullText());
+    cur.endEditBlock();
+    return true;
 }

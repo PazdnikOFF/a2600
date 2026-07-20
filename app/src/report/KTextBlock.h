@@ -32,6 +32,7 @@ public:
     // Размер шрифта в pt из стиля (Size). Реф. далее масштабирует pt→px по DPI
     // (physicalDotsPerInch) — device-специфика рендера, здесь опущена (возврат pt).
     int  FontSize(int &out) const;
+    bool FontColor(QColor &out) const;                      // FontColor → setNamedColor (всегда true)
     bool Alignment(QFlags<Qt::AlignmentFlag> &out) const;   // AlignH → Left/Center/Right
     bool LineHeight(int n, int &out) const;                 // LineHeight1..5
 

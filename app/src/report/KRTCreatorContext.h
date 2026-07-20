@@ -72,6 +72,14 @@ public:
     bool UpdateBlock(const std::string &type, KReportTemplateItem *pItem,
                      QTextFrame *pFrame);
 
+    // Данные шаблона (реф. читается творцами как *(context+0x38)).
+    KReportTemplateDataNew *GetData() const { return m_pData; }
+
+    // Реф. HideInvalidBlock @0x546168: обход всех QTextBlock фрейма; блок с keep-флагом
+    // (property UserProperty+2 == true) остаётся; иначе setVisible(false), если блок
+    // невалиден ИЛИ его текст пуст. Прячет пустые/плейсхолдер-блоки творцов. void.
+    void HideInvalidBlock(QTextFrame *pFrame);
+
     // Для проверок: сколько типов зарегистрировано (реф. поля не имеет).
     std::size_t CreatorCount() const { return m_creators.size(); }
 
