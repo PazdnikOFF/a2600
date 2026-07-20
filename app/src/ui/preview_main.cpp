@@ -92,7 +92,7 @@ public:
 #include "report/KSysReportTempletControl.h"
 #include "report/KReportDataSource.h"
 #include "report/KReportDisplayParam.h"
-#include "report/KDocumentGenerator.h"
+#include "report/KReportHtmlGenerator.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -4896,7 +4896,7 @@ int main(int argc, char **argv)
         dsd.Build(ds, 4);
         KReportTemplateManager mgr;
         const auto items = mgr.LoadTemplate("NP-2x2");
-        KDocumentGenerator gen;
+        KReportHtmlGenerator gen;
         const QString html = gen.Generate(items, ds);
         const int imgCount = html.count("<img");
         // Проверить, что демо-снимки указывают на реальные DemoImage-ассеты.
@@ -4940,7 +4940,7 @@ int main(int argc, char **argv)
         // Генерация отчёта из РЕАЛЬНЫХ данных.
         KReportTemplateManager mgr;
         const auto items = mgr.LoadTemplate("NP-2x2");
-        KDocumentGenerator gen;
+        KReportHtmlGenerator gen;
         const QString html = gen.Generate(items, ds);
 
         qInfo() << "датасорс собран:" << built
@@ -4977,7 +4977,7 @@ int main(int argc, char **argv)
             ds.SetImage(i, QString("/data/exam/A0001/%1.jpeg").arg(i),
                         QString("Mark%1").arg(i));
 
-        KDocumentGenerator gen;
+        KReportHtmlGenerator gen;
         const QString html = gen.Generate(items, ds);
         const QString outHtml = outFile.isEmpty() ? "/tmp/endo_report.html" : outFile;
         { QFile hf(outHtml); if (hf.open(QIODevice::WriteOnly)) hf.write(html.toUtf8()); }

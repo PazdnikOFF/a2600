@@ -1,11 +1,11 @@
-#include "report/KDocumentGenerator.h"
+#include "report/KReportHtmlGenerator.h"
 #include "report/KReportTemplate.h"
 #include "report/KReportDataSource.h"
 
 #include <QTextDocument>   // Qt::escape → Qt5: QString::toHtmlEscaped
 #include <QStringList>
 
-QString KDocumentGenerator::Generate(const QVector<ReportItem> &items,
+QString KReportHtmlGenerator::Generate(const QVector<ReportItem> &items,
                                      const KReportDataSource &ds) const
 {
     QString body;
@@ -14,7 +14,7 @@ QString KDocumentGenerator::Generate(const QVector<ReportItem> &items,
     return QStringLiteral("<html><body>\n") + body + QStringLiteral("</body></html>\n");
 }
 
-void KDocumentGenerator::renderItem(const ReportItem &it, const KReportDataSource &ds,
+void KReportHtmlGenerator::renderItem(const ReportItem &it, const KReportDataSource &ds,
                                     QString &out, int depth) const
 {
     const QString pad(depth * 2, ' ');

@@ -7,7 +7,7 @@ class KReportDataSource;
 // Реальный источник данных отчёта (реф. KRTDataSourceReal : KRTAbsDataSource, X-2600).
 // Заполняет KReportDataSource данными из БД: пациент (KEntityManage), осмотр
 // (KEntityExam), содержимое отчёта (KEntityReport) → поля RT_DATASOURCE_PATIENT.
-// В отличие от demo-источника, тянет живые записи. Далее KDocumentGenerator
+// В отличие от demo-источника, тянет живые записи. Далее KReportHtmlGenerator
 // строит документ из этих данных.
 class KRTDataSourceReal
 {

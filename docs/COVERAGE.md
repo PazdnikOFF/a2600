@@ -43,7 +43,7 @@
 | Класс | Домен | Методов | Конфиги | Заметка |
 |---|---|---:|---|---|
 | `KTemplateEditDocument` | REPORT | 38 | — | ❌ МЁРТВЫЙ КОД — 0 вызывающих; живой аналог KDocumentGenerator (12 вызывающих). См. PROGRESS §10 |
-| `KDocumentGenerator` | REPORT | 31 | — | есть заголовок, но свой API — сверить имена |
+| `KDocumentGenerator` | REPORT | 31 | — | не начат |
 | `KUpdateAction` | UPDATE | 16 | — | не начат |
 | `KDataOprEventDeal` | DB | 16 | — | не начат |
 | `KEntityManage` | DB | 15 | — | есть заголовок, но свой API — сверить имена |
@@ -119,9 +119,9 @@
 оценка**. Там, где мы сознательно переосмыслили API (свои имена вместо оригинальных),
 метрика показывает 0 при фактически рабочем коде:
 
-- **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
+- **Свой API при наличии класса-референса (7):** `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
 
-- **Наши абстракции без класса-референса (22):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `yxyDES2`
+- **Наши абстракции без класса-референса (23):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KRemoteSwitchConfig`, `KReportDataSource`, `KReportHtmlGenerator`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 
