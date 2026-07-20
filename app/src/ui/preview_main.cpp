@@ -100,11 +100,14 @@ public:
 #include "ui/KScreenMng.h"
 #include "video/KMessageManager.h"
 
+#include <QDir>
 #include <QFont>
+#include <QImage>
 #include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextDocument>
 #include <QTextFrame>
+#include <QTextImageFormat>
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -6077,6 +6080,71 @@ int main(int argc, char **argv)
             && colorOk && alignOk && elemIdOk;
         qInfo() << (ok ? "rttext: PASS" : "rttext: FAIL");
         return ok ? 0 : 70;
+    }
+
+    // Self-test творца блока изображения (реф. KRTImageItemCreator @0x535bd0). Рисует
+    // KImageBlock в QTextDocument; путь картинки подставлен через RegisterPicPath (замена
+    // .bss-кэша прошивки). Проверяет вставку QTextImageFormat и гейт при отсутствии файла.
+    if (screen == "rtimage") {
+        // Тестовый PNG на диске (нужен реальный файл — KImageBlock::Url делает QImage(path)).
+        const QString imgPath = QDir::tempPath() + "/a2600_rtimage_test.png";
+        QImage testImg(10, 8, QImage::Format_RGB32);
+        testImg.fill(Qt::blue);
+        const bool savedOk = testImg.save(imgPath, "PNG");
+
+        KReportTemplateDataNew data;
+        KReportTemplateItem item;
+        item.m_strID = "/RT_IMAGE"; item.m_strName = "RT_IMAGE";
+        item.m_strType = "RT_IMAGE_BLOCK";
+        item.m_strDataSrc = "src,IMGKEY";           // последний токен = ключ картинки
+        data.m_lstItems.push_back(item);
+        KReportTemplateItemConfig cfg;
+        cfg.m_strName = "/RT_IMAGE";
+        cfg.m_mapAttrs["ImageWidth"]  = "160";
+        cfg.m_mapAttrs["ImageHeight"] = "120";
+        cfg.m_mapAttrs["AlignH"]      = "Center";
+        data.m_mapItemConfigs["/RT_IMAGE"] = cfg;
+
+        KRTCreatorContext ctx(&data);
+
+        auto findImage = [](QTextDocument &d, QTextImageFormat &out) -> bool {
+            for (QTextBlock b = d.begin(); b.isValid(); b = b.next())
+                for (QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it) {
+                    QTextCharFormat cf = it.fragment().charFormat();
+                    if (cf.isImageFormat()) { out = cf.toImageFormat(); return true; }
+                }
+            return false;
+        };
+
+        // 1. Валидный файл → изображение вставлено с ImageName/Width/Height.
+        KImageBlock::ClearPicMap();
+        KImageBlock::RegisterPicPath("IMGKEY", imgPath.toStdString());
+        QTextDocument doc; QTextFrame *root = doc.rootFrame();
+        const bool created = ctx.CreateBlock("RT_IMAGE_BLOCK", &data.m_lstItems.front(), root);
+        QTextImageFormat imf;
+        const bool found = findImage(doc, imf);
+        const bool imgOk = created && found
+            && imf.name() == imgPath
+            && qFuzzyCompare(imf.width(), 160.0)
+            && qFuzzyCompare(imf.height(), 120.0);
+
+        // 2. Гейт: путь есть, но файл не существует → valid=false → изображение НЕ вставлено.
+        KImageBlock::ClearPicMap();
+        KImageBlock::RegisterPicPath("IMGKEY", "/nonexistent/nope_a2600.png");
+        QTextDocument doc2; QTextFrame *root2 = doc2.rootFrame();
+        ctx.CreateBlock("RT_IMAGE_BLOCK", &data.m_lstItems.front(), root2);
+        QTextImageFormat imf2;
+        const bool gateOk = !findImage(doc2, imf2);   // ничего не вставлено
+
+        KImageBlock::ClearPicMap();
+
+        qInfo() << "rtimage: saved:" << savedOk << "created:" << created
+                << "img(name/w/h):" << imgOk << imf.name() << imf.width() << imf.height()
+                << "| gate(no file):" << gateOk;
+
+        const bool ok = savedOk && imgOk && gateOk;
+        qInfo() << (ok ? "rtimage: PASS" : "rtimage: FAIL");
+        return ok ? 0 : 72;
     }
 
     // Self-test построителя документа отчёта (реф. KDocumentGenerator::InitDocument @0x53e108

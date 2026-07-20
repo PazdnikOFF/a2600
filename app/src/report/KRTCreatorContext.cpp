@@ -2,6 +2,7 @@
 
 #include "KRTAbsItemCreator.h"
 #include "KTextBlock.h"
+#include "KImageBlock.h"
 #include "KMeaStringUtil.h"
 #include "ui/KScreenMng.h"
 
@@ -18,6 +19,7 @@
 #include <QTextCursor>
 #include <QTextFrame>
 #include <QTextFrameFormat>
+#include <QTextImageFormat>
 
 namespace report_template {
 const std::string STR_RT_ELEMENT_TEXT_BLOCK        = "RT_TEXT_BLOCK";
@@ -311,6 +313,70 @@ bool KRTTextItemCreator::renderBlock(const KTextBlock &block, QTextCursor &cur)
     cur.beginEditBlock();
     cur.insertBlock(blockFmt, charFmt);
     cur.insertText(block.FullText());
+    cur.endEditBlock();
+    return true;
+}
+
+// --- KRTImageItemCreator: рендер блока одиночного изображения (реф. TU @0x535bd0) --------
+
+bool KRTImageItemCreator::CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame)
+{
+    // Реф. @0x536240: обёртка, как у текста. ElementId у KImageBlock и KTableBlock — один и
+    // тот же item->m_strID, берём у модели изображения (KTableBlock не тянем).
+    if (!pItem || !pFrame)
+        return false;
+
+    KImageBlock img(pItem, m_context.GetData());
+
+    QTextCursor cur = pFrame->lastCursorPosition();
+    cur.beginEditBlock();
+    QTextFrameFormat frameFmt = pFrame->frameFormat();
+    frameFmt.setProperty(QTextFormat::UserProperty + 1, QVariant(img.ElementId()));  // 0x100001
+    QTextFrame *inner = cur.insertFrame(frameFmt);
+    cur.endEditBlock();
+
+    QTextCursor innerCur = inner->lastCursorPosition();
+    const bool ok = renderImage(img, innerCur);
+
+    m_context.HideInvalidBlock(inner);
+    m_context.HideInvalidBlock(pFrame);
+    return ok;
+}
+
+bool KRTImageItemCreator::renderImage(const KImageBlock &img, QTextCursor &cur)
+{
+    // Реф. @0x535c40. ГЕЙТ: файл картинки не загрузился → НИЧЕГО не вставляется (пустой
+    // блок затем прячет HideInvalidBlock). Так off-device без картинок отчёт не падает.
+    bool valid = false;
+    const QString url = img.Url(valid);
+    if (!valid)
+        return true;
+
+    QTextImageFormat fmt;
+    fmt.setName(url);                              // ImageName 0x5000
+    if (img.Heigth() > 0)                          // "Heigth" — опечатка реф., сохранена
+        fmt.setHeight(img.Heigth());               // ImageHeight 0x5011
+    if (img.Width() > 0)
+        fmt.setWidth(img.Width());                 // ImageWidth 0x5010
+    // Масштаб GetRatioTo1K НЕ применяется — размеры уже в device-px (в отличие от текста).
+
+    QTextBlockFormat bfmt;
+    // Выравнивание (реф. immediate-флаги; ЛЕВО/ПРАВО добавляют VCenter, ЦЕНТР — нет).
+    const std::string a = img.GetAlign();
+    if (a == "Left")
+        bfmt.setAlignment(Qt::AlignVCenter | Qt::AlignLeft);    // 0x81
+    else if (a == "Center")
+        bfmt.setAlignment(Qt::AlignHCenter);                    // 0x04
+    else if (a == "Right")
+        bfmt.setAlignment(Qt::AlignVCenter | Qt::AlignRight);   // 0x82
+    // нет совпадения → align не ставится (реф.)
+    // Keep-маркер: image-блок НЕ прячется HideInvalidBlock (символ-замена «пуст» по тексту).
+    bfmt.setProperty(QTextFormat::UserProperty + 2, QVariant(true));   // 0x100002
+
+    cur.setBlockFormat(bfmt);
+    cur.beginEditBlock();
+    cur.insertBlock(bfmt);
+    cur.insertImage(fmt);
     cur.endEditBlock();
     return true;
 }

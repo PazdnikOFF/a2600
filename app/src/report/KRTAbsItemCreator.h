@@ -12,6 +12,7 @@ class QTextTableCell;
 class QTextFrame;
 class QTextCursor;
 class KTextBlock;
+class KImageBlock;
 
 // База иерархии «творцов» блоков отчёта (реф. KRTAbsItemCreator, sizeof 0x30).
 // Раскладка реф.: +0x00 vptr, +0x08 std::string m_strType (SSO-буфер @0x18),
@@ -74,6 +75,20 @@ class KRTImageItemCreator : public KRTAbsItemCreator
 {
 public:
     explicit KRTImageItemCreator(KRTCreatorContext &ctx);
+
+    // Реф. CreateBlock(item*, frame*) @0x536240 — обёртка: KImageBlock + вложенный QTextFrame
+    // с ElementId, рисование, HideInvalidBlock. (В прошивке KRTImageItemCreator наследует
+    // KRTTableItemCreator и строит внешний фрейм через KTableBlock; у нас иерархия уплощена,
+    // фрейм-формат берём как у текста + ElementId — на визуал min-рендера не влияет.)
+    bool CreateBlock(KReportTemplateItem *pItem, QTextFrame *pFrame) override;
+
+private:
+    // Реф. CreateBlock(item*, QTextCursor&) @0x535c40 — РИСОВАНИЕ: если Url невалиден (файла
+    // нет) — НИЧЕГО не вставляет (пустой блок спрячет HideInvalidBlock); иначе QTextImageFormat
+    // (ImageName=url, ImageWidth/Height если >0) + QTextBlockFormat (Alignment + keep-маркер
+    // UserProperty+2), insertBlock + insertImage. Масштаб GetRatioTo1K НЕ применяется (размеры
+    // уже в device-px). Имя наше.
+    bool renderImage(const KImageBlock &img, QTextCursor &cur);
 };
 
 class KRTImageGroupCreator : public KRTAbsItemCreator

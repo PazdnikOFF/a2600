@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **98 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **99 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -577,8 +577,22 @@ end-to-end** (self-test `initdoc`, класс **16/33 = 48%**). `GetTextDocument
 pt×physicalDotsPerInch/150)), item-ветки FontType/стиль-по-типу (RT_TITLE_TABLE_BLOCK→
 FourthTitle, RT_TEXT_BLOCK→ReportText). ОТСТУПЛЕНИЕ (помечено): InsertBlockLineAfterItem —
 документированный no-op (выравнивание футера по низу; тянет FindFrameOrCell + метрики
-QTextDocumentLayout), на контент не влияет. Творцы Image/Table/SubData и Change*Selected/
-Move*/UpdateBlock (Qt-редактор) — следующие UI-заходы.
+QTextDocumentLayout), на контент не влияет. Change*Selected/Move*/UpdateBlock (Qt-редактор) — следующие UI-заходы.
+
+**✅ ТВОРЕЦ ИЗОБРАЖЕНИЯ (итерация 6): `KRTImageItemCreator`** (self-test `rtimage`,
+`app/src/report/KRTCreatorContext.cpp`). Модель `KImageBlock` уже была. Обёртка
+CreateBlock(item*,frame*) @0x536240 — как у текста (вложенный фрейм + ElementId), рисующая
+renderImage @0x535c40: `KImageBlock::Url(valid)` — если файл не загрузился (valid=false) →
+НИЧЕГО не вставляется (пустой блок прячет HideInvalidBlock, off-device без картинок не падает);
+иначе QTextImageFormat (setName=url [ImageName 0x5000], setWidth/Height если >0 [0x5010/0x5011])
++ QTextBlockFormat (Alignment: Left→VCenter|Left 0x81, Center→HCenter 0x04, Right→VCenter|Right
+0x82 — LEFT/RIGHT добавляют VCenter, CENTER нет; keep-маркер UserProperty+2), insertBlock+
+insertImage. GetRatioTo1K НЕ применяется (размеры в device-px). Тест: RegisterPicPath(source→
+PNG) → изображение вставлено (name/160/120); несуществующий файл → гейт (не вставлено).
+⚠ В прошивке KRTImageItemCreator наследует KRTTableItemCreator (child-frame таблицы); у нас
+иерархия уплощена — фрейм-формат как у текста + ElementId (на визуал min не влияет).
+ОСТАЛОСЬ по творцам: Table/TitleTable (KRTTableItemCreator, QTextTable), SubData
+(KRTSubDataItemCreator), ImageGroup (KRTImageGroupCreator, сетка).
 
 **ОСТАВШАЯСЯ разведка (для истории; каркас уже закрыт выше):**
 
