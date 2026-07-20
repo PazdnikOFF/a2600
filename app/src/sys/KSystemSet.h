@@ -17,6 +17,12 @@ public:
 
     // Общие (реф. Common/*)
     QString Language() const;               void SetLanguage(const QString &v);
+    // Реф. GetSystemLanguage @0x65e5c8 / SetSystemLanguage @0x65fe88 — это ЦЕЛОЕ
+    // (enum), хранимое под тем же ключом Common/Language, а НЕ строка:
+    //   0=Chinese 1=English 2=Spanish 3=Italian 4=French 5=Russian 6=German 7=Polish
+    // ⚠️ Геттер КЛАМПИТ: если значение < 0 или >= KProjectSet::LanguageMode(),
+    // возвращается 1 (English) как запасной вариант.
+    int  GetSystemLanguage() const;         void SetSystemLanguage(int v);
     QString DateFormat() const;             void SetDateFormat(const QString &v);
     QString InputMethod() const;            void SetInputMethod(const QString &v);
 

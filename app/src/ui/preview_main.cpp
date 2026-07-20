@@ -140,6 +140,8 @@ public:
 #include "endo/KCamera.h"
 #include "ui/KLcdProxy.h"
 #include "ui/KUiMsgProxy.h"
+#include "sys/KUserOsdSet.h"
+#include "sys/KSystemSet.h"
 #include <cstring>
 #include <cmath>
 #include "sys/KTimeInfo.h"
@@ -7369,6 +7371,26 @@ int main(int argc, char **argv)
         const bool gainLongGateOk = KUiMsgProxy::TakeSent().isEmpty();
         KSystemStatus::GetInstance().SetPanelType(0);
 
+        // 14. ИСПРАВЛЕНО: ключи 0x213-0x218 обязаны идти через FunctionIdToIndex
+        //     (панель ждёт ПОЗИЦИЮ в списке функций, а не сырой ID).
+        const bool f2iOk = KUserOsdSet::FunctionIdToIndex(0) == 0
+                        && KUserOsdSet::FunctionIdToIndex(11) == 11
+                        && KUserOsdSet::FunctionIdToIndex(12) == 0
+                        && KUserOsdSet::FunctionIdToIndex(-1) == 0;
+        const int v213 = lp->GetKeyStatus(0x213);
+        const bool idxRangeOk = v213 >= 0 && v213 <= 11;
+
+        // 15. Язык: реф. отдаёт ЦЕЛОЕ-энум с клампом в 1 (English).
+        KSystemSet::GetInstance().SetSystemLanguage(5);
+        const bool langOk = lp->GetKeyStatus(0x101) == 5;
+        KSystemSet::GetInstance().SetSystemLanguage(-3);
+        const bool langClampOk = lp->GetKeyStatus(0x101) == 1;
+        KSystemSet::GetInstance().SetSystemLanguage(1);
+
+        qInfo() << "FunctionIdToIndex (>11/отриц. -> 0):" << f2iOk
+                << "| 0x213 отдаёт индекс:" << idxRangeOk << v213
+                << "| язык enum/кламп:" << langOk << langClampOk;
+
         qInfo() << "коды dispatch: freeze=9:" << code9Ok << "imgenh=12:" << code12Ok
                 << "tone255:" << tone255Ok << "colorR=26/0:" << code26Ok
                 << "colorC idx2:" << colCOk;
@@ -7400,7 +7422,8 @@ int main(int argc, char **argv)
                      && ledOk && opmOk && bypassOk && noBypassOk && dateOk
                      && code9Ok && code12Ok && tone255Ok && code26Ok && colCOk
                      && resetCodeOk && cancelCodeOk && powerOk && saveCodeOk
-                     && remoteCodeOk && noDispatch1 && gainShortOk && gainLongGateOk;
+                     && remoteCodeOk && noDispatch1 && gainShortOk && gainLongGateOk
+                     && f2iOk && idxRangeOk && langOk && langClampOk;
         qInfo() << (ok ? "lcdproxy: PASS" : "lcdproxy: FAIL");
         return ok ? 0 : 65;
     }

@@ -157,15 +157,25 @@ int KLcdProxy::GetKeyStatus(quint16 usKey)
     case 0x104:
         return GetEndoScope()->GetEndoShapeType() != 0 ? 0xFFFE : 0;
 
+    case 0x101:
+        // ⚠️ Реф. отдаёт ЦЕЛОЕ-энум (0=Chinese, 1=English, ... 7=Polish)
+        // с клампом в 1, а не строку.
+        return KSystemSet::GetInstance().GetSystemLanguage();
+
     // Назначения функций кнопкам ручки эндоскопа (плоский индекс 0..5,
     // = button*2 + press, A=0/B=1/M=2, Long=0/Short=1).
+    // ⚠️ ИСПРАВЛЕНО: результат ОБЯЗАН проходить через FunctionIdToIndex —
+    // панель ждёт ПОЗИЦИЮ в списке функций, а не сам ID. В первой версии
+    // возвращался сырой ID, это была ошибка.
     case 0x213: case 0x214: case 0x215: case 0x216:
-        return KUserOsdSet::GetInstance().GetButtonFunctionId(int(usKey) - 0x213);
+        return KUserOsdSet::FunctionIdToIndex(
+            KUserOsdSet::GetInstance().GetButtonFunctionId(int(usKey) - 0x213));
     // ⚠️ 0x217 (индекс 4 = ButtomM/LongPress) НАМЕРЕННО пропущен: этот слот
     // конфига write-only и читателем osd.ini никогда не заполняется.
     case 0x217: return 0;
     case 0x218:
-        return KUserOsdSet::GetInstance().GetButtonFunctionId(5);
+        return KUserOsdSet::FunctionIdToIndex(
+            KUserOsdSet::GetInstance().GetButtonFunctionId(5));
 
     // ⚠️ КЛЮЧИ, ИСТОЧНИКОВ КОТОРЫХ У НАС ПОКА НЕТ, — падают в дефолт 0
     // (совпадает с поведением реф. для неизвестного ключа, но НЕ с его
@@ -175,8 +185,6 @@ int KLcdProxy::GetKeyStatus(quint16 usKey)
     //   0x07, 0x08 — KVideoParam Iris/Tone (у нас IrisMode есть в KVideoParam,
     //                но KVideoSet-обёртки нет);
     //   0x19       — DemoireStatus (есть в KVideoParam, нет в KVideoSet);
-    //   0x101      — KSystemSet::GetSystemLanguage (у нас Language() -> QString,
-    //                а реф. отдаёт enum-индекс: соответствие НЕ УСТАНОВЛЕНО);
     //   0x103      — KColdLightConfig::GetUserVLSConfig;
     //   0x105/0x106 — GetResolutionType / GetSaveVideoSplit;
     //   0x201-0x203 — режим-зависимые Color R/B/C;

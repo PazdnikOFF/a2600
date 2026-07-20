@@ -27,6 +27,18 @@ QStringList KUserOsdSet::GetFunctionNameList()
             "TR_Brtnss+", "TR_Brtnss-", "TR_Ctrst", "TR_WBalance", "TR_LMode", "TR_Rcd"};
 }
 
+int KUserOsdSet::FunctionIdToIndex(int funcId)
+{
+    if (funcId < 0)
+        return 0;               // отступление: реф. читал бы за границей
+    if (funcId > 11)
+        return 0;               // реф.: > 11 -> 0
+    const QStringList all = GetFunctionNameList();
+    const QString name = GetFunctionName(funcId);
+    const int idx = all.indexOf(name);
+    return idx < 0 ? 0 : idx;   // промах -> 0
+}
+
 QString KUserOsdSet::GetFunctionName(int funcId)
 {
     const QStringList l = GetFunctionNameList();

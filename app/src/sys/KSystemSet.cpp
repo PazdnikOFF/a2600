@@ -1,4 +1,6 @@
 #include "sys/KSystemSet.h"
+
+#include "sys/KProjectSet.h"
 #include "sys/KSystem.h"
 
 #include <QSettings>
@@ -92,3 +94,21 @@ void KSystemSet::SetManuLicenseKey(int code)
 }
 
 QString KSystemSet::GetProcessorSN() const { return read("Common/ProcessorSN", "").toString(); }
+
+int KSystemSet::GetSystemLanguage() const
+{
+    // Реф.: сырое целое из Common/Language с клампом в 1 (English).
+    bool ok = false;
+    const int v = read("Common/Language", 1).toInt(&ok);
+    if (!ok)
+        return 1;
+    const int mode = KProjectSet::GetInstance().LanguageMode();
+    if (v < 0 || (mode > 0 && v >= mode))
+        return 1;
+    return v;
+}
+
+void KSystemSet::SetSystemLanguage(int v)
+{
+    write("Common/Language", v);
+}

@@ -597,10 +597,31 @@ OpenOrCloseVersionDialog/EndoInfoDialog (PanelKeyVersion/EndoInfo), FileView.
 Выборка кодов покрыта self-test `lcdproxy`. ⚠️ БЫЛА ОШИБКА В МОЕЙ ПЕРВОЙ ГЕНЕРАЦИИ:
 Remote-кнопки сгенерировал как 2-арг, а они 3-арг (43, код, param) — как ножные;
 исправлено, поймано тестом.
+**✅ ДОЗАКРЫТО (13-я итерация):**
+- **ИСПРАВЛЕНА МОЯ ОШИБКА:** ключи 0x213-0x218 возвращали СЫРОЙ ID функции, а реф.
+  оборачивает результат в **`FunctionIdToIndex`** — панель ждёт ПОЗИЦИЮ в списке
+  функций, а не идентификатор. Добавлен `KUserOsdSet::FunctionIdToIndex`
+  (реф. @0x403e60: funcId > 11 -> 0, промах по списку -> 0; отрицательный в реф.
+  читает за границей — у нас отсекается). Покрыто тестом.
+- **Ключ 0x101 заработал:** добавлены `KSystemSet::GetSystemLanguage/SetSystemLanguage`.
+  Это ЦЕЛОЕ-энум под тем же ключом `Common/Language`, а не строка:
+  **0=Chinese 1=English 2=Spanish 3=Italian 4=French 5=Russian 6=German 7=Polish**;
+  геттер КЛАМПИТ в 1 (English) при значении < 0 или >= KProjectSet::LanguageMode().
+- **Режим `lcdproxy` перенесён в TMP_MODES** в `tools/selftest.sh`: он теперь ПИШЕТ
+  конфиг (SetSystemLanguage), а значит обязан работать во временном ENDO_ROOT.
+  Поймано регрессией (89/89 → 88/89 и обратно) — ровно тот случай, о котором
+  предупреждает §4: пишущие режимы нельзя пускать по прошивке.
 **ОСТАЛОСЬ (честный остаток):**
-- **GetKeyStatus покрывает не все ключи**: 0x00/0x01/0x07/0x08/0x19/0x101/0x103/
+- **GetKeyStatus покрывает не все ключи**: 0x00/0x01/0x07/0x08/0x19/0x103/
   0x105/0x106/0x201-0x20C/0x20D-0x212 падают в дефолт 0, потому что у нас ещё нет
-  источников. Нужно добавить: `KVideoSet::{GetImgEnhValue,GetColorEnhValue,GetZoomValue}`,
+  источников. Точные реф.-выражения для КАЖДОГО выверены дизасмом и записаны в
+  коде GetKeyStatus — осталось добавить аксессоры.
+  ⚠️ **СТРУКТУРНОЕ РАСХОЖДЕНИЕ, ТРЕБУЕТ ОТДЕЛЬНОГО ЗАХОДА:** наш `_KUserConf`
+  (`sys/KUserSet.h`) хранит btnA/B/M Long/Short + footSwitch1/2, а реф. `KUserSet`
+  оперирует ПЛОСКИМ массивом `RemoteSwitch/Switch1..4` (+0x00..+0x0c) и
+  `FootSwitch/Switch1..2` (+0x10/+0x14) — это, похоже, РАЗНЫЕ наборы (кнопки ручки
+  живут в KUserOsdSet). Пока НЕ трогаю: нужен точечный реверс, чтобы не сломать
+  рабочий `userset`. Нужно добавить: `KVideoSet::{GetImgEnhValue,GetColorEnhValue,GetZoomValue}`,
   `KSystemSet::{GetSystemLanguage,GetCornerShape,GetResolutionType,GetSaveVideoSplit}`,
   `KColdLightConfig::GetUserVLSConfig`, `KUserSet::{GetButtonFunctionId,GetPedalFunctionId,
   FunctionIdToIndex}`, `KUserOsdSet::FunctionIdToIndex`. Список в коде.

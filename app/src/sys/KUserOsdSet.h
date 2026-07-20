@@ -44,6 +44,12 @@ public:
     static QStringList GetFunctionNameList();
     // TR-ключ функции по ID ("" вне диапазона).
     static QString GetFunctionName(int funcId);
+    // Реф. FunctionIdToIndex @0x403e60: ID функции -> ПОЗИЦИЯ в текущем
+    // (возможно, отфильтрованном) списке функций.
+    // ⚠️ funcId > 11 -> 0; промах по списку или пустой список -> тоже 0.
+    // ⚠️ Реф. пропускает ОТРИЦАТЕЛЬНЫЙ funcId (знаковое сравнение) и читает
+    // за границей таблицы — у нас отрицательные отсекаются (отступление).
+    static int FunctionIdToIndex(int funcId);
 
     // Кнопка → ID функции (реф. GetButtonFunctionId): [Buttom<X>]/<Short|Long>Press.
     int  GetButtonFunctionId(Button btn, Press press) const;
