@@ -136,6 +136,8 @@ public:
 #include "sys/KSmallLangTranslate.h"
 #include "sys/KKey2Name.h"
 #include "ctrl/K3ADimming.h"
+#include "endo/KEndoScope.h"
+#include <cstring>
 #include <cmath>
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
@@ -6854,6 +6856,215 @@ int main(int argc, char **argv)
                      && dupRowOk && alcTblOk && validOk && presetAutoOk && presetOahOk
                      && otherOk;
         qInfo() << (ok ? "dimming: PASS" : "dimming: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "endoscope") {
+        // Реф. KEndoScope — разбор EEPROM/CID эндоскопа. Ввода-вывода класс НЕ
+        // делает: байты приходят параметром, наружу идут Qt-сигналы.
+        auto *es = GetEndoScope();
+
+        // 1. Карты серий (извлечены tools/gen_endoscope.py). Промах → ПУСТАЯ строка.
+        const auto &sm = KEndoScope::GetEndoSeriesMap();
+        const bool mapOk = sm.size() == 40
+                        && sm.value("EG-2200") == "923" && sm.value("EG-430") == "748"
+                        && sm.value("EG-430L") == "749" && sm.value("EC-430L/T") == "753"
+                        && sm.value("ED-5GT") == "901"  && sm.value("V-10L") == "936"
+                        && sm.value("V-10M") == "937"   && sm.value("V-10S") == "938"
+                        && sm.value("ENL-X20S") == "981"
+                        && sm.value("нет-такой").isEmpty();
+        const auto &wh = KEndoScope::GetEndoSeriesMapWuHan();
+        const bool wuhanOk = wh.size() == 1 && wh.value("ED-5GT") == "NJE";
+
+        // 2. Полярности (все три выверены дизасмом): вхождение ⇒ TRUE,
+        //    сравнение ТОЧНОЕ и РЕГИСТРОЗАВИСИМОЕ.
+        const bool superOk = KEndoScope::IsSuperfineEndo("EUC-X20S")
+                          && KEndoScope::IsSuperfineEndo("ENL-X20S")
+                          && !KEndoScope::IsSuperfineEndo("EG-500")
+                          && !KEndoScope::IsSuperfineEndo("euc-x20s")   // регистр
+                          && !KEndoScope::IsSuperfineEndo("ECH-110");   // НЕ в списке
+        const bool chanOk = KEndoScope::IsEndoHasChannel("ENL-110S")
+                         && KEndoScope::IsEndoHasChannel("ENL-X20")
+                         && !KEndoScope::IsEndoHasChannel("EG-500");
+        // Имя лжёт: это поиск подстроки "430", а не суффикса.
+        const bool sufOk = KEndoScope::IsEndoModelHaveSuffix("EC-430L")
+                        && !KEndoScope::IsEndoModelHaveSuffix("EG-500");
+
+        // 3. IsVideoCalReveral: подстроки "430"/"500" + ПОЛНОЕ равенство "ED-5GT".
+        es->EndoInfo()->sModel = "EC-430L";
+        const bool rev1 = es->IsVideoCalReveral();
+        es->EndoInfo()->sModel = "EG-500L";
+        const bool rev2 = es->IsVideoCalReveral();
+        es->EndoInfo()->sModel = "ED-5GT";
+        const bool rev3 = es->IsVideoCalReveral();
+        es->EndoInfo()->sModel = "EG-X20";
+        const bool rev4 = !es->IsVideoCalReveral();
+        // "ED-5GT" именно РАВЕНСТВО: расширенная строка уже не подойдёт.
+        es->EndoInfo()->sModel = "ED-5GTX";
+        const bool rev5 = !es->IsVideoCalReveral();
+        const bool revOk = rev1 && rev2 && rev3 && rev4 && rev5;
+
+        // 4. Контрольная сумма CID — НЕ CRC, а бегущий XOR по 0x00..0x7e.
+        unsigned char cid[128] = {};
+        for (int i = 0; i < 0x7f; ++i) cid[i] = (unsigned char)(i * 7 + 3);
+        unsigned char x = 0;
+        for (int i = 0; i <= 0x7e; ++i) x ^= cid[i];
+        const bool crcOk = KEndoScope::makeCRC4Endo(cid) == x;
+        unsigned char zero[128] = {};
+        const bool crcZeroOk = KEndoScope::makeCRC4Endo(zero) == 0;
+
+        // 5. Разбор CID: смещения полей + квирк «модель НЕ заполняется».
+        unsigned char rec[128] = {};
+        memcpy(rec + 0x00, "  EG-500L  ", 11);
+        memcpy(rec + 0x10, "ID12345", 7);
+        rec[0x1c] = 0x11; rec[0x1d] = 0x22; rec[0x1e] = 0x33; rec[0x1f] = 0x44;
+        rec[0x20] = 0x34; rec[0x21] = 0x12;         // LE → 0x1234
+        memcpy(rec + 0x22, "20260720", 8);
+        memcpy(rec + 0x2a, "CONTRACT-9", 10);
+        memcpy(rec + 0x3a, "hello", 5);
+        rec[0x76] = 2;
+        es->EndoInfo()->sModel = "ПРЕЖНЯЯ";
+        es->ExtractEndoinfoFromdata(rec);
+        const auto *ei = es->EndoInfo();
+        const bool cidOk = ei->sEndoID == "ID12345"
+                        && ei->b10 == 0x11 && ei->b13 == 0x44
+                        && ei->u30 == 0x1234
+                        && ei->sWarrantyDate == "20260720"
+                        && ei->sServerContract == "CONTRACT-9"
+                        && ei->sComment == "hello"
+                        && ei->nGlassType == 2;
+        // КВИРК: модель ОЧИЩЕНА и НЕ заполнена из данных.
+        const bool modelQuirkOk = ei->sModel.isEmpty();
+
+        // 6. Фиксированные параметры: биты флагов управляют полями.
+        unsigned char page[64] = {};
+        auto put32 = [&page](int o, unsigned v) {
+            page[o] = v & 0xFF; page[o+1] = (v >> 8) & 0xFF;
+            page[o+2] = (v >> 16) & 0xFF; page[o+3] = (v >> 24) & 0xFF;
+        };
+        auto put16 = [&page](int o, unsigned v) {
+            page[o] = v & 0xFF; page[o+1] = (v >> 8) & 0xFF;
+        };
+        put32(0x00, 10); put32(0x04, 12);
+        put16(0x08, 17000); put16(0x0c, 12000);
+        put32(0x12, 0x02000258);               // hi=512, lo=600 — годно
+        put16(0x16, 42);
+        put16(0x2d, 77);
+        put16(0x2f, 0xBEEF);
+        es->EepromData()->fixFlags = 0x01 | 0x02 | 0x08 | 0x10 | 0x40;
+        es->ExtractFixParam(page, 24);
+        const auto *ep = es->EepromData();
+        const bool fixOk = ep->centorX == 10 && ep->centorY == 12
+                        && ep->wbRed == 17000 && ep->wbBlue == 12000
+                        && ep->octangleCut == 0x02000258
+                        && ep->usedCount == 42 && ep->remainUseTimes == 77
+                        && ep->matchProcMask == 0xBEEF;
+        put32(0x12, 0x04000100);               // hi=1024 > 960
+        es->ExtractFixParam(page, 24);
+        const bool octClampOk = es->EepromData()->octangleCut == 0x005A005A;
+        put32(0x00, 999); put32(0x04, 999);
+        es->ExtractFixParam(page, 24);
+        const bool centerClampOk = es->EepromData()->centorX == 16
+                                && es->EepromData()->centorY == 16;
+        es->EepromData()->fixFlags = 0;
+        put16(0x2f, 0x1234);
+        es->ExtractFixParam(page, 24);
+        const bool alwaysMaskOk = es->EepromData()->matchProcMask == 0x1234;
+
+        // 7. Белый список процессоров: магия 0xAA, шаг 12 байт.
+        unsigned char mp[64] = {};
+        mp[0] = 0xAA; mp[1] = 2;
+        memcpy(mp + 2,      "PROC-AAA", 8);
+        memcpy(mp + 2 + 12, "PROC-BBB", 8);
+        es->ExactMatchProcessorEepromData(mp, 64);
+        const bool mpOk = es->EepromData()->matchProcList.size() == 2
+                       && es->EepromData()->matchProcList[0] == "PROC-AAA"
+                       && es->EepromData()->matchProcList[1] == "PROC-BBB";
+        // КВИРК: очистка ДО валидации — плохая магия стирает хороший список.
+        unsigned char bad[64] = {};
+        bad[0] = 0x55;
+        es->ExactMatchProcessorEepromData(bad, 64);
+        const bool clearQuirkOk = es->EepromData()->matchProcList.isEmpty();
+
+        // 8. Обратное кодирование: SaveFixParam — точная инверсия.
+        es->ResetEepromData();
+        es->EepromData()->fixFlags = 0x5A;
+        es->EepromData()->centorX = 7; es->EepromData()->centorY = 9;
+        es->EepromData()->wbRed = 111; es->EepromData()->wbBlue = 222;
+        es->EepromData()->deadline = "20301231";
+        int savedPage = -1;
+        QObject::connect(es, &KEndoScope::SaveEndoEepromData,
+                         [&savedPage](unsigned short p) { savedPage = p; });
+        es->SaveFixParam();
+        const unsigned char *b = es->GetEepromSaveData();
+        const bool saveOk = b[0x00] == 0x5A
+                         && b[0x01] == 7 && b[0x05] == 9
+                         && b[0x09] == (111 & 0xFF) && b[0x0d] == (222 & 0xFF)
+                         && memcmp(b + 0x34, "20301231", 8) == 0
+                         && savedPage == 511;
+        const bool holesOk = b[0x0b] == 0 && b[0x0c] == 0 && b[0x19] == 0
+                          && b[0x32] == 0 && b[0x3c] == 0;
+
+        // 9. КВИРК: в байт длины пишется ПОЛНЫЙ размер списка, а записей <= 5.
+        QStringList seven;
+        for (int i = 0; i < 7; ++i) seven << QString("P%1").arg(i);
+        savedPage = -1;
+        es->SaveMatchProcessor2Eeprom(seven);
+        const unsigned char *mb = es->GetEepromSaveData();
+        const bool lenQuirkOk = mb[0] == 0xAA && mb[1] == 7
+                             && mb[2 + 4 * 12] == 'P'
+                             && mb[2 + 5 * 12] == 0
+                             && savedPage == 508;
+
+        // 10. КВИРК счётчика: при usedCount == 0xFFFF декремент теряется,
+        //     а 0xFFFE инкрементится ровно в сентинел.
+        es->ResetEepromData();
+        savedPage = -1;
+        es->AddEndoUsedCount();
+        const bool lostDecOk = es->EepromData()->usedCount == 0xFFFF
+                            && savedPage == -1;
+        es->EepromData()->usedCount = 0xFFFE;
+        es->AddEndoUsedCount();
+        const bool sentinelOk = es->EepromData()->usedCount == 0xFFFF;
+
+        // 11. Геометрия центра по типу прошивки.
+        es->EndoInfo()->sModel = QString();
+        int cx = -1, cy = -1;
+        es->GetCentorPointStart(cx, cy);
+        const bool geomOk = (cx == 8 && cy == 8) || (cx == 0 && cy == 0);
+        const bool rangeOk = es->GetCentorPointXRange() == cx / 2
+                          && es->GetCentorPointYRange() == cy / 2;
+
+        // 12. Дефолты и состояния.
+        _EndoInfoStruct fresh;
+        const bool defOk = fresh.nGlassType == 3 && fresh.nRotateType == 0;
+        es->SetEndoScopeStatus(4);
+        es->SetEndoControlStatus(5);
+        const bool stateOk = es->IsEndoReady() && !es->IsEndoOutOfControl();
+        es->SetEndoControlStatus(3);
+        const bool oocOk = es->IsEndoOutOfControl();
+
+        qInfo() << "карта серий (40 + WuHan 1):" << mapOk << wuhanOk;
+        qInfo() << "полярности superfine/channel/«суффикс»:" << superOk << chanOk << sufOk
+                << "| IsVideoCalReveral:" << revOk;
+        qInfo() << "XOR-сумма CID (не CRC):" << crcOk << crcZeroOk
+                << "| разбор CID:" << cidOk << "| квирк «модель не заполняется»:"
+                << modelQuirkOk;
+        qInfo() << "фикс-параметры:" << fixOk << "| кламп геометрии:" << octClampOk
+                << centerClampOk << "| маска читается всегда:" << alwaysMaskOk;
+        qInfo() << "белый список:" << mpOk << "| очистка до валидации:" << clearQuirkOk;
+        qInfo() << "обратное кодирование:" << saveOk << "| дыры нулевые:" << holesOk
+                << "| квирк длины 7 при 5 записях:" << lenQuirkOk;
+        qInfo() << "потерянный декремент:" << lostDecOk << "| сентинел 0xFFFF:"
+                << sentinelOk << "| геометрия:" << geomOk << rangeOk
+                << "| дефолты 3/0:" << defOk << "| состояния:" << stateOk << oocOk;
+
+        const bool ok = mapOk && wuhanOk && superOk && chanOk && sufOk && revOk
+                     && crcOk && crcZeroOk && cidOk && modelQuirkOk && fixOk
+                     && octClampOk && centerClampOk && alwaysMaskOk && mpOk
+                     && clearQuirkOk && saveOk && holesOk && lenQuirkOk && lostDecOk
+                     && sentinelOk && geomOk && rangeOk && defOk && stateOk && oocOk;
+        qInfo() << (ok ? "endoscope: PASS" : "endoscope: FAIL");
         return ok ? 0 : 65;
     }
 
