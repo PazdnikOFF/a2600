@@ -138,6 +138,8 @@ public:
 #include "ctrl/K3ADimming.h"
 #include "endo/KEndoScope.h"
 #include "endo/KCamera.h"
+#include "ui/KLcdProxy.h"
+#include "ui/KUiMsgProxy.h"
 #include <cstring>
 #include <cmath>
 #include "sys/KTimeInfo.h"
@@ -7194,6 +7196,148 @@ int main(int argc, char **argv)
                      && badFFOk && pageOk && saveOk && whbOk && cidOk && rollOk
                      && noRollOk && readyOk && notReadyOk && zeroOk && clearOk;
         qInfo() << (ok ? "camera: PASS" : "camera: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "lcdproxy") {
+        // Реф. KLcdProxy — семантический слой панели 8". Работы с железом нет.
+        auto *lp = Get_KLcdProxy();
+        KUiMsgProxy::ClearSent();
+
+        // 1. Диспетчер: совпадение по ПАРЕ (key, act). Промах → 2, попадание → 1.
+        lp->ClearLastAct();
+        const int hit = lp->KeyEventAct(1, 3, 0);          // key 1 SHORT
+        const bool hitOk = hit == 1 && lp->LastAct() == "SwitchFreezeStatus";
+        const bool missKeyOk = lp->KeyEventAct(0x3FF, 3, 0) == 2;   // нет ключа
+        const bool missActOk = lp->KeyEventAct(1, 4, 0) == 2;       // ключ есть, act нет
+
+        // 2. Один ключ — РАЗНЫЕ обработчики по типу события.
+        lp->ClearLastAct(); lp->KeyEventAct(2, 3, 0);
+        const bool k2sOk = lp->LastAct() == "SwitchChbStatus";
+        lp->ClearLastAct(); lp->KeyEventAct(2, 4, 0);
+        const bool k2lOk = lp->LastAct() == "OpenOrCloseVersionDialog";
+
+        // 3. КВИРК: у ключа 3 LONG = сброс, SHORT = ОТМЕНА сброса
+        //    (и запись LONG стоит в таблице ПЕРЕД SHORT).
+        lp->ClearLastAct(); lp->KeyEventAct(3, 4, 0);
+        const bool k3lOk = lp->LastAct() == "ResetUserParam";
+        lp->ClearLastAct(); lp->KeyEventAct(3, 3, 0);
+        const bool k3sOk = lp->LastAct() == "CancelResetUserParam";
+
+        // 4. КВИРК: ключ 13 имеет ТОЛЬКО длинное нажатие.
+        lp->ClearLastAct();
+        const bool k13Ok = lp->KeyEventAct(13, 4, 0) == 1
+                        && lp->LastAct() == "StartWhiteBalance"
+                        && lp->KeyEventAct(13, 3, 0) == 2;   // короткого нет
+        // КВИРК: ключ 24 использует act 7 (SETVAL), а не 3, в отличие от прочих.
+        const bool k24Ok = lp->KeyEventAct(24, 7, 0) == 1
+                        && lp->KeyEventAct(24, 3, 0) == 2;
+
+        // 5. КВИРК: один ключ (525..536) несёт ДВА назначения — вызов кнопки
+        //    (act 2/3/4) и ПЕРЕНАЗНАЧЕНИЕ её функции (act 7).
+        lp->ClearLastAct(); lp->KeyEventAct(525, 2, 0);
+        const bool invokeOk = lp->LastAct() == "RemoteButton0Act";
+        lp->ClearLastAct(); lp->KeyEventAct(525, 7, 3);
+        const bool assignOk = lp->LastAct() == "SetEndoButton0Funcindex";
+
+        // 6. Дублирующиеся обработчики на разных ключах.
+        lp->ClearLastAct(); lp->KeyEventAct(35, 3, 0);
+        const bool dup1Ok = lp->LastAct() == "SaveImage";
+        lp->ClearLastAct(); lp->KeyEventAct(11, 3, 0);
+        const bool dup2Ok = lp->LastAct() == "SaveImage";     // тот же обработчик
+        lp->ClearLastAct(); lp->KeyEventAct(36, 3, 0);
+        const bool dup3Ok = lp->LastAct() == "StartOrStopVideoRecord";
+
+        // 7. КВИРК расширения знака: проверяется ТОЛЬКО БИТ 7, биты 8..31
+        //    игнорируются ⇒ 0x180 приходит как 0x80 и превращается в -128.
+        //    Проверяем через ножной переключатель, который кладёт param в шину.
+        KSystemStatus::GetInstance().SetViewType(0);
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(529, 2, 0x180);
+        const auto sentA = KUiMsgProxy::TakeSent();
+        // 0x180 & 0x80 != 0 ⇒ вычитается 256, но старшие биты НЕ отброшены:
+        // 384 - 256 = 128 (= 0x80). Настоящее расширение знака дало бы -128.
+        const bool signExt1 = !sentA.isEmpty() && sentA.last().c == 128;
+        // Обычные случаи: бит 7 сброшен — без изменений; установлен — минус 256.
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(529, 2, 5);
+        const auto sentB = KUiMsgProxy::TakeSent();
+        const bool signExt2 = !sentB.isEmpty() && sentB.last().c == 5;
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(529, 2, 0x85);
+        const auto sentC = KUiMsgProxy::TakeSent();
+        const bool signExt3 = !sentC.isEmpty() && sentC.last().c == (0x85 - 256);
+        const bool signExtOk = signExt1 && signExt2 && signExt3;
+
+        // 8. КВИРК: ножные переключатели — ПОЛНЫЙ no-op при ViewType == 1.
+        KSystemStatus::GetInstance().SetViewType(1);
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(529, 2, 5);
+        const bool footNoopOk = KUiMsgProxy::TakeSent().isEmpty();
+        KSystemStatus::GetInstance().SetViewType(0);
+
+        // 9. КВИРК: ключ 0x217 намеренно даёт 0 (индекс 4 — write-only слот).
+        const bool k217Ok = lp->GetKeyStatus(0x217) == 0;
+        // Неизвестный ключ тоже 0 (дефолт switch).
+        const bool defOk = lp->GetKeyStatus(0x999) == 0;
+        // 1-based группа: уровень из конфига +1.
+        KVideoSet::Instance().SetImgEnhLevel(2);
+        const bool oneBasedOk = lp->GetKeyStatus(0x04) == 3;
+
+        // 10. Продюсеры: состав и порядок наборов.
+        auto keysOf = [](const QList<_KeyVlaue> &l) {
+            QVector<int> v; for (const auto &e : l) v << e.key; return v;
+        };
+        const auto sys1 = keysOf(lp->GetSoftEndoSystemSet1Params());
+        const bool sys1Ok = sys1 == QVector<int>({0x101, 0x102, 0x103});
+        // Hard-вариант — чистый алиас Soft.
+        const bool aliasOk = keysOf(lp->GetHardEndoSystemSet1Params()) == sys1;
+        const auto us2 = keysOf(lp->GetHardEndoUserSet2Params());
+        // ⚠️ 0x217 ПРОПУЩЕН: сразу 0x216 → 0x218.
+        const bool skip217Ok = us2 == QVector<int>({0x00, 0x213, 0x214, 0x215, 0x216, 0x218});
+        const auto led = keysOf(lp->GetPanelLedSet());
+        const bool ledOk = led == QVector<int>({0x08, 0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02});
+        const auto opm = keysOf(lp->GetHardEndoOperationModeParams());
+        const bool opmOk = opm == QVector<int>({0x18});
+
+        // 11. КВИРК: 0x0F добавляется НАПРЯМУЮ, в обход GetKeyStatus.
+        KSystemStatus::GetInstance().SetPanelType(1);
+        KSystemStatus::GetInstance().SetLightLevel(42);
+        const auto hardMain = lp->GetHardEndMainViewParams();
+        bool bypassOk = false;
+        for (const auto &e : hardMain)
+            if (e.key == 0x0F && e.value == 42) bypassOk = true;
+        KSystemStatus::GetInstance().SetPanelType(0);
+        const auto hardMain2 = lp->GetHardEndMainViewParams();
+        bool noBypassOk = true;
+        for (const auto &e : hardMain2)
+            if (e.key == 0x0F) noBypassOk = false;
+
+        // 12. Формат даты: промах молча даёт 0 (выглядит как yyyy/MM/dd).
+        const int di = lp->GetDateFormateIndex();
+        const bool dateOk = di >= 0 && di <= 3;
+
+        qInfo() << "диспетчер hit/miss:" << hitOk << missKeyOk << missActOk
+                << "| один ключ, разные события:" << k2sOk << k2lOk;
+        qInfo() << "ключ 3 LONG=сброс/SHORT=отмена:" << k3lOk << k3sOk
+                << "| только LONG (13):" << k13Ok << "| act 7 у 24:" << k24Ok;
+        qInfo() << "вызов vs переназначение (525):" << invokeOk << assignOk
+                << "| дубли обработчиков:" << dup1Ok << dup2Ok << dup3Ok;
+        qInfo() << "квирк знака (0x180→0x80):" << signExtOk
+                << "| ножной no-op при ViewType==1:" << footNoopOk;
+        qInfo() << "0x217 → 0:" << k217Ok << "| дефолт 0:" << defOk
+                << "| 1-based:" << oneBasedOk;
+        qInfo() << "продюсеры:" << sys1Ok << "алиас:" << aliasOk
+                << "| пропуск 0x217:" << skip217Ok << "| LED:" << ledOk << opmOk;
+        qInfo() << "обход GetKeyStatus для 0x0F:" << bypassOk << noBypassOk
+                << "| формат даты:" << dateOk << di;
+
+        const bool ok = hitOk && missKeyOk && missActOk && k2sOk && k2lOk && k3lOk
+                     && k3sOk && k13Ok && k24Ok && invokeOk && assignOk && dup1Ok
+                     && dup2Ok && dup3Ok && signExtOk && footNoopOk && k217Ok
+                     && defOk && oneBasedOk && sys1Ok && aliasOk && skip217Ok
+                     && ledOk && opmOk && bypassOk && noBypassOk && dateOk;
+        qInfo() << (ok ? "lcdproxy: PASS" : "lcdproxy: FAIL");
         return ok ? 0 : 65;
     }
 

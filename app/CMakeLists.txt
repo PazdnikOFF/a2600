@@ -57,6 +57,8 @@ set(SOURCES
     src/ctrl/K3ADimming.cpp
     src/endo/KEndoScope.cpp
     src/endo/KCamera.cpp
+    src/ui/KUiMsgProxy.cpp
+    src/ui/KLcdProxy.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -279,6 +281,8 @@ add_executable(ui_preview
     src/ctrl/K3ADimming.cpp
     src/endo/KEndoScope.cpp
     src/endo/KCamera.cpp
+    src/ui/KUiMsgProxy.cpp
+    src/ui/KLcdProxy.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

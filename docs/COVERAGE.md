@@ -12,17 +12,17 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **103** (21%) |
-| Методов реализовано (совпало по имени) | **1126** (17.5%) |
+| Классов затронуто у нас | **105** (22%) |
+| Методов реализовано (совпало по имени) | **1235** (19.2%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
-| **UI** | 167 | 2410 | 91 | 3.8% | 9 |
-| **CORE** | 60 | 1216 | 468 | 38.5% | 28 |
+| **UI** | 167 | 2410 | 99 | 4.1% | 10 |
+| **CORE** | 60 | 1216 | 472 | 38.8% | 28 |
 | **REPORT** | 72 | 752 | 144 | 19.1% | 17 |
-| **HW** | 40 | 598 | 87 | 14.5% | 5 |
+| **HW** | 40 | 598 | 184 | 30.8% | 6 |
 | **MISC** | 27 | 543 | 137 | 25.2% | 13 |
 | **DICOM** | 60 | 423 | 56 | 13.2% | 10 |
 | **DB** | 47 | 352 | 129 | 36.6% | 16 |
@@ -92,6 +92,7 @@
 | `KViewSoftEndo` | UI | 88 | 4 | 5% |
 | `KVideoProxy` | CORE | 115 | 50 | 43% |
 | `AlgParaManager` | MISC | 62 | 10 | 16% |
+| `KUiMsgProxy` | UI | 54 | 8 | 15% |
 | `KImgList` | UI | 49 | 8 | 16% |
 | `KVideoSet` | CORE | 58 | 18 | 31% |
 | `KDccuParam` | CORE | 93 | 54 | 58% |
@@ -107,11 +108,10 @@
 | `KProjectSet` | CORE | 31 | 14 | 45% |
 | `KSaveFile` | DB | 20 | 3 | 15% |
 | `KDicomInterface` | DICOM | 27 | 11 | 41% |
-| `KSystemStatus` | CORE | 45 | 30 | 67% |
 | `KThesaurusOpt` | REPORT | 15 | 2 | 13% |
 | `KColdLightConfig` | CORE | 18 | 6 | 33% |
 | `KPlControl` | CORE | 71 | 60 | 85% |
-| `KCamera` | HW | 37 | 26 | 70% |
+| `KSystemStatus` | CORE | 45 | 34 | 76% |
 
 ### 5.1 Оговорка о точности метрики
 
@@ -121,7 +121,7 @@
 
 - **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
 
-- **Наши абстракции без класса-референса (20):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `hal`, `keyname`, `theme`, `yxyDES2`
+- **Наши абстракции без класса-референса (21):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 

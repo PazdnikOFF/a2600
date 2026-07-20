@@ -54,6 +54,18 @@ int KUserOsdSet::GetButtonFunctionId(Button btn, Press press) const
     return ini.value(buttonSection(btn) + "/" + pressKey(press), -1).toInt();
 }
 
+int KUserOsdSet::GetButtonFunctionId(int packedIndex) const
+{
+    // index = button*2 + press (A=0,B=1,M=2 / Long=0,Short=1).
+    if (packedIndex < 0)
+        return -1;            // отступление: реф. читал бы за границей
+    if (packedIndex >= 7)
+        packedIndex = 0;      // реф.: зажим верхней границы в 0
+    const Button btn = Button(packedIndex / 2);
+    const Press press = Press(packedIndex % 2);
+    return GetButtonFunctionId(btn, press);
+}
+
 void KUserOsdSet::SaveButtonId(Button btn, Press press, int funcId) const
 {
     QSettings ini(cfgFile(), QSettings::IniFormat);

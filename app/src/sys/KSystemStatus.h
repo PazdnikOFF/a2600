@@ -77,9 +77,18 @@ public:
     bool IsDemoireEnable() const { return demoireEnable_; }
     bool IsToneEnable() const  { return toneEnable_; }
 
+    // Реф.: ChangeUserSet/ChangeSystemSet — ОДНОИНСТРУКЦИОННЫЕ tail-jump'ы
+    // в соответствующие сигналы (@0x6222c8 / @0x6222d0). В референсе сигналов
+    // ТРИ, а у нас раньше был только SystemStatusChange — добавлены остальные
+    // два (нужны KLcdProxy).
+    void ChangeUserSet(int type, int value)   { emit UserSetChange(type, value); }
+    void ChangeSystemSet(int type, int value) { emit SystemSetChange(type, value); }
+
 signals:
     // реф. SystemStatusChange(int статусТип, int значение).
     void SystemStatusChange(int type, int value);
+    void UserSetChange(int type, int value);     // реф. @0x828570
+    void SystemSetChange(int type, int value);   // реф. @0x8285a8
 
 private:
     explicit KSystemStatus(QObject *parent = nullptr) : QObject(parent) {}
