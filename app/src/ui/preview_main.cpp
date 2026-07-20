@@ -133,6 +133,7 @@ public:
 #include "report/KReportEntity.h"
 #include "report/KReportItem.h"
 #include "video/KVideoPlayerMng.h"
+#include "sys/KSmallLangTranslate.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6478,6 +6479,186 @@ int main(int argc, char **argv)
                      && lastNoneOk && swSplitOk && swNextOk && swLastOk && contOk && stopOk
                      && edgeOk && cfl0Ok && cflEndOk && cflOneOk;
         qInfo() << (ok ? "videoplayer: PASS" : "videoplayer: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "smalllang") {
+        // Реф. KSmallLangTranslate — трансляция клавиш «малых языков».
+        using namespace smalllang;
+        auto &t = KSmallLangTranslate::GetInstance();
+
+        // 1. Битовые примитивы. КВИРК: GetBit отдаёт СЫРУЮ МАСКУ, а не 0/1.
+        int word = 0;
+        char *w = reinterpret_cast<char *>(&word);
+        KSmallLangTranslate::SetBit(w, 6, 1);
+        const bool bitOk = KSmallLangTranslate::GetBit(w, 6) == 64   // маска, не 1
+                        && KSmallLangTranslate::GetBit(w, 5) == 0
+                        && word == 64;
+        KSmallLangTranslate::SetBit(w, 6, 0);
+        const bool bitClrOk = word == 0;
+
+        // 2. KbdLayoutInit. КВИРК: неизвестный язык → true, раскладка НЕ меняется.
+        const bool initOk = t.KbdLayoutInit("Latin") && t.Layout() != nullptr;
+        auto *latin = t.Layout();
+        const bool unknownOk = t.KbdLayoutInit("Klingon")   // всё равно true
+                            && t.Layout() == latin;         // раскладка прежняя
+        const bool ruOk = t.KbdLayoutInit("Russian") && t.Layout() != latin;
+        t.KbdLayoutInit("Latin");
+        auto *L = t.Layout();
+
+        // 3. Классификация клавиш.
+        const bool classOk = t.IsBaseModifier(L, KEY_SHIFT_L)
+                          && t.IsBaseModifier(L, KEY_ALTGR)
+                          && !t.IsBaseModifier(L, KEY_CAPSLOCK)   // он «залипающий»
+                          && t.IsLockedModifier(L, KEY_CAPSLOCK)
+                          && !t.IsLockedModifier(L, KEY_SHIFT_L);
+        // Номера битов из g_astModBitConf_S50.
+        const bool bitIdxOk = t.GetModifierBitIndex(L, KEY_SHIFT_L) == 0
+                           && t.GetModifierBitIndex(L, KEY_SHIFT_R) == 1
+                           && t.GetModifierBitIndex(L, KEY_CAPSLOCK) == 2
+                           && t.GetModifierBitIndex(L, KEY_ALTGR) == 3
+                           && t.GetModifierBitIndex(L, KEY_FN) == 4
+                           && t.GetModifierBitIndex(L, 0x999) == -1;
+
+        // 4. Базовый модификатор — установка/сброс по нажатию/отпусканию.
+        L->nModBitState = 0;
+        t.ProcBaseModifier(L, KEY_SHIFT_L, 1);
+        const bool shiftOnOk = (L->nModBitState & 0x01) != 0;
+        t.ProcBaseModifier(L, KEY_SHIFT_L, 0);
+        const bool shiftOffOk = (L->nModBitState & 0x01) == 0;
+        const bool baseBadOk = t.ProcBaseModifier(L, 0x999, 1) == -1;
+
+        // 5. Залипающий модификатор — ПЕРЕКЛЮЧАТЕЛЬ; отпускание игнорируется.
+        L->nModBitState = 0;
+        t.ProcLockedModifier(L, KEY_CAPSLOCK, 1);
+        const bool capsOnOk = (L->nModBitState & 0x04) != 0;
+        const bool relIgnoredOk = t.ProcLockedModifier(L, KEY_CAPSLOCK, 0) == 0
+                               && (L->nModBitState & 0x04) != 0;   // НЕ сбросился
+        t.ProcLockedModifier(L, KEY_CAPSLOCK, 1);                  // второе нажатие
+        const bool capsToggleOk = (L->nModBitState & 0x04) == 0;
+
+        // 6. GetCurrentModState: AltGr и Fn НАМЕРЕННО не экспортируются.
+        L->nModBitState = 0;
+        t.ProcBaseModifier(L, KEY_SHIFT_L, 1);
+        t.ProcBaseModifier(L, KEY_CTRL, 1);
+        const int ms = t.GetCurrentModState(L);
+        const bool modStateOk = (ms & 0x0001) && (ms & 0x0040);
+        t.ProcBaseModifier(L, KEY_ALTGR, 1);
+        t.ProcBaseModifier(L, KEY_FN, 1);
+        const int ms2 = t.GetCurrentModState(L);
+        const bool notExportedOk = ms2 == ms;   // AltGr/Fn ничего не добавили
+        L->nModBitState = 0;
+
+        // 7. Многоуровневая клавиша: без модификаторов — уровень 0 (сама себя).
+        const bool mlOk = t.IsMultiLevelKey(L, 0x42d) && !t.IsMultiLevelKey(L, 0x999);
+        E_SONO_KEY k = 0x42d;
+        const bool lvl0Ok = t.ProcMultiLevelKey(L, &k, 0) == 0 && k == 0x42d;
+        // Shift (бит индекса 0) → уровень 1: для 0x42d это 0x47a (см. таблицу).
+        t.ProcBaseModifier(L, KEY_SHIFT_L, 1);
+        k = 0x42d;
+        const bool lvl1Ok = t.ProcMultiLevelKey(L, &k, 0) == 0 && k == 0x47a;
+        L->nModBitState = 0;
+        // Незнакомая клавиша → -1.
+        E_SONO_KEY unk = 0x999;
+        const bool mlBadOk = t.ProcMultiLevelKey(L, &unk, 0) == -1;
+
+        // 8. CapsLock подтягивается из внешнего источника (шов вместо KKeyKits).
+        KSmallLangTranslate::SetCapsLockOn(true);
+        L->nModBitState = 0;
+        const bool syncOk = t.SyncCapslockStatus(L, KEY_CAPSLOCK) == 0
+                         && (L->nModBitState & 0x04) != 0;
+        KSmallLangTranslate::SetCapsLockOn(false);
+        const bool syncOffOk = t.SyncCapslockStatus(L, KEY_CAPSLOCK) == 0
+                            && (L->nModBitState & 0x04) == 0;
+        const bool syncBadOk = t.SyncCapslockStatus(L, 0x999) == -1;
+
+        // 9. Мёртвые клавиши латиницы: префикс проглатывается, затем композиция.
+        L->nModBitState = 0;
+        L->ePendingCombPrefix = 0;
+        const bool prefixOk = t.IsCombinePrefixKey(L, 0x42d)      // из aeCombPrefixKey
+                           && !t.IsCombinePrefixKey(L, 0x999)
+                           && t.GetCombPrefixArrayIdx(L, 0x454) == 1;
+        stPADKeyboardEvent ev[8] = {};
+        ev[0].bRelease = 0; ev[0].eKey = 0x42d;                   // префикс
+        const bool swallowOk = t.ProcCombineKey(L, ev, 8) == 0
+                            && L->ePendingCombPrefix == 0x42d;
+        // Базовая клавиша 0x473 при префиксе индекса 0 даёт 0x4e2.
+        ev[0].bRelease = 0; ev[0].eKey = 0x473;
+        const bool combOk = t.ProcCombineKey(L, ev, 8) == 1
+                         && ev[0].eKey == 0x4e2
+                         && L->ePendingCombPrefix == 0;
+        // Нет совпадения → переигрывание ТРЁХ событий.
+        L->ePendingCombPrefix = 0x42d;
+        ev[0].bRelease = 0; ev[0].eKey = 0x999;
+        const int replay = t.ProcCombStepKey(L, ev, 8);
+        const bool replayOk = replay == 3
+                           && ev[0].eKey == 0x42d && ev[0].bRelease == 0
+                           && ev[1].eKey == 0x42d && ev[1].bRelease == 1
+                           && ev[2].eKey == 0x999
+                           && L->ePendingCombPrefix == 0;
+        // Буфера меньше 3 не хватает.
+        L->ePendingCombPrefix = 0x42d;
+        ev[0].eKey = 0x999;
+        const bool smallBufOk = t.ProcCombStepKey(L, ev, 2) == 0;
+        L->ePendingCombPrefix = 0;
+
+        // 10. КВИРК: ЛЮБОЕ событие AltGr (даже отпускание) сбрасывает защёлку.
+        L->ePendingCombPrefix = 0x42d;
+        E_SONO_KEY altgr = KEY_ALTGR;
+        t.ProcOneRawKeysym(0, &altgr, 0);            // именно ОТПУСКАНИЕ
+        const bool altgrClearOk = L->ePendingCombPrefix == 0;
+
+        // 11. Верхний уровень: модификатор отдаётся как ОДНО событие (1).
+        L->nModBitState = 0;
+        stPADKeyboardEvent me[8] = {};
+        me[0].bRelease = 0; me[0].eKey = KEY_SHIFT_L;
+        const bool topModOk = t.KbdLayout_ProcRawKeysym(0, me, 8) == 1;
+        // Обычная клавиша проходит через трансляцию.
+        L->nModBitState = 0;
+        stPADKeyboardEvent ke[8] = {};
+        ke[0].bRelease = 0; ke[0].eKey = 0x42e;
+        const bool topKeyOk = t.KbdLayout_ProcRawKeysym(0, ke, 8) == 1
+                           && ke[0].eKey == 0x42e;
+        // Пустой указатель → -1.
+        const bool topNullOk = t.KbdLayout_ProcRawKeysym(0, nullptr, 8) == -1;
+
+        // 12. Французская/польская таблицы мёртвых клавиш ПУСТЫ (в реф. .bss,
+        //     нулевые) ⇒ композиция никогда не совпадает, всегда переигрывание.
+        t.KbdLayoutInit("French");
+        auto *F = t.Layout();
+        F->ePendingCombPrefix = 0x554;
+        stPADKeyboardEvent fe[8] = {};
+        fe[0].bRelease = 0; fe[0].eKey = 0x473;   // в латинице это дало бы 0x4e2
+        const bool frEmptyOk = t.ProcCombStepKey(F, fe, 8) == 3;
+        t.KbdLayoutInit("Latin");
+
+        qInfo() << "биты (сырая маска):" << bitOk << bitClrOk
+                << "| init:" << initOk << "неизвестный язык → true:" << unknownOk
+                << "| русская:" << ruOk;
+        qInfo() << "классификация:" << classOk << "| номера битов:" << bitIdxOk;
+        qInfo() << "базовый модификатор:" << shiftOnOk << shiftOffOk << baseBadOk
+                << "| залипающий (toggle, отпускание игнор.):" << capsOnOk
+                << relIgnoredOk << capsToggleOk;
+        qInfo() << "modState:" << modStateOk << "| AltGr/Fn не экспортируются:"
+                << notExportedOk;
+        qInfo() << "многоуровневые:" << mlOk << "уровень0/1:" << lvl0Ok << lvl1Ok
+                << "| неизвестная → -1:" << mlBadOk;
+        qInfo() << "CapsLock-шов:" << syncOk << syncOffOk << syncBadOk;
+        qInfo() << "мёртвые клавиши:" << prefixOk << "проглот:" << swallowOk
+                << "композиция:" << combOk << "| переигрывание 3:" << replayOk
+                << "малый буфер:" << smallBufOk;
+        qInfo() << "AltGr сбрасывает защёлку:" << altgrClearOk
+                << "| верхний уровень:" << topModOk << topKeyOk << topNullOk
+                << "| фр. таблица пуста:" << frEmptyOk;
+
+        const bool ok = bitOk && bitClrOk && initOk && unknownOk && ruOk && classOk
+                     && bitIdxOk && shiftOnOk && shiftOffOk && baseBadOk && capsOnOk
+                     && relIgnoredOk && capsToggleOk && modStateOk && notExportedOk
+                     && mlOk && lvl0Ok && lvl1Ok && mlBadOk && syncOk && syncOffOk
+                     && syncBadOk && prefixOk && swallowOk && combOk && replayOk
+                     && smallBufOk && altgrClearOk && topModOk && topKeyOk
+                     && topNullOk && frEmptyOk;
+        qInfo() << (ok ? "smalllang: PASS" : "smalllang: FAIL");
         return ok ? 0 : 65;
     }
 

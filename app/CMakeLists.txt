@@ -107,6 +107,7 @@ set(SOURCES
     src/alg/KImageProcess.cpp
     src/report/KReportEditDataSource.cpp
     src/video/KVideoPlayerMng.cpp
+    src/sys/KSmallLangTranslate.cpp
     src/report/KReportEntity.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
@@ -244,6 +245,7 @@ add_executable(ui_preview
     src/alg/KImageProcess.cpp
     src/report/KReportEditDataSource.cpp
     src/video/KVideoPlayerMng.cpp
+    src/sys/KSmallLangTranslate.cpp
     src/report/KReportEntity.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
