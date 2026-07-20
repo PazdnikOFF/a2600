@@ -54,6 +54,7 @@ set(SOURCES
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp
     src/ctrl/KColdLightConfig.cpp
+    src/ctrl/K3ADimming.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -273,6 +274,7 @@ add_executable(ui_preview
     src/ctrl/KPlControl.cpp
     src/ctrl/KDccuParam.cpp
     src/ctrl/KColdLightConfig.cpp
+    src/ctrl/K3ADimming.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

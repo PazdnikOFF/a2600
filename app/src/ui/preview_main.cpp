@@ -135,6 +135,8 @@ public:
 #include "video/KVideoPlayerMng.h"
 #include "sys/KSmallLangTranslate.h"
 #include "sys/KKey2Name.h"
+#include "ctrl/K3ADimming.h"
+#include <cmath>
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6689,6 +6691,169 @@ int main(int argc, char **argv)
                      && topNullOk && frEmptyOk && nameModOk && namePadkOk
                      && nameSonoOk && nameMissOk && nameDupOk && scanMissOk;
         qInfo() << (ok ? "smalllang: PASS" : "smalllang: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "dimming") {
+        // Реф. K3ADimming — авто-диммирование 3A (экспозиция/лампа/AGC).
+        // Яркость здесь НЕ вычисляется: приходит готовой в AUTO_DIMMING_PARA,
+        // поэтому синтетические входы — ровно то, что видит боевой код.
+        auto *d = K3ADimming::Instance();
+        d->Reset();
+        K3ADimming::ResetPidHistory();
+        K3ADimming::SetGateLampDisabled(false);
+        auto near = [](double a, double b, double eps = 1e-9) {
+            return std::fabs(a - b) < eps;
+        };
+
+        // 1. Элементарные функции. CalPow(p1) должен дать РОВНО литерал m_expMax
+        //    из .rodata — бесплатный оракул на точность.
+        const bool logOk = near(K3ADimming::CalLog(10.0), 20.0)
+                        && near(K3ADimming::CalPow(24.3496), 16.49985014952608, 1e-12);
+
+        // 2. Пересчёт дБ лампы <-> ток (делитель 17903.32, диапазон 33060..47514).
+        const bool ldbOk = d->ldb2Lp(0.0) == 33060 && d->ldb2Lp(6.0) == 33139
+                        && d->ldb2Lp(20.0) == 33786 && d->ldb2Lp(24.3496) == 34310
+                        && d->ldb2Lp(40.0) == 41052 && d->ldb2Lp(45.0) == 47335;
+        const bool lpOk = near(d->lp2LdB(33060), 0.0)
+                       && near(d->lp2LdB(35000), 27.965746, 1e-5)
+                       && near(d->lp2LdB(40000), 38.786391, 1e-5)
+                       && near(d->lp2LdB(47514), 45.106898, 1e-5);
+
+        // 3. ПИД в приращениях. История — ФАЙЛОВЫЕ СТАТИКИ типа float:
+        //    проверяем и значение, и то, что она переживает шаги.
+        d->SetLgtTotal(0.0);
+        d->UpdataPid(3.0);                       // полоса p0..p1, e>0 → set4 {0,0.5,0}
+        const bool pid1Ok = near(d->CalculatePidOut(3.0), 1.5);
+        // Чтобы попасть в ветку L <= p2 (набор set0/set1), нужно L < p0:
+        // p1 == p2 == 24.3496, поэтому любое L в [p0..p1] уходит в set4/set5.
+        d->SetLgtTotal(-30.0);
+        d->UpdataPid(-3.0);                      // e<0 → set1 {1.0,1.5,0}
+        // eLast=3, ePre=0: 1.0*(-3-3) + 1.5*(-3) + 0 = -10.5
+        const bool pid2Ok = near(d->CalculatePidOut(-3.0), -10.5);
+
+        // 4. Ассиметрия скорости: затемнение вдвое медленнее (m_ratio1 == 0).
+        d->SetRatio1(0.0);
+        const bool ratioOk = near(d->exposureRatioCal(-9.0), -4.5)
+                          && near(d->exposureRatioCal(9.0), 9.0);   // ранний возврат
+
+        // 5. Кламп интегратора: верх зависит от m_agcStatus, низ — p0.
+        d->SetAGCStatus(1);
+        const bool clampHiOnOk = near(d->UpdataLgtData(1000.0), 84.4566, 1e-9);
+        d->SetAGCStatus(0);
+        const bool clampHiOffOk = near(d->UpdataLgtData(1000.0), 69.4566, 1e-9);
+        d->SetAGCStatus(1);
+        const bool clampLoOk = near(d->UpdataLgtData(-999.0), -20.0);
+
+        // 6. Экспозиция -> регистр по типам сенсора (усечение + нижний порог).
+        d->SetEndoSensorType(0);
+        const bool exp0Ok = d->ExposureTimeToRegisterValue(0.01) == 10;
+        d->SetEndoSensorType(1);
+        const bool exp1Ok = d->ExposureTimeToRegisterValue(0.01) == 4;   // порог
+        d->SetEndoSensorType(2);
+        const bool exp2Ok = d->ExposureTimeToRegisterValue(0.01) == 2305;
+        d->SetEndoSensorType(3);
+        const bool exp3Ok = d->ExposureTimeToRegisterValue(0.01) == 4;   // порог
+        d->SetEndoSensorType(4);
+        const bool exp4Ok = d->ExposureTimeToRegisterValue(0.01) == 4;   // порог
+
+        // 7. Усиление -> регистр.
+        d->SetEndoSensorType(3);
+        const bool gdb3Ok = d->gdbRegisterValue(6.0) == 31;
+        d->SetEndoSensorType(2);
+        const bool gdb2Ok = d->gdbRegisterValue(6.0) == 510;
+        d->SetEndoSensorType(0);
+
+        // 8. Подавление пересветов.
+        AUTO_DIMMING_PARA cd;
+        cd.target = 128; cd.d8 = 0.5; cd.d10 = 0.0;
+        // Коэффициенты в реф. — float, поэтому точное значение чуть отличается
+        // от «идеального» double (-1.9396597658938428): разница ~7.4e-8.
+        // Проверяем именно float-точное — оно и есть поведение бинарника.
+        const bool deltOk = near(d->CalDelt(cd), -1.9396596920301528, 1e-12);
+
+        // 9. Мёртвая зона (15): |diff| < 15 — шага нет, иначе есть.
+        d->Reset();
+        K3ADimming::ResetPidHistory();
+        AUTO_DIMMING_PARA p1;
+        p1.target = 100; p1.measured = 110;
+        const double before = d->LgtTotal();
+        d->Calculate3ADimmingPara(p1);
+        const bool deadOk = near(d->LgtTotal(), before);   // |10| < 15 — не тронуто
+        AUTO_DIMMING_PARA p2;
+        p2.target = 100; p2.measured = 120;
+        d->Calculate3ADimmingPara(p2);
+        const bool stepOk = !near(d->LgtTotal(), before);  // |20| >= 15 — шаг был
+
+        // 10. КВИРК: measured == 0 переписывается ЕДИНИЦЕЙ в структуре ВЫЗЫВАЮЩЕГО.
+        AUTO_DIMMING_PARA p3;
+        p3.target = 100; p3.measured = 0;
+        d->Calculate3ADimmingPara(p3);
+        const bool clobberOk = p3.measured == 1;
+
+        // 11. Распределение бюджета света: в полосе p0..p1 всё уходит в экспозицию.
+        d->Reset();
+        d->ConverLgtTo3ADimmingPara(10.0);
+        const bool convOk = near(d->AecLgt(), 10.0) && near(d->AlcLgt(), 0.0)
+                         && near(d->AgcLgt(), 0.0)
+                         && near(d->ExposureTime(), K3ADimming::CalPow(10.0), 1e-9)
+                         && d->LightCurrent() == d->AlcMin()
+                         && near(d->Gain(), 1.0);
+
+        // 12. КВИРКИ: SetAlcMax НИЧЕГО не сохраняет; строки 1 и 2 таблицы ALC
+        //     идентичны; GetAlcMinValueFromCL-подобная валидность по умолчанию false.
+        const int alcMaxBefore = d->AlcMax();
+        d->SetAlcMax(42.0);
+        const bool deadSetterOk = d->AlcMax() == alcMaxBefore;
+        bool dupRowOk = true;
+        for (int i = 0; i < 19; ++i)
+            if (d->GetManuDimmingALC(1, i) != d->GetManuDimmingALC(2, i))
+                dupRowOk = false;
+        const bool alcTblOk = d->GetManuDimmingALC(0, 0) == 33259
+                           && d->GetManuDimmingALC(3, 18) == 47513;
+        const bool validOk = !d->GetAlcValidState();
+
+        // 13. Пресеты: OAH0428 начинается с +20 (а не -20, как остальные).
+        d->SetCameraAutoDimmingParam();
+        const bool presetAutoOk = near(d->Preset()[0], -20.0)
+                               && near(d->Preset()[5], 96.4566);
+        d->SetOAH0428DimmingParam();
+        const bool presetOahOk = near(d->Preset()[0], 20.0)
+                              && near(d->Preset()[3], 74.347);
+        // КВИРК: SetOtherSensorDimmingParam — клон Auto, но m_expMax НЕ ставит.
+        d->Reset();
+        d->SetOAH0428DimmingParam();
+        const double expMaxAfterOah = d->ExposureTime();
+        (void)expMaxAfterOah;
+        d->SetOtherSensorDimmingParam();
+        const bool otherOk = near(d->Preset()[0], -20.0);
+
+        d->Reset();
+        K3ADimming::ResetPidHistory();
+
+        qInfo() << "CalLog/CalPow (оракул .rodata):" << logOk
+                << "| дБ→ток:" << ldbOk << "| ток→дБ:" << lpOk;
+        qInfo() << "ПИД (float-история, статики):" << pid1Ok << pid2Ok
+                << "| ассиметрия затемнения:" << ratioOk;
+        qInfo() << "кламп интегратора AGC on/off/низ:" << clampHiOnOk << clampHiOffOk
+                << clampLoOk;
+        qInfo() << "экспозиция→регистр 0..4:" << exp0Ok << exp1Ok << exp2Ok << exp3Ok
+                << exp4Ok << "| усиление→регистр:" << gdb3Ok << gdb2Ok;
+        qInfo() << "подавление пересветов:" << deltOk
+                << "| мёртвая зона 15:" << deadOk << stepOk
+                << "| measured=0 → 1 у вызывающего:" << clobberOk;
+        qInfo() << "распределение бюджета:" << convOk
+                << "| SetAlcMax ничего не пишет:" << deadSetterOk
+                << "| дубль строк ALC:" << dupRowOk << alcTblOk << validOk;
+        qInfo() << "пресеты Auto/OAH0428/Other:" << presetAutoOk << presetOahOk << otherOk;
+
+        const bool ok = logOk && ldbOk && lpOk && pid1Ok && pid2Ok && ratioOk
+                     && clampHiOnOk && clampHiOffOk && clampLoOk && exp0Ok && exp1Ok
+                     && exp2Ok && exp3Ok && exp4Ok && gdb3Ok && gdb2Ok && deltOk
+                     && deadOk && stepOk && clobberOk && convOk && deadSetterOk
+                     && dupRowOk && alcTblOk && validOk && presetAutoOk && presetOahOk
+                     && otherOk;
+        qInfo() << (ok ? "dimming: PASS" : "dimming: FAIL");
         return ok ? 0 : 65;
     }
 
