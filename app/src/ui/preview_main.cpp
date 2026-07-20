@@ -132,6 +132,7 @@ public:
 #include "report/KReportEditDataSource.h"
 #include "report/KReportEntity.h"
 #include "report/KReportItem.h"
+#include "video/KVideoPlayerMng.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6347,6 +6348,136 @@ int main(int argc, char **argv)
                      && diagOk && skipOk && griMissOk && griOk && insRc1 && insertedOk
                      && insRc2 && updatedOk && sexGateOk && statusOk;
         qInfo() << (ok ? "reportedit: PASS" : "reportedit: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "videoplayer") {
+        // Реф. KVideoPlayerMng — навигация по списку записей и частям разбиения.
+        const QString base = "/tmp/endo_videoplayer";
+        QDir(base).removeRecursively();
+        QDir().mkpath(base);
+        auto touch = [](const QString &p) {
+            QFile f(p); f.open(QIODevice::WriteOnly); f.write("x"); f.close();
+        };
+        // Две записи: A из трёх частей, B из одной. Плюс мусор и каталог-ловушка.
+        touch(base + "/2026-01-02_090000_01.mp4");   // запись B (новее)
+        touch(base + "/2026-01-01_120000_01.mp4");   // запись A, часть 1
+        touch(base + "/2026-01-01_120000_02.mp4");   // A, часть 2
+        touch(base + "/2026-01-01_120000_03.mp4");   // A, часть 3
+        touch(base + "/notes.txt");                  // не видео
+        QDir().mkpath(base + "/trap.mp4");           // КАТАЛОГ с видео-именем
+
+        auto *m = KVideoPlayerMng::GetInstance();
+        const std::string a1 = (base + "/2026-01-01_120000_01.mp4").toStdString();
+        const std::string a2 = (base + "/2026-01-01_120000_02.mp4").toStdString();
+        const std::string a3 = (base + "/2026-01-01_120000_03.mp4").toStdString();
+        const std::string b1 = (base + "/2026-01-02_090000_01.mp4").toStdString();
+
+        // 1. IsValidVideoFile — три ветки отказа.
+        const bool validOk = m->IsValidVideoFile(a1)
+                          && !m->IsValidVideoFile("")                       // стр. 49
+                          && !m->IsValidVideoFile((base + "/нет.mp4").toStdString())  // стр. 62
+                          && !m->IsValidVideoFile((base + "/notes.txt").toStdString());// стр. 60
+
+        // 2. ParseSplitVideo — коды 0 / -1 / -2 и квирк «out затирается при -1».
+        std::string g, i;
+        const bool p0 = m->ParseSplitVideo(a1, g, i) == 0 && g.find("120000") != std::string::npos
+                     && i == "01";
+        // Нет '_' → -1 ДО записи out-параметров (они остаются нетронутыми).
+        std::string g2 = "СТАРОЕ", i2 = "СТАРОЕ";
+        const bool pNoSep = m->ParseSplitVideo((base + "/plain.mp4").toStdString(), g2, i2) == -1
+                         && g2 == "СТАРОЕ" && i2 == "СТАРОЕ";
+        // А вот при ПУСТОЙ ПОЛОВИНЕ запись уже произошла — и -1 всё равно
+        // возвращается с затёртыми out-параметрами (квирк реф.).
+        std::string g4 = "СТАРОЕ", i4 = "СТАРОЕ";
+        const bool clobberOk = m->ParseSplitVideo((base + "/_01.mp4").toStdString(), g4, i4) == -1
+                            && g4.empty() && i4 == "01";
+        std::string g3, i3;
+        const bool pBadExt = m->ParseSplitVideo((base + "/notes.txt").toStdString(), g3, i3) == -2
+                          && g3.empty() && i3.empty();   // при -2 НЕ трогаются
+
+        // 3. AutoSetVideoFiles — порядок ПО УБЫВАНИЮ, каталог-ловушка отсеян.
+        m->AutoSetVideoFiles(a1);
+        const auto &lst = m->VideoList();
+        const bool listOk = lst.size() == 4                 // trap.mp4 и notes.txt вне списка
+                         && lst[0].fullPath == b1           // индекс 0 — САМОЕ НОВОЕ
+                         && lst[1].fullPath == a3
+                         && lst[2].fullPath == a2
+                         && lst[3].fullPath == a1
+                         && lst[1].index == "03" && lst[3].index == "01"
+                         && lst[1].group == lst[3].group    // одна запись A
+                         && lst[0].group != lst[3].group
+                         && lst[0].suffix == "mp4";
+        // Негодный текущий файл — список НЕ трогается.
+        m->AutoSetVideoFiles((base + "/нет.mp4").toStdString());
+        const bool keepOk = m->VideoList().size() == 4;
+
+        // 4. Индексация и выборка.
+        const bool idxOk = m->GetVideoListItemIndexByPath(a2) == 2
+                        && m->GetVideoListItemIndexByPath("нет") == -1
+                        && m->GetVideoListItemByPath(a2).index == "02"
+                        && m->GetVideoListItemByPath("нет").fullPath.empty();
+
+        // 5. FindNextSplitVideo — СЛЕПО берёт idx-1 (группа не проверяется).
+        std::string out;
+        const bool splitOk = m->FindNextSplitVideo(a1, out) && out == a2   // 3→2
+                          && m->FindNextSplitVideo(a3, out) && out == b1;  // квирк: чужая группа
+        const bool splitEdgeOk = !m->FindNextSplitVideo(b1, out);          // idx 0 → false
+
+        // 6. Переходы между ЗАПИСЯМИ (иная группа).
+        // Индексы: 0=b1(B), 1=a3, 2=a2, 3=a1(A).
+        const bool nextOk = m->FindNextEnable(0, out) && out == a1;  // из B → самая ранняя часть A
+        const bool nextNoneOk = !m->FindNextEnable(3, out);          // после A групп нет
+        const bool lastOk = m->FindLastEnable(3, out) && out == b1;  // из A назад → B
+        const bool lastNoneOk = !m->FindLastEnable(0, out);          // из индекса 0 назад некуда
+
+        // 7. Switch* меняют текущий файл.
+        m->SetCurPlayFile(a2);
+        const bool swSplitOk = m->SwitchNextSplitVideoFileFullPath() == a3
+                            && m->CurPlayFile() == a3;
+        m->SetCurPlayFile(b1);
+        const bool swNextOk = m->SwitchNextVideoFileFullPath() == a1;
+        m->SetCurPlayFile(a1);
+        const bool swLastOk = m->SwitchLastVideoFileFullPath() == b1;
+
+        // 8. CheckIsNeedPlayNextVideo: внутри группы true, на границе false.
+        m->SetCurPlayFile(a2);   // предыдущий по списку — a3, та же группа
+        const bool contOk = m->CheckIsNeedPlayNextVideo();
+        m->SetCurPlayFile(a3);   // предыдущий — b1, ДРУГАЯ группа
+        const bool stopOk = !m->CheckIsNeedPlayNextVideo();
+        m->SetCurPlayFile(b1);   // индекс 0 → предыдущего нет
+        const bool edgeOk = !m->CheckIsNeedPlayNextVideo();
+
+        // 9. CheckIsFirstOrLast — «есть предыдущая / есть следующая» ЗАПИСЬ.
+        bool hp = true, hn = true;
+        m->CheckIsFirstOrLast(b1, hp, hn);
+        const bool cfl0Ok = !hp && hn;              // индекс 0: назад нет, вперёд есть
+        m->CheckIsFirstOrLast(a1, hp, hn);
+        const bool cflEndOk = hp && !hn;            // последний индекс
+        // Квирк: список ровно из одного элемента → false/false.
+        std::vector<KVideoListItem> one(1);
+        one[0].fullPath = a1;
+        m->SetVideoFiles(one);
+        hp = true; hn = true;
+        m->CheckIsFirstOrLast(a1, hp, hn);
+        const bool cflOneOk = !hp && !hn;
+        m->AutoSetVideoFiles(a1);                   // восстановить список
+
+        qInfo() << "IsValidVideoFile:" << validOk << "| ParseSplitVideo 0/-1/-2:"
+                << p0 << pNoSep << pBadExt << "| квирк «затирает при -1»:" << clobberOk;
+        qInfo() << "список (убывание, каталог отсеян):" << listOk << m->VideoList().size()
+                << "| негодный файл не рушит список:" << keepOk << "| индексы:" << idxOk;
+        qInfo() << "FindNextSplitVideo (слепой idx-1):" << splitOk << "| край:" << splitEdgeOk;
+        qInfo() << "переходы между записями:" << nextOk << nextNoneOk << lastOk << lastNoneOk;
+        qInfo() << "Switch split/next/last:" << swSplitOk << swNextOk << swLastOk;
+        qInfo() << "продолжать запись:" << contOk << "| граница:" << stopOk << edgeOk
+                << "| CheckIsFirstOrLast:" << cfl0Ok << cflEndOk << "один элемент:" << cflOneOk;
+
+        const bool ok = validOk && p0 && pNoSep && clobberOk && pBadExt && listOk && keepOk
+                     && idxOk && splitOk && splitEdgeOk && nextOk && nextNoneOk && lastOk
+                     && lastNoneOk && swSplitOk && swNextOk && swLastOk && contOk && stopOk
+                     && edgeOk && cfl0Ok && cflEndOk && cflOneOk;
+        qInfo() << (ok ? "videoplayer: PASS" : "videoplayer: FAIL");
         return ok ? 0 : 65;
     }
 

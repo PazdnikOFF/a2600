@@ -16,7 +16,7 @@ statistic sysstatus project style videoset dsdemo videocal templetcfg osdset end
 remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib encset imageblock reporttmplmgr legalnotice"
 # Режимы без ENDO_ROOT (чистая логика / своя БД).
 PLAIN_MODES="cornercut quickinput examcfg exam filebackup update reportdb
-reportedit imgproc exportrec savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop patstr stopwatch patient doctor dbstr session textblock tableblock titletableblock reporttmpl examdata kobject xmlparser dbsqlite des templetmodel"
+videoplayer reportedit imgproc exportrec savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop patstr stopwatch patient doctor dbstr session textblock tableblock titletableblock reporttmpl examdata kobject xmlparser dbsqlite des templetmodel"
 # Режимы, пишущие в ENDO_ROOT → временный каталог.
 TMP_MODES="dccu account dcmconf listsetup examno manupwd controlini kcontrolproc templetsave dimmer printdata autotest exambiz"
 
