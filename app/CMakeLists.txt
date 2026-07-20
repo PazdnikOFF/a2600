@@ -104,6 +104,7 @@ set(SOURCES
     src/db/KEntityExam.cpp
     src/db/KExamListDBTableHandler.cpp
     src/db/KExportRecord.cpp
+    src/alg/KImageProcess.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
     src/db/KPatientMngExamStatus.cpp
@@ -237,6 +238,7 @@ add_executable(ui_preview
     src/db/KEntityExam.cpp
     src/db/KExamListDBTableHandler.cpp
     src/db/KExportRecord.cpp
+    src/alg/KImageProcess.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
     src/db/KPatientMngExamStatus.cpp

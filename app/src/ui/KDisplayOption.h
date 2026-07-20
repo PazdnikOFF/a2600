@@ -64,6 +64,10 @@ public:
 
     // Пути стиля/тем
     QString GetStyleQssPath() const;               // <root>/qss/black/style.qss
+    // Реф. KDisplayOption::GetThemeQssPath(QString) — СТАТИЧЕСКИЙ, возвращает
+    // ФАЙЛОВЫЙ путь внутри текущей темы (к результату применяется QFile::exists).
+    // У нас тема одна («black») ⇒ <root>/qss/black/<rel>.
+    static QString GetThemeQssPath(const QString &rel);
 
     // Иконки (по логическому пути внутри qss/black)
     QIcon   GetIcon(const QString &relToBlack) const;

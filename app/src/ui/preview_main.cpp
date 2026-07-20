@@ -128,6 +128,7 @@ public:
 #include "kernel/KThreadPoolMsg.h"
 #include "db/KExamDataFileNameGenerator.h"
 #include "db/KExportRecord.h"
+#include "alg/KImageProcess.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -5915,6 +5916,152 @@ int main(int argc, char **argv)
                      && spaceOk && spaceEmptyOk && copiedOk && cntOk && idsOk
                      && statOk && fnOk && delOk && cleanOk && stopOk && noUsbOk && allOk;
         qInfo() << (ok ? "exportrec: PASS" : "exportrec: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "imgproc") {
+        // Реф. KImageProcess — все методы статические, чистая математика/геометрия.
+        const QString base = "/tmp/endo_imgproc";
+        QDir(base).removeRecursively();
+        QDir().mkpath(base);
+
+        // 1. RGB2Ybcbr — коэффициенты Rec.709, порядок каналов RGB, БЕЗ +128.
+        const uchar rgbIn[9] = {255, 0, 0,   0, 255, 0,   0, 0, 255};
+        float ycc[9] = {0};
+        KImageProcess::RGB2Ybcbr(rgbIn, ycc, 3, 1);
+        // Допуск 0.5: коэффициенты в реф. — float с 4 знаками, круговой прогон
+        // Rec.709 даёт накопленную ошибку порядка десятых.
+        auto near = [](float a, double b) { return qAbs(double(a) - b) < 0.5; };
+        const bool r709Ok = near(ycc[0], 0.2126 * 255) && near(ycc[3], 0.7152 * 255)
+                         && near(ycc[6], 0.0722 * 255)
+                         && near(ycc[1], -0.1146 * 255)   // Cb для чистого красного
+                         && near(ycc[2],  0.5    * 255);  // Cr для чистого красного
+
+        // 2. Ybcbr2RGB — обратная матрица; круговой прогон возвращает исходное.
+        float rgbBack[9] = {0};
+        KImageProcess::Ybcbr2RGB(ycc, rgbBack, 3, 1);
+        const bool roundOk = near(rgbBack[0], 255) && near(rgbBack[1], 0)
+                          && near(rgbBack[2], 0)   && near(rgbBack[4], 255)
+                          && near(rgbBack[8], 255);
+
+        // 3. EnhanceSaturability. Серые пиксели (d == 0) идут мимо ветки
+        //    насыщения — на них проверяется ЧИСТЫЙ насыщающий кламп.
+        float sat[9] = {128, 128, 128,  300, 300, 300,  -50, -50, -50};
+        uchar satOut[9] = {0};
+        KImageProcess::EnhanceSaturability(sat, satOut, 3, 1, 0);
+        const bool satGrayOk = satOut[0] == 128 && satOut[1] == 128 && satOut[2] == 128;
+        const bool clampOk = satOut[3] == 255 && satOut[6] == 0;   // 300→255, -50→0
+        // Цветной пиксель при nSat == 0: alpha = 1/S, если S >= 1 ⇒ насыщенность
+        // ПОДЖИМАЕТСЯ к 1 (а не остаётся как есть) — поведение реф.
+        float satC[3] = {300, -50, 10};
+        uchar satCOut[3] = {0};
+        KImageProcess::EnhanceSaturability(satC, satCOut, 1, 1, 0);
+        const bool satCOk = satCOut[0] == 250 && satCOut[1] == 0;
+
+        // 4. EnhanceBrightnessAndContrast — кривая непрерывна в точке порога
+        //    и проходит через (255, 255).
+        float y1[3] = {50, 0, 0}, y2[3] = {50.0001f, 0, 0}, y3[3] = {255, 0, 0};
+        KImageProcess::EnhanceBrightnessAndContrast(y1, 1, 1, 40, 20, 50);
+        KImageProcess::EnhanceBrightnessAndContrast(y2, 1, 1, 40, 20, 50);
+        KImageProcess::EnhanceBrightnessAndContrast(y3, 1, 1, 40, 20, 50);
+        const bool curveOk = qAbs(y1[0] - y2[0]) < 0.05     // C0 в точке порога
+                          && qAbs(y3[0] - 255.0f) < 0.05;   // проходит через (255,255)
+
+        // 5. ScaledWithAspectRatio — ничья уходит в ветку «по ширине».
+        const QSize sw = KImageProcess::ScaledWithAspectRatio(QSize(200, 100), QSize(50, 50));
+        const QSize sh = KImageProcess::ScaledWithAspectRatio(QSize(100, 200), QSize(50, 50));
+        const QSize se = KImageProcess::ScaledWithAspectRatio(QSize(100, 100), QSize(50, 50));
+        const bool arOk = sw == QSize(50, 25)     // rb(1.0) <= ra(2.0) → по ширине
+                       && sh == QSize(25, 50)     // rb(1.0) >  ra(0.5) → по высоте
+                       && se == QSize(50, 50);    // ничья → по ширине
+
+        // 6. GetGroupImageSize — типы 0/1 и квирки.
+        QImage a(100, 50, QImage::Format_ARGB32);  a.fill(Qt::red);
+        QImage b(40, 20, QImage::Format_ARGB32);   b.fill(Qt::blue);
+        _KGroupImgSize g0;
+        KImageProcess::GetGroupImageSize(a, b, K_GROUP_B_LEFT_A_RIGHT, g0, 0);
+        // H = 2*20 = 40; thumbW = 100*40/50 = 80; итог 120x40; B в (0, 10).
+        const bool g0Ok = g0.totalW == 120 && g0.totalH == 40 && g0.imgA_drawW == 80
+                       && g0.B_x == 0 && g0.B_y == 10 && g0.A_x == 40 && g0.A_y == 0;
+        _KGroupImgSize g1;
+        KImageProcess::GetGroupImageSize(a, b, K_GROUP_A_LEFT_B_RIGHT, g1, 1);
+        // flag == 1: H = 20 (БЕЗ удвоения); thumbW = 100*20/50 = 40; B без центрирования.
+        const bool g1Ok = g1.totalH == 20 && g1.imgA_drawW == 40 && g1.B_x == 40
+                       && g1.B_y == 0;
+        // Типы 2/3 — холст 0x0, записаны только imgB_*.
+        _KGroupImgSize g2;
+        KImageProcess::GetGroupImageSize(a, b, K_GROUP_UNUSED_2, g2, 0);
+        const bool g2Ok = g2.totalW == 0 && g2.totalH == 0 && g2.imgB_w == 40;
+        // Наложение: холст ровно по A.
+        _KGroupImgSize g4;
+        KImageProcess::GetGroupImageSize(a, b, K_GROUP_OVERLAY, g4, 0);
+        const bool g4Ok = g4.totalW == 100 && g4.totalH == 50 && g4.B_x == 0;
+        // КВИРК: негодный A ⇒ НЕ пишется НИЧЕГО (даже imgB_*).
+        _KGroupImgSize gBad;
+        const QImage nullImg;
+        KImageProcess::GetGroupImageSize(nullImg, b, K_GROUP_B_LEFT_A_RIGHT, gBad, 0);
+        const bool gBadOk = gBad.totalW == 0 && gBad.imgB_w == 0;
+
+        // 7. CreateGroupImage — размеры холста и точка наложения.
+        _KPoint pt; pt.x = 10; pt.y = 5;
+        const QImage grp = KImageProcess::CreateGroupImage(a, b, pt, K_GROUP_B_LEFT_A_RIGHT, 0);
+        const QImage ovl = KImageProcess::CreateGroupImage(a, b, pt, K_GROUP_OVERLAY, 0);
+        const bool grpOk = grp.size() == QSize(120, 40) && ovl.size() == QSize(100, 50)
+                        && ovl.pixelColor(15, 10) == QColor(Qt::blue)   // B в (10,5)
+                        && ovl.pixelColor(5, 2) == QColor(Qt::red);     // A под ней
+
+        // 8. CreateThumbnail — точный размер (IgnoreAspectRatio).
+        const bool thumbOk = KImageProcess::CreateThumbnail(a, 33, 77).size() == QSize(33, 77);
+
+        // 9. ResizeCopyImage — целевые размеры по _LoadImgType + подложка.
+        const QString srcImg = base + "/src.png";
+        QImage big(400, 400, QImage::Format_ARGB32); big.fill(Qt::green);
+        big.save(srcImg);
+        const QString d0 = base + "/d0.jpg", d1 = base + "/d1.jpg", d2 = base + "/d2.jpg";
+        const int rc0 = KImageProcess::ResizeCopyImage(srcImg, d0, K_LOAD_IMG_150x30);
+        const int rc1 = KImageProcess::ResizeCopyImage(srcImg, d1, K_LOAD_IMG_850x120);
+        const int rc2 = KImageProcess::ResizeCopyImage(srcImg, d2, K_LOAD_IMG_160x120);
+        const bool rcOk = rc0 == 1 && rc1 == 1 && rc2 == 1
+                       && QImage(d0).size() == QSize(150, 30)     // подложка до цели
+                       && QImage(d1).size() == QSize(850, 120)
+                       && QImage(d2).size() == QSize(160, 120);
+        // Коды ошибок: пустой путь → 5, src == dst → 1, не загрузилось → 0.
+        const bool rcErrOk = KImageProcess::ResizeCopyImage("", d0, K_LOAD_IMG_150x30) == 5
+                          && KImageProcess::ResizeCopyImage(srcImg, srcImg, K_LOAD_IMG_150x30) == 1
+                          && KImageProcess::ResizeCopyImage(base + "/нет.png", d0,
+                                                            K_LOAD_IMG_150x30) == 0;
+
+        // 10. GetVideoImg — <dir>/<base>.jpg
+        const bool viOk = KImageProcess::GetVideoImg("/a/b/clip.mp4") == "/a/b/clip.jpg";
+
+        // 11. OptimizeReportImage — коды возврата и то, что пиксели изменились.
+        const QString opt = base + "/opt.jpg";
+        const bool optRcOk = KImageProcess::OptimizeReportImage("", opt) == 5
+                          && KImageProcess::OptimizeReportImage(srcImg, "") == 5;
+        QImage mid(8, 8, QImage::Format_ARGB32); mid.fill(QColor(90, 110, 130));
+        const QString midPath = base + "/mid.png";
+        mid.save(midPath);
+        const int optRc = KImageProcess::OptimizeReportImage(midPath, opt);
+        const QImage optImg(opt);
+        const bool optOk = optRc == 1 && !optImg.isNull()
+                        && optImg.pixelColor(4, 4) != QColor(90, 110, 130);
+
+        qInfo() << "Rec.709 прямая:" << r709Ok << "| обратная (roundtrip):" << roundOk;
+        qInfo() << "насыщенность серого:" << satGrayOk << "| кламп:" << clampOk
+                << "| поджим S>=1:" << satCOk << satCOut[0] << satCOut[1]
+                << "| кривая яркость/контраст:" << curveOk;
+        qInfo() << "ScaledWithAspectRatio:" << arOk << sw << sh << se;
+        qInfo() << "GetGroupImageSize 0/1/2/4:" << g0Ok << g1Ok << g2Ok << g4Ok
+                << "| квирк «негодный A»:" << gBadOk;
+        qInfo() << "CreateGroupImage:" << grpOk << "| CreateThumbnail:" << thumbOk;
+        qInfo() << "ResizeCopyImage:" << rcOk << "| коды ошибок:" << rcErrOk
+                << "| GetVideoImg:" << viOk;
+        qInfo() << "OptimizeReportImage:" << optOk << "| коды:" << optRcOk;
+
+        const bool ok = r709Ok && roundOk && satGrayOk && clampOk && satCOk && curveOk && arOk
+                     && g0Ok && g1Ok && g2Ok && g4Ok && gBadOk && grpOk && thumbOk
+                     && rcOk && rcErrOk && viOk && optOk && optRcOk;
+        qInfo() << (ok ? "imgproc: PASS" : "imgproc: FAIL");
         return ok ? 0 : 65;
     }
 

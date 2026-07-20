@@ -123,3 +123,8 @@ QPixmap KDisplayOption::GetOsdIconPixmap(const QString &name) const
 {
     return QPixmap(theme::asset("black/osd/" + name));
 }
+
+QString KDisplayOption::GetThemeQssPath(const QString &rel)
+{
+    return theme::asset(QStringLiteral("black/") + rel);
+}
