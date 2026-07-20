@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **105 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **106 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -634,11 +634,17 @@ GetAllItemIDs).
 **OFF-DEVICE-ЯДРО KDocumentGenerator ПО СУТИ ЗАКРЫТО.** Работает сквозной цикл: данные
 (CRUD/image-sync/оркестратор) → рендер (text/image/table + InitDocument, валидировано на
 реальном шаблоне `initdocreal`) → поиск (FindFrameOrCell) → выделение → UI-обёртки →
-перемещение. **ОСТАТОК (мелочи/редкое):** `UpdateBlock` (перерисовка одного фрейма без полного
-InitDocument), `InsertBlockLineAfterItem` (футер-падинг — нужны метрики QTextDocumentLayout),
-`ChangeTxtColor`/`ChangeBgColor`/`ChangeFontSet` (правка цвета/шрифта выделенного),
-редкие творцы ImageGroup/SubData (в поставке НЕ встречаются), image/table-в-ячейку перегрузки,
-Q_DECLARE_METATYPE для round-trip редактора.
+перемещение. **✅ ПРАВКА ВНЕШНЕГО ВИДА (итерация 11): `ChangeTxtColor`/`ChangeBgColor`/`ChangeFontSet`**
+(self-test `changecolor`). ВАЖНО (реф.): цвета красят ВЕСЬ документ (не выделение!) —
+ChangeTxtColor: QTextCursor(Document)+mergeCharFormat(ForegroundBrush) + дубль строкой
+m_mapConfigs["FontColor"]=color.name(); ChangeBgColor: rootFrame BackgroundBrush +
+m_mapConfigs["BgColor"]=name (тот же ключ, что читает InitDocument). Оба БЕЗ InitDocument.
+ChangeFontSet: upsert набора в m_mapItemConfigs (перезапись полей ПОЛНОСТЬЮ, не merge), тоже
+без хвоста. Класс ~29/33.
+**ОСТАТОК (мелочи/редкое, off-device-ядро закрыто):** `UpdateBlock` (перерисовка одного фрейма
+через KRTCreatorContext::UpdateBlock, сейчас диспетчер-заглушка), `InsertBlockLineAfterItem`
+(футер-падинг — нужны метрики QTextDocumentLayout), редкие творцы ImageGroup/SubData (в поставке
+НЕ встречаются), image/table-в-ячейку перегрузки, Q_DECLARE_METATYPE для round-trip редактора.
 
 **ОСТАВШАЯСЯ разведка (для истории; каркас уже закрыт выше):**
 

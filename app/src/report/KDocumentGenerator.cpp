@@ -419,6 +419,48 @@ void KDocumentGenerator::SyncRefresnImageItemData()
     }
 }
 
+void KDocumentGenerator::ChangeTxtColor(const QColor &color)
+{
+    // Реф. @0x53d8b8: цвет текста ВСЕГО документа (не выделения). БЕЗ InitDocument.
+    if (!m_pDoc)
+        return;
+    QTextCharFormat fmt;
+    fmt.setForeground(QBrush(color, Qt::SolidPattern));   // ForegroundBrush 0x821
+    QTextCursor cur(m_pDoc);
+    cur.select(QTextCursor::Document);
+    cur.mergeCharFormat(fmt);
+    if (m_pData)
+        m_pData->m_mapConfigs["FontColor"] = color.name().toStdString();  // дубль (сериализация)
+}
+
+void KDocumentGenerator::ChangeBgColor(const QColor &color)
+{
+    // Реф. @0x53d4d8: фон корневого фрейма (всего документа). БЕЗ InitDocument.
+    if (!m_pDoc)
+        return;
+    QTextFrame *root = m_pDoc->rootFrame();
+    QTextFrameFormat ff = root->frameFormat();
+    ff.setBackground(QBrush(color, Qt::SolidPattern));    // BackgroundBrush 0x820
+    root->setFrameFormat(ff);
+    if (m_pData)
+        m_pData->m_mapConfigs["BgColor"] = color.name().toStdString();
+}
+
+void KDocumentGenerator::ChangeFontSet(
+    const std::map<std::string, KReportTemplateItemConfig> &cfgMap)
+{
+    // Реф. @0x541468: upsert конфигов в m_mapItemConfigs (перезапись полей, не merge). Хвоста
+    // (InitDocument/выделение) НЕТ — перерисовку зовёт caller.
+    if (!m_pData)
+        return;
+    for (const auto &kv : cfgMap) {
+        KReportTemplateItemConfig &dst = m_pData->m_mapItemConfigs[kv.first];
+        dst.m_bUserDefine = kv.second.m_bUserDefine;
+        dst.m_strName     = kv.second.m_strName;
+        dst.m_mapAttrs    = kv.second.m_mapAttrs;
+    }
+}
+
 std::list<KReportTemplateItem> *
 KDocumentGenerator::mutableSiblingsOf(const std::string &id)
 {

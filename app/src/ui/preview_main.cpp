@@ -6252,6 +6252,60 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Self-test правки внешнего вида (реф. ChangeTxtColor/ChangeBgColor/ChangeFontSet).
+    // Цвета красят ВЕСЬ документ + дубль строкой в m_mapConfigs; FontSet — upsert конфигов.
+    if (screen == "changecolor") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["VA"] = "Alpha";
+        KReportTemplateItem a;
+        a.m_strID = "/RT_A"; a.m_strName = "RT_A"; a.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(a);
+        KReportTemplateItemConfig ca; ca.m_strName = "/RT_A";
+        ca.m_mapAttrs["TemplateData"] = "VA";
+        data.m_mapItemConfigs["/RT_A"] = ca;
+
+        QObject parent;
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+
+        // 1. Цвет текста → красный по всему документу + строка "FontColor".
+        gen.ChangeTxtColor(QColor("red"));
+        bool txtRed = false;
+        for (QTextBlock b = doc->begin(); b.isValid(); b = b.next())
+            for (QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it)
+                if (it.fragment().text().contains("Alpha"))
+                    txtRed = it.fragment().charFormat().foreground().color() == QColor("red");
+        const bool txtOk = txtRed
+            && data.m_mapConfigs["FontColor"] == QColor("red").name().toStdString();  // "#ff0000"
+
+        // 2. Фон → синий (корневой фрейм) + строка "BgColor".
+        gen.ChangeBgColor(QColor("blue"));
+        const bool bgOk =
+            doc->rootFrame()->frameFormat().background().color() == QColor("blue")
+            && data.m_mapConfigs["BgColor"] == QColor("blue").name().toStdString();   // "#0000ff"
+
+        // 3. ChangeFontSet: upsert конфига /RT_A (перезапись m_mapAttrs).
+        std::map<std::string, KReportTemplateItemConfig> fs;
+        fs["/RT_A"].m_strName = "/RT_A";
+        fs["/RT_A"].m_mapAttrs["Size"] = "99";
+        fs["/NEW"].m_strName = "/NEW";                 // вставка нового
+        fs["/NEW"].m_mapAttrs["Bold"] = "1";
+        gen.ChangeFontSet(fs);
+        const bool fontSetOk =
+            data.m_mapItemConfigs["/RT_A"].m_mapAttrs["Size"] == "99"      // перезаписан
+            && data.m_mapItemConfigs["/RT_A"].m_mapAttrs.count("TemplateData") == 0  // m_mapAttrs заменён целиком
+            && data.m_mapItemConfigs.count("/NEW") == 1                    // вставлен
+            && data.m_mapItemConfigs["/NEW"].m_mapAttrs["Bold"] == "1";
+
+        qInfo() << "changecolor: txt:" << txtOk << "bg:" << bgOk << "fontset:" << fontSetOk
+                << "| FontColor:" << QString::fromStdString(data.m_mapConfigs["FontColor"])
+                << "BgColor:" << QString::fromStdString(data.m_mapConfigs["BgColor"]);
+
+        const bool ok = txtOk && bgOk && fontSetOk;
+        qInfo() << (ok ? "changecolor: PASS" : "changecolor: FAIL");
+        return ok ? 0 : 79;
+    }
+
     // Self-test перемещения блока (реф. MoveFront @0x540640 / MoveBack @0x5408c0): своп
     // содержимого соседних узлов данных + перерисовка. Qt Gui.
     if (screen == "movefb") {

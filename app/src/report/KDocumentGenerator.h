@@ -7,6 +7,7 @@
 class QTextDocument;
 class QTextFrame;
 class QTextTableCell;
+class QColor;
 class QObject;
 class KRTCreatorContext;
 
@@ -124,6 +125,21 @@ public:
     // QTextFrame напрямую НЕ двигаются (документ пересобирается из данных).
     void MoveFront();
     void MoveBack();
+
+    // --- правка внешнего вида (реф.: цвета красят ВЕСЬ документ, не выделение!) ---
+
+    // Реф. ChangeTxtColor @0x53d8b8: цвет текста ВСЕГО документа (QTextCursor(Document)+
+    // mergeCharFormat, ForegroundBrush) + дубль строкой m_mapConfigs["FontColor"]=color.name().
+    // Гейт m_pDoc. БЕЗ InitDocument. (Реф. игнорирует m_strCurItemId — красит глобально.)
+    void ChangeTxtColor(const QColor &color);
+
+    // Реф. ChangeBgColor @0x53d4d8: фон rootFrame (BackgroundBrush) + m_mapConfigs["BgColor"]=
+    // color.name() (тот же ключ, что читает InitDocument). Гейт m_pDoc. БЕЗ InitDocument.
+    void ChangeBgColor(const QColor &color);
+
+    // Реф. ChangeFontSet @0x541468: upsert набора конфигов в m_mapItemConfigs (перезапись
+    // трёх полей ПОЛНОСТЬЮ, не merge атрибутов). БЕЗ InitDocument (перерисовку зовёт caller).
+    void ChangeFontSet(const std::map<std::string, KReportTemplateItemConfig> &cfgMap);
 
     // --- синхронизация колонок image-text-map (реф., восстановлено ДЕКОМПИЛЯТОРОМ) ---
     // Это слой данных под живой раскладкой RT_IMAGE_TEXT_MAP (галерея снимков N×M):
