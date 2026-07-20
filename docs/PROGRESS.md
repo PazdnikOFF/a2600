@@ -533,7 +533,27 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **95 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
-**ПОСЛЕДНЕЕ (итерация 3b): ЗАКРЫТ оркестратор `KDocumentGenerator::SyncRefresnImageItemData`**
+**ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
+(self-test `docgen` расширен, класс **12/33**). Два Qt-free метода-ядра (четыре UI-обёртки
+Add/Delete/Update/ClickSubItem — Qt через InitDocument/ChangeItemSelected, ждут документной
+итерации):
+- **`AddSubItemData`** @0x540bf0 — вставка копии item в список под parentId по позиции pos
+  (0→в начало, ≥размера→в конец; реф. 3 ветки = один insert в min(pos,size)). parentId==""→
+  корень; промах родителя → лог+выход. Дедуп: если id уже есть → RemoveSubItem(parentId,
+  item.m_strName) перед вставкой (КВИРК: RemoveSubItem без root-фолбэка → в корне дедуп
+  no-op). Слияние cfgMap: upsert трёх полей. Хвост (сверено СЫРЫМ asm): оба find по
+  **item.m_strID** — `item.m_strID.find(STR_REF_IMAGE_TEXT_MAP)` ‖ `STR_REF_IMAGE_TEXT_MAP_EXT.
+  find(item.m_strID)` → SyncRefresnImageItemData. Возврат ulong (норма -1) реф. игнорируется→void.
+- **`DeleteSubItemData`** @0x53fb10 — id==""→из корня убрать ВСЕ узлы с m_strID==item.m_strID
+  (цикл не прерывается); иначе RemoveSubItem(id, item.m_strName). Каскад конфигов (сверено
+  СЫРЫМ asm — needle **item.m_strID**, НЕ parentId): стереть все ключи m_mapItemConfigs,
+  содержащие item.m_strID как ПОДСТРОКУ (сносит сам элемент + детей по префиксу; квирк — "/CC"
+  тоже попадает под подстроку "/C"; сиблинги с иным префиксом целы). Хвост по item.m_strID.
+**ИСПРАВЛЕНО:** в итерации 2 `imgSyncOk` печатался, но НЕ входил в `ok` docgen (image-sync
+тесты не гейтили PASS — латентный пробел, ровно про который §4). Добавлено `&& imgSyncOk
+&& crudOk`.
+
+**ПРЕДЫДУЩЕЕ (итерация 3b): ЗАКРЫТ оркестратор `KDocumentGenerator::SyncRefresnImageItemData`**
 @0x53efa0 (опечатка Refresn; self-test `docsync` на РЕАЛЬНЫХ синглтонах прошивки).
 Весь кластер синхронизации колонок image-text-map теперь закрыт (класс **10/33**).
 Поток: templName (выбранный шаблон) → libName=GetTempletLibName → libData=GetTemplateLib(libName)

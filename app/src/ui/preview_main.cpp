@@ -5875,9 +5875,80 @@ int main(int argc, char **argv)
         const bool imgSyncOk = getAllOk && normOk && extOk && missOk
             && syncContentOk && syncParamOk;
 
+        // 13. Под-элементная CRUD-модель (реф. AddSubItemData/DeleteSubItemData, Qt-free).
+        //     Все id — НЕ image-text-map, поэтому синглтонный хвост SyncRefresnImageItemData
+        //     не срабатывает (тест детерминирован, прошивка не нужна).
+        KReportTemplateDataNew crud;
+        KDocumentGenerator cg(&crud);
+        auto mkI = [](const std::string &id, const std::string &title = "") {
+            KReportTemplateItem it; it.m_strID = id;
+            it.m_strName = id.substr(id.find_last_of('/') + 1);
+            it.m_strTitle = title; return it;
+        };
+        std::map<std::string, KReportTemplateItemConfig> noCfg;
+
+        // 13a. Вставка в корень по позициям: 0 (в начало), ≥размера (в конец), середина.
+        cg.AddSubItemData("", mkI("/A"), noCfg, 0);        // [A]
+        cg.AddSubItemData("", mkI("/B"), noCfg, 0);        // [B, A]  (pos 0 → в начало)
+        cg.AddSubItemData("", mkI("/C"), noCfg, 99);       // [B, A, C] (pos ≥ размера → конец)
+        cg.AddSubItemData("", mkI("/D"), noCfg, 1);        // [B, D, A, C] (перед индексом 1)
+        std::vector<std::string> order;
+        for (const auto &n : crud.m_lstItems) order.push_back(n.m_strID);
+        const bool addPosOk = order == std::vector<std::string>{"/B", "/D", "/A", "/C"};
+
+        // 13b. Слияние конфигов при вставке.
+        std::map<std::string, KReportTemplateItemConfig> cfg;
+        cfg["/E"].m_strName = "/E";
+        cfg["/E"].m_mapAttrs["Section"] = "Body";
+        cg.AddSubItemData("", mkI("/E"), cfg, 99);
+        const bool addCfgOk = crud.m_mapItemConfigs.count("/E") == 1
+            && crud.m_mapItemConfigs["/E"].m_mapAttrs["Section"] == "Body";
+
+        // 13c. Не корень + дедуп: под /A создаём ребёнка, затем повторно с тем же id и
+        //      новым Title → старый удалён, вставлен новый (RemoveSubItem по имени).
+        cg.AddSubItemData("/A", mkI("/A/X", "СТАРЫЙ"), noCfg, 0);
+        cg.AddSubItemData("/A", mkI("/A/X", "НОВЫЙ"), noCfg, 0);
+        const KReportTemplateItem *pa = report_template::FindConstRefItem(crud, "/A");
+        const bool dedupOk = pa && pa->m_lstSubItems.size() == 1
+            && pa->m_lstSubItems.front().m_strID == "/A/X"
+            && pa->m_lstSubItems.front().m_strTitle == "НОВЫЙ";
+
+        // 13d. Промах родителя → вставки нет (лог опущен).
+        const size_t beforeMiss = crud.m_lstItems.size();
+        cg.AddSubItemData("/НЕТ", mkI("/НЕТ/Z"), noCfg, 0);
+        const bool missParentOk = crud.m_lstItems.size() == beforeMiss;
+
+        // 13e. Удаление из корня + каскад конфигов по префиксу item.m_strID; сиблинг цел.
+        crud.m_mapItemConfigs["/C"].m_strName = "/C";
+        crud.m_mapItemConfigs["/C/sub"].m_strName = "/C/sub";   // ребёнок C
+        crud.m_mapItemConfigs["/CC"].m_strName = "/CC";         // ПОХОЖИЙ, но НЕ префикс "/C"?
+        cg.DeleteSubItemData("", mkI("/C"));
+        bool cGone = true;
+        for (const auto &n : crud.m_lstItems) if (n.m_strID == "/C") cGone = false;
+        // Каскад: "/C" и "/C/sub" содержат подстроку "/C" → стёрты; "/CC" тоже содержит "/C"
+        //         (подстрочный тест реф.!) → тоже стёрт. Проверяем это ЯВНО (квирк).
+        const bool delRootOk = cGone
+            && crud.m_mapItemConfigs.count("/C") == 0
+            && crud.m_mapItemConfigs.count("/C/sub") == 0
+            && crud.m_mapItemConfigs.count("/CC") == 0        // подстрока → тоже удалён
+            && crud.m_mapItemConfigs.count("/E") == 1;        // сиблинг /E цел
+
+        // 13f. Удаление не из корня: под /A есть /A/X → удаляем по (parent="/A", name="X").
+        crud.m_mapItemConfigs["/A/X"].m_strName = "/A/X";
+        cg.DeleteSubItemData("/A", mkI("/A/X"));
+        const KReportTemplateItem *pa2 = report_template::FindConstRefItem(crud, "/A");
+        const bool delChildOk = pa2 && pa2->m_lstSubItems.empty()
+            && crud.m_mapItemConfigs.count("/A/X") == 0;
+
+        const bool crudOk = addPosOk && addCfgOk && dedupOk && missParentOk
+            && delRootOk && delChildOk;
+
         qInfo() << "imgsync: getAll:" << getAllOk << "norm:" << normOk << extOk
                 << "miss:" << missOk << "| content:" << syncContentOk
                 << "param:" << syncParamOk;
+        qInfo() << "crud: addPos:" << addPosOk << "addCfg:" << addCfgOk
+                << "dedup:" << dedupOk << "missParent:" << missParentOk
+                << "| delRoot:" << delRootOk << "delChild:" << delChildOk;
 
         qInfo() << "init:" << initOk << "| футер:" << footerOk
                 << "нет футера:" << noFooterOk << "футер первый:" << firstFootOk;
@@ -5888,7 +5959,8 @@ int main(int argc, char **argv)
                 << "сосед-pin:" << pinnedNeighbor;
 
         const bool ok = initOk && footerOk && noFooterOk && firstFootOk
-            && calcOk && layoutOk && saveOk && deepOk && moveOk;
+            && calcOk && layoutOk && saveOk && deepOk && moveOk
+            && imgSyncOk && crudOk;
         qInfo() << (ok ? "docgen: PASS" : "docgen: FAIL");
         return ok ? 0 : 67;
     }

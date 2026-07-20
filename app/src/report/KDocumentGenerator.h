@@ -60,6 +60,29 @@ public:
     // Пусто, если футера нет либо он первый.
     std::string FindItmeIdofPreFooter() const;
 
+    // --- под-элементная CRUD (ядро модели, Qt-free; UI-обёртки — документная итерация) ---
+
+    // Реф. AddSubItemData @0x540bf0: вставить копию item в список под parentId по позиции
+    // pos (0 → в начало; pos ≥ размера → в конец), слить cfgMap в m_pData->m_mapItemConfigs.
+    //   • parentId == "" → корень m_lstItems; иначе FindRefItem(parentId), промах →
+    //     лог "not find parent item, add subitem failed" + выход (ничего не вставлено);
+    //   • дедуп: если элемент с item.m_strID уже есть → RemoveSubItem(parentId, item.m_strName)
+    //     перед вставкой;
+    //   • слияние конфигов: upsert по ключу (нет → вставка; есть → перезапись
+    //     m_bUserDefine/m_strName/m_mapAttrs);
+    //   • хвост: для image-text-map id — SyncRefresnImageItemData (пересборка колонок).
+    // Реф. возвращает ulong (нормальный путь -1), но ВСЕ вызывающие возврат игнорируют → void.
+    void AddSubItemData(const std::string &parentId, const KReportTemplateItem &item,
+                        const std::map<std::string, KReportTemplateItemConfig> &cfgMap,
+                        int pos);
+
+    // Реф. DeleteSubItemData @0x53fb10: удалить под-элемент item из списка под id.
+    //   • id == "" → удалить из корня ВСЕ узлы с m_strID == item.m_strID; иначе
+    //     RemoveSubItem(id, item.m_strName);
+    //   • каскад: стереть из m_mapItemConfigs все записи, чей ключ содержит <id-удаляемого>;
+    //   • хвост: для image-text-map id — SyncRefresnImageItemData.
+    void DeleteSubItemData(const std::string &id, const KReportTemplateItem &item);
+
     // --- синхронизация колонок image-text-map (реф., восстановлено ДЕКОМПИЛЯТОРОМ) ---
     // Это слой данных под живой раскладкой RT_IMAGE_TEXT_MAP (галерея снимков N×M):
     // колонки MAP1/MAP2/… «зеркалят» эталонную MAP0 через атрибут SynColumnID.

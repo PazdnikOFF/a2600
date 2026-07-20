@@ -249,6 +249,95 @@ void KDocumentGenerator::SyncImageItemParam(const KReportTemplateDataNew &libDat
     }
 }
 
+void KDocumentGenerator::AddSubItemData(
+    const std::string &parentId, const KReportTemplateItem &item,
+    const std::map<std::string, KReportTemplateItemConfig> &cfgMap, int pos)
+{
+    // Реф. @0x540bf0. Возврат ulong (нормальный путь -1) реф. игнорируется → void.
+    if (!m_pData)
+        return;
+
+    // 1. Целевой список: корень при пустом parentId, иначе дети найденного родителя.
+    std::list<KReportTemplateItem> *target = nullptr;
+    if (parentId.empty()) {
+        target = &m_pData->m_lstItems;     // реф. здесь assert(list != nullptr)
+    } else {
+        KReportTemplateItem *parent = report_template::FindRefItem(*m_pData, parentId);
+        if (!parent)
+            return;   // реф. puts("not find parent item, add subitem failed") — лог опущен
+        target = &parent->m_lstSubItems;
+    }
+
+    // 2. Дедуп: если элемент с таким id уже есть → удалить перед вставкой (по имени в
+    //    parentId). КВИРК: RemoveSubItem не имеет root-фолбэка, поэтому при parentId=="" это
+    //    no-op — дубль в корне НЕ удаляется (реф. так же). Список-объект target стабилен:
+    //    erase ребёнка не двигает узел-родитель.
+    if (report_template::FindConstRefItem(*m_pData, item.m_strID) != nullptr)
+        report_template::RemoveSubItem(*m_pData, parentId, item.m_strName);
+
+    // 3. Вставка глубокой копии item по позиции pos (0 → в начало; pos ≥ размера → в конец).
+    //    Реф. разбивает на 3 ветки (пусто / pos==0 / advance), но результат = один insert
+    //    в позицию min(pos, size) от начала.
+    auto it = target->begin();
+    for (int k = 0; k < pos && it != target->end(); ++k)
+        ++it;
+    target->insert(it, item);
+
+    // 4. Слияние конфигов: upsert по ключу (нет → вставка; есть → перезапись трёх полей).
+    for (const auto &kv : cfgMap) {
+        KReportTemplateItemConfig &dst = m_pData->m_mapItemConfigs[kv.first];
+        dst.m_bUserDefine = kv.second.m_bUserDefine;
+        dst.m_strName     = kv.second.m_strName;
+        dst.m_mapAttrs    = kv.second.m_mapAttrs;
+    }
+
+    // 5. Хвост: image-text-map id → пересборка колонок. ОБА find по item.m_strID (сверено
+    //    сырым asm): прямое вхождение константы В id ЛИБО обратно — id как подстрока EXT.
+    if (item.m_strID.find(STR_REF_IMAGE_TEXT_MAP) != std::string::npos
+        || STR_REF_IMAGE_TEXT_MAP_EXT.find(item.m_strID) != std::string::npos)
+        SyncRefresnImageItemData();
+}
+
+void KDocumentGenerator::DeleteSubItemData(const std::string &id,
+                                           const KReportTemplateItem &item)
+{
+    // Реф. @0x53fb10.
+    if (!m_pData)
+        return;
+
+    // 1. Удаление узла.
+    if (id.empty()) {
+        // Корень: убрать ВСЕ узлы с m_strID == item.m_strID (реф. цикл не прерывается —
+        // обрабатывает возможные дубли по id).
+        for (auto it = m_pData->m_lstItems.begin(); it != m_pData->m_lstItems.end();) {
+            if (it->m_strID == item.m_strID)
+                it = m_pData->m_lstItems.erase(it);
+            else
+                ++it;
+        }
+    } else {
+        // Не корень: удалить ребёнка по ИМЕНИ (item.m_strName) из родителя id.
+        report_template::RemoveSubItem(*m_pData, id, item.m_strName);
+    }
+
+    // 2. Каскад конфигов: стереть все записи, чей ключ СОДЕРЖИТ item.m_strID (сверено сырым
+    //    asm — needle именно item.m_strID, НЕ parentId). Так вычищается сам элемент и его
+    //    дети по префиксу id; сиблинги не затрагиваются.
+    for (auto it = m_pData->m_mapItemConfigs.begin();
+         it != m_pData->m_mapItemConfigs.end();) {
+        if (it->first.find(item.m_strID) != std::string::npos)
+            it = m_pData->m_mapItemConfigs.erase(it);
+        else
+            ++it;
+    }
+
+    // 3. Хвост: image-text-map id → пересборка (реф. Delete-пара проверяет ТОЛЬКО прямое
+    //    вхождение константы, без обратной EXT-проверки Add-пары). По item.m_strID —
+    //    консистентно с подтверждённым хвостом Add и каскадом выше.
+    if (item.m_strID.find(STR_REF_IMAGE_TEXT_MAP) != std::string::npos)
+        SyncRefresnImageItemData();
+}
+
 void KDocumentGenerator::SyncRefresnImageItemData()
 {
     // Реф. @0x53efa0 (декомпилятор + сверка сырого asm по двум сравнениям). Порядок 1:1.
