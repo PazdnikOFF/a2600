@@ -392,3 +392,64 @@ offscreen (как KUIDesktop). Порядок по важности:
 - Цель Фаз A+B+D: закрыть остаток ✅ (REPORT `KTemplateEditDocument`/`KRT*`, UPDATE
   `KFactoryOptions`, DB `KEntity*`, DICOM) → покрытие методов ~45–50% от полного паритета.
 - Полнота (вкл. UI+HW) достижима только с прибором и реализацией всех 167 UI-классов.
+
+---
+
+## 6. Роадмап разведки: что ещё можно вскрыть и написать
+
+Составлен 2026-07-20 по факту обхода поставки. Приоритет = отдача / трудозатраты.
+Правило, оплаченное ошибками (см. PROGRESS §10): **сначала разведка, потом код**;
+эвристика ✅ в §4 COVERAGE не знает ни про мёртвый код, ни про Qt::Widgets, ни про то,
+вызывается ли класс вообще.
+
+### A. НЕРАЗВЕДАННЫЕ БИНАРНИКИ — главный неиспользованный ресурс
+
+Весь реверс до сих пор шёл ТОЛЬКО по `update/root/X2000` (13 МБ). Рядом лежат ещё три
+маленьких исполняемых файла, не тронутых ни разу. Они на порядок меньше, а значит
+разбираются ЦЕЛИКОМ — это возможность закрыть законченные программы, а не куски.
+
+| Бинарник | Размер | Содержимое | Оценка |
+|---|---:|---|---|
+| **X2000Monitor** | 28 КБ | 31 функция, C-стиль, имена читаемые: `runStateMachine`, `InstallHeartBeatSig`, `find_pid_by_name`, `restartAPP`, `mainCtrlMonitor`, `videoMonitor`, `RecHeartBeatAct`, `UpdateHeartBeatTime`, `RecExceptionAct`, `RecSigChildAct`, `sendAppSignal`, `run_poweroff`, `initAppProc`, `restoreVideoMain`, `restoreExitApp`, `mySystem`, `mySleep`, `get_time`, `monitor_print_log` | **A1. ВЫСШИЙ ПРИОРИТЕТ.** Сторожевой процесс: heartbeat, машина состояний, перезапуск упавших процессов. Реально закрыть на 100% — целый бинарник за одну-две итерации. Ценность: восстанавливает модель надёжности прибора (что перезапускается, по какому таймауту, каким сигналом). |
+| **X2000Video** | 142 КБ | 7 классов / ~54 метода: `KEncodermanager` (20), `KMessageManager` (14), `KPipleline` (11), `KSemaphoreManger` (3), `KSharedBuffer` (3), `KSaveImage` (2), `KCommData` (1); плюс `ImageSaveBuf` (SetImageBpp/Width/Height, `copyGstBufferToShareBuffer`, `getImgShMemory`, `getRecordShMemory`) | **A2.** Отдельный процесс видео-тракта. GStreamer-часть — device, НО **протокол IPC** (`KMessageManager::HandleMessage/SendMessage`, `EndoConnectCmdHdl`, `ImageSaveStartCmdHdl`) и **раскладка разделяемой памяти** (`KSharedBuffer::GetReadBuffer/GetWriteBuffer`, семафоры) — off-device и проверяемы. Закрывает белое пятно: как наше приложение общается с видео-процессом. |
+| **X2000Simulator** | 131 КБ | Проигрыватель автотест-кейсов. `/dev/input/event`, `XSendEvent`, `INIFileCaseExec`, `OneKeyExec`, `SendOneKey`, `python caseformat.py` | **A3.** Частично уже использован (из него взят KAutoTestScript). Остаток: формат `casefile`, `/home/root/tmp/playcasename.txt`, `/home/root/tmp/casename.txt`, точная таблица кодов клавиш. ПОДТВЕРДИЛ пути из разведки KFunTest (`/home/root/tmp/testcaselist.txt`, `system/autotest/casefile`) — независимое доказательство. |
+
+### B. ЖИВЫЕ КЛАССЫ X2000 — продолжение текущей линии
+
+| # | Цель | Методов | Почему |
+|---|---|---:|---|
+| B1 | `KRTCreatorContext` + `KRTAbsItemCreator` + `KRTTextItemCreator` | 10 + ~4 + ~4 | Итерация 2 к уже начатому `KDocumentGenerator`. Разблокирует `InitDocument`/`GetTextDocument` и всю документную половину. Прочие 4 творца можно НЕ делать — 17 из 23 типов всё равно уходят в TEXT_BLOCK-фолбэк. |
+| B2 | `KUpdateAction` (17), `KUpdatePrepare` (13) | 30 | UPDATE — слабейший домен после UI (17.1%). Есть **читаемый ground truth**: `system/update/update_start` и `auto_update` — обычные shell-скрипты, по ним сверяется весь пайплайн. |
+| B3 | `KDataOprEventDeal` (16), `KEntityBase` (14), `KDataFileOpr` (12), `KImportRules` (10), `KRecordItem` (10) | 62 | DB-слой, домен 38%. Все «не начаты», коллизий имён нет. |
+| B4 | `KRTTeCreatorContext` (16), `KRTAbsDataSource` (11) | 27 | REPORT, продолжение линии B1. |
+| B5 | `KTimeMng` (10), `KFunTest` (10) | 20 | CORE. По `KFunTest` разведка уже сделана (см. PROGRESS §10) — можно брать сразу. |
+
+### C. ЛОВУШКИ — разгрести до того, как наступишь
+
+| # | Что | Статус |
+|---|---|---|
+| C1 | 5 классов с ВЫДУМАННЫМ API (0% совпадения): `KEntityManage`, `KEntityService`, `KRTDataSourceReal`, `KEntityReport`, `KRTDataSourceDemo` | Вынесено отдельной задачей. Шестой (`KDocumentGenerator`) уже разведён — имя освобождено, класс написан. |
+| C2 | `enum StatusType` пронумерован не как в бинарнике; `SetPanelType`/`SetWindowID`/`SetAutoTestStatus` у нас шлют сигнал, а реф. — нет | Вынесено отдельной задачей. |
+| C3 | `STR_INVALID_ITEM_ID` не восстановлена — блокирует `MoveFront`/`MoveBack`/`ClickSubItem` в `KDocumentGenerator` | Помечено в коде. Решать вместе с B1. |
+
+### D. ДАННЫЕ И КОНФИГИ, не прочитанные
+
+| # | Файл | Объём | Ценность |
+|---|---|---|---|
+| D1 | `system/update/dbupdate.ini` | 12 КБ | **История схемы БД**: секция = версия, ключ = таблица → колонки. ⚠️ ЧИТАТЕЛЬ ДО СИХ ПОР НЕ НАЙДЕН — нет ни в X2000, ни в трёх малых бинарниках, ни в `update_start`/`auto_update`. Без читателя нельзя взять реф.-имена. Проверить: не читается ли внешним скриптом с USB-пакета. |
+| D2 | `system/platform/statistic.py` | 36 КБ | **Читаемый Python3** — лучшая документация формата APPlog и семантики `statistic.ini` (который мы уже парсим). Даром достаётся. |
+| D3 | `system/videoconf/IRIS/*.txt` | 27 файлов | Таблицы настройки диафрагмы по сенсорам (`OH01A_EB_768X928`, `OV2740_EC_1280X960` и др.). У нас НЕ читаются вообще. Привязаны к типу сенсора → частично device, но сам парсинг off-device. |
+| D4 | `presetdata/userpreset/dicom/dicom.dic` | 5006 строк | Словарь DCMTK. Утилитарно полезен (расшифрует DCM_*-имена в наших XML), но это upstream-данные OFFIS, не код вендора — реверс-ценность низкая. |
+| D5 | `system/update/update_start`, `auto_update` | 2.4 + 1.8 КБ | Shell-скрипты пайплайна обновления. **Читаемый исходник** — использовать как эталон при B2. |
+
+**НЕ БРАТЬ** (проверено, отдача нулевая): `HD-2000.dat` (энтропийный блоб), `platform/dict_pinyin.dat`
+(проприетарный trie Google Pinyin), `qss/black/*` кроме style.qss.
+
+### E. РЕКОМЕНДУЕМЫЙ ПОРЯДОК
+
+1. **A1 X2000Monitor** — закрыть целый бинарник (лучшее соотношение отдача/трудозатраты).
+2. **B1** — доделать `KDocumentGenerator` до рабочего документа (+ C3 попутно).
+3. **A2 X2000Video** — протокол IPC и разделяемая память (закрывает архитектурное белое пятно).
+4. **B2** (со сверкой по D5) и **D2** — дешёвые, с готовым ground truth.
+5. **B3/B4/B5** — планомерный добор off-device-корзины.
+6. **C1/C2** — когда мешают, а не «когда-нибудь».
