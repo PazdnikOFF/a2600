@@ -67,6 +67,8 @@ public:
     int IrisValue() const      { return iris_; }
     int ImageBrightness() const { return brightness_; }
     int CHbStatus() const      { return chb_; }
+    int LowLight() const       { return lowLight_; }   // SS[+0x40]
+    int DimmingType() const    { return dimmingType_; }
     int VlsMode() const        { return vlsMode_; }   // спектральный режим
     int ViewType() const       { return viewType_; }
     int PanelType() const      { return panelType_; }

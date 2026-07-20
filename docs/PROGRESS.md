@@ -579,11 +579,25 @@ KLcdProxy. Добавлена перегрузка `GetButtonFunctionId(int)`.
 **ОТСТУПЛЕНИЕ ОТ ОРИГИНАЛА (помечено в коде):** реф. `SetTimeFormat(int)` индексирует
 QList **БЕЗ ПРОВЕРКИ ГРАНИЦ** (`d->begin + arg`) ⇒ любое значение вне 0..3 читает
 указатель за границей и портит кучу. Поставлена проверка 0..3.
-**НЕ ЗАКРЫТО (честный остаток):**
-- **~40 однострочных обработчиков `Switch*`/`Remote*`**: маршрутизация реализована и
-  проверена тестом, но **КОНКРЕТНЫЙ КОД сообщения SendToMainCtrl для каждого НЕ
-  УСТАНОВЛЕН** реверсом (функции 0x20-0x44 байта, шаблон вызова виден, аргумент нет).
-  Каждый помечен комментарием; нужен точечный дизасм-проход.
+**✅ ДОЗАКРЫТО (та же сессия, дизасм-проход по обработчикам):** коды сообщений ВСЕХ
+~63 обработчиков ВЫВЕРЕНЫ дизасмом и проставлены. Ключевые: freeze=9, chb=10,
+imgenh=(12,param), colorenh=(11,param), zoom=(8,param), iris=(28,param),
+tone=(20,**255**) — arg2 ЛИТЕРАЛ, не param; save=4, record=2, usb=39, wb=13,
+power=0, connect=1, moire=30, window=(45,param), airpump=(48,param),
+reset=(37,1)/cancel=(37,0), colorR/B/C=(26, idx0/1/2, param),
+imgEnhL*=(24, idx, param), colorEnhL*=(25, idx, param), zoomL*=(27, idx, param),
+Remote*/Foot*=(43, код 0x20D..0x218, param). GainSwitch: обе шлют **7**, гейт по
+PanelType (short при 1, long при 0). **БЕЗ dispatch (только запись состояния/лог):**
+OpenLamp/CloseLamp (SetLampStatus), Add/SubLampLevel (АБСОЛЮТНЫЙ уровень: гейт SS
+LowLight → SetImageBrightness иначе SetLightLevel; Add и Sub БАЙТ-ИДЕНТИЧНЫ),
+SwitchAuto/ManuLightAdjust (SetDimmingType), SwitchVlsMode (SetVlsMode),
+StartTrans/SwitchAirPumpLevel (только лог), SetLanguage/SetVLSGroup/SetConnerShape/
+SetResolution/SetVideoSplit (конфиг + ChangeSystemSet 0x101/0x103/0x104/0x105/0x106),
+OpenOrCloseVersionDialog/EndoInfoDialog (PanelKeyVersion/EndoInfo), FileView.
+Выборка кодов покрыта self-test `lcdproxy`. ⚠️ БЫЛА ОШИБКА В МОЕЙ ПЕРВОЙ ГЕНЕРАЦИИ:
+Remote-кнопки сгенерировал как 2-арг, а они 3-арг (43, код, param) — как ножные;
+исправлено, поймано тестом.
+**ОСТАЛОСЬ (честный остаток):**
 - **GetKeyStatus покрывает не все ключи**: 0x00/0x01/0x07/0x08/0x19/0x101/0x103/
   0x105/0x106/0x201-0x20C/0x20D-0x212 падают в дефолт 0, потому что у нас ещё нет
   источников. Нужно добавить: `KVideoSet::{GetImgEnhValue,GetColorEnhValue,GetZoomValue}`,

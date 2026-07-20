@@ -93,8 +93,8 @@ int KLcdProxy::SetButtonFunc(int nKeyId, int nIndex)
     // Реф.: KVideoSet::SetButtonFuncId + KSystemStatus::ChangeUserSet, затем
     // Rigid/Flex-подсказка по признаку жёсткого эндоскопа.
     KSystemStatus::GetInstance().ChangeUserSet(nKeyId, nIndex);
-    // Реф. смотрит признак жёсткого эндоскопа в KSystemStatus.
-    if (KSystemStatus::GetInstance().VlsMode() == 1)
+    // Реф.: гид гейтится по ViewType (SS[+0x14] == 1 → жёсткий эндоскоп).
+    if (KSystemStatus::GetInstance().ViewType() == 1)
         m_pUiMsgProxy->UpdateRigidEndoBtnGuide();
     else
         m_pUiMsgProxy->UpdateFlexEndoBtnGuide();
@@ -317,694 +317,506 @@ QList<_KeyVlaue> KLcdProxy::GetPanelLedSet()
 
 int KLcdProxy::AddLampLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("AddLampLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    KSystemStatus &st = KSystemStatus::GetInstance();
+    // ⚠️ КВИРК: Add и Sub БАЙТ-ИДЕНТИЧНЫ (различаются только текстом лога);
+    // ни прибавления, ни вычитания нет — param трактуется как АБСОЛЮТНЫЙ уровень.
+    // Гейт SS[+0x44]: 1 -> яркость изображения, иначе уровень света.
+    if (st.LowLight() == 1)
+        st.SetImageBrightness(nParam);
+    else {
+        CheckIsLightAdjustEnable();
+        st.SetLightLevel(nParam);
+    }
     return 1;
 }
 
 int KLcdProxy::CancelResetUserParam(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("CancelResetUserParam");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(37, 0);
     return 1;
 }
 
 int KLcdProxy::CloseLamp(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("CloseLamp");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    CheckIsLightAdjustEnable();
+    KSystemStatus::GetInstance().SetLampStatus(0);
     return 1;
 }
 
 int KLcdProxy::ConnectOrDisconnecEndo(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("ConnectOrDisconnecEndo");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(1);
     return 1;
 }
 
 int KLcdProxy::FileView(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("FileView");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->FileView(nParam);
     return 1;
 }
 
 int KLcdProxy::GainSwitchLongPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("GainSwitchLongPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    if (KSystemStatus::GetInstance().PanelType() == 0)
+        m_pUiMsgProxy->SendToMainCtrl(7);
     return 1;
 }
 
 int KLcdProxy::GainSwitchShortPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("GainSwitchShortPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    if (KSystemStatus::GetInstance().PanelType() == 1)
+        m_pUiMsgProxy->SendToMainCtrl(7);
     return 1;
 }
 
 int KLcdProxy::OpenLamp(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("OpenLamp");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    KSystemStatus &st = KSystemStatus::GetInstance();
+    st.SetLampStatus(1);
+    // if SS[+0x40]==1 (LowLight) -> SetLowLightMode(0) — поле lowLight есть.
+    if (st.LowLight() == 1)
+        st.SetLowLightMode(0);
     return 1;
 }
 
 int KLcdProxy::OpenOrCloseEliminatemoire(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("OpenOrCloseEliminatemoire");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(30);
     return 1;
 }
 
 int KLcdProxy::OpenOrCloseEndoInfoDialog(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("OpenOrCloseEndoInfoDialog");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->PanelKeyEndoInfo();
     return 1;
 }
 
 int KLcdProxy::OpenOrCloseVersionDialog(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("OpenOrCloseVersionDialog");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->PanelKeyVersion();
     return 1;
 }
 
 int KLcdProxy::PowerOff(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("PowerOff");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(0);
     return 1;
 }
 
 int KLcdProxy::RemoteButton0Act(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButton0Act");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x20d, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButton1Act(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButton1Act");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x20e, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButton2Act(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButton2Act");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x20f, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButton3Act(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButton3Act");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x210, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonALongPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonALongPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x213, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonAShortPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonAShortPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x214, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonBLongPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonBLongPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x215, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonBShortPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonBShortPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x216, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonMLongPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonMLongPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x217, nParam);
     return 1;
 }
 
 int KLcdProxy::RemoteButtonMShortPressAct(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("RemoteButtonMShortPressAct");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: 3-арг (43, код, param) + лог.
+    m_pUiMsgProxy->SendToMainCtrl(43, 0x218, nParam);
     return 1;
 }
 
 int KLcdProxy::ResetUserParam(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("ResetUserParam");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(37, 1);
     return 1;
 }
 
 int KLcdProxy::SaveImage(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SaveImage");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(4);
     return 1;
 }
 
 int KLcdProxy::SetColorBValue(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorBValue");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(26, 1, nParam);
     return 1;
 }
 
 int KLcdProxy::SetColorCValue(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorCValue");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(26, 2, nParam);
     return 1;
 }
 
 int KLcdProxy::SetColorEnhL1Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorEnhL1Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(25, 0, nParam);
     return 1;
 }
 
 int KLcdProxy::SetColorEnhL2Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorEnhL2Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(25, 1, nParam);
     return 1;
 }
 
 int KLcdProxy::SetColorEnhL3Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorEnhL3Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(25, 2, nParam);
     return 1;
 }
 
 int KLcdProxy::SetColorRValue(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetColorRValue");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(26, 0, nParam);
     return 1;
 }
 
 int KLcdProxy::SetConnerShape(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetConnerShape");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: KSystemSet::SetCornerShape(param) — метода пока нет; шлём только сигнал.
+    KSystemStatus::GetInstance().ChangeSystemSet(0x104, nParam);
     return 1;
 }
 
 int KLcdProxy::SetImgEnhL1Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetImgEnhL1Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(24, 0, nParam);
     return 1;
 }
 
 int KLcdProxy::SetImgEnhL2Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetImgEnhL2Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(24, 1, nParam);
     return 1;
 }
 
 int KLcdProxy::SetImgEnhL3Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetImgEnhL3Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(24, 2, nParam);
     return 1;
 }
 
 int KLcdProxy::SetLanguage(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetLanguage");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    KSystemSet::GetInstance().SetLanguage(QString::number(nParam));
+    KSystemStatus::GetInstance().ChangeSystemSet(0x101, nParam);
     return 1;
 }
 
 int KLcdProxy::SetResolution(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetResolution");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    KSystemStatus::GetInstance().ChangeSystemSet(0x105, nParam);
     return 1;
 }
 
 int KLcdProxy::SetVLSGroup(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetVLSGroup");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: KColdLightConfig::SetUserVLSConfig(param, ViewType) + ChangeSystemSet.
+    KSystemStatus::GetInstance().ChangeSystemSet(0x103, nParam);
     return 1;
 }
 
 int KLcdProxy::SetVideoSplit(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetVideoSplit");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    KSystemStatus::GetInstance().ChangeSystemSet(0x106, nParam);
     return 1;
 }
 
 int KLcdProxy::SetZoomL1Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetZoomL1Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(27, 0, nParam);
     return 1;
 }
 
 int KLcdProxy::SetZoomL2Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetZoomL2Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(27, 1, nParam);
     return 1;
 }
 
 int KLcdProxy::SetZoomL3Value(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SetZoomL3Value");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(27, 2, nParam);
     return 1;
 }
 
 int KLcdProxy::StartOrStopVideoRecord(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("StartOrStopVideoRecord");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(2);
     return 1;
 }
 
 int KLcdProxy::StartTrans(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("StartTrans");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    // Реф.: ТОЛЬКО лог, без dispatch.
+    LogPrintf("[APP][I]: ", "StartTrans");
     return 1;
 }
 
 int KLcdProxy::StartWhiteBalance(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("StartWhiteBalance");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(13);
     return 1;
 }
 
 int KLcdProxy::SubLampLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SubLampLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    KSystemStatus &st = KSystemStatus::GetInstance();
+    // ⚠️ КВИРК: Add и Sub БАЙТ-ИДЕНТИЧНЫ (различаются только текстом лога);
+    // ни прибавления, ни вычитания нет — param трактуется как АБСОЛЮТНЫЙ уровень.
+    // Гейт SS[+0x44]: 1 -> яркость изображения, иначе уровень света.
+    if (st.LowLight() == 1)
+        st.SetImageBrightness(nParam);
+    else {
+        CheckIsLightAdjustEnable();
+        st.SetLightLevel(nParam);
+    }
     return 1;
 }
 
 int KLcdProxy::SwitchAirPumpLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchAirPumpLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: ТОЛЬКО лог, без dispatch.
+    LogPrintf("[APP][I]: ", "Switch air pump level: %d", nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchAirPumpStatus(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchAirPumpStatus");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(48, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchAutoLightAdjust(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchAutoLightAdjust");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    KSystemStatus::GetInstance().SetDimmingType(1);
     return 1;
 }
 
 int KLcdProxy::SwitchChbStatus(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchChbStatus");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(10);
     return 1;
 }
 
 int KLcdProxy::SwitchColorEnhLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchColorEnhLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(11, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchContrastType(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchContrastType");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(14, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchFreezeStatus(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchFreezeStatus");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(9);
     return 1;
 }
 
 int KLcdProxy::SwitchImgEnhLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchImgEnhLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(12, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchIrisType(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchIrisType");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(28, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchManuLightAdjust(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchManuLightAdjust");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    KSystemStatus &st = KSystemStatus::GetInstance();
+    st.SetDimmingType(0);
+    st.SetLowLightMode(0);
     return 1;
 }
 
 int KLcdProxy::SwitchOperatingPattern(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchOperatingPattern");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(29, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchToneMode(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchToneMode");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(20, 255);
     return 1;
 }
 
 int KLcdProxy::SwitchVlsMode(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchVlsMode");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    // Реф.: пишет KSystemStatus, dispatch НЕТ.
+    KSystemStatus::GetInstance().SetVlsMode(nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchWindow(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchWindow");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(45, nParam);
     return 1;
 }
 
 int KLcdProxy::SwitchZoomLevel(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("SwitchZoomLevel");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    m_pUiMsgProxy->SendToMainCtrl(8, nParam);
     return 1;
 }
 
 int KLcdProxy::ToneAdd(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("ToneAdd");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(21);
     return 1;
 }
 
 int KLcdProxy::ToneSub(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("ToneSub");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(22);
     return 1;
 }
 
 int KLcdProxy::UnmountUsbDevice(int nParam)
 {
-    (void)nParam;
     m_lastAct = QStringLiteral("UnmountUsbDevice");
-    // ⚠️ КОНКРЕТНЫЙ КОД СООБЩЕНИЯ SendToMainCtrl ДЛЯ ЭТОГО ОБРАБОТЧИКА
-    // НЕ УСТАНОВЛЕН реверсом (одностроч. функция 0x20-0x44 байта; шаблон
-    // вызова виден, аргумент — нет). Маршрутизация проверяется тестом,
-    // отправка кода будет добавлена после точечного дизасма.
+    (void)nParam;
+    m_pUiMsgProxy->SendToMainCtrl(39);
     return 1;
 }
 

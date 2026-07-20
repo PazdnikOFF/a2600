@@ -7317,6 +7317,67 @@ int main(int argc, char **argv)
         const int di = lp->GetDateFormateIndex();
         const bool dateOk = di >= 0 && di <= 3;
 
+        // 13. КОДЫ СООБЩЕНИЙ SendToMainCtrl теперь выверены дизасмом (было
+        //     «не установлено»). Проверяем представительную выборку.
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(1, 3, 0);      // SwitchFreezeStatus → 1-арг код 9
+        auto s1 = KUiMsgProxy::TakeSent();
+        const bool code9Ok = s1.size() == 1 && s1[0].argc == 1 && s1[0].a == 9;
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(4, 3, 5);      // SwitchImgEnhLevel → 2-арг (12, param)
+        auto s2 = KUiMsgProxy::TakeSent();
+        const bool code12Ok = s2.size() == 1 && s2[0].argc == 2
+                           && s2[0].a == 12 && s2[0].b == 5;
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(8, 3, 7);      // SwitchToneMode → arg2 ЛИТЕРАЛ 255, не param
+        auto s3 = KUiMsgProxy::TakeSent();
+        const bool tone255Ok = s3.size() == 1 && s3[0].a == 20 && s3[0].b == 255;
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(513, 7, 42);   // SetColorRValue → 3-арг (26, 0, param)
+        auto s4 = KUiMsgProxy::TakeSent();
+        const bool code26Ok = s4.size() == 1 && s4[0].argc == 3
+                           && s4[0].a == 26 && s4[0].b == 0 && s4[0].c == 42;
+        KUiMsgProxy::ClearSent();
+        lp->KeyEventAct(515, 7, 9);    // SetColorCValue → индекс 2
+        auto s5 = KUiMsgProxy::TakeSent();
+        const bool colCOk = s5.size() == 1 && s5[0].a == 26 && s5[0].b == 2;
+        // ResetUserParam(37,1) / CancelResetUserParam(37,0).
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(3, 4, 0);
+        auto s6 = KUiMsgProxy::TakeSent();
+        const bool resetCodeOk = s6.size() == 1 && s6[0].a == 37 && s6[0].b == 1;
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(3, 3, 0);
+        auto s7 = KUiMsgProxy::TakeSent();
+        const bool cancelCodeOk = s7.size() == 1 && s7[0].a == 37 && s7[0].b == 0;
+        // PowerOff → 0, ConnectOrDisconnecEndo → 1, SaveImage → 4.
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(32, 4, 0);
+        const bool powerOk = KUiMsgProxy::TakeSent().value(0).a == 0;
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(35, 3, 0);
+        const bool saveCodeOk = KUiMsgProxy::TakeSent().value(0).a == 4;
+        // Remote-кнопка A short → (43, 0x214, param).
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(532, 3, 88);
+        auto s8 = KUiMsgProxy::TakeSent();
+        const bool remoteCodeOk = s8.size() == 1 && s8[0].a == 43
+                               && s8[0].b == 0x214 && s8[0].c == 88;
+        // StartTrans / SwitchAirPumpLevel — ТОЛЬКО лог, dispatch НЕТ.
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(18, 3, 0);
+        const bool noDispatch1 = KUiMsgProxy::TakeSent().isEmpty();
+        // GainSwitch: обе шлют 7, гейт по PanelType.
+        KSystemStatus::GetInstance().SetPanelType(1);
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(0, 3, 0);   // short при PanelType==1
+        const bool gainShortOk = KUiMsgProxy::TakeSent().value(0).a == 7;
+        KUiMsgProxy::ClearSent(); lp->KeyEventAct(0, 4, 0);   // long при PanelType==1 — не шлёт
+        const bool gainLongGateOk = KUiMsgProxy::TakeSent().isEmpty();
+        KSystemStatus::GetInstance().SetPanelType(0);
+
+        qInfo() << "коды dispatch: freeze=9:" << code9Ok << "imgenh=12:" << code12Ok
+                << "tone255:" << tone255Ok << "colorR=26/0:" << code26Ok
+                << "colorC idx2:" << colCOk;
+        qInfo() << "reset 37/1:" << resetCodeOk << "cancel 37/0:" << cancelCodeOk
+                << "power=0:" << powerOk << "save=4:" << saveCodeOk
+                << "remote 43/0x214:" << remoteCodeOk;
+        qInfo() << "лог-онли без dispatch:" << noDispatch1
+                << "| gain short/long-гейт:" << gainShortOk << gainLongGateOk;
+
         qInfo() << "диспетчер hit/miss:" << hitOk << missKeyOk << missActOk
                 << "| один ключ, разные события:" << k2sOk << k2lOk;
         qInfo() << "ключ 3 LONG=сброс/SHORT=отмена:" << k3lOk << k3sOk
@@ -7336,7 +7397,10 @@ int main(int argc, char **argv)
                      && k3sOk && k13Ok && k24Ok && invokeOk && assignOk && dup1Ok
                      && dup2Ok && dup3Ok && signExtOk && footNoopOk && k217Ok
                      && defOk && oneBasedOk && sys1Ok && aliasOk && skip217Ok
-                     && ledOk && opmOk && bypassOk && noBypassOk && dateOk;
+                     && ledOk && opmOk && bypassOk && noBypassOk && dateOk
+                     && code9Ok && code12Ok && tone255Ok && code26Ok && colCOk
+                     && resetCodeOk && cancelCodeOk && powerOk && saveCodeOk
+                     && remoteCodeOk && noDispatch1 && gainShortOk && gainLongGateOk;
         qInfo() << (ok ? "lcdproxy: PASS" : "lcdproxy: FAIL");
         return ok ? 0 : 65;
     }
