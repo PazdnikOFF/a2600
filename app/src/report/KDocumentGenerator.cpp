@@ -1,6 +1,9 @@
 #include "KDocumentGenerator.h"
 
 #include "KReportTemplateCommonDef.h"
+#include "KReportTemplate.h"          // KReportTemplateManager (синглтон, GetTempletLibName)
+#include "KSysReportTempletControl.h" // KSysReportTempletControl (выбранный шаблон)
+#include "KTemplateLibCfg.h"          // KTemplateLibCfg::GetTemplateLib
 
 #include <iterator>
 
@@ -37,6 +40,10 @@ const std::string STR_REF_IMAGE_TEXT_MAP_EXT  = "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_
 const std::string STR_REF_IMAGE_TEXT_MAP0_EXT =
     "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0";
 const std::string STR_RT_ITEM_ATTR_SYNCOLUMNID = "SynColumnID";
+// Реф. report_preview::NP_4x1 = "NP-4x1". СРАВНИВАЕТСЯ С templName (сырое имя выбранного
+// шаблона), НЕ с libName — сверено сырым asm (декомпилятор путал стек-слоты sp+0x108
+// templName / sp+0x128 libName). Для этой раскладки поддерево живёт под MAIN_CONTENT.
+const std::string STR_NP_4X1 = "NP-4x1";
 
 } // namespace
 
@@ -239,6 +246,67 @@ void KDocumentGenerator::SyncImageItemParam(const KReportTemplateDataNew &libDat
             dst.m_strName     = cfg.m_strName;
             dst.m_mapAttrs    = cfg.m_mapAttrs;
         }
+    }
+}
+
+void KDocumentGenerator::SyncRefresnImageItemData()
+{
+    // Реф. @0x53efa0 (декомпилятор + сверка сырого asm по двум сравнениям). Порядок 1:1.
+    if (!m_pData)
+        return;
+
+    // 1. Имя выбранного шаблона.
+    const std::string templName = KSysReportTempletControl::GetInstance()
+                                      ->GetSelectedTempletInfo()
+                                      .TempletName()
+                                      .toStdString();
+
+    // 2. Имя библиотеки, содержащей шаблон. GetTempletLibName при промахе out НЕ трогает —
+    //    поэтому libName стартует пустым (реф. так же строит пустую строку перед вызовом).
+    std::string libName;
+    KReportTemplateManager::GetInstance()->GetTempletLibName(templName, libName);
+
+    // 3. Библиотечные данные раскладки. В GetTemplateLib идёт libName (префикс
+    //    "ReportTemplate…", совпадает с ключами-группами); при промахе реф. отдаёт &m_data.
+    KReportTemplateDataNew *libData =
+        KReportTemplateManager::GetInstance()->GetTemplateLibCfg()->GetTemplateLib(libName);
+    if (!libData)
+        return;   // защитно: реф. не проверяет (GetTemplateLib никогда не null).
+
+    // 4. Ключ поддерева image-text-map. РОВНО templName == "NP-4x1" → MAIN_CONTENT-префикс.
+    std::string refKey = STR_REF_IMAGE_TEXT_MAP;
+    if (templName == STR_NP_4X1)
+        refKey = STR_REF_IMAGE_TEXT_MAP_EXT;
+
+    // 5. Верхний узел галереи в НАШИХ данных.
+    KReportTemplateItem *top = report_template::FindRefItem(*m_pData, refKey);
+    if (!top)
+        return;                          // реф. лог "...image top item is null" (опущен)
+    if (top->m_lstSubItems.empty())
+        return;                          // реф. лог "...image top item child is empty"
+
+    // 6. Прототип состава — из ПЕРВОЙ колонки, СНЯТ ДО очистки (по нему обрежется каждая
+    //    новая колонка: SyncImageItemContent фильтрует по именам суб-элементов proto).
+    KReportTemplateItem proto = top->m_lstSubItems.front();
+
+    // 7. Старые колонки стираются.
+    top->m_lstSubItems.clear();
+
+    // 8. Пересобрать колонки из библиотеки.
+    const KReportTemplateItem *libTop = report_template::FindConstRefItem(*libData, refKey);
+    if (libTop) {
+        for (const KReportTemplateItem &child : libTop->m_lstSubItems) {
+            // Резолв реального lib-элемента по id (реф. — повторный Find, хотя child уже узел).
+            const KReportTemplateItem *resolved =
+                report_template::FindConstRefItem(*libData, child.m_strID);
+            if (!resolved)
+                continue;                // защитно
+            KReportTemplateItem newItem = *resolved;   // копия: 7 строк + саб-список
+            SyncImageItemContent(proto, newItem);      // обрезать состав по прототипу
+            top->m_lstSubItems.push_back(newItem);      // hook в top
+        }
+        // Синхронизировать конфиги колонок из библиотеки в m_pData->m_mapItemConfigs.
+        SyncImageItemParam(*libData);
     }
 }
 

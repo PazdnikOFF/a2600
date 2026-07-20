@@ -530,8 +530,25 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **94 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **95 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
+
+**ПОСЛЕДНЕЕ (итерация 3b): ЗАКРЫТ оркестратор `KDocumentGenerator::SyncRefresnImageItemData`**
+@0x53efa0 (опечатка Refresn; self-test `docsync` на РЕАЛЬНЫХ синглтонах прошивки).
+Весь кластер синхронизации колонок image-text-map теперь закрыт (класс **10/33**).
+Поток: templName (выбранный шаблон) → libName=GetTempletLibName → libData=GetTemplateLib(libName)
+→ refKey=`/RT_IMAGE_TEXT_MAP` (при templName=="NP-4x1" → EXT-префикс) → top=FindRefItem;
+proto=копия первой колонки ДО очистки; top.children очищаются; для каждого ребёнка libTop —
+resolve, SyncImageItemContent(proto,copy), push; затем SyncImageItemParam(libData).
+**КЛЮЧЕВОЕ (сверено СЫРЫМ asm — декомпилятор путал стек-слоты sp+0x108 templName /
+sp+0x128 libName):** с "NP-4x1" сравнивается **templName** (сырое имя), а в GetTemplateLib
+идёт **libName** (префикс "ReportTemplate…", совпадает с ключами-группами). Тест: группа
+ReportTemplateNP-1x4 включает Image1x4.xml → поддерево из 4 колонок MAP0..MAP3; богус-колонка
+после пересборки исчезает. Все три Qt-free метода-помощника (GetAllItemIDs/SyncImageItemContent/
+SyncImageItemParam) + GetTempletLibName из предыдущих итераций работают в связке.
+**ОСТАЛОСЬ по KDocumentGenerator:** документная половина (InitDocument/GetTextDocument/
+ChangeLayout/PutFooterOnBottom/Move*/Change*Selected/CreateBlock) — вся на QTextDocument/
+QTextCursor/QTextTable, ждёт отдельной UI-итерации.
 
 **ПОСЛЕДНЕЕ (эта сессия): KDocumentGenerator итерация 2 — слой синхронизации колонок
 image-text-map** (self-test `docgen` расширен, `app/src/report/KDocumentGenerator.*`).
@@ -561,12 +578,8 @@ map<string,bool>, у нас `depts`, ОТСОРТИРОВАН по имени = 
 guard роняет на ключе <3 символов — у нас пропуск (депты поставки всегда "KW_*").
 Проверено: "NP-1x4"→"ReportTemplateNP-1x4", промах сохраняет сентинел.
 
-**ОТЛОЖЕНО (итерация 3b, оркестратор): `SyncRefresnImageItemData`** @0x53efa0 (опечатка
-Refresn) — Qt-free, GetTempletLibName теперь есть. Осталась обвязка синглтонов
-(KSysReportTempletControl выбранный шаблон + KReportTemplateManager lib-данные) для
-self-test + разрешить нестыковку: реф. сравнивает `libName == "NP-4x1"`, но GetTempletLibName
-отдаёт "ReportTemplateNP-4x1" — надо проверить дизасмом, ЧТО реально сравнивается (templName?
-dept без префикса? иное), прежде чем брать NP-4x1-ветку.
+**ЗАКРЫТО (итерация 3b): `SyncRefresnImageItemData`** — см. блок «ПОСЛЕДНЕЕ» выше
+(нестыковка "NP-4x1" разрешена сырым asm: сравнивается templName, не libName).
 refKey по умолчанию `"/RT_IMAGE_TEXT_MAP"`, при `libName=="NP-4x1"` →
 `"/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP"` (STR_REF_IMAGE_TEXT_MAP_EXT). `ChangeLayout`
 @0x5405e0 и `PutFooterOnBottom` @0x53e078 — оркестраторы, тянут QTextDocument-слой

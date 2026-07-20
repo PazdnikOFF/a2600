@@ -91,6 +91,24 @@ public:
     // по itemId (устаревшая колонка). Конфиги без SynColumnID пропускаются.
     void SyncImageItemParam(const KReportTemplateDataNew &libData);
 
+    // Реф. SyncRefresnImageItemData @0x53efa0 (опечатка Refresn вендора сохранена).
+    // Оркестратор: пересобирает поддерево колонок RT_IMAGE_TEXT_MAP в m_pData из
+    // библиотечных данных ВЫБРАННОГО шаблона, фильтруя состав по прежней первой колонке.
+    // Тянет синглтоны KSysReportTempletControl (выбранный шаблон) + KReportTemplateManager
+    // (имя библиотеки + lib-данные). Qt-free, но требует их инициализации. Шаги:
+    //   1. templName = выбранный шаблон; 2. libName = GetTempletLibName(templName);
+    //   3. libData = GetTemplateLibCfg()->GetTemplateLib(libName) (при промахе — &m_data);
+    //   4. refKey = "/RT_IMAGE_TEXT_MAP", но templName=="NP-4x1" → EXT-префикс;
+    //   5. top = FindRefItem(m_pData, refKey); null / пустой список → выход;
+    //   6. proto = копия top.children[0] (ДО очистки); 7. top.children очищается;
+    //   8. libTop = FindConstRefItem(libData, refKey); для каждого его ребёнка —
+    //      resolve по id, SyncImageItemContent(proto, копия) для обрезки состава, push в top;
+    //      затем SyncImageItemParam(libData).
+    // ⚠️ Ключевое (сверено СЫРЫМ asm, декомпилятор путал стек-слоты): с "NP-4x1"
+    // сравнивается templName (сырое имя), а в GetTemplateLib идёт libName (префикс
+    // "ReportTemplate..."). Логи реф. ("image top item is null" и т.п.) опущены (off-device).
+    void SyncRefresnImageItemData();
+
     // Реф. UpdateMovableFlag @0x53c7b0 (восстановлено ДЕКОМПИЛЯТОРОМ Ghidra, не asm).
     // Выставляет m_bCanMoveFront/Back для элемента id по его позиции среди СОСЕДЕЙ:
     //   • оба флага сбрасываются;

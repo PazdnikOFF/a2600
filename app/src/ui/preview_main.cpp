@@ -5893,6 +5893,75 @@ int main(int argc, char **argv)
         return ok ? 0 : 67;
     }
 
+    // Self-test оркестратора KDocumentGenerator::SyncRefresnImageItemData (реф. @0x53efa0)
+    // на РЕАЛЬНЫХ синглтонах прошивки. Группа ReportTemplateNP-1x4 включает Image1x4.xml →
+    // поддерево /RT_IMAGE_TEXT_MAP с колонками MAP0..MAP3. Проверяем: оркестратор
+    // пересобирает поддерево top в наших данных из lib-данных выбранного шаблона.
+    if (screen == "docsync") {
+        const std::string refKey = "/RT_IMAGE_TEXT_MAP";
+        KReportTemplateManager *mgr = KReportTemplateManager::GetInstance();
+        mgr->InitModule();
+
+        // Имя библиотеки для шаблона NP-1x4 и её данные.
+        std::string libName;
+        mgr->GetTempletLibName("NP-1x4", libName);            // → "ReportTemplateNP-1x4"
+        KReportTemplateDataNew *libData = mgr->GetTemplateLibCfg()->GetTemplateLib(libName);
+        const bool libNameOk = libName == "ReportTemplateNP-1x4" && libData != nullptr;
+
+        // Precondition: в lib-данных есть поддерево /RT_IMAGE_TEXT_MAP с колонками.
+        const KReportTemplateItem *libTop =
+            report_template::FindConstRefItem(*libData, refKey);
+        const bool preOk = libTop != nullptr && !libTop->m_lstSubItems.empty();
+        const size_t libChildren = libTop ? libTop->m_lstSubItems.size() : 0;
+
+        // Выбрать шаблон в контроллере (оркестратор читает выбранный).
+        KSysReportTempletControl *ctl = KSysReportTempletControl::GetInstance();
+        ctl->Init();
+        ctl->OnSelectedTempletChanged("NP-1x4");
+        const bool selOk =
+            ctl->GetSelectedTempletInfo().TempletName() == QString("NP-1x4");
+
+        // Наши данные = копия lib-данных (поддерево top c child[0] существует). Мутилируем:
+        // добавляем богус-колонку → после пересборки она обязана исчезнуть.
+        KReportTemplateDataNew doc = *libData;
+        KReportTemplateItem *docTopPre = report_template::FindRefItem(doc, refKey);
+        const bool haveTop = docTopPre != nullptr && !docTopPre->m_lstSubItems.empty();
+        if (haveTop) {
+            KReportTemplateItem bogus;
+            bogus.m_strID = "/RT_IMAGE_TEXT_MAP/BOGUS";
+            bogus.m_strName = "BOGUS";
+            docTopPre->m_lstSubItems.push_back(bogus);
+        }
+
+        KDocumentGenerator dg(&doc);
+        dg.SyncRefresnImageItemData();
+
+        // После пересборки: дети top == дети libTop (по id, в порядке), богус исчез.
+        KReportTemplateItem *docTop = report_template::FindRefItem(doc, refKey);
+        bool rebuilt = docTop != nullptr && docTop->m_lstSubItems.size() == libChildren
+            && libChildren > 0;
+        if (rebuilt && libTop) {
+            auto a = docTop->m_lstSubItems.begin();
+            for (const KReportTemplateItem &c : libTop->m_lstSubItems) {
+                if (a->m_strID != c.m_strID) { rebuilt = false; break; }
+                ++a;
+            }
+        }
+        bool noBogus = true;
+        if (docTop)
+            for (const KReportTemplateItem &c : docTop->m_lstSubItems)
+                if (c.m_strID == "/RT_IMAGE_TEXT_MAP/BOGUS") noBogus = false;
+
+        qInfo() << "docsync: libName:" << libNameOk << QString::fromStdString(libName)
+                << "| pre:" << preOk << "children:" << (int)libChildren
+                << "sel:" << selOk << "haveTop:" << haveTop
+                << "| rebuilt:" << rebuilt << "noBogus:" << noBogus;
+
+        const bool ok = libNameOk && preOk && selOk && haveTop && rebuilt && noBogus;
+        qInfo() << (ok ? "docsync: PASS" : "docsync: FAIL");
+        return ok ? 0 : 68;
+    }
+
     // Self-test сторожевого процесса (реф. ОТДЕЛЬНЫЙ бинарник X2000Monitor).
     // Все пороги сверены дизасмом: 5000 мс (#0x1388), 3600000 мс (0x36EE80),
     // порог отказов 11 (cmp w0,#0xb). Qt не участвует.
