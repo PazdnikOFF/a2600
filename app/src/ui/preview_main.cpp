@@ -129,6 +129,8 @@ public:
 #include "db/KExamDataFileNameGenerator.h"
 #include "db/KExportRecord.h"
 #include "alg/KImageProcess.h"
+#include "report/KReportEditDataSource.h"
+#include "report/KReportEntity.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6062,6 +6064,167 @@ int main(int argc, char **argv)
                      && g0Ok && g1Ok && g2Ok && g4Ok && gBadOk && grpOk && thumbOk
                      && rcOk && rcErrOk && viOk && optOk && optRcOk;
         qInfo() << (ok ? "imgproc: PASS" : "imgproc: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "reportedit") {
+        // Реф. KReportEditDataSource — статeless-класс статических методов.
+        const QString base = "/tmp/endo_reportedit";
+        QDir(base).removeRecursively();
+        QDir().mkpath(base);
+
+        // 1. Пара сериализации списка файлов — точная обратимость.
+        const QString s0 = KReportEditDataSource::ChangeFileListToString(QStringList());
+        const QString s2 = KReportEditDataSource::ChangeFileListToString(
+            QStringList() << "a.jpg" << "b.jpg");
+        const bool serOk = s0 == "" && s2 == "$#a.jpg#b.jpg";
+        const QStringList back = KReportEditDataSource::ChangeStringToFileList(s2);
+        const bool deserOk = back.size() == 2 && back[0] == "a.jpg" && back[1] == "b.jpg";
+        // Оба условия обязательны: префикс "$" И length() > 2.
+        const bool guardOk =
+               KReportEditDataSource::ChangeStringToFileList("").isEmpty()
+            && KReportEditDataSource::ChangeStringToFileList("$#").isEmpty()   // len == 2
+            && KReportEditDataSource::ChangeStringToFileList("#a").isEmpty()   // нет "$"
+            && KReportEditDataSource::ChangeStringToFileList("$#a").size() == 1;
+        // KeepEmptyParts: хвостовой '#' даёт пустой элемент.
+        const QStringList tail = KReportEditDataSource::ChangeStringToFileList("$#a#");
+        const bool tailOk = tail.size() == 2 && tail[1] == "";
+        // Экранирования нет: '#' внутри имени ломает обратимость (квирк реф.).
+        const QStringList brk = KReportEditDataSource::ChangeStringToFileList(
+            KReportEditDataSource::ChangeFileListToString(QStringList() << "a#b"));
+        const bool noEscapeOk = brk.size() == 2;
+
+        // 2. Системные списки органов — размеры и первые ключи.
+        const QStringList gastro = KReportEditDataSource::GetSysOrganNameList(
+            KScopeClass::E_GASTROSCOPY);
+        const QStringList colon = KReportEditDataSource::GetSysOrganNameList(
+            KScopeClass::E_COLONOSCOPY);
+        const QStringList bronch = KReportEditDataSource::GetSysOrganNameList(
+            KScopeClass::E_BRONCHOSCOPE);
+        const QStringList nose = KReportEditDataSource::GetSysOrganNameList(
+            KScopeClass::E_NOSELARYNXSCOPE);
+        // Дуоденоскоп (14) НЕ имеет своего списка — падает в гастро-ветку.
+        const QStringList duo = KReportEditDataSource::GetSysOrganNameList(
+            KScopeClass::E_DUODENOSCOPE);
+        const bool organOk = gastro.size() == 9 && colon.size() == 7
+                          && bronch.size() == 18 && nose.size() == 25
+                          && duo == gastro
+                          && gastro[0] == "TR_Egs" && colon[0] == "TR_AColon"
+                          && bronch[0] == "TR_ApSOLULobe" && nose[0] == "TR_LNCavity";
+
+        // 3. Имена типов отчёта; неизвестный класс → пустая строка.
+        const bool typeOk =
+               KReportEditDataSource::GetReportTypeName(KScopeClass::E_GASTROSCOPY) == "TR_VGReport"
+            && KReportEditDataSource::GetReportTypeName(KScopeClass::E_COLONOSCOPY) == "TR_VCReport"
+            && KReportEditDataSource::GetReportTypeName(KScopeClass::E_BRONCHOSCOPE) == "TR_VBReport"
+            && KReportEditDataSource::GetReportTypeName(KScopeClass::E_NOSELARYNXSCOPE) == "TR_VNReport"
+            && KReportEditDataSource::GetReportTypeName(KScopeClass::E_DUODENOSCOPE) == "TR_VDReport"
+            && KReportEditDataSource::GetReportTypeName(KScopeClass::E_CLASS(7)).isEmpty();
+
+        // 4. Пути: у региона неизвестный класс даёт "", у курсора — ГОЛЫЙ базовый
+        //    каталог (разное поведение — квирк реф.).
+        const std::string ro = KEnvConfig::GetInstance().GetReadOnlyBaseDir();
+        const bool regionOk =
+               KReportEditDataSource::GetRegionImgPath(KScopeClass::E_GASTROSCOPY)
+                   == ro + "mainapp/patient/region/Stomach/1.jpg"
+            && KReportEditDataSource::GetRegionImgPath(KScopeClass::E_DUODENOSCOPE)
+                   == ro + "mainapp/patient/region/Duodeno/1.jpg"
+            && KReportEditDataSource::GetRegionImgPath(KScopeClass::E_CLASS(7)).empty();
+        const bool cursorOk =
+               KReportEditDataSource::GetCursorImgPath(exam_detail::E_POINT_CURSOR)
+                   == ro + "mainapp/application/qss/icon/arrow/point.png"
+            && KReportEditDataSource::GetCursorImgPath(exam_detail::E_ARROW_LEFT_UP_CURSOR)
+                   == ro + "mainapp/application/qss/icon/arrow/upleft.png"
+            && KReportEditDataSource::GetCursorImgPath(exam_detail::E_CURSOR_NONE)
+                   == ro + "mainapp/application/qss/";      // голый базовый каталог
+
+        // 5. LoadDbString / LoadDbInt — сентинел и коды ошибок.
+        const bool loadStrOk = KReportEditDataSource::LoadDbString("INVALID_STRING").empty()
+                            && KReportEditDataSource::LoadDbString("abc") == "abc";
+        int iv = 777;
+        const bool loadIntOk = KReportEditDataSource::LoadDbInt("42", iv) == 0 && iv == 42;
+        int iv2 = 777;
+        // При ошибке out НЕ ТРОГАЕТСЯ (квирк реф.).
+        const bool loadIntErrOk = KReportEditDataSource::LoadDbInt("xyz", iv2) == -2
+                               && iv2 == 777;
+
+        // 6. GetSysDeviceType — мёртвая константа.
+        const bool devOk = KReportEditDataSource::GetSysDeviceType() == 0;
+
+        // 7. Таблица Report (имя БЕЗ префикса tb_, ключ ExamId, 15 колонок).
+        const QString dbPath = base + "/HD-2000.dat";
+        const char *conn = "endo_reportedit";
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", conn);
+        db.setDatabaseName(dbPath);
+        db.open();
+        const bool ddlOk = KReportDBTableHandler::CreateTable(conn);
+
+        KReportEntity re;
+        re.ExamId = "E100";  re.ReportDate = "2026-07-20";
+        re.ExamFindings = "findings";  re.DiseaseName = "disease";
+        re.Suggest = "suggest";  re.HPType = 1;
+        re.ExamImg = KReportEditDataSource::ChangeFileListToString(
+            QStringList() << base + "/i1.jpg" << base + "/nope.jpg").toStdString();
+        const bool addOk = KReportDBTableHandler::AddNewReportEntity(re) == 0;
+        KReportEntity got;
+        const bool getOk = KReportDBTableHandler::GetEntity("E100", got) == 0
+                        && got.DiseaseName == "disease" && got.HPType == 1
+                        && got.ReportDate == "2026-07-20";
+        const bool numOk = KReportDBTableHandler::GetRecordNumber() == 1;
+        std::vector<std::string> keys;
+        const bool keyOk = KReportDBTableHandler::GetAllRecordMainKey(keys) == 0
+                        && keys.size() == 1 && keys[0] == "E100";
+        // DeleteEntites в реф. НЕ РЕАЛИЗОВАН — код -8193.
+        const bool notSupOk = KReportDBTableHandler::DeleteEntites({"E100"})
+                           == KReportDBTableHandler::ERR_NOT_SUPPORT;
+        // QueryReportTable — проба существования.
+        const bool queryOk = KReportEditDataSource::QueryReportTable("E100") == 0
+                          && KReportEditDataSource::QueryReportTable("нет") != 0;
+
+        // 8. GetOneRecordFromReportTB — фильтрация снимков по фактическому наличию.
+        { QFile f(base + "/i1.jpg"); f.open(QIODevice::WriteOnly); f.write("x"); f.close(); }
+        // Наш PatientExamData::GetExamDataPath принимает КАТАЛОГ осмотра, поэтому
+        // для проверки успешного пути заводим запись, у которой ExamId — реально
+        // существующий каталог (в реф. examId→каталог разрешается выше по стеку).
+        KReportEntity re2 = re;
+        re2.ExamId = base.toStdString();
+        KReportDBTableHandler::AddNewReportEntity(re2);
+        std::vector<std::string> imgs;
+        std::string outPath;
+        const int rc = KReportEditDataSource::GetOneRecordFromReportTB(
+            base.toStdString(), imgs, outPath);
+        // Из двух путей в ExamImg существует только i1.jpg — второй отфильтрован.
+        const bool oneRecOk = rc == 1 && imgs.size() == 1
+                           && imgs[0] == (base + "/i1.jpg").toStdString()
+                           && outPath == base.toStdString();
+        KReportDBTableHandler::DeleteEntity(base.toStdString());
+        const bool missOk = KReportEditDataSource::GetOneRecordFromReportTB(
+                                "нет", imgs, outPath) == -1;
+
+        const bool delOk = KReportEditDataSource::DeleteReportByExamId("E100") == 0
+                        && KReportDBTableHandler::GetRecordNumber() == 0;
+
+        QSqlDatabase::database(conn).close();
+        QSqlDatabase::removeDatabase(conn);
+
+        qInfo() << "сериализация:" << serOk << deserOk << "| стражи:" << guardOk
+                << "| хвостовой '#':" << tailOk << "| нет экранирования:" << noEscapeOk;
+        qInfo() << "списки органов 9/7/18/25 + duo→гастро:" << organOk
+                << "| имена типов:" << typeOk;
+        qInfo() << "путь региона:" << regionOk << "| путь курсора:" << cursorOk
+                << "| GetSysDeviceType:" << devOk;
+        qInfo() << "LoadDbString:" << loadStrOk << "| LoadDbInt:" << loadIntOk
+                << "| out не трогается при ошибке:" << loadIntErrOk;
+        qInfo() << "таблица Report:" << ddlOk << addOk << getOk << numOk << keyOk
+                << "| DeleteEntites не поддержан:" << notSupOk << "| query:" << queryOk;
+        qInfo() << "GetOneRecordFromReportTB:" << oneRecOk << "rc=" << rc
+                << "| нет записи:" << missOk << "| удаление:" << delOk;
+
+        const bool ok = serOk && deserOk && guardOk && tailOk && noEscapeOk && organOk
+                     && typeOk && regionOk && cursorOk && loadStrOk && loadIntOk
+                     && loadIntErrOk && devOk && ddlOk && addOk && getOk && numOk
+                     && keyOk && notSupOk && queryOk && oneRecOk && missOk && delOk;
+        qInfo() << (ok ? "reportedit: PASS" : "reportedit: FAIL");
         return ok ? 0 : 65;
     }
 

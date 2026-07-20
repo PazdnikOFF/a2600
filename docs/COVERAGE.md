@@ -12,8 +12,8 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **95** (20%) |
-| Методов реализовано (совпало по имени) | **987** (15.3%) |
+| Классов затронуто у нас | **98** (20%) |
+| Методов реализовано (совпало по имени) | **1012** (15.7%) |
 
 ## 2. По доменам
 
@@ -21,7 +21,7 @@
 |---|---:|---:|---:|---:|---:|
 | **UI** | 167 | 2410 | 48 | 2.0% | 7 |
 | **CORE** | 60 | 1216 | 468 | 38.5% | 28 |
-| **REPORT** | 72 | 752 | 117 | 15.6% | 14 |
+| **REPORT** | 72 | 752 | 142 | 18.9% | 17 |
 | **HW** | 40 | 598 | 21 | 3.5% | 3 |
 | **MISC** | 27 | 543 | 135 | 24.9% | 12 |
 | **DICOM** | 60 | 423 | 56 | 13.2% | 10 |
@@ -45,7 +45,6 @@
 | `KFactoryOptions` | UPDATE | 45 | `testenv.ini` | не начат |
 | `KTemplateEditDocument` | REPORT | 38 | — | не начат |
 | `KDocumentGenerator` | REPORT | 31 | — | есть заголовок, но свой API — сверить имена |
-| `KReportEditDataSource` | REPORT | 17 | — | не начат |
 | `KUpdateAction` | UPDATE | 16 | — | не начат |
 | `KDataOprEventDeal` | DB | 16 | — | не начат |
 | `KEntityManage` | DB | 15 | — | есть заголовок, но свой API — сверить имена |
@@ -58,7 +57,6 @@
 | `KRTDataSourceReal` | REPORT | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KRTCreatorContext` | REPORT | 10 | — | не начат |
 | `KImportRules` | DB | 9 | — | не начат |
-| `KReportDBTableHandler` | REPORT | 9 | — | не начат |
 | `KFunTest` | CORE | 9 | `testcaselist.txt` | не начат |
 | `KTimeMng` | CORE | 9 | — | не начат |
 | `KSelfTest` | CORE | 9 | `testenv.ini` | не начат |
@@ -82,6 +80,8 @@
 | `KVideoPlay` | CORE | 6 | — | не начат |
 | `KRTTableItemCreator` | REPORT | 6 | — | не начат |
 | `KReportEditUIConfig` | REPORT | 6 | — | не начат |
+| `KPdf2Pics` | REPORT | 6 | — | не начат |
+| `KEntityDEC` | DB | 5 | — | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
@@ -121,7 +121,7 @@
 
 - **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
 
-- **Наши абстракции без класса-референса (17):** `Application`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`, `yxyDES2`
+- **Наши абстракции без класса-референса (18):** `Application`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 
