@@ -161,6 +161,7 @@ set(SOURCES
     src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
+    src/monitor/X2000Monitor.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp
@@ -311,6 +312,7 @@ add_executable(ui_preview
     src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
+    src/monitor/X2000Monitor.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp

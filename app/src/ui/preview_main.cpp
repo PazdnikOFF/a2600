@@ -94,6 +94,7 @@ public:
 #include "report/KReportDisplayParam.h"
 #include "report/KReportHtmlGenerator.h"
 #include "report/KDocumentGenerator.h"
+#include "monitor/X2000Monitor.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -5746,6 +5747,137 @@ int main(int argc, char **argv)
             && calcOk && layoutOk && saveOk && deepOk;
         qInfo() << (ok ? "docgen: PASS" : "docgen: FAIL");
         return ok ? 0 : 67;
+    }
+
+    // Self-test сторожевого процесса (реф. ОТДЕЛЬНЫЙ бинарник X2000Monitor).
+    // Все пороги сверены дизасмом: 5000 мс (#0x1388), 3600000 мс (0x36EE80),
+    // порог отказов 11 (cmp w0,#0xb). Qt не участвует.
+    if (screen == "monitor") {
+        using namespace x2000monitor;
+
+        // 1. Стартовое состояние: g_bOpenKill в .data ИНИЦИАЛИЗИРОВАН ЕДИНИЦЕЙ.
+        MonitorState st;
+        const bool initOk = st.g_bOpenKill == 1 && st.g_bAppExit == 0
+            && st.g_iMainCtrlFailCount == 0;
+
+        // 2. Heartbeat консоли: sig 43 отмечает время и взводит init-флаг.
+        RecHeartBeatAct(st, SIG_MAINCTRL_HEARTBEAT, 0, 1000);
+        const bool hbOk = st.g_iConsoleTime == 1000 && st.g_bisMainCtrlInit == 1;
+
+        // 3. sig 43 val=1 → синхронизация отсчёта видео с консолью, флаг гасится.
+        st.g_iVideoMainTime = 0;
+        RecHeartBeatAct(st, SIG_MAINCTRL_HEARTBEAT, 1, 2000);
+        const bool syncOk = st.g_bisUpdateSysTime == 0
+            && st.g_iVideoMainTime == 2000 && st.g_iConsoleTime == 2000;
+
+        // 4. sig 43 val=2/3 — пауза и снятие паузы мониторинга.
+        RecHeartBeatAct(st, SIG_MAINCTRL_HEARTBEAT, 2, 2100);
+        const bool pauseOn = st.g_bIsStopMonitor == 1;
+        RecHeartBeatAct(st, SIG_MAINCTRL_HEARTBEAT, 3, 2200);
+        const bool pauseOk = pauseOn && st.g_bIsStopMonitor == 0;
+
+        // 5. Управляющий канал sig 46: 0=poweroff, 1/2=update, 5/6=kill.
+        MonitorState c;
+        RecHeartBeatAct(c, SIG_CONTROL, 1, 0);
+        const bool updOn = c.g_bisUpdate == 1;
+        RecHeartBeatAct(c, SIG_CONTROL, 2, 0);
+        RecHeartBeatAct(c, SIG_CONTROL, 6, 0);
+        const bool killOff = c.g_bOpenKill == 0;
+        RecHeartBeatAct(c, SIG_CONTROL, 5, 0);
+        RecHeartBeatAct(c, SIG_CONTROL, 0, 0);
+        const bool ctrlOk = updOn && c.g_bisUpdate == 0 && killOff
+            && c.g_bOpenKill == 1 && c.g_bPoweroff == 1;
+
+        // 6. Приоритет машины состояний: poweroff перекрывает всё.
+        c.g_bAppExit = 1;
+        const bool prioOk = runStateMachine(c, 0) == ACT_POWEROFF;
+
+        // 7. Заморозка: пауза/обновление глушат даже разбор упавших.
+        MonitorState f;
+        f.g_bAppExit = 1;
+        f.g_bisUpdate = 1;
+        const bool freezeOk = runStateMachine(f, 0) == ACT_NONE;
+        f.g_bisUpdate = 0;
+        const bool exitOk = runStateMachine(f, 0) == ACT_RESTORE_EXIT_APP;
+
+        // 8. Таймаут heartbeat СТРОГИЙ: ровно 5000 — молчим, 5001 — реагируем.
+        MonitorState t;
+        t.g_iConsoleTime = 0;
+        t.g_iFailRebootTime = 0;
+        const bool edgeOk = runStateMachine(t, 5000) == ACT_NONE
+            && t.g_iMainCtrlFailCount == 0;
+        const bool timeoutOk = runStateMachine(t, 5001) == ACT_RESTORE_CONSOLE_GRACE
+            && t.g_iMainCtrlFailCount == 1;
+
+        // 9. Порог отказов: сдаёмся при СТРОГО больше 11, т.е. с 12-го.
+        MonitorState lim;
+        lim.g_iMainCtrlFailCount = 11;
+        CheckFailLimit(lim);
+        const bool below = lim.g_bOpenKill == 1;
+        lim.g_iMainCtrlFailCount = 12;
+        CheckFailLimit(lim);
+        const bool limitOk = below && lim.g_bOpenKill == 0;
+
+        // 10. Сдались → машина состояний больше ничего не перезапускает,
+        //     а почасовой сброс счётчиков сам по себе НЕ возвращает g_bOpenKill.
+        lim.g_iConsoleTime = 0;
+        lim.g_iFailRebootTime = 0;
+        const bool gaveUpOk = runStateMachine(lim, 4000000) == ACT_NONE
+            && lim.g_bOpenKill == 0;
+        // Вернуть в строй может ТОЛЬКО внешний sigqueue(46, 5).
+        RecHeartBeatAct(lim, SIG_CONTROL, 5, 0);
+        const bool reviveOk = lim.g_bOpenKill == 1;
+
+        // 11. Почасовой сброс: > 3600000 мс обнуляет оба счётчика.
+        MonitorState r;
+        r.g_iMainCtrlFailCount = 5;
+        r.g_iVideoMainFailCount = 7;
+        r.g_iFailRebootTime = 0;
+        r.g_iConsoleTime = 3600001;   // чтобы не сработал таймаут heartbeat
+        runStateMachine(r, 3600001);
+        const bool resetOk = r.g_iMainCtrlFailCount == 0
+            && r.g_iVideoMainFailCount == 0 && r.g_iFailRebootTime == 3600001;
+
+        // 12. АНОМАЛИЯ ПРОШИВКИ: videoMonitor работает, но runStateMachine его
+        //     НЕ ЗОВЁТ (в реф. ноль call site) → таймаут видеотракта не ловится.
+        MonitorState v;
+        v.g_iConsoleTime = 100000;    // консоль свежая
+        v.g_iVideoMainTime = 0;       // видео молчит очень давно
+        v.g_iFailRebootTime = 100000;
+        const bool vDeadOk = runStateMachine(v, 100000) == ACT_NONE
+            && v.g_iVideoMainFailCount == 0;          // счётчик не тронут
+        const bool vWorksOk = videoMonitor(v, 100000) == ACT_RESTORE_VIDEO_GRACE
+            && v.g_iVideoMainFailCount == 1;          // но сама функция исправна
+
+        // 13. Формат лога: "[MM-DD HH:MM:SS:mmm] " — без года, мс из usec/1000.
+        const std::string pref = MonitorLogPrefix(0, 123000);
+        // "[MM-DD HH:MM:SS:mmm] " = 21 символ (1+5+1+8+1+3+1+1), года НЕТ.
+        const bool fmtOk = pref.size() == 21 && pref[0] == '['
+            && pref[3] == '-' && pref[6] == ' ' && pref[15] == ':'
+            && pref.substr(pref.size() - 6) == ":123] ";
+        const bool pathOk =
+            MonitorLogPath("/x") == "/x/data/app/logfile/Monitor.log"
+            && MonitorLogPath("") == "/home/root/data/app/logfile/Monitor.log";
+
+        // 14. get_time — реальные часы, проверяем лишь правдоподобие.
+        int64_t ms = 0;
+        const bool timeOk = get_time(&ms) == 0 && ms > 1600000000000LL
+            && get_time(nullptr) == -1;
+
+        qInfo() << "init:" << initOk << "hb:" << hbOk << "sync:" << syncOk
+                << "pause:" << pauseOk << "ctrl:" << ctrlOk;
+        qInfo() << "приоритет:" << prioOk << "заморозка:" << freezeOk << exitOk
+                << "| таймаут 5000/5001:" << edgeOk << timeoutOk;
+        qInfo() << "порог 11/12:" << limitOk << "сдались:" << gaveUpOk
+                << "оживление:" << reviveOk << "сброс за час:" << resetOk;
+        qInfo() << "videoMonitor мёртв:" << vDeadOk << "но исправен:" << vWorksOk
+                << "| лог:" << fmtOk << pathOk << "время:" << timeOk;
+
+        const bool ok = initOk && hbOk && syncOk && pauseOk && ctrlOk && prioOk
+            && freezeOk && exitOk && edgeOk && timeoutOk && limitOk && gaveUpOk
+            && reviveOk && resetOk && vDeadOk && vWorksOk && fmtOk && pathOk && timeOk;
+        qInfo() << (ok ? "monitor: PASS" : "monitor: FAIL");
+        return ok ? 0 : 68;
     }
 
     // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/
