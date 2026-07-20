@@ -5691,9 +5691,11 @@ int main(int argc, char **argv)
 
         KDocumentGenerator gen(&data);
 
-        // 1. Стартовое состояние (реф. strh wzr — оба флага обнулены разом).
+        // 1. Стартовое состояние: флаги 0, m_strCurItemId = "Invalid ID"
+        //    (реф. ctor инициализирует константой STR_INVALID_ITEM_ID).
         const bool initOk = !gen.CanMoveFront() && !gen.CanMoveBack()
-            && gen.CurItemId().empty();
+            && gen.CurItemId() == "Invalid ID"
+            && KDocumentGenerator::InvalidItemId() == "Invalid ID";
 
         // 2. Футер есть; элемент перед ним — /RT_EXAM_INFO.
         const bool footerOk = gen.HasFooterTemplateItem()
@@ -5741,13 +5743,43 @@ int main(int argc, char **argv)
         data.m_lstItems.push_back(mkItem("/RT_ADDITION"));
         const bool deepOk = out.m_lstItems.size() == 4;
 
+        // 9. UpdateMovableFlag (реф. @0x53c7b0, восстановлено декомпилятором).
+        //    Порядок соседей верхнего уровня: HOSPITAL_TOP, PATIENT_INFO, EXAM_INFO,
+        //    SIGNATURE, ADDITION (добавлен на шаге 8).
+        KDocumentGenerator mv(&data);
+        // Первый элемент: вперёд нельзя, назад можно.
+        mv.UpdateMovableFlag("/RT_HOSPITAL_TOP");
+        const bool firstMv = !mv.CanMoveFront() && mv.CanMoveBack();
+        // Средний: и вперёд, и назад.
+        mv.UpdateMovableFlag("/RT_EXAM_INFO");
+        const bool midMv = mv.CanMoveFront() && mv.CanMoveBack();
+        // Последний: вперёд можно, назад нельзя.
+        mv.UpdateMovableFlag("/RT_ADDITION");
+        const bool lastMv = mv.CanMoveFront() && !mv.CanMoveBack();
+        // Сентинел "Invalid ID" → оба флага сброшены (ранний выход).
+        mv.UpdateMovableFlag("Invalid ID");
+        const bool sentinelMv = !mv.CanMoveFront() && !mv.CanMoveBack();
+        // Cell-закреплённый элемент → не двигается (оба флага 0), даже будучи средним.
+        data.m_mapItemConfigs["/RT_EXAM_INFO"].m_mapAttrs["CellAt"] = "1,1";
+        mv.UpdateMovableFlag("/RT_EXAM_INFO");
+        const bool pinnedSelf = !mv.CanMoveFront() && !mv.CanMoveBack();
+        // Сосед cell-закреплён → в его сторону двигать нельзя. Для PATIENT_INFO
+        // следующий (EXAM_INFO) закреплён → назад нельзя; предыдущий свободен → вперёд можно.
+        mv.UpdateMovableFlag("/RT_PATIENT_INFO");
+        const bool pinnedNeighbor = mv.CanMoveFront() && !mv.CanMoveBack();
+        const bool moveOk = firstMv && midMv && lastMv && sentinelMv
+            && pinnedSelf && pinnedNeighbor;
+
         qInfo() << "init:" << initOk << "| футер:" << footerOk
                 << "нет футера:" << noFooterOk << "футер первый:" << firstFootOk;
         qInfo() << "calcapp:" << calcOk << "layout:" << layoutOk
                 << "| save:" << saveOk << "копия:" << deepOk;
+        qInfo() << "movable: first/mid/last:" << firstMv << midMv << lastMv
+                << "| сентинел:" << sentinelMv << "self-pin:" << pinnedSelf
+                << "сосед-pin:" << pinnedNeighbor;
 
         const bool ok = initOk && footerOk && noFooterOk && firstFootOk
-            && calcOk && layoutOk && saveOk && deepOk;
+            && calcOk && layoutOk && saveOk && deepOk && moveOk;
         qInfo() << (ok ? "docgen: PASS" : "docgen: FAIL");
         return ok ? 0 : 67;
     }

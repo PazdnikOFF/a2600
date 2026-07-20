@@ -26,12 +26,16 @@ case "$cmd" in
     ssh "$HOST" "cd $REF && aarch64-linux-gnu-objdump -d \
       --start-address=$start --stop-address=$stop bin/$bin" ;;
   dec)
+    # Принимает ИМЯ функции (надёжнее) либо адрес. ВНИМАНИЕ: Ghidra грузит образ
+    # с базой 0x100000 — при передаче runtime-адреса прибавь 0x100000 сам, либо
+    # (лучше) передавай имя из `sym`. Логи Ghidra префиксуют только первую строку
+    # println, поэтому режем диапазон от маркера "// ====" и снимаем префикс.
     bin="${1:?bin}"; func="${2:?func|addr}"
     ssh "$HOST" "cd $REF && export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && \
       G=\$(ls -d ghidra_*PUBLIC) && \
       ./\$G/support/analyzeHeadless $REF proj -process $bin -noanalysis \
-        -scriptPath $REF -postScript Decompile.java '$func' 2>/dev/null \
-        | sed -n '/^\/\/ ====/,\$p'" ;;
+        -scriptPath $REF/myscripts -postScript Decompile.java '$func' 2>/dev/null" \
+      | sed -n 's/^INFO  Decompile.java> //; /\/\/ ====/,$p' ;;
   run)
     bin="${1:?bin}"; shift || true
     ssh "$HOST" "cd $REF && QEMU_LD_PREFIX=/usr/aarch64-linux-gnu \

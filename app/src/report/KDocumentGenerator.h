@@ -60,20 +60,35 @@ public:
     // Пусто, если футера нет либо он первый.
     std::string FindItmeIdofPreFooter() const;
 
+    // Реф. UpdateMovableFlag @0x53c7b0 (восстановлено ДЕКОМПИЛЯТОРОМ Ghidra, не asm).
+    // Выставляет m_bCanMoveFront/Back для элемента id по его позиции среди СОСЕДЕЙ:
+    //   • оба флага сбрасываются;
+    //   • id == STR_INVALID_ITEM_ID → выход;
+    //   • сам элемент cell-закреплён (его конфиг имеет атрибут "CellAt") → выход;
+    //   • front = есть предыдущий сосед И он НЕ cell-закреплён;
+    //   • back  = есть следующий сосед И он НЕ cell-закреплён.
+    // Список соседей = дети родителя (id без последнего "/"-сегмента), либо корневой
+    // список, если родитель не найден. Cell-закрепление = наличие атрибута "CellAt"
+    // (в поставляемых шаблонах не встречается — на реальных данных соседи всегда движимы).
+    void UpdateMovableFlag(const std::string &id);
+
     // --- состояние ---
     const std::string &CurItemId() const { return m_strCurItemId; }
     bool CanMoveFront() const { return m_bCanMoveFront; }
     bool CanMoveBack() const  { return m_bCanMoveBack; }
-    // ВНИМАНИЕ: реф. ctor инициализирует m_strCurItemId константой STR_INVALID_ITEM_ID
-    // (@0xa974e0 в TU этого класса) — её ЗНАЧЕНИЕ ПОКА НЕ ВОССТАНОВЛЕНО (строится
-    // статическим инициализатором в рантайме, литерал не найден). У нас поле стартует
-    // ПУСТЫМ. На реализованные ниже методы это не влияет — ни один из них константу
-    // не читает. НО перед реализацией MoveFront/MoveBack/ClickSubItem/ChangeItemSelected
-    // её НУЖНО восстановить: они сравнивают m_strCurItemId именно с ней.
+
+    // Реф. STR_INVALID_ITEM_ID = "Invalid ID" (восстановлено декомпилятором из
+    // _GLOBAL__sub_I_KDocumentGenerator.cpp: string(&STR_INVALID_ITEM_ID,"Invalid ID")).
+    // Этой строкой реф. ctor инициализирует m_strCurItemId (наш ctor — теперь тоже).
+    static const std::string &InvalidItemId();
 
 private:
     // Значение атрибута конфига элемента по id; пусто, если конфига/атрибута нет.
     std::string itemAttr(const std::string &id, const std::string &attr) const;
+    // Есть ли у конфига элемента атрибут "CellAt" (cell-закрепление).
+    bool isCellPinned(const std::string &id) const;
+    // Список соседей элемента id (дети родителя либо корневой список).
+    const std::list<KReportTemplateItem> *siblingsOf(const std::string &id) const;
 
     QTextDocument          *m_pDoc = nullptr;      // +0x00
     KRTCreatorContext      *m_pContext = nullptr;  // +0x08 — НЕ реализован (итерация 2)

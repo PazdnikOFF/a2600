@@ -2522,11 +2522,17 @@ AlgParaManager::IsSoftEndo, KViewBase::IsSoftEndoView — все три `[0x14] 
   RefColumnID/RefColumn/ColumnRatio/MarginWidth/SplitStartIndex/SplitLineWidth/
   SplitLineType/SplitLineSpace. Атрибут **CellAt в поставке НЕ ВСТРЕЧАЕТСЯ НИ РАЗУ** —
   значит чтение CELLAT в UpdateMovableFlag на реальных данных всегда даёт пусто.
-  ⚠️ НЕ ВОССТАНОВЛЕНО: значение константы STR_INVALID_ITEM_ID (@0xa974e0 в TU класса,
-  строится статическим инициализатором; литерал быстро найти не удалось). У нас
-  m_strCurItemId стартует ПУСТЫМ. На 6 реализованных методов не влияет — ни один её не
-  читает. НО перед MoveFront/MoveBack/ClickSubItem/ChangeItemSelected её НУЖНО достать:
-  они сравнивают m_strCurItemId именно с ней.
+  ✅ STR_INVALID_ITEM_ID ВОССТАНОВЛЕНА через среду hermes (§0a): декомпилятор Ghidra отдал
+  `string(&STR_INVALID_ITEM_ID,"Invalid ID")` из _GLOBAL__sub_I_KDocumentGenerator.cpp за
+  один заход — статикой на Mac она не бралась (const-пропаган.). Значение = **"Invalid ID"**.
+  Наш ctor теперь инициализирует m_strCurItemId ею.
+  ✅ ДОБАВЛЕН UpdateMovableFlag @0x53c7b0 (7-й write-pure метод) — ПЕРВЫЙ метод,
+  восстановленный ДЕКОМПИЛЯТОРОМ, а не ручным asm. Логика (проверена self-test'ом):
+  сброс обоих флагов; ранний выход при id=="Invalid ID" ИЛИ если сам элемент cell-закреплён
+  (атрибут "CellAt", значение сверено в .rodata 0x865d18); front = есть предыдущий сосед И
+  он не cell-закреплён; back = есть следующий сосед И он не cell-закреплён. Соседи = дети
+  родителя (id без последнего "/"-сегмента) либо корневой список. Self-test `docgen` расширен
+  (first/mid/last, сентинел, self-pin, сосед-pin).
   ТАКЖЕ УТОЧНЕНО дизасмом Save: копируются ТОЛЬКО m_mapConfigs и m_lstItems;
   m_mapItemConfigs (+0x48) в Save НЕ участвует — приёмник сохраняет свою карту.
   🔧 ПОБОЧНО ИСПРАВЛЕНА ОШИБКА В МЕТРИКЕ (найдена здесь же): tools/coverage.py парсил
