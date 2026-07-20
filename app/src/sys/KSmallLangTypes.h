@@ -5,10 +5,10 @@
 // Типы подсистемы раскладок «малых языков» (реф. X-2600,
 // platform/language/SmallLanguage/KSmallLangTranslate.cpp).
 //
-// ⚠️ Символических ИМЁН клавиш в бинарнике нет: их выдаёт только
-// KKey2Name::GetNameOfKey, читающий массивы g_strKeysym_S40/S50 в .bss
-// (233 / 357 std::string, заполняются _GLOBAL__sub_I). Пока используем
-// сырые коды; расшифровка массивов имён — отдельная задача.
+// Имена клавиш — в sys/KKey2Name.h (таблица извлечена из бинарника
+// генератором tools/gen_keysym.py: 614 записей, коды 0x000-0x142 «PADK_*»
+// и 0x3e9-0x565 «SONO_*»). Тип остаётся int: в PADK-части коды разрежены,
+// и enum на 614 значений пользы не даёт.
 using E_SONO_KEY = int;
 
 namespace smalllang {

@@ -1,6 +1,7 @@
 #include "sys/KSmallLangTranslate.h"
 
 #include "kernel/KSystemLog.h"
+#include "sys/KKey2Name.h"
 #include "sys/KSmallLangTables.h"
 
 using namespace smalllang;
@@ -27,10 +28,9 @@ const Remap kDeadKeyRemap[5] = {
     { 0x47a, 0x552 }, { 0x4b2, 0x553 },
 };
 
-// Реф. имена клавиш выдаёт KKey2Name::GetNameOfKey, читающий массивы
-// g_strKeysym_S40/S50 из .bss (их расшифровка — отдельная задача).
-// Для логов достаточно кода.
-std::string GetNameOfKey(E_SONO_KEY k) { return std::to_string(k); }
+// Реф. имена клавиш выдаёт KKey2Name::GetNameOfKey (см. sys/KKey2Name.h) —
+// теперь настоящая таблица, извлечённая из бинарника (tools/gen_keysym.py).
+std::string GetNameOfKey(E_SONO_KEY k) { return KKey2Name::GetNameOfKey(k); }
 
 // Раскладки. aeBaseModifier/aeLockedModifier/aeCombPrefixKey и указатели —
 // из реверса структур g_st<Язык>KeyboardLayout (по 128 байт).

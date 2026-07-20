@@ -12,8 +12,8 @@
 |---|---|
 | Пользовательских классов в референсе | **485** |
 | Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **100** (21%) |
-| Методов реализовано (совпало по имени) | **1058** (16.5%) |
+| Классов затронуто у нас | **101** (21%) |
+| Методов реализовано (совпало по имени) | **1060** (16.5%) |
 
 ## 2. По доменам
 
@@ -23,7 +23,7 @@
 | **CORE** | 60 | 1216 | 468 | 38.5% | 28 |
 | **REPORT** | 72 | 752 | 144 | 19.1% | 17 |
 | **HW** | 40 | 598 | 21 | 3.5% | 3 |
-| **MISC** | 27 | 543 | 135 | 24.9% | 12 |
+| **MISC** | 27 | 543 | 137 | 25.2% | 13 |
 | **DICOM** | 60 | 423 | 56 | 13.2% | 10 |
 | **DB** | 47 | 352 | 129 | 36.6% | 16 |
 | **UPDATE** | 12 | 137 | 14 | 10.2% | 5 |
@@ -121,7 +121,7 @@
 
 - **Свой API при наличии класса-референса (8):** `KDocumentGenerator`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
 
-- **Наши абстракции без класса-референса (18):** `Application`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `hal`, `theme`, `yxyDES2`
+- **Наши абстракции без класса-референса (19):** `Application`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KRemoteSwitchConfig`, `KReportDataSource`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `hal`, `keyname`, `theme`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 

@@ -27,7 +27,7 @@ struct stUnicode2TextLayout {
 //
 // В оригинале библиотека раскладок — файловый глобал g_s_vec_stUnic2TextLayoutLib;
 // здесь держится в синглтоне. Off-device-ядро (парсинг+лукап); маппинг int-кода клавиши
-// в имя SONO_* (реф. KKey2Name::GetNameOfKey) — device/клавиатура, не здесь.
+// в имя SONO_* — это реф. KKey2Name::GetNameOfKey, РЕАЛИЗОВАН в sys/KKey2Name.h.
 //
 // ВАЖНО: файл прошивки — НЕвалидный строгий XML (голые &, <, пробел в value="..."),
 // поэтому парсим построчно (оригинальный парсер тоже лоялен к этому), а не QXmlStreamReader.

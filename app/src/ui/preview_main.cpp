@@ -134,6 +134,7 @@ public:
 #include "report/KReportItem.h"
 #include "video/KVideoPlayerMng.h"
 #include "sys/KSmallLangTranslate.h"
+#include "sys/KKey2Name.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6632,6 +6633,31 @@ int main(int argc, char **argv)
         const bool frEmptyOk = t.ProcCombStepKey(F, fe, 8) == 3;
         t.KbdLayoutInit("Latin");
 
+        // 13. KKey2Name — таблица имён, извлечённая генератором из бинарника.
+        //     Совпадение имён с кодами модификаторов, которые мы реверснули
+        //     независимо, — перекрёстная проверка обеих итераций.
+        const bool nameModOk =
+               KKey2Name::GetNameOfKey(KEY_CAPSLOCK) == "SONO_CapsLock"
+            && KKey2Name::GetNameOfKey(KEY_SHIFT_L)  == "SONO_Shift_Left"
+            && KKey2Name::GetNameOfKey(KEY_SHIFT_R)  == "SONO_Shift_Right"
+            && KKey2Name::GetNameOfKey(KEY_CTRL)     == "SONO_Control_Left"
+            && KKey2Name::GetNameOfKey(KEY_FN)       == "SONO_Function"
+            && KKey2Name::GetNameOfKey(KEY_ALT)      == "SONO_Alt"
+            && KKey2Name::GetNameOfKey(KEY_ALTGR)    == "SONO_AltGr";
+        // Обе половины таблицы: PADK_* (разрежены) и SONO_* (сплошные).
+        const bool namePadkOk = KKey2Name::GetNameOfKey(0x008) == "PADK_BACKSPACE"
+                             && KKey2Name::GetNameOfKey(0x00d) == "PADK_RETURN"
+                             && KKey2Name::GetNameOfKey(0x020) == "PADK_SPACE"
+                             && KKey2Name::GetNameOfKey(0x140) == "PADK_POWER";
+        const bool nameSonoOk = KKey2Name::GetNameOfKey(0x3e9) == "SONO_FREEZE"
+                             && KKey2Name::GetNameOfKey(0x565) == "SONO_uni0171";
+        // Промах → "SONO_Unknown" (.rodata @0x89e5d0), а НЕ пустая строка.
+        const bool nameMissOk = KKey2Name::GetNameOfKey(0x7fff) == "SONO_Unknown";
+        // Дубль кода 0: линейный поиск отдаёт ПЕРВОЕ совпадение.
+        const bool nameDupOk = KKey2Name::GetNameOfKey(0x000) == "PADK_UNKNOWN";
+        // Qt-сканкоды: промах даёт ПУСТУЮ строку (иное поведение, чем выше).
+        const bool scanMissOk = KKey2Name::GetNameOfQtScancode(0x7fff).empty();
+
         qInfo() << "биты (сырая маска):" << bitOk << bitClrOk
                 << "| init:" << initOk << "неизвестный язык → true:" << unknownOk
                 << "| русская:" << ruOk;
@@ -6650,6 +6676,9 @@ int main(int argc, char **argv)
         qInfo() << "AltGr сбрасывает защёлку:" << altgrClearOk
                 << "| верхний уровень:" << topModOk << topKeyOk << topNullOk
                 << "| фр. таблица пуста:" << frEmptyOk;
+        qInfo() << "KKey2Name: модификаторы:" << nameModOk << "PADK/SONO:"
+                << namePadkOk << nameSonoOk << "| промах SONO_Unknown:" << nameMissOk
+                << "дубль→первое:" << nameDupOk << "| сканкод-промах пуст:" << scanMissOk;
 
         const bool ok = bitOk && bitClrOk && initOk && unknownOk && ruOk && classOk
                      && bitIdxOk && shiftOnOk && shiftOffOk && baseBadOk && capsOnOk
@@ -6657,7 +6686,8 @@ int main(int argc, char **argv)
                      && mlOk && lvl0Ok && lvl1Ok && mlBadOk && syncOk && syncOffOk
                      && syncBadOk && prefixOk && swallowOk && combOk && replayOk
                      && smallBufOk && altgrClearOk && topModOk && topKeyOk
-                     && topNullOk && frEmptyOk;
+                     && topNullOk && frEmptyOk && nameModOk && namePadkOk
+                     && nameSonoOk && nameMissOk && nameDupOk && scanMissOk;
         qInfo() << (ok ? "smalllang: PASS" : "smalllang: FAIL");
         return ok ? 0 : 65;
     }
