@@ -6079,6 +6079,86 @@ int main(int argc, char **argv)
         return ok ? 0 : 70;
     }
 
+    // Self-test построителя документа отчёта (реф. KDocumentGenerator::InitDocument @0x53e108
+    // + GetTextDocument @0x53eac0). Собирает шаблон из двух текстовых блоков, строит целый
+    // QTextDocument и проверяет, что оба блока отрисованы с верным форматом. Чистый Qt Gui.
+    if (screen == "initdoc") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["BgColor"] = "white";
+        data.m_mapConfigs["DIAG_KEY"] = "Chronic gastritis";
+        data.m_mapConfigs["CONC_KEY"] = "Follow-up in 6 months";
+
+        auto addText = [&](const std::string &id, const std::string &title,
+                           const std::string &dataKey, const std::string &style) {
+            KReportTemplateItem it;
+            it.m_strID = id; it.m_strName = id.substr(id.find_last_of('/') + 1);
+            it.m_strTitle = title; it.m_strType = "RT_TEXT_BLOCK";
+            data.m_lstItems.push_back(it);
+            KReportTemplateItemConfig cfg;
+            cfg.m_strName = id;
+            cfg.m_mapAttrs["TemplateData"] = dataKey;
+            cfg.m_mapAttrs["FontType"] = style;
+            data.m_mapItemConfigs[id] = cfg;
+        };
+        addText("/RT_DIAGNOSIS", "TR_Diagnosis", "DIAG_KEY", "ThirdTitle");
+        addText("/RT_CONCLUSION", "TR_Conclusion", "CONC_KEY", "ReportText");
+
+        KReportTemplateItemConfig style;   // стиль ThirdTitle: Bold
+        style.m_strName = "ThirdTitle";
+        style.m_mapAttrs["Size"] = "18";
+        style.m_mapAttrs["Bold"] = "1";
+        data.m_mapItemConfigs["ThirdTitle"] = style;
+
+        QObject parent;                    // владелец документа
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+
+        const bool docOk = doc != nullptr;
+        // Оба блока отрисованы (текст присутствует в документе).
+        const QString plain = doc ? doc->toPlainText() : QString();
+        const bool bothBlocksOk = plain.contains("TR_Diagnosis : Chronic gastritis")
+            && plain.contains("TR_Conclusion : Follow-up in 6 months");
+
+        // Фон корневого фрейма = "white"; поле 20; ширина 100%.
+        bool frameOk = false;
+        if (doc) {
+            QTextFrameFormat ff = doc->rootFrame()->frameFormat();
+            frameOk = ff.background().color() == QColor("white")
+                && qFuzzyCompare(ff.margin(), 20.0)
+                && ff.width().type() == QTextLength::PercentageLength
+                && qFuzzyCompare(ff.width().rawValue(), 100.0);
+        }
+
+        // Диагноз жирный (ThirdTitle Bold), заключение — нет (ReportText).
+        bool diagBold = false, conclNotBold = true;
+        if (doc) {
+            for (QTextBlock b = doc->begin(); b.isValid(); b = b.next()) {
+                QTextCharFormat cf;
+                for (QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it) {
+                    cf = it.fragment().charFormat(); break;
+                }
+                if (b.text().contains("Chronic gastritis"))
+                    diagBold = cf.fontWeight() == QFont::Bold;
+                if (b.text().contains("Follow-up"))
+                    conclNotBold = cf.fontWeight() != QFont::Bold;
+            }
+        }
+
+        // Повторный вызов GetTextDocument пересобирает (InitDocument чистит): текст не двоится.
+        QTextDocument *doc2 = gen.GetTextDocument(&parent);
+        const bool rebuildOk = doc2
+            && doc2->toPlainText().count("Chronic gastritis") == 1;
+
+        qInfo() << "initdoc: doc:" << docOk << "оба блока:" << bothBlocksOk
+                << "frame(bg/margin/width):" << frameOk
+                << "| diagBold:" << diagBold << "conclNotBold:" << conclNotBold
+                << "rebuild:" << rebuildOk;
+
+        const bool ok = docOk && bothBlocksOk && frameOk && diagBold && conclNotBold && rebuildOk;
+        qInfo() << (ok ? "initdoc: PASS" : "initdoc: FAIL");
+        return ok ? 0 : 71;
+    }
+
     // Self-test оркестратора KDocumentGenerator::SyncRefresnImageItemData (реф. @0x53efa0)
     // на РЕАЛЬНЫХ синглтонах прошивки. Группа ReportTemplateNP-1x4 включает Image1x4.xml →
     // поддерево /RT_IMAGE_TEXT_MAP с колонками MAP0..MAP3. Проверяем: оркестратор

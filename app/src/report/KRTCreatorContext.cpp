@@ -2,8 +2,13 @@
 
 #include "KRTAbsItemCreator.h"
 #include "KTextBlock.h"
+#include "KMeaStringUtil.h"
 #include "ui/KScreenMng.h"
 
+#include <QtGlobal>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QString>
 #include <QBrush>
 #include <QColor>
 #include <QFont>
@@ -156,6 +161,71 @@ bool KRTCreatorContext::UpdateBlock(const std::string &type,
     // вместе с рендером; здесь — только диспетчеризация с TABLE-фолбэком.
     KRTAbsItemCreator *p = FindCreatorForUpdate(type);
     return p ? p->UpdateBlock(pItem, pFrame) : false;
+}
+
+namespace {
+// База шрифта отчёта (реф. QFont("Source Han Sans CN", 16, Normal, false), обе перегрузки).
+QFont baseReportFont()
+{
+    return QFont(QStringLiteral("Source Han Sans CN"), 16, QFont::Normal, false);
+}
+// DPI-скейл (реф. общий хвост @0x547574): setPointSize(qRound(pt×dpi/150)); без экрана dpi=150.
+void applyDpiScale(QFont &f)
+{
+    double dpi = 150.0;
+    if (QScreen *s = QGuiApplication::primaryScreen())
+        dpi = s->physicalDotsPerInch();
+    f.setPointSize(qRound(f.pointSize() * dpi / 150.0));
+}
+} // namespace
+
+QFont KRTCreatorContext::GetFontSize(const std::string &styleName) const
+{
+    // Реф. @0x547400: именованный стиль → Size/Bold/Italic, затем DPI-скейл (всегда).
+    QFont f = baseReportFont();
+    if (m_pData) {
+        auto it = m_pData->m_mapItemConfigs.find(styleName);
+        if (it != m_pData->m_mapItemConfigs.end()) {
+            const auto &attrs = it->second.m_mapAttrs;
+            auto s = attrs.find("Size");
+            if (s != attrs.end()) {
+                KMeaStringUtil u;
+                f.setPointSize(u.ConvertStringToInt(s->second));
+            }
+            auto b = attrs.find("Bold");
+            if (b != attrs.end() && b->second == "1")
+                f.setWeight(QFont::Bold);            // 75
+            auto i = attrs.find("Italic");
+            if (i != attrs.end() && i->second == "1")
+                f.setStyle(QFont::StyleItalic);
+        }
+    }
+    applyDpiScale(f);
+    return f;
+}
+
+QFont KRTCreatorContext::GetFontSize(const KReportTemplateItem *pItem) const
+{
+    // Реф. @0x547690. (A) null/id не в конфиге → база+DPI; (B) FontType → рекурсия по
+    // значению; (C) имя стиля по типу элемента.
+    QFont f = baseReportFont();
+    if (!pItem || !m_pData
+        || m_pData->m_mapItemConfigs.find(pItem->m_strID) == m_pData->m_mapItemConfigs.end()) {
+        applyDpiScale(f);
+        return f;
+    }
+    const KReportTemplateItemConfig &cfg =
+        m_pData->m_mapItemConfigs.at(pItem->m_strID);
+    auto ft = cfg.m_mapAttrs.find("FontType");
+    if (ft != cfg.m_mapAttrs.end())
+        return GetFontSize(ft->second);              // (B)
+    if (pItem->m_strType == "RT_TITLE_TABLE_BLOCK")
+        return GetFontSize(std::string("FourthTitle"));
+    if (pItem->m_strType == "RT_TEXT_BLOCK")
+        return GetFontSize(std::string("ReportText"));
+    if (pItem->m_strShowTitle == "1")                // item+0xc0 = m_strShowTitle
+        return GetFontSize(std::string("FourthTitle"));
+    return GetFontSize(std::string("ReportText"));
 }
 
 void KRTCreatorContext::HideInvalidBlock(QTextFrame *pFrame)

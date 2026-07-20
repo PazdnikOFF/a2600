@@ -5,9 +5,11 @@
 
 struct KReportTemplateDataNew;
 struct KReportTemplateItem;
+struct KReportTemplateItem;
 class KRTAbsItemCreator;
 class QTextTableCell;
 class QTextFrame;
+class QFont;
 
 // Строковые типы блоков отчёта (реф. константы report_template::STR_RT_ELEMENT_*).
 // Значения подтверждены РЕАЛЬНЫМИ шаблонами поставки (атрибут Type= в <Content>):
@@ -74,6 +76,16 @@ public:
 
     // Данные шаблона (реф. читается творцами как *(context+0x38)).
     KReportTemplateDataNew *GetData() const { return m_pData; }
+
+    // Реф. GetFontSize @0x547690 (item*) / @0x547400 (string): шрифт блока/документа.
+    // База: QFont("Source Han Sans CN", 16, QFont::Normal). item*-перегрузка: null или id
+    // не в конфиге → база+DPI; есть FontType → рекурсия по его значению; иначе имя стиля по
+    // m_strType (RT_TITLE_TABLE_BLOCK→"FourthTitle", RT_TEXT_BLOCK→"ReportText", флаг +0xc0
+    // =="1"→"FourthTitle", иначе "ReportText"). string-перегрузка: ищет именованный стиль в
+    // m_mapItemConfigs, читает Size/Bold/Italic. Обе применяют DPI-скейл: setPointSize(qRound(
+    // pt×physicalDotsPerInch/150)). Эталон 150 DPI; без primaryScreen dpi=150 (скейл 1).
+    QFont GetFontSize(const KReportTemplateItem *pItem) const;
+    QFont GetFontSize(const std::string &styleName) const;
 
     // Реф. HideInvalidBlock @0x546168: обход всех QTextBlock фрейма; блок с keep-флагом
     // (property UserProperty+2 == true) остаётся; иначе setVisible(false), если блок

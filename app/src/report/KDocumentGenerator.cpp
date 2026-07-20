@@ -1,9 +1,19 @@
 #include "KDocumentGenerator.h"
 
 #include "KReportTemplateCommonDef.h"
+#include "KRTCreatorContext.h"        // m_pContext: рендер блоков + GetFontSize
 #include "KReportTemplate.h"          // KReportTemplateManager (синглтон, GetTempletLibName)
 #include "KSysReportTempletControl.h" // KSysReportTempletControl (выбранный шаблон)
 #include "KTemplateLibCfg.h"          // KTemplateLibCfg::GetTemplateLib
+
+#include <QBrush>
+#include <QColor>
+#include <QFont>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QTextFrame>
+#include <QTextFrameFormat>
+#include <QTextLength>
 
 #include <iterator>
 
@@ -55,12 +65,19 @@ const std::string &KDocumentGenerator::InvalidItemId()
 }
 
 KDocumentGenerator::KDocumentGenerator(KReportTemplateDataNew *pData)
-    : m_pData(pData), m_strCurItemId(InvalidItemId())
+    : m_pContext(new KRTCreatorContext(pData)), m_pData(pData),
+      m_strCurItemId(InvalidItemId())
 {
     // Реф.: m_pDoc=0; m_pData=p; m_strCurItemId=STR_INVALID_ITEM_ID ("Invalid ID");
-    // strh wzr,[this,#0x38] — оба bool-флага обнуляются одной инструкцией;
-    // m_pContext = new KRTCreatorContext(p) (0x40 байт).
-    // У нас: контекст не создаётся (KRTCreatorContext — итерация 2).
+    // оба bool-флага=0; m_pContext = new KRTCreatorContext(p) — теперь СОЗДАЁТСЯ
+    // (render-половина реализована, контекст регистрирует творцов блоков).
+}
+
+KDocumentGenerator::~KDocumentGenerator()
+{
+    // Реф. владеет контекстом; удаляем во избежание утечки (m_pDoc принадлежит
+    // parent-QObject, его НЕ трогаем).
+    delete m_pContext;
 }
 
 std::string KDocumentGenerator::itemAttr(const std::string &id,
@@ -446,4 +463,70 @@ std::string KDocumentGenerator::FindItmeIdofPreFooter() const
         prev = item.m_strID;
     }
     return std::string();
+}
+
+QTextDocument *KDocumentGenerator::GetTextDocument(QObject *parent)
+{
+    // Реф. @0x53eac0: тривиальная фабрика. parent — только QObject-родитель нового
+    // QTextDocument (в реф. QTextEdit*), поэтому владение документом уходит parent'у.
+    m_pDoc = new QTextDocument(parent);
+    InitDocument();
+    return m_pDoc;
+}
+
+void KDocumentGenerator::InitDocument()
+{
+    // Реф. @0x53e108. МИНИМАЛЬНЫЙ рендер: опущены (помечено) сброс члена-строки @+0x18,
+    // подстановка номеров страниц, split-линии и begin/endEditBlock-группировка undo.
+    if (!m_pDoc || !m_pContext || !m_pData)
+        return;                                    // реф. assert(m_pDoc/m_pContext)
+
+    m_pDoc->clear();
+
+    // Формат корневого фрейма: фон из m_mapConfigs["BgColor"], поле 20, ширина 100%.
+    QTextFrame *root = m_pDoc->rootFrame();
+    QColor bg;
+    bg.setNamedColor(QString::fromStdString(m_pData->m_mapConfigs["BgColor"]));
+    QTextFrameFormat fmt = root->frameFormat();
+    fmt.setMargin(20.0);
+    if (bg.isValid())
+        fmt.setBackground(QBrush(bg, Qt::SolidPattern));   // property BackgroundBrush 0x820
+    fmt.setWidth(QTextLength(QTextLength::PercentageLength, 100.0));  // FrameWidth 0x4003
+    root->setFrameFormat(fmt);   // публичный эквивалент protected QTextObject::setFormat
+
+    // Дефолтный шрифт документа (реф. GetFontSize(nullptr) → база + DPI-скейл).
+    m_pDoc->setDefaultFont(m_pContext->GetFontSize(static_cast<KReportTemplateItem *>(nullptr)));
+
+    // Главный цикл: по элементам верхнего уровня → творец блока каждого типа.
+    if (!m_pData->m_lstItems.empty()) {
+        for (KReportTemplateItem &item : m_pData->m_lstItems)
+            m_pContext->CreateBlock(item.m_strType, &item, root);
+        // [ОМИТ min] между элементами InsertSplitLine при наличии split-линии.
+        PutFooterOnBottom();
+    }
+}
+
+void KDocumentGenerator::PutFooterOnBottom()
+{
+    // Реф. @0x53e078: если есть футер — набить пустыми абзацами перед ним (прижать к низу
+    // страницы). Само прижатие — в InsertBlockLineAfterItem (см. ниже; для min без футера
+    // это no-op).
+    if (!HasFooterTemplateItem())
+        return;
+    const std::string preId = FindItmeIdofPreFooter();   // опечатка "Itme" — реф.
+    if (!preId.empty())
+        InsertBlockLineAfterItem(preId);
+}
+
+void KDocumentGenerator::InsertBlockLineAfterItem(const std::string & /*id*/)
+{
+    // Реф. @0x53dc90: ВЫРАВНИВАНИЕ ФУТЕРА ПО НИЗУ СТРАНИЦЫ. Находит фрейм/ячейку элемента id
+    // (FindFrameOrCell), берёт lastCursorPosition и добивает документ ПУСТЫМИ абзацами
+    // (QTextBlockFormat по умолчанию, без property), пока высота документа < editMaxHeight-9
+    // (editMaxHeight из QTextDocumentLayout). Контент НЕ добавляет — только визуальный отступ.
+    //
+    // ОТСТУПЛЕНИЕ (помечено): реализовано как no-op. Требует ещё не восстановленных
+    // FindFrameOrCell @0x53ca28 (Qt-поиск фрейма/ячейки по id) и метрик QTextDocumentLayout.
+    // На КОРРЕКТНОСТЬ КОНТЕНТА и его рендер не влияет — только на прижатие футера к нижнему
+    // краю. Полностью реализуется в UI-итерации вместе с FindFrameOrCell/Change*Selected.
 }

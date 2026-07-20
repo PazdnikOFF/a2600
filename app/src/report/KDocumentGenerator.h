@@ -5,6 +5,7 @@
 #include "KReportTemplateData.h"
 
 class QTextDocument;
+class QObject;
 class KRTCreatorContext;
 
 // Генератор документа отчёта (реф. KDocumentGenerator @0x53bf38…0x541dac, X-2600).
@@ -36,6 +37,11 @@ public:
     // Реф. ctor: m_pDoc=0; m_pData=p; m_strCurItemId=STR_INVALID_ITEM_ID; флаги=0;
     // m_pContext = new KRTCreatorContext(p). У нас контекст не создаётся (не реализован).
     explicit KDocumentGenerator(KReportTemplateDataNew *pData);
+    ~KDocumentGenerator();
+
+    // Владеет m_pContext (сырой указатель) — копирование запрещено во избежание double-free.
+    KDocumentGenerator(const KDocumentGenerator &) = delete;
+    KDocumentGenerator &operator=(const KDocumentGenerator &) = delete;
 
     // --- write-pure (реализовано) ---
 
@@ -143,6 +149,28 @@ public:
     // список, если родитель не найден. Cell-закрепление = наличие атрибута "CellAt"
     // (в поставляемых шаблонах не встречается — на реальных данных соседи всегда движимы).
     void UpdateMovableFlag(const std::string &id);
+
+    // --- документная/render-половина (Qt; итерация 5) ---
+
+    // Реф. GetTextDocument @0x53eac0: ТРИВИАЛЬНАЯ фабрика — m_pDoc = new QTextDocument(parent);
+    // InitDocument(); return m_pDoc. parent используется ТОЛЬКО как QObject-родитель (в реф.
+    // QTextEdit*), поэтому у нас QObject* — зависимость от Widgets снята (как в комментарии .h).
+    QTextDocument *GetTextDocument(QObject *parent);
+
+    // Реф. InitDocument @0x53e108: строит содержимое m_pDoc по m_pData. clear() → формат
+    // rootFrame (BgColor/margin 20/ширина 100%) → дефолтный шрифт → цикл по m_lstItems с
+    // m_pContext->CreateBlock(item.m_strType, &item, rootFrame) → PutFooterOnBottom().
+    // МИНИМАЛЬНЫЙ рендер: опущены подстановка номеров страниц и split-линии (помечено).
+    void InitDocument();
+
+    // Реф. PutFooterOnBottom @0x53e078: если есть футер-элемент — прижать его к низу
+    // страницы через InsertBlockLineAfterItem(id-элемента-перед-футером). Нет футера → no-op.
+    void PutFooterOnBottom();
+
+    // Реф. InsertBlockLineAfterItem @0x53dc90: добить документ пустыми абзацами после
+    // элемента id, пока высота < editMaxHeight-9 (выравнивание футера по низу). Для min
+    // без футера — документированный no-op (тянет FindFrameOrCell + метрики layout).
+    void InsertBlockLineAfterItem(const std::string &id);
 
     // --- состояние ---
     const std::string &CurItemId() const { return m_strCurItemId; }
