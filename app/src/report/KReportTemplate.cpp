@@ -170,6 +170,27 @@ void KReportTemplateManager::InitTempletLibInfos()
     m_vecTempletLibInfos = KSysReportTempletCfg::GetInstance().TempletLibInfos();
 }
 
+void KReportTemplateManager::GetTempletLibName(const std::string &templName,
+                                               std::string &out) const
+{
+    // Реф. @0x5999d0. ПРОМАХ не трогает out — поэтому НЕ очищаем его здесь.
+    for (const KTempletBaseInfo &libInfo : m_vecTempletLibInfos) {
+        // depts держится отсортированным по имени → порядок как у реф. map<string,bool>.
+        for (const KTempletDept &dept : libInfo.depts) {
+            const std::string key = dept.name.toStdString();
+            // ⚠️ Реф. substr(3) без guard роняет приложение на key длиной <3; у нас —
+            // пропуск (в поставке депты всегда "KW_*", ветка не срабатывает).
+            if (key.size() < 3)
+                continue;
+            if (key.substr(3) == templName) {
+                out = libInfo.TempletName().toStdString();  // имя библиотеки
+                return;                                     // первое совпадение — выход
+            }
+        }
+    }
+    // Промах: out оставлен как есть (реф. голый return).
+}
+
 int KReportTemplateManager::InitModule()
 {
     if (m_bInited)

@@ -84,6 +84,18 @@ public:
     const QVector<KTempletBaseInfo> &GetTempletLibInfos() const { return m_vecTempletLibInfos; }
     bool IsInited() const { return m_bInited; }
 
+    // Реф. GetTempletLibName @0x5999d0 (декомпилятор): по имени шаблона найти имя
+    // библиотеки, которая его содержит. Обходит m_vecTempletLibInfos; для каждой либы —
+    // её депты (реф. GetAllDeptDefault → map<string,bool>, у нас depts, ОТСОРТИРОВАН по
+    // имени — тот же порядок обхода). Ключ депта БЕЗ первых 3 символов (dept-префикс
+    // "KW_") сравнивается с templName; ПЕРВОЕ совпадение → out = TempletName() либы,
+    // немедленный возврат. ПРОМАХ: out НЕ трогается (реф. голый return — caller
+    // предынициализирует). Флаг isDefault грузится, но в сравнении не участвует.
+    // ⚠️ Реф. substr(3) БЕЗ guard: ключ короче 3 → std::out_of_range (в поставке депты
+    // всегда "KW_*" ≥3). У нас депт <3 символов ПРОПУСКАЕТСЯ (помечено), чтобы не ронять
+    // приложение на битом конфиге. Пустой templName матчит первый депт длиной ровно 3.
+    void GetTempletLibName(const std::string &templName, std::string &out) const;
+
 private:
     QVector<ReportItem> loadSubContent(const QString &fileName) const;
     void InitTempletsInfos();      // KSysReportTempletCfg → m_vecTempletInfos

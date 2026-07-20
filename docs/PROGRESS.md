@@ -551,9 +551,22 @@ image-text-map** (self-test `docgen` расширен, `app/src/report/KDocument
   копия конфига под своим itemId; нет → запись по itemId стирается (устаревшая колонка);
   без SynColumnID → пропуск.
 - Атрибут вендора **`SynColumnID`** (орфография SYN, НЕ SYNC; 92 вхождения в поставке).
-**ОТЛОЖЕНО (итерация 3, оркестратор):** `SyncRefresnImageItemData` @0x53efa0 (опечатка
-Refresn) — Qt-free, но нужен **`KReportTemplateManager::GetTempletLibName`** (ещё не
-реализован) + обвязка синглтонов (KSysReportTempletControl/KReportTemplateManager).
+**ЗАКРЫТО (итерация 3a): `KReportTemplateManager::GetTempletLibName`** @0x5999d0
+(self-test `reporttmplmgr` расширен). По имени шаблона → имя содержащей библиотеки:
+обход `m_vecTempletLibInfos`, для каждой либы — её депты (реф. GetAllDeptDefault →
+map<string,bool>, у нас `depts`, ОТСОРТИРОВАН по имени = тот же порядок); ключ депта
+БЕЗ первых 3 символов (dept-префикс "KW_") сравнивается с templName; ПЕРВОЕ совпадение →
+`out = TempletName()` либы, немедленный возврат. ПРОМАХ: реф. голым return НЕ трогает out
+(caller предынициализирует — воспроизведено, out не очищаем). Квирк: реф. `substr(3)` без
+guard роняет на ключе <3 символов — у нас пропуск (депты поставки всегда "KW_*").
+Проверено: "NP-1x4"→"ReportTemplateNP-1x4", промах сохраняет сентинел.
+
+**ОТЛОЖЕНО (итерация 3b, оркестратор): `SyncRefresnImageItemData`** @0x53efa0 (опечатка
+Refresn) — Qt-free, GetTempletLibName теперь есть. Осталась обвязка синглтонов
+(KSysReportTempletControl выбранный шаблон + KReportTemplateManager lib-данные) для
+self-test + разрешить нестыковку: реф. сравнивает `libName == "NP-4x1"`, но GetTempletLibName
+отдаёт "ReportTemplateNP-4x1" — надо проверить дизасмом, ЧТО реально сравнивается (templName?
+dept без префикса? иное), прежде чем брать NP-4x1-ветку.
 refKey по умолчанию `"/RT_IMAGE_TEXT_MAP"`, при `libName=="NP-4x1"` →
 `"/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP"` (STR_REF_IMAGE_TEXT_MAP_EXT). `ChangeLayout`
 @0x5405e0 и `PutFooterOnBottom` @0x53e078 — оркестраторы, тянут QTextDocument-слой

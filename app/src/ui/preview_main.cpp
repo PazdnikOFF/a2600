@@ -2751,6 +2751,20 @@ int main(int argc, char **argv)
             && m->GetDemoDataSource() && m->GetDataSourceReal();
         const bool infosOk = m->GetTempletsInfos().size() > 0;
 
+        // GetTempletLibName (реф. @0x5999d0): имя шаблона → имя содержащей библиотеки.
+        // Депты поставки — "KW_<шаблон>", библиотеки — "ReportTemplate<шаблон>"
+        // (config/TempletLibInfo.xml). Ключ депта БЕЗ первых 3 символов ("KW_") = имя.
+        std::string libName1 = "СЕНТИНЕЛ";
+        m->GetTempletLibName("NP-1x4", libName1);
+        std::string libName2 = "СЕНТИНЕЛ";
+        m->GetTempletLibName("NP-2x2", libName2);
+        // Промах: реф. голым return НЕ трогает out — сентинел обязан уцелеть.
+        std::string libMiss = "СЕНТИНЕЛ";
+        m->GetTempletLibName("НЕТ_ТАКОГО_ШАБЛОНА", libMiss);
+        const bool libNameOk = libName1 == "ReportTemplateNP-1x4"
+            && libName2 == "ReportTemplateNP-2x2"
+            && libMiss == "СЕНТИНЕЛ";
+
         // Идемпотентность: повторный InitModule — гейт, части те же.
         KTemplateCfg *before = m->GetTemplateCfg();
         const bool idemOk = m->InitModule() == 1 && m->GetTemplateCfg() == before;
@@ -2768,10 +2782,11 @@ int main(int argc, char **argv)
         qInfo() << "singleton:" << singletonOk << "preInit:" << preInitOk << "init:" << initOk
                 << "parts:" << partsOk << "infos:" << infosOk << m->GetTempletsInfos().size();
         qInfo() << "idem:" << idemOk << "uninit:" << uninitOk << "reinit:" << reinitOk
-                << "loader-API:" << loaderOk;
+                << "loader-API:" << loaderOk << "| libName:" << libNameOk
+                << QString::fromStdString(libName1);
 
         const bool ok = singletonOk && preInitOk && initOk && partsOk && infosOk
-            && idemOk && uninitOk && reinitOk && loaderOk;
+            && idemOk && uninitOk && reinitOk && loaderOk && libNameOk;
         qInfo() << (ok ? "reporttmplmgr: PASS" : "reporttmplmgr: FAIL");
         return ok ? 0 : 57;
     }
