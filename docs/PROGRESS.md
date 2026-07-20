@@ -617,13 +617,28 @@ KRTCreatorContext* m_pContext, +0x10 KReportTemplateDataNew* m_pData, +0x18 std:
 СДЕЛАНЫ. ОСТАЛОСЬ: `GetTextDocument` (тривиальная фабрика), `InitDocument` (опорный),
 `GetFontSize` (упростить до фикс-шрифта, пометить), `PutFooterOnBottom` (Qt via
 InsertBlockLineAfterItem).
-⚠️ **ПЕРЕД InitDocument РЕШИТЬ РАСХОЖДЕНИЕ РАСКЛАДКИ:** разведка указала `m_pData +0x40 int
-PageCount, +0x48 map SplitLineInfo`, но это КОНФЛИКТУЕТ с нашим `KReportTemplateDataNew`
-(+0x30 m_lstItems, +0x48 m_mapItemConfigs — PageCount-поля НЕТ). Нужен точечный дизасм
-InitDocument @0x53e108: где реально берётся PageCount (поле m_pData? отдельный источник?
-число элементов списка?) и SplitLineInfo — иначе InitDocument сломает раскладку. Это первый
-шаг следующего захода. Диспетчер `KRTCreatorContext::CreateBlock(type,item,frame)` УЖЕ
-вызывает творца (проверено `rttext`: рендер через него работает).
+✅ **РАСХОЖДЕНИЕ РАСКЛАДКИ РАЗРЕШЕНО (дизасм InitDocument):** наш `KReportTemplateDataNew`
+ВЕРЕН, менять НЕ надо. Разведка спутала внутренние члены STL с полями: «PageCount @+0x40» —
+это `std::list::_M_size` (C++11 list = 0x18 байт: +0x30 next, +0x38 prev, +0x40 size), т.е.
+**число элементов m_lstItems**, НЕ страниц; «SplitLineInfo @+0x48» — наш `m_mapItemConfigs`
+(GetSplitLineInfo("/", m_mapItemConfigs, out) достаёт KSplitLineInfo по ключу "/").
+Подтверждена и раскладка KDocumentGenerator (+0x18 — доп. член-строка).
+
+**СПЕКА InitDocument @0x53e108 (готова к реализации, min TEXT_BLOCK):**
+1. assert(m_pDoc/m_pContext); `m_pDoc->clear()`.
+2. Формат rootFrame: `bg = m_mapConfigs["BgColor"]` → QColor::setNamedColor; `fmt=root->
+   frameFormat(); fmt.setMargin(20.0); fmt.setProperty(BackgroundBrush 0x820, QBrush(c,Solid));
+   fmt.setProperty(FrameWidth 0x4003, QTextLength(PercentageLength=2, 100.0)); root->setFormat(fmt)`.
+3. `m_pDoc->setDefaultFont(m_pContext->GetFontSize(nullptr))`.
+4. `if (m_lstItems.size()>0)`: цикл по m_lstItems → `m_pContext->CreateBlock(item.m_strType,
+   &item, root)` (ОБЯЗАТЕЛЬНО); между элементами InsertSplitLine при split.width>0 [ОМИТ min].
+5. `PutFooterOnBottom()`.
+ОСТАЮТСЯ ДЛЯ InitDocument (следующий заход): `GetTextDocument` (тривиально), `GetFontSize(item*)`
+(для null-item: QFont("Source Han Sans CN",16,50)+DPI setPointSize; item-config-ветка FONTTYPE
+— упростить/дизасм), `PutFooterOnBottom` (Qt via `InsertBlockLineAfterItem` @0x53dc90 — тоже
+создать; no-op когда футера нет). МОЖНО ОМИТ для min: сброс члена-строки @+0x18, подстановка
+номеров страниц (__to_xstring "%lu", NP_1x4/GetParam), GetSplitLineInfo/InsertSplitLine,
+begin/endEditBlock. Диспетчер CreateBlock УЖЕ вызывает творца (проверено `rttext`).
 
 **ПОСЛЕДНЕЕ (эта сессия): KDocumentGenerator итерация 2 — слой синхронизации колонок
 image-text-map** (self-test `docgen` расширен, `app/src/report/KDocumentGenerator.*`).
