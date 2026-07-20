@@ -411,7 +411,7 @@ offscreen (как KUIDesktop). Порядок по важности:
 | Бинарник | Размер | Содержимое | Оценка |
 |---|---:|---|---|
 | **X2000Monitor** ✅ **СДЕЛАН** | 28 КБ | Разобран целиком, ядро реализовано (`app/src/monitor/X2000Monitor.{h,cpp}`, self-test `monitor`). Было: 31 функция, C-стиль, имена читаемые: `runStateMachine`, `InstallHeartBeatSig`, `find_pid_by_name`, `restartAPP`, `mainCtrlMonitor`, `videoMonitor`, `RecHeartBeatAct`, `UpdateHeartBeatTime`, `RecExceptionAct`, `RecSigChildAct`, `sendAppSignal`, `run_poweroff`, `initAppProc`, `restoreVideoMain`, `restoreExitApp`, `mySystem`, `mySleep`, `get_time`, `monitor_print_log` | **A1. ВЫСШИЙ ПРИОРИТЕТ.** Сторожевой процесс: heartbeat, машина состояний, перезапуск упавших процессов. Реально закрыть на 100% — целый бинарник за одну-две итерации. Ценность: восстанавливает модель надёжности прибора (что перезапускается, по какому таймауту, каким сигналом). |
-| **X2000Video** | 142 КБ | 7 классов / ~54 метода: `KEncodermanager` (20), `KMessageManager` (14), `KPipleline` (11), `KSemaphoreManger` (3), `KSharedBuffer` (3), `KSaveImage` (2), `KCommData` (1); плюс `ImageSaveBuf` (SetImageBpp/Width/Height, `copyGstBufferToShareBuffer`, `getImgShMemory`, `getRecordShMemory`) | **A2.** Отдельный процесс видео-тракта. GStreamer-часть — device, НО **протокол IPC** (`KMessageManager::HandleMessage/SendMessage`, `EndoConnectCmdHdl`, `ImageSaveStartCmdHdl`) и **раскладка разделяемой памяти** (`KSharedBuffer::GetReadBuffer/GetWriteBuffer`, семафоры) — off-device и проверяемы. Закрывает белое пятно: как наше приложение общается с видео-процессом. |
+| **X2000Video** ✅ ЧАСТИЧНО (IPC+shm) | 142 КБ | 7 классов / ~54 метода: `KEncodermanager` (20), `KMessageManager` (14), `KPipleline` (11), `KSemaphoreManger` (3), `KSharedBuffer` (3), `KSaveImage` (2), `KCommData` (1); плюс `ImageSaveBuf` (SetImageBpp/Width/Height, `copyGstBufferToShareBuffer`, `getImgShMemory`, `getRecordShMemory`) | **A2.** Отдельный процесс видео-тракта. GStreamer-часть — device, НО **протокол IPC** (`KMessageManager::HandleMessage/SendMessage`, `EndoConnectCmdHdl`, `ImageSaveStartCmdHdl`) и **раскладка разделяемой памяти** (`KSharedBuffer::GetReadBuffer/GetWriteBuffer`, семафоры) — off-device и проверяемы. Закрывает белое пятно: как наше приложение общается с видео-процессом. |
 | **X2000Simulator** | 131 КБ | Проигрыватель автотест-кейсов. `/dev/input/event`, `XSendEvent`, `INIFileCaseExec`, `OneKeyExec`, `SendOneKey`, `python caseformat.py` | **A3.** Частично уже использован (из него взят KAutoTestScript). Остаток: формат `casefile`, `/home/root/tmp/playcasename.txt`, `/home/root/tmp/casename.txt`, точная таблица кодов клавиш. ПОДТВЕРДИЛ пути из разведки KFunTest (`/home/root/tmp/testcaselist.txt`, `system/autotest/casefile`) — независимое доказательство. |
 
 ### B. ЖИВЫЕ КЛАССЫ X2000 — продолжение текущей линии
@@ -450,7 +450,7 @@ offscreen (как KUIDesktop). Порядок по важности:
 1. ~~**A1 X2000Monitor**~~ ✅ СДЕЛАНО 2026-07-20: бинарник закрыт целиком, ядро
    реализовано, self-test `monitor`, найдены две аномалии прошивки (см. PROGRESS §10).
 2. **B1** — доделать `KDocumentGenerator` до рабочего документа (+ C3 попутно).
-3. **A2 X2000Video** — протокол IPC и разделяемая память (закрывает архитектурное белое пятно).
+3. ~~**A2 X2000Video**~~ ✅ IPC+shm СДЕЛАНО 2026-07-20 (self-test `videoipc`); остаётся GStreamer-часть (device).
 4. **B2** (со сверкой по D5) и **D2** — дешёвые, с готовым ground truth.
 5. **B3/B4/B5** — планомерный добор off-device-корзины.
 6. **C1/C2** — когда мешают, а не «когда-нибудь».

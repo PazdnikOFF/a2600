@@ -97,6 +97,7 @@ public:
 #include "monitor/X2000Monitor.h"
 #include "report/KRTCreatorContext.h"
 #include "report/KRTAbsItemCreator.h"
+#include "video/KMessageManager.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -5959,6 +5960,123 @@ int main(int argc, char **argv)
             && fbCreateOk && fbUpdateOk && addOk && newOk && dispatchOk;
         qInfo() << (ok ? "rtcreator: PASS" : "rtcreator: FAIL");
         return ok ? 0 : 69;
+    }
+
+    // Self-test протокола X2000 ↔ X2000Video (реф. ОТДЕЛЬНЫЙ бинарник X2000Video).
+    // Транспорт — System V msgqueue. Раскладки закреплены static_assert'ами
+    // в заголовке, т.е. проверяются УЖЕ НА КОМПИЛЯЦИИ; здесь — поведение.
+    if (screen == "videoipc") {
+        using namespace x2000video;
+
+        // 1. Ключи каналов и флаги (сверены дизасмом KMessageManager @0x9000:
+        //    mov w1,#-0x7f000000 → 0x81000000, #-0x7e000000 → 0x82000000).
+        const bool keysOk = CH_VIDEO_CMD == 0x81000000u
+            && CH_VIDEO_RESP == 0x82000000u && IPC_FLAGS == 0x3B6;
+
+        // 2. Раскладка сообщения: 80 байт, нагрузка 72, msgsz = 0x48.
+        const bool msgOk = sizeof(KMsgBuf) == 80 && sizeof(Para) == 72
+            && MSG_TEXT_SIZE == 0x48 && offsetof(KMsgBuf, para) == 8
+            && MSG_FLAGS_NOWAIT == 0x800
+            && CH_AUTOTEST_CMD == 0x85000000u && CH_AUTOTEST_RESP == 0x86000000u;
+
+        // 3. Арифметика кадра: 0x697800 обязана быть 1920*1200*3.
+        const bool frameOk = SHM_FRAME_SIZE == 6912000
+            && SHM_FRAME_SIZE == SHM_FRAME_WIDTH * SHM_FRAME_HEIGHT * SHM_FRAME_BPP
+            && SHM_TOTAL_SIZE == 6912544
+            && sizeof(ImageShmLayout) == SHM_TOTAL_SIZE
+            && offsetof(ImageShmLayout, volumePath) == 0x697800
+            && offsetof(ImageShmLayout, pendingThumb) == 0x697A18;
+        const bool shmKeyOk = SHM_IMAGE == 0xA1000000u && SHM_RECORD == 0xA2000000u;
+
+        // 4. Нагрузка MSG_ENDO_CONNECT — ЧЕТЫРЕ int16 подряд, round-trip.
+        const Para ep = MakeEndoConnect(1, 2, 1920, 1200);
+        const EndoConnectPara parsed = ParseEndoConnect(ep);
+        const bool endoOk = parsed.connect == 1 && parsed.type == 2
+            && parsed.width == 1920 && parsed.height == 1200
+            // Хвост нагрузки обязан быть нулевым (реф. обнуляет).
+            && ep.raw[8] == 0 && ep.raw[71] == 0;
+
+        // 5. Нагрузка «два int32» (реф. overload MsgSend(type,int,int)).
+        const Para two = MakeTwoInts(-1, 7);
+        int32_t a = 0, b = 0;
+        std::memcpy(&a, two.raw + 0, 4);
+        std::memcpy(&b, two.raw + 4, 4);
+        const bool twoOk = a == -1 && b == 7 && two.raw[8] == 0;
+
+        // 6. Диспетчер: снимок с холодного старта поднимает снимочный пайплайн.
+        EncoderState st;
+        KMsgBuf m{};
+        m.mtype = MSG_IMAGESAVE_START;
+        HandleResult r = HandleMessage(st, m);
+        const bool snapOk = r.known && r.pipelineTouched
+            && r.pipelineRequest == KSNAP_PIPELINE_RUN
+            && st.current == KSNAP_PIPELINE_RUN;
+
+        // 7. Повторный старт записи, когда УЖЕ пишем → отказ 0x80001002/-1
+        //    и пайплайн не трогается.
+        EncoderState rec;
+        rec.current = KRECORD_PIPELINE_RUN;
+        m.mtype = MSG_VIDEOSAVE_START;
+        r = HandleMessage(rec, m);
+        const bool busyOk = r.known && !r.pipelineTouched
+            && r.respType == MSG_VIDEOSAVE_START_READY && r.respParam == RESP_FAIL;
+
+        // 8. Стоп записи: recState гасится, пайплайн просят остановить.
+        EncoderState stp;
+        stp.recState = 1;
+        m.mtype = MSG_VIDEOSAVE_STOP;
+        r = HandleMessage(stp, m);
+        const bool stopOk = r.known && stp.recState == 0
+            && r.pipelineRequest == KSNAP_KRECORD_NONE;
+
+        // 9. Подключение/отключение эндоскопа рулит пайплайном:
+        //    connect=1 → SNAP, connect=0 → NONE.
+        EncoderState e1;
+        m.mtype = MSG_ENDO_CONNECT;
+        m.para = MakeEndoConnect(1, 0, 1920, 1200);
+        r = HandleMessage(e1, m);
+        const bool conOk = e1.endoState == 1 && e1.current == KSNAP_PIPELINE_RUN;
+        m.para = MakeEndoConnect(0, 0, 0, 0);
+        r = HandleMessage(e1, m);
+        const bool disconOk = conOk && e1.endoState == 0
+            && e1.current == KSNAP_KRECORD_NONE;
+
+        // 10. Неизвестный код — реф. только логирует, состояние не меняется.
+        EncoderState unk;
+        m.mtype = 0xDEAD;
+        r = HandleMessage(unk, m);
+        const bool unknownOk = !r.known && !r.pipelineTouched
+            && unk.current == KSNAP_KRECORD_NONE;
+
+        // 11. Правило пути записи: ТОЛЬКО суффикс .mp4.
+        const bool pathOk = IsValidVideoSavePath("/x/a_001.mp4")
+            && !IsValidVideoSavePath("/x/a_001.avi")
+            && !IsValidVideoSavePath("mp4")      // короче 4 — реф. читал бы за границу
+            && !IsValidVideoSavePath("");
+
+        // 12. KSharedBuffer — кольцо; ВОПРЕКИ ИМЕНИ это обычный malloc,
+        //     а не разделяемая память.
+        KSharedBuffer ring(16, 3);
+        const bool emptyOk = ring.GetReadBuffer() == nullptr;   // index==0 → NULL
+        unsigned char *w0 = static_cast<unsigned char *>(ring.GetWriteBuffer());
+        ring.Advance();
+        unsigned char *r0 = static_cast<unsigned char *>(ring.GetReadBuffer());
+        unsigned char *w1 = static_cast<unsigned char *>(ring.GetWriteBuffer());
+        ring.Advance(); ring.Advance();
+        unsigned char *w3 = static_cast<unsigned char *>(ring.GetWriteBuffer());
+        const bool ringOk = emptyOk && r0 == w0 && w1 == w0 + 16 && w3 == w0;
+
+        qInfo() << "ключи:" << keysOk << shmKeyOk << "| сообщение:" << msgOk
+                << "кадр 1920x1200x3:" << frameOk;
+        qInfo() << "endo-нагрузка:" << endoOk << "два int32:" << twoOk
+                << "| snap:" << snapOk << "занято:" << busyOk << "стоп:" << stopOk;
+        qInfo() << "connect/disconnect:" << disconOk << "неизв. код:" << unknownOk
+                << "| путь .mp4:" << pathOk << "кольцо:" << ringOk;
+
+        const bool ok = keysOk && shmKeyOk && msgOk && frameOk && endoOk && twoOk
+            && snapOk && busyOk && stopOk && disconOk && unknownOk && pathOk && ringOk;
+        qInfo() << (ok ? "videoipc: PASS" : "videoipc: FAIL");
+        return ok ? 0 : 70;
     }
 
     // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/
