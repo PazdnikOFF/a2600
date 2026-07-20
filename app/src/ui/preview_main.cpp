@@ -926,18 +926,33 @@ int main(int argc, char **argv)
     // Self-test нумерации файлов снимков/видео (реф. KSaveFile::FormatFlowNumber +
     // разбор имён + поиск следующего номера в каталоге).
     if (screen == "savefile") {
-        // Форматирование: 3 цифры zero-pad, overflow "999^".
+        // Форматирование: чистый zero-pad до 3 знаков (реф. @0x6a89b8 —
+        // stringstream width(3)/fill('0'), БЕЗ потолка и БЕЗ '^').
         const bool fmtOk = KSaveFile::FormatFlowNumber(0) == "000" &&
                            KSaveFile::FormatFlowNumber(1) == "001" &&
                            KSaveFile::FormatFlowNumber(42) == "042" &&
                            KSaveFile::FormatFlowNumber(999) == "999" &&
-                           KSaveFile::FormatFlowNumber(1000) == "999^" &&
+                           KSaveFile::FormatFlowNumber(1000) == "1000" &&
                            KSaveFile::MakeFileName(7, false) == "007.jpg" &&
                            KSaveFile::MakeFileName(12, true) == "012.mp4";
+        // Переполнение оформляет вызывающий: "999^" + %03d (реф. GetFileFlowNumber
+        // @0x6a99d8, .rodata "999^" @0x8695f8; ср. KExamDataFileNameGenerator).
+        const bool ovfOk = KSaveFile::MakeFlowName(999) == "999" &&
+                           KSaveFile::MakeFlowName(1000) == "999^001" &&
+                           KSaveFile::MakeFlowName(1001) == "999^002" &&
+                           KSaveFile::MakeFlowName(1998) == "999^999" &&
+                           KSaveFile::MakeFileName(1000, false) == "999^001.jpg" &&
+                           KSaveFile::MakeFileName(1998, true) == "999^999.mp4" &&
+                           KSaveFile::UseUpFlowName() == "999^999" &&
+                           KSaveFile::CheckIsFileNumberUseUp("999^999.jpg") &&
+                           !KSaveFile::CheckIsFileNumberUseUp("999^998.jpg");
         // Разбор номера из имени.
         const bool parseOk = KSaveFile::FlowNumberFromName("003.jpg") == 3 &&
                              KSaveFile::FlowNumberFromName("012.mp4") == 12 &&
-                             KSaveFile::FlowNumberFromName("999^.jpg") == 999 &&
+                             KSaveFile::FlowNumberFromName("999.jpg") == 999 &&
+                             KSaveFile::FlowNumberFromName("999^001.jpg") == 1000 &&
+                             KSaveFile::FlowNumberFromName("999^999.mp4") == 1998 &&
+                             KSaveFile::FlowNumberFromName("999^000.jpg") == -1 &&
                              KSaveFile::FlowNumberFromName("readme.txt") == -1;
 
         // Поиск следующего номера в каталоге со снимками.
@@ -950,10 +965,20 @@ int main(int argc, char **argv)
             { QFile ff(dir + "/" + n); ff.open(QIODevice::WriteOnly); ff.close(); }
         const int mx = KSaveFile::FindMaxFileFlowNumber(dir);
         const int next = KSaveFile::NextFlowNumber(dir);
-        qInfo() << "fmt:" << fmtOk << "parse:" << parseOk
-                << "| пустой→" << emptyNext << "| max:" << mx << "next:" << next;
+        // Тот же каталог, но уже с файлами «второго круга»: "999^002" → 1001.
+        for (const QString &n : {"999.jpg", "999^002.jpg"})
+            { QFile ff(dir + "/" + n); ff.open(QIODevice::WriteOnly); ff.close(); }
+        const int mxOvf = KSaveFile::FindMaxFileFlowNumber(dir);
+        const int nextOvf = KSaveFile::NextFlowNumber(dir);
+        const QString nextOvfName = KSaveFile::MakeFileName(nextOvf, false);
+        qInfo() << "fmt:" << fmtOk << "ovf:" << ovfOk << "parse:" << parseOk
+                << "| пустой→" << emptyNext << "| max:" << mx << "next:" << next
+                << "| overflow max:" << mxOvf << "next:" << nextOvf << nextOvfName;
 
-        const bool ok = fmtOk && parseOk && emptyNext && mx == 5 && next == 6;
+        const bool ok = fmtOk && ovfOk && parseOk && emptyNext &&
+                        mx == 5 && next == 6 &&
+                        mxOvf == 1001 && nextOvf == 1002 &&
+                        nextOvfName == "999^003.jpg";
         qInfo() << (ok ? "savefile: PASS" : "savefile: FAIL");
         return ok ? 0 : 33;
     }

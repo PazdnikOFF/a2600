@@ -245,6 +245,21 @@ app/
 
 ## 7. Ключевые факты реверса (справочник)
 
+**Нумерация файлов снимков/видео — расхождение снято (KSaveFile vs KExamDataFileNameGenerator):**
+- `KSaveFile::FormatFlowNumber` @0x6a89b8 (0x350) — **чистый zero-pad до 3 знаков** через
+  `std::stringstream` (`width(3)` + `fill('0')`, `ss << n; ss >> str`). В теле НЕТ константы
+  0x3e7 и НЕТ ни одной ссылки на .rodata → внутри функции ни потолка 999, ни маркера '^'.
+- Маркер переполнения добавляет **вызывающий** — `KSaveFile::GetFileFlowNumber` @0x6a99d8:
+  .rodata `"999^"` @0x8695f8 и `"001"` @0x869600; вставка `"999^"` (len 4) в позицию 0 перед
+  результатом `FormatFlowNumber(n)` → имена вида `999^001`. `LogPrintf` рядом получает
+  литеральную 999 (`mov w3, #0x3e7`), сравнение круга — `cmp x22, #0x3e6`.
+- `KSaveFile::CheckIsFileNumberUseUp` @0x6a92c8 сравнивает с .rodata `"999^999"` @0x8695d0 —
+  последнее допустимое имя. `FindMaxFileFlowNumber` @0x6ab6d0 распознаёт обе формы (regex
+  `([0-9]{2}[1-9]{1}|...)`, `(.jpg|(_[0-9]{3}.mp4))`, `([\^]{1})`, `999`).
+- Итог: схема нумерации **одна**, и она совпадает с `KExamDataFileNameGenerator::GetFileSerialNum`
+  @0x48BEA8 (`"%d^%03d"`, первый `%d` — литеральная 999). Ранняя реимплементация
+  `FormatFlowNumber(1000) → "999^"` была **ошибочной**; исправлено, формат — `999^001`.
+
 **АРХИТЕКТУРА доступа к железу (подтверждено реверсом libhal.so + kmemdevice.cpp):**
 - Запись PL-регистра: `KPlControl::WriteValueToPL` → `KMemDevice::WriteDevRegister` →
   `WriteRegister(fd,addr,val)`: `mmap` страницы `/dev/mem` по `addr&~(pg-1)`, запись 32-бит,
