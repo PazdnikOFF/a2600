@@ -10,31 +10,31 @@
 
 | Метрика | Значение |
 |---|---|
-| Пользовательских классов в референсе | **485** |
-| Методов в них (уникальные имена) | **6431** |
-| Классов затронуто у нас | **106** (22%) |
-| Методов реализовано (совпало по имени) | **1246** (19.4%) |
+| Пользовательских классов в референсе | **486** |
+| Методов в них (уникальные имена) | **7008** |
+| Классов затронуто у нас | **107** (22%) |
+| Методов реализовано (совпало по имени) | **1350** (19.3%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
-| **UI** | 167 | 2410 | 99 | 4.1% | 10 |
-| **CORE** | 60 | 1216 | 475 | 39.1% | 28 |
-| **REPORT** | 72 | 752 | 144 | 19.1% | 17 |
-| **HW** | 40 | 598 | 184 | 30.8% | 6 |
-| **MISC** | 27 | 543 | 137 | 25.2% | 13 |
-| **DICOM** | 60 | 423 | 56 | 13.2% | 10 |
-| **DB** | 47 | 352 | 129 | 36.6% | 16 |
-| **UPDATE** | 12 | 137 | 22 | 16.1% | 6 |
+| **UI** | 167 | 2665 | 100 | 3.8% | 10 |
+| **CORE** | 60 | 1251 | 493 | 39.4% | 28 |
+| **REPORT** | 73 | 829 | 191 | 23.0% | 18 |
+| **MISC** | 27 | 669 | 148 | 22.1% | 13 |
+| **HW** | 40 | 625 | 190 | 30.4% | 6 |
+| **DICOM** | 60 | 455 | 63 | 13.8% | 10 |
+| **DB** | 47 | 368 | 140 | 38.0% | 16 |
+| **UPDATE** | 12 | 146 | 25 | 17.1% | 6 |
 
 ## 3. Верифицируемость off-device
 
 | Признак | Классов | Методов |
 |---|---:|---:|
-| ✅ | 172 | 1843 |
-| ⚠️ | 73 | 1112 |
-| ❌ | 240 | 3476 |
+| ✅ | 173 | 1967 |
+| ⚠️ | 73 | 1268 |
+| ❌ | 240 | 3773 |
 
 ## 4. ТОП-40 нереализованных off-device-классов (✅)
 
@@ -43,23 +43,24 @@
 | Класс | Домен | Методов | Конфиги | Заметка |
 |---|---|---:|---|---|
 | `KTemplateEditDocument` | REPORT | 38 | — | ❌ МЁРТВЫЙ КОД — 0 вызывающих; живой аналог KDocumentGenerator (12 вызывающих). См. PROGRESS §10 |
-| `KDocumentGenerator` | REPORT | 31 | — | не начат |
-| `KUpdateAction` | UPDATE | 16 | — | не начат |
+| `KUpdateAction` | UPDATE | 17 | — | не начат |
 | `KDataOprEventDeal` | DB | 16 | — | не начат |
+| `KRTTeCreatorContext` | REPORT | 16 | — | не начат |
 | `KEntityManage` | DB | 15 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityBase` | DB | 14 | — | не начат |
-| `KRTTeCreatorContext` | REPORT | 14 | — | не начат |
+| `KUpdatePrepare` | UPDATE | 13 | — | не начат |
 | `KDataFileOpr` | DB | 12 | — | не начат |
-| `KUpdatePrepare` | UPDATE | 12 | — | не начат |
 | `KEntityService` | DB | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KRTAbsDataSource` | REPORT | 11 | — | не начат |
 | `KRTDataSourceReal` | REPORT | 11 | — | есть заголовок, но свой API — сверить имена |
+| `KRecordItem` | DB | 10 | — | не начат |
+| `KImportRules` | DB | 10 | — | не начат |
 | `KRTCreatorContext` | REPORT | 10 | — | не начат |
-| `KImportRules` | DB | 9 | — | не начат |
-| `KFunTest` | CORE | 9 | `testcaselist.txt` | не начат |
-| `KTimeMng` | CORE | 9 | — | не начат |
-| `KSelfTest` | CORE | 9 | `testenv.ini` | не начат |
-| `KRecordItem` | DB | 8 | — | не начат |
+| `KFunTest` | CORE | 10 | `testcaselist.txt` | не начат |
+| `KTimeMng` | CORE | 10 | — | не начат |
+| `KSelfTest` | CORE | 10 | `testenv.ini` | не начат |
+| `KRptTempletNodeInfo` | REPORT | 9 | — | не начат |
+| `KVersion` | UPDATE | 9 | — | не начат |
 | `KEntityReport` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
 | `KRTDataSourceDemo` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityQuickInputDoctor` | DB | 8 | — | не начат |
@@ -68,50 +69,49 @@
 | `KQuickInputDoctorDbTableHandler` | DB | 8 | — | не начат |
 | `KQuickInputPatientDbTableHandler` | DB | 8 | — | не начат |
 | `KQuickInputApplicantDbTableHandler` | DB | 8 | — | не начат |
-| `KVersion` | UPDATE | 8 | — | не начат |
+| `KUpdateMng` | UPDATE | 7 | — | не начат |
 | `KNetWorkSet` | MISC | 7 | `system.ini` | не начат |
 | `KHalUpdateClass` | UPDATE | 7 | — | не начат |
 | `KThreadMessageQueue` | CORE | 7 | — | не начат |
 | `KReportTemplateConfig` | REPORT | 7 | `ReportTemplateConfig.xml` | не начат |
 | `KPicMng` | CORE | 7 | — | не начат |
 | `KExamData` | DB | 7 | — | не начат |
-| `KUpdateMng` | UPDATE | 6 | — | не начат |
 | `KVideoPlay` | CORE | 6 | — | не начат |
+| `KRecordCase` | DB | 6 | `casename.txt`, `testenv.ini` | не начат |
 | `KRTTableItemCreator` | REPORT | 6 | — | не начат |
 | `KReportEditUIConfig` | REPORT | 6 | — | не начат |
 | `KPdf2Pics` | REPORT | 6 | — | не начат |
 | `KEntityDEC` | DB | 5 | — | не начат |
-| `KRecordCase` | DB | 5 | `casename.txt`, `testenv.ini` | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
 | Класс | Домен | Методов | Наших | Покрытие |
 |---|---|---:|---:|---:|
-| `KMainCtrlThread` | CORE | 112 | 12 | 11% |
+| `KMainCtrlThread` | CORE | 113 | 12 | 11% |
 | `KSystemSet` | CORE | 101 | 15 | 15% |
-| `KViewSoftEndo` | UI | 88 | 4 | 5% |
-| `KVideoProxy` | CORE | 115 | 50 | 43% |
-| `AlgParaManager` | MISC | 62 | 10 | 16% |
-| `KUiMsgProxy` | UI | 54 | 8 | 15% |
-| `KImgList` | UI | 49 | 8 | 16% |
+| `KViewSoftEndo` | UI | 89 | 4 | 4% |
+| `KVideoProxy` | CORE | 116 | 50 | 43% |
+| `AlgParaManager` | MISC | 63 | 10 | 16% |
+| `KUiMsgProxy` | UI | 55 | 8 | 15% |
+| `KImgList` | UI | 50 | 8 | 16% |
 | `KVideoSet` | CORE | 58 | 18 | 31% |
 | `KDccuParam` | CORE | 93 | 54 | 58% |
-| `KFactoryOptions` | UPDATE | 45 | 8 | 18% |
-| `KEndoScope` | HW | 76 | 40 | 53% |
+| `KFactoryOptions` | UPDATE | 46 | 8 | 17% |
+| `KEndoScope` | HW | 79 | 42 | 53% |
 | `KSystem` | CORE | 51 | 17 | 33% |
-| `KVideoCal` | UI | 34 | 3 | 9% |
-| `KUpdateConf` | UPDATE | 28 | 1 | 4% |
+| `KVideoCal` | UI | 35 | 3 | 9% |
+| `KUpdateConf` | UPDATE | 29 | 1 | 3% |
+| `KDocumentGenerator` | REPORT | 33 | 5 | 15% |
+| `KVideoParam` | CORE | 44 | 17 | 39% |
 | `KUserOsdSet` | CORE | 34 | 8 | 24% |
-| `KVideoParam` | CORE | 42 | 16 | 38% |
 | `KUserSet` | CORE | 27 | 3 | 11% |
-| `KUsbDevice` | HW | 24 | 2 | 8% |
-| `KEncStyle` | CORE | 38 | 18 | 47% |
+| `KUsbDevice` | HW | 25 | 2 | 8% |
+| `KEncStyle` | CORE | 39 | 18 | 46% |
 | `KProjectSet` | CORE | 31 | 14 | 45% |
 | `KSaveFile` | DB | 20 | 3 | 15% |
 | `KDicomInterface` | DICOM | 27 | 11 | 41% |
+| `KSystemStatus` | CORE | 47 | 34 | 72% |
 | `KThesaurusOpt` | REPORT | 15 | 2 | 13% |
-| `KColdLightConfig` | CORE | 18 | 6 | 33% |
-| `KPlControl` | CORE | 71 | 60 | 85% |
 
 ### 5.1 Оговорка о точности метрики
 
@@ -131,36 +131,36 @@
 
 | Класс | Домен | Методов | Причина |
 |---|---|---:|---|
-| `KLcdProxy` | HW | 100 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
-| `KViewSoftEndo` | UI | 88 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KEndoScope` | HW | 76 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
-| `KReportEditUi` | REPORT | 63 | редактор отчётов — Qt-виджеты |
-| `KExamListViewUi` | UI | 59 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KViewHardEndo` | UI | 58 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KUiMsgProxy` | UI | 54 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KReportEditAddMarkView` | REPORT | 52 | редактор отчётов — Qt-виджеты |
-| `KPatientListViewUi` | UI | 51 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KTempletTreeWidget` | REPORT | 51 | редактор отчётов — Qt-виджеты |
-| `KImgList` | UI | 49 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KAlgParamAjustDlg` | UI | 48 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KCustomEdit` | UI | 47 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KSystemSetDlg` | UI | 38 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KCalendarWidget` | UI | 38 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KImgTableItem` | UI | 37 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KCamera` | HW | 37 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
-| `KScopeInfoEdit` | UI | 36 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KImgTableModel` | UI | 35 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KVideoCal` | UI | 34 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KVideoPlayerOSD` | UI | 33 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KExamDetailInfoUi` | UI | 33 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KPinyinWidget` | UI | 32 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KUserSrvSet` | UI | 31 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KOptionListButton` | UI | 31 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KPatientManagmentUi` | UI | 31 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KTableView` | UI | 27 | Qt5::Widgets — нужен UX-реверс живого экрана |
-| `KThsaurusManageMentUi` | REPORT | 27 | редактор отчётов — Qt-виджеты |
-| `KImageEditor` | REPORT | 26 | редактор отчётов — Qt-виджеты |
-| `KProgressDlg` | UI | 25 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KLcdProxy` | HW | 101 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
+| `KViewSoftEndo` | UI | 89 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KEndoScope` | HW | 79 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
+| `KReportEditUi` | REPORT | 64 | редактор отчётов — Qt-виджеты |
+| `KExamListViewUi` | UI | 60 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KViewHardEndo` | UI | 59 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KCalendarWidget` | UI | 58 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KUiMsgProxy` | UI | 55 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KTempletTreeWidget` | REPORT | 53 | редактор отчётов — Qt-виджеты |
+| `KReportEditAddMarkView` | REPORT | 53 | редактор отчётов — Qt-виджеты |
+| `KPatientListViewUi` | UI | 52 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KImgList` | UI | 50 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KAlgParamAjustDlg` | UI | 49 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KCustomEdit` | UI | 48 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KCamera` | HW | 42 | прибор: LCD/сенсор/камера/USB/принтер/MCU |
+| `KSystemSetDlg` | UI | 39 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KImgTableItem` | UI | 38 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KImgTableModel` | UI | 37 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KScopeInfoEdit` | UI | 37 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KOptionListButton` | UI | 37 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KVideoCal` | UI | 35 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KPinyinWidget` | UI | 34 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KVideoPlayerOSD` | UI | 34 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KExamDetailInfoUi` | UI | 34 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KUserSrvSet` | UI | 32 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KPatientManagmentUi` | UI | 32 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KEmpDateEdit` | UI | 31 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KTableView` | UI | 28 | Qt5::Widgets — нужен UX-реверс живого экрана |
+| `KThsaurusManageMentUi` | REPORT | 28 | редактор отчётов — Qt-виджеты |
+| `KImageEditor` | REPORT | 27 | редактор отчётов — Qt-виджеты |
 
 ## 7. Как перегенерировать
 

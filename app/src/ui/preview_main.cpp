@@ -93,6 +93,7 @@ public:
 #include "report/KReportDataSource.h"
 #include "report/KReportDisplayParam.h"
 #include "report/KReportHtmlGenerator.h"
+#include "report/KDocumentGenerator.h"
 #include "report/KEntityReport.h"
 #include "report/KThesaurusOpt.h"
 #include "report/KRTDataSourceReal.h"
@@ -5654,6 +5655,97 @@ int main(int argc, char **argv)
             && uiBranchOk && copy1 && copy2 && startOk && verOk && codeOk && dbgOk && dbgClampOk;
         qInfo() << (ok ? "factoryopt: PASS" : "factoryopt: FAIL");
         return ok ? 0 : 66;
+    }
+
+    // Self-test генератора документа отчёта (реф. KDocumentGenerator), итерация 1:
+    // ТОЛЬКО write-pure подмножество — чистый STL, Qt не участвует вообще.
+    // Значения Section сверены с реальными шаблонами прошивки (Body/Footer/Header).
+    if (screen == "docgen") {
+        auto mkItem = [](const std::string &id) {
+            KReportTemplateItem it;
+            it.m_strID = id;
+            it.m_strName = id.substr(id.find_last_of('/') + 1);
+            it.m_strType = "RT_TABLE_BLOCK";
+            return it;
+        };
+        auto setSection = [](KReportTemplateDataNew &d, const std::string &id,
+                             const std::string &sec) {
+            d.m_mapItemConfigs[id].m_strName = id;
+            d.m_mapItemConfigs[id].m_mapAttrs["Section"] = sec;
+        };
+
+        // Шаблон в порядке реальной поставки: шапка → тело → футер.
+        KReportTemplateDataNew data;
+        data.m_lstItems.push_back(mkItem("/RT_HOSPITAL_TOP"));
+        data.m_lstItems.push_back(mkItem("/RT_PATIENT_INFO"));
+        data.m_lstItems.push_back(mkItem("/RT_EXAM_INFO"));
+        data.m_lstItems.push_back(mkItem("/RT_SIGNATURE"));
+        setSection(data, "/RT_HOSPITAL_TOP", "Header");
+        setSection(data, "/RT_PATIENT_INFO", "Body");
+        setSection(data, "/RT_EXAM_INFO",    "Body");
+        setSection(data, "/RT_SIGNATURE",    "Footer");   // как в Signature.xml поставки
+
+        KDocumentGenerator gen(&data);
+
+        // 1. Стартовое состояние (реф. strh wzr — оба флага обнулены разом).
+        const bool initOk = !gen.CanMoveFront() && !gen.CanMoveBack()
+            && gen.CurItemId().empty();
+
+        // 2. Футер есть; элемент перед ним — /RT_EXAM_INFO.
+        const bool footerOk = gen.HasFooterTemplateItem()
+            && gen.FindItmeIdofPreFooter() == "/RT_EXAM_INFO";
+
+        // 3. Футера нет → оба метода дают отрицательный результат.
+        KReportTemplateDataNew noFoot = data;
+        noFoot.m_mapItemConfigs["/RT_SIGNATURE"].m_mapAttrs["Section"] = "Body";
+        KDocumentGenerator genNo(&noFoot);
+        const bool noFooterOk = !genNo.HasFooterTemplateItem()
+            && genNo.FindItmeIdofPreFooter().empty();
+
+        // 4. Футер ПЕРВЫЙ → предшественника нет, но футер есть (граничный случай).
+        KReportTemplateDataNew firstFoot;
+        firstFoot.m_lstItems.push_back(mkItem("/RT_SIGNATURE"));
+        firstFoot.m_lstItems.push_back(mkItem("/RT_PATIENT_INFO"));
+        firstFoot.m_mapItemConfigs["/RT_SIGNATURE"].m_mapAttrs["Section"] = "Footer";
+        KDocumentGenerator genFirst(&firstFoot);
+        const bool firstFootOk = genFirst.HasFooterTemplateItem()
+            && genFirst.FindItmeIdofPreFooter().empty();
+
+        // 5. ChangeCalcApps → doc-атрибут "CalcApp" (реф. литерал).
+        gen.ChangeCalcApps("OB");
+        const bool calcOk = data.m_mapConfigs["CalcApp"] == "OB";
+
+        // 6. SetLayoutParam → атрибут "RefColumn" в конфиге элемента; реф. всегда true.
+        const bool layoutRet = gen.SetLayoutParam("/RT_PATIENT_INFO", "3");
+        const bool layoutOk = layoutRet
+            && data.m_mapItemConfigs["/RT_PATIENT_INFO"].m_mapAttrs["RefColumn"] == "3"
+            // Прочие атрибуты элемента не затёрты.
+            && data.m_mapItemConfigs["/RT_PATIENT_INFO"].m_mapAttrs["Section"] == "Body";
+
+        // 7. Save: копируются m_mapConfigs и m_lstItems; m_mapItemConfigs НЕ трогается.
+        KReportTemplateDataNew out;
+        out.m_mapItemConfigs["СВОЁ"].m_strName = "СВОЁ";
+        gen.Save(out);
+        const bool saveOk = out.m_lstItems.size() == 4
+            && out.m_lstItems.front().m_strID == "/RT_HOSPITAL_TOP"
+            && out.m_lstItems.back().m_strID == "/RT_SIGNATURE"
+            && out.m_mapConfigs["CalcApp"] == "OB"
+            && out.m_mapItemConfigs.count("СВОЁ") == 1        // своя карта уцелела
+            && out.m_mapItemConfigs.count("/RT_SIGNATURE") == 0;
+
+        // 8. Save — именно копия: правка источника после Save не видна в out.
+        data.m_lstItems.push_back(mkItem("/RT_ADDITION"));
+        const bool deepOk = out.m_lstItems.size() == 4;
+
+        qInfo() << "init:" << initOk << "| футер:" << footerOk
+                << "нет футера:" << noFooterOk << "футер первый:" << firstFootOk;
+        qInfo() << "calcapp:" << calcOk << "layout:" << layoutOk
+                << "| save:" << saveOk << "копия:" << deepOk;
+
+        const bool ok = initOk && footerOk && noFooterOk && firstFootOk
+            && calcOk && layoutOk && saveOk && deepOk;
+        qInfo() << (ok ? "docgen: PASS" : "docgen: FAIL");
+        return ok ? 0 : 67;
     }
 
     // Self-test парсера скриптов автотеста (реф. X2000Simulator: INIFileCaseExec/

@@ -48,13 +48,29 @@ def comps(s):
 
 
 def sym_class_method(sym):
-    """_ZN<cls><method>E... -> (класс, метод) либо None."""
+    """_ZN<cls><method>E... -> (класс, метод) либо None.
+
+    ВАЖНО: const-методы манглятся как _ZNK (K = const this), volatile — _ZNV,
+    const volatile — _ZNVK. Раньше парсились только _ZN, из-за чего КАЖДЫЙ
+    const-метод бинарника выпадал и из знаменателя, и из совпадений — метрика
+    покрытия систематически занижалась. Пойман на KDocumentGenerator:
+    HasFooterTemplateItem/FindItmeIdofPreFooter (_ZNK) не попадали в список,
+    хотя символы в бинарнике есть.
+
+    Хвостовой ABI-тег B5cxx11 (у методов, возвращающих std::string) отрезается —
+    иначе имя не совпадает с нашим.
+    """
     if not sym.startswith("_ZN"):
         return None
-    c = comps(sym[3:])
+    rest = sym[3:]
+    # CV-квалификаторы this идут сразу после _ZN: K / V / VK.
+    while rest[:1] in ("K", "V"):
+        rest = rest[1:]
+    c = comps(rest)
     if len(c) < 2:
         return None
-    return c[0], "::".join(c[1:])
+    parts = [p[:-7] if p.endswith("B5cxx11") else p for p in c[1:]]
+    return c[0], "::".join(parts)
 
 
 # ------------------------------------------------------- фильтр «наш класс» ---

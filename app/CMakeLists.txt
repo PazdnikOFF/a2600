@@ -161,6 +161,7 @@ set(SOURCES
     src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
+    src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp
     src/report/KThesaurusOpt.cpp
@@ -310,6 +311,7 @@ add_executable(ui_preview
     src/report/KSysReportTempletControl.cpp
     src/report/KReportDataSource.cpp
     src/report/KReportDisplayParam.cpp
+    src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp
     src/report/KThesaurusOpt.cpp
