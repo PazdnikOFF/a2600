@@ -6252,6 +6252,74 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Self-test выделения блока (реф. ChangeItemSelected/ChangeSingleItemSelected/
+    // ChangeFrameSelected/ChangeCellSelected). Выделение = серый фон #a0a0a0. Чистый Qt Gui.
+    if (screen == "selectitem") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["V"] = "CellText";
+        KReportTemplateItem txt;
+        txt.m_strID = "/RT_A"; txt.m_strName = "RT_A"; txt.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(txt);
+        KReportTemplateItem tbl;
+        tbl.m_strID = "/RT_TBL"; tbl.m_strName = "RT_TBL"; tbl.m_strType = "RT_TABLE_BLOCK";
+        tbl.m_strColumn = "1"; tbl.m_strShowTitle = "0";
+        KReportTemplateItem c0;
+        c0.m_strID = "/RT_TBL/c0"; c0.m_strName = "c0"; c0.m_strType = "RT_TEXT_BLOCK";
+        tbl.m_lstSubItems.push_back(c0);
+        data.m_lstItems.push_back(tbl);
+        KReportTemplateItemConfig cc; cc.m_strName = "/RT_TBL/c0";
+        cc.m_mapAttrs["TemplateData"] = "V";
+        data.m_mapItemConfigs["/RT_TBL/c0"] = cc;
+        data.m_mapItemConfigs["/RT_TBL"].m_strName = "/RT_TBL";
+
+        QObject parent;
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+        QTextFrame *root = doc->rootFrame();
+
+        const QColor gray("#a0a0a0");
+        auto frameBg = [&](const std::string &id) -> QColor {
+            QTextFrame *f = nullptr; QTextTableCell ce;
+            if (gen.FindFrameOrCell(root, id, &f, ce) && f)
+                return f->frameFormat().background().color();
+            return QColor();
+        };
+        auto cellBg = [&](const std::string &id) -> QColor {
+            QTextFrame *f = nullptr; QTextTableCell ce;
+            if (gen.FindFrameOrCell(root, id, &f, ce) && ce.isValid())
+                return ce.format().background().color();
+            return QColor();
+        };
+
+        // 1. Выделить текст-блок → серый фон + m_strCurItemId + GetSelectFrame находит.
+        gen.ChangeItemSelected("/RT_A", true);
+        const bool selFrame = frameBg("/RT_A") == gray
+            && gen.CurItemId() == "/RT_A"
+            && gen.GetSelectFrame() != nullptr;
+
+        // 2. Снять выделение → фон больше не серый (clearProperty).
+        gen.ChangeItemSelected("/RT_A", false);
+        const bool deselFrame = frameBg("/RT_A") != gray;
+
+        // 3. Выделить ячейку → серый фон ячейки + GetSelectCell находит.
+        gen.ChangeItemSelected("/RT_TBL/c0", true);
+        const bool selCell = cellBg("/RT_TBL/c0") == gray
+            && gen.CurItemId() == "/RT_TBL/c0"
+            && gen.GetSelectCell().isValid();
+
+        // 4. Промах: m_strCurItemId НЕ меняется (ранний выход).
+        const std::string before = gen.CurItemId();
+        gen.ChangeSingleItemSelected("/НЕТ_ТАКОГО", true);
+        const bool missKeep = gen.CurItemId() == before;
+
+        qInfo() << "selectitem: selFrame:" << selFrame << "desel:" << deselFrame
+                << "selCell:" << selCell << "| missKeep:" << missKeep;
+
+        const bool ok = selFrame && deselFrame && selCell && missKeep;
+        qInfo() << (ok ? "selectitem: PASS" : "selectitem: FAIL");
+        return ok ? 0 : 76;
+    }
+
     // Self-test примитива поиска блока в документе (реф. KDocumentGenerator::FindFrameOrCell
     // @0x53ca28 + GetSelectFrame/GetSelectCell). Строит документ (текст-блок + таблица с
     // ячейками) и ищет элементы по ElementId. Чистый Qt Gui.

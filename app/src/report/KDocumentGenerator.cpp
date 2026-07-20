@@ -13,6 +13,7 @@
 #include <QTextDocument>
 #include <QTextFrame>
 #include <QTextFrameFormat>
+#include <QTextCharFormat>
 #include <QTextLength>
 #include <QTextTable>
 #include <QTextTableCell>
@@ -565,6 +566,81 @@ bool KDocumentGenerator::FindFrameOrCell(QTextFrame *frame, const std::string &i
         }
     }
     return false;
+}
+
+void KDocumentGenerator::ChangeFrameSelected(QTextFrame *frame, bool sel)
+{
+    // Реф. @0x53bfd8: sel → серый фон #a0a0a0; !sel → снять фон. Рамку не трогает.
+    if (!frame)
+        return;
+    QTextCursor cur = frame->firstCursorPosition();
+    cur.beginEditBlock();
+    QTextFrameFormat fmt = frame->frameFormat();
+    if (sel) {
+        QColor c;
+        c.setNamedColor(QStringLiteral("#a0a0a0"));
+        fmt.setProperty(QTextFormat::BackgroundBrush, QBrush(c, Qt::SolidPattern));  // 0x820
+    } else {
+        fmt.clearProperty(QTextFormat::BackgroundBrush);
+    }
+    frame->setFrameFormat(fmt);
+    cur.endEditBlock();
+}
+
+void KDocumentGenerator::ChangeCellSelected(QTextTableCell &cell, bool sel)
+{
+    // Реф. @0x53c138: то же, но на формате ячейки.
+    if (!cell.isValid())
+        return;
+    QTextCursor cur = cell.firstCursorPosition();
+    cur.beginEditBlock();
+    QTextCharFormat fmt = cell.format();
+    if (sel) {
+        QColor c;
+        c.setNamedColor(QStringLiteral("#a0a0a0"));
+        fmt.setProperty(QTextFormat::BackgroundBrush, QBrush(c, Qt::SolidPattern));
+    } else {
+        fmt.clearProperty(QTextFormat::BackgroundBrush);
+    }
+    cell.setFormat(fmt);
+    cur.endEditBlock();
+}
+
+void KDocumentGenerator::ChangeSingleItemSelected(const std::string &id, bool sel)
+{
+    // Реф. @0x53d098: найти и перекрасить. m_strCurItemId пишется ТОЛЬКО при успехе.
+    if (!m_pDoc)
+        return;
+    QTextFrame *frame = nullptr;
+    QTextTableCell cell;
+    FindFrameOrCell(m_pDoc->rootFrame(), id, &frame, cell);
+    if (frame) {
+        ChangeFrameSelected(frame, sel);
+    } else if (cell.isValid()) {
+        ChangeCellSelected(cell, sel);
+    } else {
+        // Реф. printf("ChangeItemSelected failed …") — лог опущен; РАННИЙ выход.
+        return;
+    }
+    m_strCurItemId = id;
+}
+
+void KDocumentGenerator::ChangeItemSelected(const std::string &id, bool sel)
+{
+    // Реф. @0x5402f0: расширить id до набора связанных колонок и выделить каждую.
+    if (!m_pData)
+        return;
+    std::string key = id;
+    // Если у конфига id есть SynColumnID — это колонка-зеркало; выделяем группу эталона.
+    auto it = m_pData->m_mapItemConfigs.find(id);
+    if (it != m_pData->m_mapItemConfigs.end()) {
+        auto syn = it->second.m_mapAttrs.find("SynColumnID");
+        if (syn != it->second.m_mapAttrs.end())
+            key = syn->second;
+    }
+    const std::list<std::string> ids = GetAllItemIDs(key, *m_pData);
+    for (const std::string &one : ids)
+        ChangeSingleItemSelected(one, sel);
 }
 
 QTextFrame *KDocumentGenerator::GetSelectFrame() const

@@ -190,6 +190,25 @@ public:
     QTextFrame    *GetSelectFrame() const;
     QTextTableCell GetSelectCell() const;
 
+    // --- выделение блока (реф.: только СЕРЫЙ фон #a0a0a0, рамка не трогается) ---
+
+    // Реф. ChangeFrameSelected @0x53bfd8 / ChangeCellSelected @0x53c138: sel → BackgroundBrush
+    // (0x820) = QBrush("#a0a0a0", Solid); !sel → clearProperty(0x820). Обёрнуто в begin/
+    // endEditBlock. Рамку/бордюр НЕ меняют.
+    void ChangeFrameSelected(QTextFrame *frame, bool sel);
+    void ChangeCellSelected(QTextTableCell &cell, bool sel);
+
+    // Реф. ChangeSingleItemSelected @0x53d098: FindFrameOrCell(id) → фрейм→ChangeFrameSelected,
+    // ячейка→ChangeCellSelected; ни то ни другое → лог + РАННИЙ выход (m_strCurItemId НЕ
+    // трогается). На успехе m_strCurItemId = id.
+    void ChangeSingleItemSelected(const std::string &id, bool sel);
+
+    // Реф. ChangeItemSelected @0x5402f0: расширяет id до набора связанных колонок и выделяет
+    // каждую. key = id; если у конфига id есть атрибут "SynColumnID" → key = его значение
+    // (эталонная колонка); ids = GetAllItemIDs(key); для каждого → ChangeSingleItemSelected.
+    // Для обычных блоков (нет SynColumnID) GetAllItemIDs даёт [id] → одиночное выделение.
+    void ChangeItemSelected(const std::string &id, bool sel);
+
     // --- состояние ---
     const std::string &CurItemId() const { return m_strCurItemId; }
     bool CanMoveFront() const { return m_bCanMoveFront; }
