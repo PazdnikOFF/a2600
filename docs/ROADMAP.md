@@ -430,7 +430,8 @@ offscreen (как KUIDesktop). Порядок по важности:
 |---|---|---|
 | C1 | 5 классов с ВЫДУМАННЫМ API (0% совпадения): `KEntityManage`, `KEntityService`, `KRTDataSourceReal`, `KEntityReport`, `KRTDataSourceDemo` | Вынесено отдельной задачей. Шестой (`KDocumentGenerator`) уже разведён — имя освобождено, класс написан. |
 | C2 | `enum StatusType` пронумерован не как в бинарнике; `SetPanelType`/`SetWindowID`/`SetAutoTestStatus` у нас шлют сигнал, а реф. — нет | Вынесено отдельной задачей. |
-| C3 | `STR_INVALID_ITEM_ID` не восстановлена — блокирует `MoveFront`/`MoveBack`/`ClickSubItem` в `KDocumentGenerator` | Помечено в коде. Решать вместе с B1. |
+| C3 | `STR_INVALID_ITEM_ID` не восстановлена — блокирует `MoveFront`/`MoveBack`/`ClickSubItem` в `KDocumentGenerator` | ✅ РЕШЕНО 2026-07-21 (= "Invalid ID", декомпилятор). Все три метода реализованы. |
+| C4 | **`KEntityBase` (B3) — ЛОВУШКА:** это ЧИСТЫЙ АБСТРАКТНЫЙ базовый класс, все 14 «методов» — заглушки (`return ERR_NOT_SUPPORT/0/-1/""`, слиты линкером ICF в общие адреса 0x42d1d8/e8/f8). sizeof 0x50: +0x08 `IDatabase& m_db`, +0x10 `std::string m_type` (=ctor-арг, отдаётся `GetType()` ссылкой), +0x30 `std::string m_dataPath` (пустой). Реальный CRUD — в ПОДКЛАССАХ (реф. KEntityExam/Patient/… override с KDbSqlite). | НЕ реализовывать вслепую: (1) интерфейс `IDatabase` НЕ реверсирован (KEntityBase holds ref, но сам не зовёт — набор pure-virtual неизвестен); (2) `ERR_NOT_SUPPORT` — рантайм-.bss (@0xa60a68), статикой значение не берётся; (3) реф.-подклассы КОЛЛИЗИРУЮТ с нашими существующими `KEntity*` (QSqlQuery-API). Брать только вместе с реверсом IDatabase + конкретного подкласса, решив коллизию (как с KDocumentGenerator). |
 
 ### D. ДАННЫЕ И КОНФИГИ, не прочитанные
 
@@ -449,7 +450,13 @@ offscreen (как KUIDesktop). Порядок по важности:
 
 1. ~~**A1 X2000Monitor**~~ ✅ СДЕЛАНО 2026-07-20: бинарник закрыт целиком, ядро
    реализовано, self-test `monitor`, найдены две аномалии прошивки (см. PROGRESS §10).
-2. **B1** — доделать `KDocumentGenerator` до рабочего документа (+ C3 попутно).
+2. ~~**B1**~~ ✅ СДЕЛАНО 2026-07-21: `KDocumentGenerator` ЗАКРЫТ целиком (~29/33) вместе со
+   всей render-подсистемой (KScreenMng, творцы text/image/table, InitDocument/GetTextDocument,
+   FindFrameOrCell, выделение, UI-обёртки Add/Delete/Update/Click/Move/ChangeLayout, правка
+   цвета/шрифта). Валидировано на реальном ReportTemplateNP-1x4 (self-test `initdocreal`).
+   C3 (STR_INVALID_ITEM_ID) решён. Остаток — косметика (InsertBlockLineAfterItem футер-падинг,
+   UpdateBlock, редкие творцы ImageGroup/SubData — в поставке нет). Детали — PROGRESS §10.
+   ТЕКУЩАЯ ЛИНИЯ: **B3 DB-слой** — начат `KEntityBase` (генерик-CRUD поверх готового KDbSqlite).
 3. ~~**A2 X2000Video**~~ ✅ IPC+shm СДЕЛАНО 2026-07-20 (self-test `videoipc`); остаётся GStreamer-часть (device).
 4. **B2** (со сверкой по D5) и **D2** — дешёвые, с готовым ground truth.
 5. **B3/B4/B5** — планомерный добор off-device-корзины.
