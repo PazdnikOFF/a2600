@@ -137,6 +137,7 @@ public:
 #include "sys/KKey2Name.h"
 #include "ctrl/K3ADimming.h"
 #include "endo/KEndoScope.h"
+#include "endo/KCamera.h"
 #include <cstring>
 #include <cmath>
 #include "sys/KTimeInfo.h"
@@ -7065,6 +7066,134 @@ int main(int argc, char **argv)
                      && clearQuirkOk && saveOk && holesOk && lenQuirkOk && lostDecOk
                      && sentinelOk && geomOk && rangeOk && defOk && stateOk && oocOk;
         qInfo() << (ok ? "endoscope: PASS" : "endoscope: FAIL");
+        return ok ? 0 : 65;
+    }
+
+    if (screen == "camera") {
+        // Реф. KCamera — разбор CID/EEPROM камеры. Работы с железом нет.
+        auto *c = GetCamera();
+        c->ResetCameraInfo();
+        c->ResetCameraEepromData();
+
+        // 1. Карта серий: РОВНО 7 записей, одна карта (в отличие от KEndoScope).
+        const auto &m = KCamera::GetCameraSeriesMap();
+        const bool mapOk = m.size() == 7
+                        && m.value("10-110-201") == "2I2"
+                        && m.value("10-111-201") == "2I3"
+                        && m.value("10-112-201") == "2I4"
+                        && m.value("10-100-201") == "4I6"
+                        && m.value("10-110-201V") == "8I7"
+                        && m.value("10-112-201V") == "8I9"
+                        && m.value("нет-такой").isEmpty();
+
+        // 2. Дефолты ctor: m_nCameraInfoSaveRet == 1 (а НЕ 0).
+        const bool saveRetOk = c->GetCameraInfoSaveRet() == 1;
+        // Сброс EEPROM даёт НЕнулевые значения.
+        const auto *ep = c->EepromInfo();
+        const bool resetOk = ep->centorX == 16 && ep->centorY == 16
+                          && ep->rGain == 18000 && ep->bGain == 11800;
+
+        // 3. Типы — ЖЁСТКИЕ КОНСТАНТЫ (не запрос в KEncStyle, в отличие от эндоскопа).
+        const bool typeOk = c->GetCameraType() == 8 && c->GetSensorType() == 2
+                         && c->GetFirmwareType() == 2;
+        // Центр всегда (1,7), диапазоны всегда 0.
+        int sx = -1, sy = -1;
+        c->GetCentorPointStart(sx, sy);
+        const bool startOk = sx == 1 && sy == 7
+                          && c->GetCentorPointXRange() == 0
+                          && c->GetCentorPointYRange() == 0;
+
+        // 4. Годность страницы EEPROM: {0x00, 0xFF} ⇒ НЕгодна.
+        unsigned char page[64] = {};
+        page[0] = 0x00;
+        c->ExtractFixDataPage(page);
+        const bool bad0Ok = !c->IsEepromDataOK();
+        page[0] = 0xFF;
+        c->ExtractFixDataPage(page);
+        const bool badFFOk = !c->IsEepromDataOK();
+
+        // 5. Разбор страницы: бит0 — центр, бит1 — баланс белого.
+        //    ⚠️ КВИРК: синий берётся с 0x0d, а 0x0b/0x0c ПРОПУСКАЮТСЯ.
+        memset(page, 0, sizeof(page));
+        page[0] = 0x03;                       // оба бита
+        page[1] = 20; page[5] = 30;           // центр (LE int32)
+        page[0x09] = 0x10; page[0x0a] = 0x27; // rGain = 10000
+        page[0x0b] = 0xEE; page[0x0c] = 0xEE; // ловушка: НЕ должны попасть в bGain
+        page[0x0d] = 0x20; page[0x0e] = 0x4E; // bGain = 20000
+        c->ExtractFixDataPage(page);
+        const auto *e2 = c->EepromInfo();
+        const bool pageOk = c->IsEepromDataOK() && e2->flags == 0x03
+                         && e2->centorX == 20 && e2->centorY == 30
+                         && e2->rGain == 10000
+                         && e2->bGain == 20000;   // ⚠️ не 0xEEEE — байты пропущены
+
+        // 6. Обратное кодирование: 0x0b/0x0c остаются нулями (зеркало квирка).
+        int savedPage = -1;
+        QObject::connect(c, &KCamera::SaveCameraEepromData,
+                         [&savedPage](unsigned short p) { savedPage = p; });
+        c->SetVideoCentorPoint(5, 6);
+        const unsigned char *sp = c->GetEepromSaveData();
+        const bool saveOk = sp[0] == (0x03 | 0x01) && sp[1] == 5 && sp[5] == 6
+                         && sp[0x0b] == 0 && sp[0x0c] == 0
+                         && savedPage == 511;
+        c->SetWhBPara(1234, 5678);
+        const unsigned char *sp2 = c->GetEepromSaveData();
+        const bool whbOk = (sp2[0] & 0x02) != 0
+                        && (sp2[0x09] | (sp2[0x0a] << 8)) == 1234
+                        && (sp2[0x0d] | (sp2[0x0e] << 8)) == 5678;
+
+        // 7. Разбор CID: NUL-терминированные строки, пропуск 0x1c..0x21,
+        //    trimmed ТОЛЬКО у модели.
+        unsigned char cid[128] = {};
+        memcpy(cid + 0x00, "  10-100-201  ", 14);
+        memcpy(cid + 0x10, "SN-CAM-001", 10);
+        memcpy(cid + 0x1c, "МУСОР", 6);       // область пропуска
+        memcpy(cid + 0x22, "20260720", 8);
+        memcpy(cid + 0x2a, "  padded  ", 10); // НЕ trimmed
+        memcpy(cid + 0x3a, "comment", 7);
+        c->ExtractCameraInfo(cid);
+        const auto *ci = c->GetCameraInfo();
+        const bool cidOk = ci->sModel == "10-100-201"      // обрезана
+                        && ci->sSerialNo == "SN-CAM-001"
+                        && ci->s10 == "20260720"
+                        && ci->s18 == "  padded  "          // НЕ обрезана
+                        && ci->s20 == "comment";
+        // ⚠️ «Rollover» на деле означает «модель РОВНО 10-100-201».
+        const bool rollOk = c->IsNeedRollover();
+        memcpy(cid + 0x00, "10-110-201\0\0\0\0", 14);
+        c->ExtractCameraInfo(cid);
+        const bool noRollOk = !c->IsNeedRollover();
+
+        // 8. Готовность: 4 — готова, всё прочее — нет; предикаты согласованы.
+        c->SetCameraStatus(4);
+        const bool readyOk = c->IsCameraReady() && !c->CameraIsNotReady();
+        c->SetCameraStatus(5);
+        const bool notReadyOk = !c->IsCameraReady() && c->CameraIsNotReady();
+        // Сброс в 0 переустанавливает структуры и ставит saveRet = 1.
+        c->SetCameraStatus(0);
+        const bool zeroOk = c->GetCameraInfoSaveRet() == 1
+                         && c->EepromInfo()->centorX == 16
+                         && c->GetCameraInfo()->sModel.isEmpty();
+
+        // 9. ClearCameraInfo пишет литерал вендора.
+        c->ClearCameraInfo();
+        const bool clearOk = c->GetCameraInfo()->s20 == "Cleared by R&D!";
+
+        qInfo() << "карта серий (7, одна):" << mapOk
+                << "| saveRet == 1:" << saveRetOk << "| дефолты 16/16/18000/11800:" << resetOk;
+        qInfo() << "типы-константы 8/2/2:" << typeOk << "| центр всегда (1,7):" << startOk;
+        qInfo() << "негодные флаги 0x00/0xFF:" << bad0Ok << badFFOk
+                << "| разбор страницы (0x0b/0x0c пропущены):" << pageOk;
+        qInfo() << "обратное кодирование:" << saveOk << whbOk;
+        qInfo() << "разбор CID (trimmed только модель):" << cidOk
+                << "| «rollover» = модель 10-100-201:" << rollOk << noRollOk;
+        qInfo() << "готовность:" << readyOk << notReadyOk << "| сброс в 0:" << zeroOk
+                << "| Cleared by R&D!:" << clearOk;
+
+        const bool ok = mapOk && saveRetOk && resetOk && typeOk && startOk && bad0Ok
+                     && badFFOk && pageOk && saveOk && whbOk && cidOk && rollOk
+                     && noRollOk && readyOk && notReadyOk && zeroOk && clearOk;
+        qInfo() << (ok ? "camera: PASS" : "camera: FAIL");
         return ok ? 0 : 65;
     }
 
