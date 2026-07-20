@@ -6252,6 +6252,52 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Интеграционный self-test: полный render-конвейер на РЕАЛЬНОМ шаблоне прошивки.
+    // Загружает группу ReportTemplateNP-1x4 (HospitalTop/PatientInfo/Image1x4/ExamInfo/
+    // Signature/Addition) и строит из неё QTextDocument — проверяет, что text/image/table
+    // творцы отрабатывают на данных поставки без падения и дают непустой документ со структурой.
+    if (screen == "initdocreal") {
+        KReportTemplateManager *mgr = KReportTemplateManager::GetInstance();
+        mgr->InitModule();
+        std::string libName;
+        mgr->GetTempletLibName("NP-1x4", libName);              // "ReportTemplateNP-1x4"
+        KReportTemplateDataNew *libData = mgr->GetTemplateLibCfg()->GetTemplateLib(libName);
+
+        const bool loadOk = libData != nullptr && !libData->m_lstItems.empty();
+        // Рендерим КОПИЮ (чтобы не мутировать общие данные синглтона).
+        KReportTemplateDataNew copy = libData ? *libData : KReportTemplateDataNew();
+
+        QObject parent;
+        KDocumentGenerator gen(&copy);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+
+        const bool docOk = doc != nullptr;
+        // Документ непустой (заголовки блоков tr'нуты, но текст присутствует).
+        const bool nonEmptyOk = doc && !doc->toPlainText().trimmed().isEmpty();
+        // В шаблоне есть таблицы (image-text-map = title-table + прочие) → хотя бы одна QTextTable.
+        int tableCount = 0;
+        if (doc) {
+            std::function<void(QTextFrame *)> walk = [&](QTextFrame *f) {
+                for (QTextFrame *ch : f->childFrames()) {
+                    if (qobject_cast<QTextTable *>(ch)) ++tableCount;
+                    walk(ch);
+                }
+            };
+            walk(doc->rootFrame());
+        }
+        const bool tableOk = tableCount > 0;
+        // Число элементов верхнего уровня шаблона (для отчёта).
+        const int topItems = (int)copy.m_lstItems.size();
+
+        qInfo() << "initdocreal: load:" << loadOk << QString::fromStdString(libName)
+                << "topItems:" << topItems << "| doc:" << docOk
+                << "nonEmpty:" << nonEmptyOk << "tables:" << tableCount << tableOk;
+
+        const bool ok = loadOk && docOk && nonEmptyOk && tableOk;
+        qInfo() << (ok ? "initdocreal: PASS" : "initdocreal: FAIL");
+        return ok ? 0 : 74;
+    }
+
     // Self-test построителя документа отчёта (реф. KDocumentGenerator::InitDocument @0x53e108
     // + GetTextDocument @0x53eac0). Собирает шаблон из двух текстовых блоков, строит целый
     // QTextDocument и проверяет, что оба блока отрисованы с верным форматом. Чистый Qt Gui.
