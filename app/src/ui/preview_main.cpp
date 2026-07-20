@@ -5770,6 +5770,100 @@ int main(int argc, char **argv)
         const bool moveOk = firstMv && midMv && lastMv && sentinelMv
             && pinnedSelf && pinnedNeighbor;
 
+        // 10. Слой синхронизации колонок image-text-map (реф. GetAllItemIDs /
+        //     SyncImageItemContent / SyncImageItemParam, восстановлены декомпилятором).
+        //     Данные повторяют реальный SubContent/Image1x4.xml поставки: колонки
+        //     MAP1/MAP2/MAP3 зеркалят MAP0 через атрибут SynColumnID.
+        const std::string map0 = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0/RT_IMAGE_MAP";
+        const std::string map1 = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP1/RT_IMAGE_MAP";
+        const std::string map2 = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP2/RT_IMAGE_MAP";
+        const std::string map3 = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP3/RT_IMAGE_MAP";
+
+        KReportTemplateDataNew img;
+        img.m_mapItemConfigs[map0].m_strName = map0;             // эталон, без SynColumnID
+        img.m_mapItemConfigs[map0].m_mapAttrs["AlignH"] = "Center";
+        for (const std::string &m : {map1, map2, map3}) {
+            img.m_mapItemConfigs[m].m_strName = m;
+            img.m_mapItemConfigs[m].m_mapAttrs["SynColumnID"] = map0;   // зеркалит MAP0
+        }
+        KDocumentGenerator ig(&img);
+
+        // 10a. GetAllItemIDs(map0-leaf): все зеркала (MAP1,MAP2,MAP3 в порядке ключа) + сам cur.
+        std::list<std::string> ids = ig.GetAllItemIDs(map0, img);
+        const bool getAllOk = ids.size() == 4
+            && ids.front() == map1                    // матчи первыми, в порядке ключа map
+            && *std::next(ids.begin()) == map2
+            && *std::next(ids.begin(), 2) == map3
+            && ids.back() == map0;                    // сам cur — последним
+
+        // 10b. Нормализация: id контейнера MAP0 → cur="/RT_IMAGE_TEXT_MAP", совпадений нет.
+        std::list<std::string> idsNorm =
+            ig.GetAllItemIDs("/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0", img);
+        const bool normOk = idsNorm.size() == 1 && idsNorm.front() == "/RT_IMAGE_TEXT_MAP";
+        // EXT-нормализация (MAIN_CONTENT-префикс сохраняется).
+        std::list<std::string> idsExt = ig.GetAllItemIDs(
+            "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0", img);
+        const bool extOk = idsExt.size() == 1
+            && idsExt.front() == "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP";
+
+        // 10c. Не image-map id → ровно [id].
+        std::list<std::string> idsMiss = ig.GetAllItemIDs("/RT_PATIENT_INFO", img);
+        const bool missOk = idsMiss.size() == 1 && idsMiss.front() == "/RT_PATIENT_INFO";
+
+        // 11. SyncImageItemContent: из target выкидываются суб-элементы, чьё m_strName
+        //     нет в proto. Фильтр по ИМЕНИ, не по id.
+        KReportTemplateItem proto;
+        for (const std::string &n : {std::string("RT_IMAGE_MAP"), std::string("RT_TEXT_MARK")}) {
+            KReportTemplateItem s; s.m_strName = n; proto.m_lstSubItems.push_back(s);
+        }
+        KReportTemplateItem target;
+        for (const std::string &n : {std::string("RT_IMAGE_MAP"), std::string("RT_TEXT_MARK"),
+                                     std::string("RT_EXTRA_COL")}) {
+            KReportTemplateItem s; s.m_strName = n;
+            s.m_strID = "/x/" + n;               // id отличается — доказать, что фильтр по имени
+            target.m_lstSubItems.push_back(s);
+        }
+        ig.SyncImageItemContent(proto, target);
+        const bool syncContentOk = target.m_lstSubItems.size() == 2
+            && target.m_lstSubItems.front().m_strName == "RT_IMAGE_MAP"
+            && target.m_lstSubItems.back().m_strName == "RT_TEXT_MARK";
+
+        // 12. SyncImageItemParam: mirror-конфиг из libData с SynColumnID на существующий у
+        //     нас эталон → копируется под своим id; с SynColumnID на отсутствующий → запись
+        //     по этому id стирается; конфиг без SynColumnID → пропускается.
+        KReportTemplateDataNew doc;
+        doc.m_mapItemConfigs[map0].m_strName = map0;             // эталон есть (для MAP1)
+        doc.m_mapItemConfigs[map0].m_mapAttrs["AlignH"] = "Center";
+        const std::string map9 = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP9/RT_IMAGE_MAP";
+        doc.m_mapItemConfigs[map9].m_strName = map9;             // будет стёрт (эталона нет)
+        doc.m_mapItemConfigs[map9].m_mapAttrs["Old"] = "1";
+        KDocumentGenerator dg(&doc);
+
+        KReportTemplateDataNew lib;
+        lib.m_mapItemConfigs[map1].m_strName = map1;             // валидное зеркало → скопируется
+        lib.m_mapItemConfigs[map1].m_mapAttrs["SynColumnID"] = map0;
+        lib.m_mapItemConfigs[map1].m_mapAttrs["AlignH"] = "Left";
+        lib.m_mapItemConfigs[map9].m_strName = map9;             // SynColumnID на отсутствующий
+        lib.m_mapItemConfigs[map9].m_mapAttrs["SynColumnID"] =
+            "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0/NOPE";
+        lib.m_mapItemConfigs[map0].m_strName = map0;             // без SynColumnID → пропуск
+        lib.m_mapItemConfigs[map0].m_mapAttrs["AlignH"] = "Center";
+
+        dg.SyncImageItemParam(lib);
+        const bool syncParamOk =
+            doc.m_mapItemConfigs.count(map1) == 1                       // зеркало скопировано
+            && doc.m_mapItemConfigs[map1].m_mapAttrs["AlignH"] == "Left"
+            && doc.m_mapItemConfigs[map1].m_mapAttrs["SynColumnID"] == map0
+            && doc.m_mapItemConfigs.count(map9) == 0                    // устаревшее стёрто
+            && doc.m_mapItemConfigs.count(map0) == 1;                   // эталон не тронут
+
+        const bool imgSyncOk = getAllOk && normOk && extOk && missOk
+            && syncContentOk && syncParamOk;
+
+        qInfo() << "imgsync: getAll:" << getAllOk << "norm:" << normOk << extOk
+                << "miss:" << missOk << "| content:" << syncContentOk
+                << "param:" << syncParamOk;
+
         qInfo() << "init:" << initOk << "| футер:" << footerOk
                 << "нет футера:" << noFooterOk << "футер первый:" << firstFootOk;
         qInfo() << "calcapp:" << calcOk << "layout:" << layoutOk

@@ -60,6 +60,37 @@ public:
     // Пусто, если футера нет либо он первый.
     std::string FindItmeIdofPreFooter() const;
 
+    // --- синхронизация колонок image-text-map (реф., восстановлено ДЕКОМПИЛЯТОРОМ) ---
+    // Это слой данных под живой раскладкой RT_IMAGE_TEXT_MAP (галерея снимков N×M):
+    // колонки MAP1/MAP2/… «зеркалят» эталонную MAP0 через атрибут SynColumnID.
+    // Все три метода — чистый STL, Qt не участвует (проверено дизасмом: прямых QText*-
+    // вызовов нет). Их оркестратор SyncRefresnImageItemData — итерация 3 (нужен
+    // KReportTemplateManager::GetTempletLibName + обвязка синглтонов).
+
+    // Реф. GetAllItemIDs @0x53fdb0: все id колонок, «зеркалящих» колонку id (плюс сам id).
+    // Нестатический член, но this в теле реф. НЕ используется (по сути статический).
+    //   • Нормализация: id == "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0" → cur="/RT_IMAGE_TEXT_MAP";
+    //     id == EXT-вариант "/RT_MAIN_CONTENT/.../RT_IMAGE_TEXT_MAP0" → cur="/RT_MAIN_CONTENT/
+    //     RT_IMAGE_TEXT_MAP" (relative→relative, prefixed→prefixed).
+    //   • cur НЕ содержит "/RT_IMAGE_TEXT_MAP" → результат ровно [cur].
+    //   • иначе: конфиги, чей ключ содержит "/RT_IMAGE_TEXT_MAP" и attrs["SynColumnID"]==cur,
+    //     дают свои id (в порядке ключа map), затем ОДНИМ последним push — сам cur.
+    std::list<std::string> GetAllItemIDs(const std::string &id,
+                                         const KReportTemplateDataNew &data) const;
+
+    // Реф. SyncImageItemContent @0x53c490: приводит состав суб-элементов target к proto —
+    // из target УДАЛЯЮТСЯ суб-элементы, чьё m_strName ОТСУТСТВУЕТ среди суб-элементов
+    // proto. Фильтр по ИМЕНИ (m_strName, +0x20), НЕ по id. this в теле не используется.
+    void SyncImageItemContent(const KReportTemplateItem &proto,
+                              KReportTemplateItem &target) const;
+
+    // Реф. SyncImageItemParam @0x53eb20: тянет конфиги суб-элементов из libData в
+    // m_pData->m_mapItemConfigs. GetSubItemsParam(libData, "RT_IMAGE_TEXT_MAP", tmp) →
+    // для каждого (itemId, cfg) с атрибутом SynColumnID: если значение SynColumnID есть
+    // ключом в наших конфигах → записать cfg под ключом itemId; иначе — стереть записи
+    // по itemId (устаревшая колонка). Конфиги без SynColumnID пропускаются.
+    void SyncImageItemParam(const KReportTemplateDataNew &libData);
+
     // Реф. UpdateMovableFlag @0x53c7b0 (восстановлено ДЕКОМПИЛЯТОРОМ Ghidra, не asm).
     // Выставляет m_bCanMoveFront/Back для элемента id по его позиции среди СОСЕДЕЙ:
     //   • оба флага сбрасываются;

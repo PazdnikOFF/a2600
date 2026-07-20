@@ -530,8 +530,36 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **89 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`). ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **94 self-test-режима** (все PASS, регрессия —
+`tools/selftest.sh`).
+
+**ПОСЛЕДНЕЕ (эта сессия): KDocumentGenerator итерация 2 — слой синхронизации колонок
+image-text-map** (self-test `docgen` расширен, `app/src/report/KDocumentGenerator.*`).
+Взяты ТРИ Qt-free метода, восстановленных ДЕКОМПИЛЯТОРОМ Ghidra на hermes (класс теперь
+**9/33**):
+- **`GetAllItemIDs`** @0x53fdb0 — все id колонок, зеркалящих данную (+ сама). Needle-глобал
+  реф. это **`"/RT_IMAGE_TEXT_MAP"` СО СЛЭШЕМ** (сверено дизасмом статических инициализаторов,
+  .bss a97938); голое `"RT_IMAGE_TEXT_MAP"` — ДРУГОЙ глобал `STR_TOP_IMAGE_TEXT_NAME`.
+  НОРМАЛИЗАЦИЯ: id контейнера MAP0 → cur=его родитель, с сохранением формата
+  (relative→relative, MAIN_CONTENT-prefixed→prefixed; 4 глобала — MAP/MAP0/MAP_EXT/MAP0_EXT).
+  Не-image id → результат ровно `[cur]`. Иначе: матчи по `attrs["SynColumnID"]==cur` (в
+  порядке ключа map), затем ОДИН push самого cur ПОСЛЕДНИМ.
+- **`SyncImageItemContent`** @0x53c490 — из target выкидываются суб-элементы, чьё
+  **`m_strName`** (НЕ id!) нет среди суб-элементов proto. `this` в теле не используется.
+- **`SyncImageItemParam`** @0x53eb20 — `GetSubItemsParam(libData,"/RT_IMAGE_TEXT_MAP",tmp)`;
+  для каждого конфига с атрибутом `SynColumnID`: значение SynColumnID есть ключом у нас →
+  копия конфига под своим itemId; нет → запись по itemId стирается (устаревшая колонка);
+  без SynColumnID → пропуск.
+- Атрибут вендора **`SynColumnID`** (орфография SYN, НЕ SYNC; 92 вхождения в поставке).
+**ОТЛОЖЕНО (итерация 3, оркестратор):** `SyncRefresnImageItemData` @0x53efa0 (опечатка
+Refresn) — Qt-free, но нужен **`KReportTemplateManager::GetTempletLibName`** (ещё не
+реализован) + обвязка синглтонов (KSysReportTempletControl/KReportTemplateManager).
+refKey по умолчанию `"/RT_IMAGE_TEXT_MAP"`, при `libName=="NP-4x1"` →
+`"/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP"` (STR_REF_IMAGE_TEXT_MAP_EXT). `ChangeLayout`
+@0x5405e0 и `PutFooterOnBottom` @0x53e078 — оркестраторы, тянут QTextDocument-слой
+(InitDocument/InsertBlockLineAfterItem) → ждут документной половины.
+
+**ПРЕДЫДУЩЕЕ (89-режимная позиция ниже сохранена для истории):** ЧЕСТНАЯ МЕТРИКА ПОКРЫТИЯ — `docs/COVERAGE.md` (генерится
 `python3 tools/coverage.py > docs/COVERAGE.md`): **485 классов / 6431 метод в референсе,
 затронуто 86 классов / 910 методов (14.2%)** (report_template 28/36 = 78% — свободные функции
 namespace по сути закрыты, остаток «36» — Qt-виджет KLineEdit). Это нижняя оценка (считает совпадение имён;

@@ -21,6 +21,23 @@ const std::string STR_RT_VALUE_FOOTER        = "Footer";
 // атрибут CellAt не встречается — на реальных данных cell-закрепления нет.
 const std::string STR_RT_ITEM_ATTR_CELLAT    = "CellAt";
 
+// Раскладка галереи снимков RT_IMAGE_TEXT_MAP: колонки MAP1/MAP2/… «зеркалят»
+// эталонную MAP0 через атрибут SynColumnID. Имена вендорские, сверены с поставкой
+// (system/presetdata/.../report/template/SubContent/*.xml) И с дизасмом статических
+// инициализаторов (адреса .bss a97938/a97958/a97978/a97998).
+//   "SynColumnID" — 92 вхождения (орфография вендора: SYN, НЕ SYNC). Значение — id
+//   колонки MAP0, которую данная колонка зеркалит.
+// ⚠️ ВНИМАНИЕ: needle-глобал реф. это "/RT_IMAGE_TEXT_MAP" СО СЛЭШЕМ, а голое
+// "RT_IMAGE_TEXT_MAP" — ДРУГОЙ глобал (STR_TOP_IMAGE_TEXT_NAME, имя узла). Для реальных
+// ключей конфигов (все начинаются с "/RT_IMAGE_TEXT_MAP") подстрочный тест совпадает,
+// но литерал храним точный.
+const std::string STR_REF_IMAGE_TEXT_MAP      = "/RT_IMAGE_TEXT_MAP";
+const std::string STR_REF_IMAGE_TEXT_MAP0     = "/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0";
+const std::string STR_REF_IMAGE_TEXT_MAP_EXT  = "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP";
+const std::string STR_REF_IMAGE_TEXT_MAP0_EXT =
+    "/RT_MAIN_CONTENT/RT_IMAGE_TEXT_MAP/RT_IMAGE_TEXT_MAP0";
+const std::string STR_RT_ITEM_ATTR_SYNCOLUMNID = "SynColumnID";
+
 } // namespace
 
 const std::string &KDocumentGenerator::InvalidItemId()
@@ -124,6 +141,105 @@ KDocumentGenerator::siblingsOf(const std::string &id) const
     const std::string parentPath = id.substr(0, pos == std::string::npos ? id.size() : pos);
     const KReportTemplateItem *parent = report_template::FindConstRefItem(*m_pData, parentPath);
     return parent ? &parent->m_lstSubItems : &m_pData->m_lstItems;
+}
+
+std::list<std::string>
+KDocumentGenerator::GetAllItemIDs(const std::string &id,
+                                 const KReportTemplateDataNew &data) const
+{
+    // Реф. @0x53fdb0 (декомпилятор + сверка статических инициализаторов). Порядок 1:1.
+    std::list<std::string> result;
+
+    // Нормализация id колонки MAP0 к id её контейнера (реф. присваивает cur один из двух
+    // глобалов — relative или MAIN_CONTENT-prefixed; ветка A проверяется первой).
+    std::string cur = id;
+    if (id == STR_REF_IMAGE_TEXT_MAP0)
+        cur = STR_REF_IMAGE_TEXT_MAP;
+    else if (id == STR_REF_IMAGE_TEXT_MAP0_EXT)
+        cur = STR_REF_IMAGE_TEXT_MAP_EXT;
+
+    // Не image-text-map id → результат ровно [cur], map не обходится (реф. ранний возврат).
+    if (cur.find(STR_REF_IMAGE_TEXT_MAP) == std::string::npos) {
+        result.push_back(cur);
+        return result;
+    }
+
+    // Собрать конфиги колонок галереи (ключ содержит "/RT_IMAGE_TEXT_MAP") во временный map
+    // (реф. — отдельный проход, отсюда порядок сортировки ключей на выходе).
+    std::map<std::string, KReportTemplateItemConfig> tmp;
+    for (const auto &kv : data.m_mapItemConfigs) {
+        if (kv.first.find(STR_REF_IMAGE_TEXT_MAP) != std::string::npos)
+            tmp.insert(kv);
+    }
+    // Колонки, зеркалящие cur (attrs["SynColumnID"] == cur) — их id, в порядке ключа map.
+    for (const auto &kv : tmp) {
+        auto itSyn = kv.second.m_mapAttrs.find(STR_RT_ITEM_ATTR_SYNCOLUMNID);
+        if (itSyn != kv.second.m_mapAttrs.end() && itSyn->second == cur)
+            result.push_back(kv.first);
+    }
+    // И сам cur — ОДНИМ безусловным push, последним.
+    result.push_back(cur);
+    return result;
+}
+
+void KDocumentGenerator::SyncImageItemContent(const KReportTemplateItem &proto,
+                                              KReportTemplateItem &target) const
+{
+    // Реф. @0x53c490 (декомпилятор): оставить в target.m_lstSubItems только те
+    // суб-элементы, чьё m_strName ЕСТЬ среди суб-элементов proto. Фильтр по ИМЕНИ
+    // (реф. читает node payload +0x20 = m_strName), НЕ по id — легко перепутать.
+    // this в теле реф. не используется (метод по сути статический).
+    for (auto it = target.m_lstSubItems.begin(); it != target.m_lstSubItems.end();) {
+        bool keep = false;
+        for (const KReportTemplateItem &p : proto.m_lstSubItems) {
+            if (p.m_strName == it->m_strName) {
+                keep = true;
+                break;
+            }
+        }
+        if (keep)
+            ++it;
+        else
+            it = target.m_lstSubItems.erase(it);
+    }
+}
+
+void KDocumentGenerator::SyncImageItemParam(const KReportTemplateDataNew &libData)
+{
+    // Реф. @0x53eb20 (декомпилятор): синхронизировать конфиги колонок-зеркал из libData
+    // в наш m_pData->m_mapItemConfigs. Реф. логирует "[info] … SyncImageItemParam" —
+    // лог опущен (off-device).
+    if (!m_pData)
+        return;
+
+    // Плоский сбор конфигов суб-элементов image-text-map (реф. GetSubItemsParam:
+    // ключ конфига СОДЕРЖИТ подстроку "RT_IMAGE_TEXT_MAP").
+    std::map<std::string, KReportTemplateItemConfig> tmp;
+    report_template::GetSubItemsParam(libData, STR_REF_IMAGE_TEXT_MAP, tmp);
+
+    for (const auto &kv : tmp) {
+        const std::string &itemId = kv.first;
+        const KReportTemplateItemConfig &cfg = kv.second;
+
+        // Конфиг без SynColumnID — не колонка-зеркало, пропускаем.
+        auto itSyn = cfg.m_mapAttrs.find(STR_RT_ITEM_ATTR_SYNCOLUMNID);
+        if (itSyn == cfg.m_mapAttrs.end())
+            continue;
+        const std::string &synVal = itSyn->second;
+
+        if (m_pData->m_mapItemConfigs.find(synVal) == m_pData->m_mapItemConfigs.end()) {
+            // Колонка-эталон (значение SynColumnID) в наших данных отсутствует —
+            // запись по этому itemId устарела, стираем (реф. equal_range+erase; ключ
+            // map уникален → эквивалентно erase(itemId)).
+            m_pData->m_mapItemConfigs.erase(itemId);
+        } else {
+            // Эталон есть — переносим конфиг зеркала под ключом itemId.
+            KReportTemplateItemConfig &dst = m_pData->m_mapItemConfigs[itemId];
+            dst.m_bUserDefine = cfg.m_bUserDefine;
+            dst.m_strName     = cfg.m_strName;
+            dst.m_mapAttrs    = cfg.m_mapAttrs;
+        }
+    }
 }
 
 void KDocumentGenerator::UpdateMovableFlag(const std::string &id)
