@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **104 self-test-режима** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **105 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -618,11 +618,27 @@ ElementId==id (property UserProperty+1 на frameFormat фрейма ИЛИ form
 Заодно доставлена штамповка ElementId на ЯЧЕЙКИ в createChild (реф. GetCellWithID @0x539c20,
 ранее опущено) → ячейки теперь находимы. Тест: находит текст-фрейм/таблицу/ячейку, промах,
 сентинел. Всё Qt-чистое.
-**ОСТАЛОСЬ по редактору (следующие заходы):** `ChangeFrameSelected`/`ChangeCellSelected`
-(ПОКРАСКА выделения — фон/бордюр; НЕ декомпилированы) → `ChangeSingleItemSelected` (диспетчер +
-пишет m_strCurItemId) → `ChangeItemSelected` (расширяет id до набора через GetAllItemIDs +
-SynColumnID) → UI-обёртки Add/Delete/Update/ClickSubItem → `Move*`/`InsertBlockLineAfterItem`
-(футер-падинг, нужны метрики QTextDocumentLayout) → `UpdateBlock`.
+**✅ ВЫДЕЛЕНИЕ (итерация 8b): `ChangeFrameSelected`/`ChangeCellSelected`/`ChangeSingleItemSelected`/
+`ChangeItemSelected`** (self-test `selectitem`). Выделение = серый фон #a0a0a0 (BackgroundBrush
+0x820), рамка не трогается; sel→setProperty, !sel→clearProperty. ChangeSingleItemSelected пишет
+m_strCurItemId только при успехе. ChangeItemSelected расширяет id до набора (SynColumnID →
+GetAllItemIDs).
+**✅ UI-ОБЁРТКИ (итерация 9): `AddSubItem`/`DeleteSubItem`/`UpdateSubItem`/`ClickSubItem`/
+`ChangeLayout`** (self-test `docedit`) — мутация данных + InitDocument + выделение. БЕЗ новой
+декомпиляции (зависимости готовы).
+**✅ ПЕРЕМЕЩЕНИЕ (итерация 10): `MoveFront`/`MoveBack`** (self-test `movefb`) — std::swap
+СОДЕРЖИМОГО соседних узлов данных + InitDocument (фреймы напрямую не двигаются). Гейт по
+сентинелу m_strCurItemId (НЕ по m_bCanMove-флагам — те лишь для UI); границу (первый/последний)
+проверяют сами; после свопа выделяется переехавший id. Класс ~26/33.
+
+**OFF-DEVICE-ЯДРО KDocumentGenerator ПО СУТИ ЗАКРЫТО.** Работает сквозной цикл: данные
+(CRUD/image-sync/оркестратор) → рендер (text/image/table + InitDocument, валидировано на
+реальном шаблоне `initdocreal`) → поиск (FindFrameOrCell) → выделение → UI-обёртки →
+перемещение. **ОСТАТОК (мелочи/редкое):** `UpdateBlock` (перерисовка одного фрейма без полного
+InitDocument), `InsertBlockLineAfterItem` (футер-падинг — нужны метрики QTextDocumentLayout),
+`ChangeTxtColor`/`ChangeBgColor`/`ChangeFontSet` (правка цвета/шрифта выделенного),
+редкие творцы ImageGroup/SubData (в поставке НЕ встречаются), image/table-в-ячейку перегрузки,
+Q_DECLARE_METATYPE для round-trip редактора.
 
 **ОСТАВШАЯСЯ разведка (для истории; каркас уже закрыт выше):**
 

@@ -116,6 +116,15 @@ public:
     // InitDocument → ChangeItemSelected(id,true) → UpdateMovableFlag(id).
     void ChangeLayout(const std::string &id, const std::string &value);
 
+    // Реф. MoveFront @0x540640 / MoveBack @0x5408c0: переместить ТЕКУЩИЙ элемент
+    // (m_strCurItemId) на одну позицию вперёд/назад среди соседей. Гейт — id != "Invalid ID"
+    // (НЕ m_bCanMove-флаги: те лишь для UI). Границу (первый/последний) проверяют сами.
+    // Механизм: std::swap СОДЕРЖИМОГО двух соседних узлов списка данных (все поля +
+    // под-список) → InitDocument перерисовывает → выделить переехавший id → UpdateMovableFlag.
+    // QTextFrame напрямую НЕ двигаются (документ пересобирается из данных).
+    void MoveFront();
+    void MoveBack();
+
     // --- синхронизация колонок image-text-map (реф., восстановлено ДЕКОМПИЛЯТОРОМ) ---
     // Это слой данных под живой раскладкой RT_IMAGE_TEXT_MAP (галерея снимков N×M):
     // колонки MAP1/MAP2/… «зеркалят» эталонную MAP0 через атрибут SynColumnID.
@@ -251,6 +260,8 @@ private:
     bool isCellPinned(const std::string &id) const;
     // Список соседей элемента id (дети родителя либо корневой список).
     const std::list<KReportTemplateItem> *siblingsOf(const std::string &id) const;
+    // Non-const близнец (для Move*, где нужен splice/swap реальных узлов).
+    std::list<KReportTemplateItem> *mutableSiblingsOf(const std::string &id);
 
     QTextDocument          *m_pDoc = nullptr;      // +0x00
     KRTCreatorContext      *m_pContext = nullptr;  // +0x08 — НЕ реализован (итерация 2)

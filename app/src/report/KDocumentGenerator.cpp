@@ -419,6 +419,65 @@ void KDocumentGenerator::SyncRefresnImageItemData()
     }
 }
 
+std::list<KReportTemplateItem> *
+KDocumentGenerator::mutableSiblingsOf(const std::string &id)
+{
+    // Non-const близнец siblingsOf: родитель = id без последнего "/"-сегмента, его дети,
+    // либо корень m_lstItems.
+    if (!m_pData)
+        return nullptr;
+    const std::size_t pos = id.find_last_of('/');
+    const std::string parentPath =
+        id.substr(0, pos == std::string::npos ? id.size() : pos);
+    KReportTemplateItem *parent = report_template::FindRefItem(*m_pData, parentPath);
+    return parent ? &parent->m_lstSubItems : &m_pData->m_lstItems;
+}
+
+void KDocumentGenerator::MoveFront()
+{
+    // Реф. @0x540640: гейт по сентинелу id (НЕ по m_bCanMoveFront); своп с ПРЕДЫДУЩИМ соседом.
+    if (m_strCurItemId == InvalidItemId())
+        return;
+    std::list<KReportTemplateItem> *sibs = mutableSiblingsOf(m_strCurItemId);
+    if (!sibs)
+        return;
+    for (auto it = sibs->begin(); it != sibs->end(); ++it) {
+        if (it->m_strID != m_strCurItemId)
+            continue;
+        if (it == sibs->begin())
+            return;                          // уже первый — вперёд нельзя
+        auto prev = std::prev(it);
+        std::swap(*it, *prev);               // своп содержимого (7 строк + под-список + счётчик)
+        InitDocument();
+        // После свопа наш id теперь в узле prev — выделить его и пересчитать флаги.
+        ChangeItemSelected(prev->m_strID, true);
+        UpdateMovableFlag(prev->m_strID);
+        return;
+    }
+}
+
+void KDocumentGenerator::MoveBack()
+{
+    // Реф. @0x5408c0: симметрично MoveFront — своп со СЛЕДУЮЩИМ соседом.
+    if (m_strCurItemId == InvalidItemId())
+        return;
+    std::list<KReportTemplateItem> *sibs = mutableSiblingsOf(m_strCurItemId);
+    if (!sibs)
+        return;
+    for (auto it = sibs->begin(); it != sibs->end(); ++it) {
+        if (it->m_strID != m_strCurItemId)
+            continue;
+        auto nxt = std::next(it);
+        if (nxt == sibs->end())
+            return;                          // уже последний — назад нельзя
+        std::swap(*it, *nxt);
+        InitDocument();
+        ChangeItemSelected(nxt->m_strID, true);
+        UpdateMovableFlag(nxt->m_strID);
+        return;
+    }
+}
+
 void KDocumentGenerator::AddSubItem(
     const std::string &id, const KReportTemplateItem &item,
     const std::map<std::string, KReportTemplateItemConfig> &cfgMap, int pos)

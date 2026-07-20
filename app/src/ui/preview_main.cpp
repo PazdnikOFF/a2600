@@ -6252,6 +6252,77 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Self-test перемещения блока (реф. MoveFront @0x540640 / MoveBack @0x5408c0): своп
+    // содержимого соседних узлов данных + перерисовка. Qt Gui.
+    if (screen == "movefb") {
+        KReportTemplateDataNew data;
+        auto add = [&](const std::string &id, const std::string &val) {
+            KReportTemplateItem it; it.m_strID = id;
+            it.m_strName = id.substr(id.find_last_of('/') + 1);
+            it.m_strType = "RT_TEXT_BLOCK";
+            data.m_lstItems.push_back(it);
+            data.m_mapConfigs["V" + id] = val;
+            KReportTemplateItemConfig c; c.m_strName = id;
+            c.m_mapAttrs["TemplateData"] = "V" + id;
+            data.m_mapItemConfigs[id] = c;
+        };
+        add("/A", "AAA"); add("/B", "BBB"); add("/C", "CCC");
+
+        QObject parent;
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+
+        auto order = [&]() {
+            std::vector<std::string> o;
+            for (const auto &n : data.m_lstItems) o.push_back(n.m_strID);
+            return o;
+        };
+        using V = std::vector<std::string>;
+        const bool startOk = order() == V{"/A", "/B", "/C"};
+
+        // Выделить B, подвинуть вперёд → [B, A, C]; в документе BBB раньше AAA.
+        gen.ChangeItemSelected("/B", true);
+        gen.MoveFront();
+        const QString txt1 = doc->toPlainText();
+        const bool frontOk = order() == V{"/B", "/A", "/C"}
+            && txt1.indexOf("BBB") >= 0 && txt1.indexOf("BBB") < txt1.indexOf("AAA")
+            && gen.CurItemId() == "/B";
+
+        // Назад дважды → [A, B, C] → [A, C, B].
+        gen.MoveBack();
+        gen.MoveBack();
+        const bool backOk = order() == V{"/A", "/C", "/B"};
+
+        // Граница: B последний → MoveBack no-op.
+        gen.MoveBack();
+        const bool boundBack = order() == V{"/A", "/C", "/B"};
+
+        // Граница: A первый → MoveFront no-op.
+        gen.ChangeItemSelected("/A", true);
+        gen.MoveFront();
+        const bool boundFront = order() == V{"/A", "/C", "/B"};
+
+        // Сентинел: без выделения (стартовый "Invalid ID") → no-op.
+        KReportTemplateDataNew d2;
+        KReportTemplateItem x; x.m_strID = "/X"; x.m_strName = "X"; x.m_strType = "RT_TEXT_BLOCK";
+        d2.m_lstItems.push_back(x);
+        KReportTemplateItem y; y.m_strID = "/Y"; y.m_strName = "Y"; y.m_strType = "RT_TEXT_BLOCK";
+        d2.m_lstItems.push_back(y);
+        KDocumentGenerator g2(&d2);
+        g2.MoveBack();   // m_strCurItemId == "Invalid ID" → гейт
+        bool sentinelOk = true;
+        { std::vector<std::string> o; for (auto &n : d2.m_lstItems) o.push_back(n.m_strID);
+          sentinelOk = (o == V{"/X", "/Y"}); }
+
+        qInfo() << "movefb: start:" << startOk << "front:" << frontOk << "back:" << backOk
+                << "| boundBack:" << boundBack << "boundFront:" << boundFront
+                << "sentinel:" << sentinelOk;
+
+        const bool ok = startOk && frontOk && backOk && boundBack && boundFront && sentinelOk;
+        qInfo() << (ok ? "movefb: PASS" : "movefb: FAIL");
+        return ok ? 0 : 78;
+    }
+
     // Self-test UI-обёрток редактора (реф. AddSubItem/UpdateSubItem/ClickSubItem/
     // DeleteSubItem/ChangeLayout): мутация данных + перерисовка m_pDoc + выделение. Qt Gui.
     if (screen == "docedit") {
