@@ -6252,6 +6252,80 @@ int main(int argc, char **argv)
         return ok ? 0 : 72;
     }
 
+    // Self-test UI-обёрток редактора (реф. AddSubItem/UpdateSubItem/ClickSubItem/
+    // DeleteSubItem/ChangeLayout): мутация данных + перерисовка m_pDoc + выделение. Qt Gui.
+    if (screen == "docedit") {
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["VA"] = "Alpha";
+        KReportTemplateItem a;
+        a.m_strID = "/RT_A"; a.m_strName = "RT_A"; a.m_strTitle = "TR_A";
+        a.m_strType = "RT_TEXT_BLOCK";
+        data.m_lstItems.push_back(a);
+        KReportTemplateItemConfig ca; ca.m_strName = "/RT_A";
+        ca.m_mapAttrs["TemplateData"] = "VA";
+        data.m_mapItemConfigs["/RT_A"] = ca;
+
+        QObject parent;
+        KDocumentGenerator gen(&data);
+        QTextDocument *doc = gen.GetTextDocument(&parent);
+        const QColor gray("#a0a0a0");
+        auto frameBg = [&](const std::string &id) -> QColor {
+            QTextFrame *f = nullptr; QTextTableCell ce;
+            if (gen.FindFrameOrCell(doc->rootFrame(), id, &f, ce) && f)
+                return f->frameFormat().background().color();
+            return QColor();
+        };
+
+        // 1. AddSubItem: добавить блок B в корень → в данных, в перерисованном документе,
+        //    выделен (m_strCurItemId + серый фон).
+        data.m_mapConfigs["VB"] = "Beta";
+        KReportTemplateItem b;
+        b.m_strID = "/RT_B"; b.m_strName = "RT_B"; b.m_strTitle = "TR_B";
+        b.m_strType = "RT_TEXT_BLOCK";
+        std::map<std::string, KReportTemplateItemConfig> cfgB;
+        cfgB["/RT_B"].m_strName = "/RT_B";
+        cfgB["/RT_B"].m_mapAttrs["TemplateData"] = "VB";
+        gen.AddSubItem("", b, cfgB, 99);
+        const bool addOk =
+            report_template::FindConstRefItem(data, "/RT_B") != nullptr
+            && doc->toPlainText().contains("Beta")
+            && gen.CurItemId() == "/RT_B"
+            && frameBg("/RT_B") == gray;
+
+        // 2. UpdateSubItem: сменить заголовок A → в данных и в перерисованном документе.
+        KReportTemplateItem upd; upd.m_strID = "/RT_A"; upd.m_strTitle = "TR_ANew";
+        gen.UpdateSubItem("", upd);
+        const KReportTemplateItem *pa = report_template::FindConstRefItem(data, "/RT_A");
+        const bool updOk = pa && pa->m_strTitle == "TR_ANew"
+            && doc->toPlainText().contains("TR_ANew");
+
+        // 3. ClickSubItem: выделить A без изменения данных (структура документа та же).
+        const int lenBefore = doc->toPlainText().length();
+        gen.ClickSubItem("", a);
+        const bool clickOk = gen.CurItemId() == "/RT_A"
+            && frameBg("/RT_A") == gray
+            && doc->toPlainText().length() == lenBefore;   // без перестройки
+
+        // 4. DeleteSubItem: удалить B → нет в данных и в документе.
+        KReportTemplateItem del; del.m_strID = "/RT_B"; del.m_strName = "RT_B";
+        gen.DeleteSubItem("", del);
+        const bool delOk =
+            report_template::FindConstRefItem(data, "/RT_B") == nullptr
+            && !doc->toPlainText().contains("Beta");
+
+        // 5. ChangeLayout: RefColumn у A.
+        gen.ChangeLayout("/RT_A", "3");
+        const bool layoutOk =
+            data.m_mapItemConfigs["/RT_A"].m_mapAttrs["RefColumn"] == "3";
+
+        qInfo() << "docedit: add:" << addOk << "update:" << updOk << "click:" << clickOk
+                << "delete:" << delOk << "layout:" << layoutOk;
+
+        const bool ok = addOk && updOk && clickOk && delOk && layoutOk;
+        qInfo() << (ok ? "docedit: PASS" : "docedit: FAIL");
+        return ok ? 0 : 77;
+    }
+
     // Self-test выделения блока (реф. ChangeItemSelected/ChangeSingleItemSelected/
     // ChangeFrameSelected/ChangeCellSelected). Выделение = серый фон #a0a0a0. Чистый Qt Gui.
     if (screen == "selectitem") {

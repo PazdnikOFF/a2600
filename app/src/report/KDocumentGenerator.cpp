@@ -419,6 +419,69 @@ void KDocumentGenerator::SyncRefresnImageItemData()
     }
 }
 
+void KDocumentGenerator::AddSubItem(
+    const std::string &id, const KReportTemplateItem &item,
+    const std::map<std::string, KReportTemplateItemConfig> &cfgMap, int pos)
+{
+    // Реф. @0x541388: снять выделение текущего → мутация данных → перерисовка → выделить новый.
+    ChangeItemSelected(m_strCurItemId, false);
+    AddSubItemData(id, item, cfgMap, pos);
+    InitDocument();
+    ChangeItemSelected(item.m_strID, true);   // реф. передаёт item как string& (item+0x00)
+    UpdateMovableFlag(item.m_strID);
+}
+
+void KDocumentGenerator::DeleteSubItem(const std::string &id,
+                                       const KReportTemplateItem &item)
+{
+    // Реф. @0x540b20: асимметрия с Add — m_strCurItemId ЯВНО = id удалённого (в Add это
+    // делает ChangeItemSelected(…,true) внутри).
+    ChangeItemSelected(m_strCurItemId, false);
+    DeleteSubItemData(id, item);
+    InitDocument();
+    m_strCurItemId = item.m_strID;
+    UpdateMovableFlag(m_strCurItemId);
+}
+
+void KDocumentGenerator::UpdateSubItem(const std::string &id,
+                                       const KReportTemplateItem &item)
+{
+    // Реф. @0x5404a8: обновляет ТОЛЬКО заголовок (m_strTitle) найденного элемента.
+    // (аргумент id в реф. не используется в теле — берётся item.m_strID; сохраняем сигнатуру.)
+    (void)id;
+    if (!m_pData)
+        return;
+    KReportTemplateItem *p = report_template::FindRefItem(*m_pData, item.m_strID);
+    if (!p)
+        return;                              // реф. assert(p != nullptr)
+    p->m_strTitle = item.m_strTitle;         // ТОЛЬКО +0x40
+    InitDocument();
+    ChangeItemSelected(item.m_strID, true);
+    UpdateMovableFlag(m_strCurItemId);       // реф. берёт член, не item
+}
+
+void KDocumentGenerator::ClickSubItem(const std::string &id,
+                                      const KReportTemplateItem &item)
+{
+    // Реф. @0x540528: смена выделения БЕЗ перестройки документа. Гейт по m_pDoc.
+    (void)id;
+    if (!m_pDoc)
+        return;
+    ChangeItemSelected(m_strCurItemId, false);
+    ChangeItemSelected(item.m_strID, true);
+    UpdateMovableFlag(m_strCurItemId);
+}
+
+void KDocumentGenerator::ChangeLayout(const std::string &id, const std::string &value)
+{
+    // Реф. @0x5405e0: сменить RefColumn-параметр раскладки и перерисовать.
+    if (!SetLayoutParam(id, value))
+        return;                              // реф. puts("change layout failed")
+    InitDocument();
+    ChangeItemSelected(id, true);
+    UpdateMovableFlag(id);
+}
+
 void KDocumentGenerator::UpdateMovableFlag(const std::string &id)
 {
     // Реф. @0x53c7b0 (восстановлено декомпилятором Ghidra). Порядок 1:1.

@@ -91,6 +91,31 @@ public:
     //   • хвост: для image-text-map id — SyncRefresnImageItemData.
     void DeleteSubItemData(const std::string &id, const KReportTemplateItem &item);
 
+    // --- UI-обёртки над CRUD (реф.): мутация данных + перерисовка + выделение ---
+    // Все зависимости готовы (AddSubItemData/DeleteSubItemData/InitDocument/ChangeItemSelected/
+    // UpdateMovableFlag), поэтому обёртки реализуемы. Требуют построенного m_pDoc.
+
+    // Реф. AddSubItem @0x541388: снять выделение текущего → AddSubItemData → InitDocument →
+    // выделить новый (item.m_strID) → UpdateMovableFlag(item.m_strID).
+    void AddSubItem(const std::string &id, const KReportTemplateItem &item,
+                    const std::map<std::string, KReportTemplateItemConfig> &cfgMap, int pos);
+
+    // Реф. DeleteSubItem @0x540b20: снять выделение → DeleteSubItemData → InitDocument →
+    // m_strCurItemId = item.m_strID → UpdateMovableFlag.
+    void DeleteSubItem(const std::string &id, const KReportTemplateItem &item);
+
+    // Реф. UpdateSubItem @0x5404a8: FindRefItem(item.m_strID) → обновить ТОЛЬКО m_strTitle →
+    // InitDocument → выделить → UpdateMovableFlag(m_strCurItemId).
+    void UpdateSubItem(const std::string &id, const KReportTemplateItem &item);
+
+    // Реф. ClickSubItem @0x540528: если m_pDoc==null → выход; снять выделение текущего →
+    // выделить кликнутый → UpdateMovableFlag. БЕЗ мутации данных и БЕЗ InitDocument.
+    void ClickSubItem(const std::string &id, const KReportTemplateItem &item);
+
+    // Реф. ChangeLayout @0x5405e0: SetLayoutParam(id,value); при неудаче лог+выход; иначе
+    // InitDocument → ChangeItemSelected(id,true) → UpdateMovableFlag(id).
+    void ChangeLayout(const std::string &id, const std::string &value);
+
     // --- синхронизация колонок image-text-map (реф., восстановлено ДЕКОМПИЛЯТОРОМ) ---
     // Это слой данных под живой раскладкой RT_IMAGE_TEXT_MAP (галерея снимков N×M):
     // колонки MAP1/MAP2/… «зеркалят» эталонную MAP0 через атрибут SynColumnID.
