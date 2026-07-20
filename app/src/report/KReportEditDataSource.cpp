@@ -11,6 +11,12 @@
 #include "kernel/KSystemLog.h"
 #include "report/KReportEntity.h"
 #include "sys/KEnvConfig.h"
+#include "db/KExamBussinessHandler.h"
+#include "db/KExamListDBTableHandler.h"
+#include "hal/KUsbDevice.h"
+#include "kernel/KObject.h"
+
+#include <QDate>
 
 // --- константы реф. ---------------------------------------------------------
 
@@ -305,4 +311,135 @@ int KReportEditDataSource::GetOneRecordFromReportTB(const std::string &examId,
     LogPrintf("[APP][I]: ", "all(num:%d) report images, get (num:%d) images",
               int(all.size()), int(outImgs.size()));
     return 1;   // реф.: 1 — успех
+}
+
+// --- карточка отчёта --------------------------------------------------------
+
+namespace {
+const char *const kDateFormat = "yyyy-MM-dd";
+// Реф.: сообщение шины, публикуемое после сохранения отчёта.
+const int kMsgReportSaved = 12006;   // 0x2ee6
+} // namespace
+
+int KReportEditDataSource::GetReportItem(const QString &examId, report_edit::KReportItem &item)
+{
+    LogPrintf("[APP][I]: ", "KReportEditDataSource::GetReportItem strExamId=%s",
+              examId.toStdString().c_str());
+    const std::string sId = examId.toStdString();
+
+    // --- сторона списка осмотров -------------------------------------------
+    KExamEntry ee;
+    // КВИРК реф.: при неудаче НЕТ ни лога, ни раннего выхода — блок просто
+    // пропускается, поля остаются нетронутыми.
+    if (KExamListDBTableHandler::GetExamEntity(sId, ee) == 0) {
+        // Единственное поле, куда подставляется префикс USB; склейка идёт на
+        // std::string ДО LoadDbString.
+        item.RecordPath = QString::fromUtf8(LoadDbString(
+            KUsbDevice::GetInstance()->GetUsbPath().toStdString() + ee.RecordPath).c_str());
+        item.ExamId = examId;   // реф.: прямое присваивание, не из БД
+        item.ExamDate = QDate::fromString(
+            QString::fromLatin1(LoadDbString(ee.ExamDate).c_str()), kDateFormat);
+        item.Device       = QString::fromUtf8(LoadDbString(ee.Device).c_str());
+        item.ReportStatus = QString::fromUtf8(LoadDbString(ee.ReportStatus).c_str());
+        item.PatientName  = QString::fromUtf8(LoadDbString(ee.PatientName).c_str());
+        // Реф.: присваивается ТОЛЬКО при успехе разбора И значении <= 3.
+        int sex = 0;
+        if (LoadDbInt(ee.PatientSex, sex) == 0 && sex <= 3)
+            item.PatientSex = sex;
+        item.PatientAge = ee.PatientAge;      // безусловно
+        item.PatientID  = QString::fromUtf8(LoadDbString(ee.PatientID).c_str());
+        item.Applicants = QString::fromUtf8(LoadDbString(ee.Applicants).c_str());
+        item.PatientBirthday = QDate::fromString(
+            QString::fromLatin1(LoadDbString(ee.PatientBirthday).c_str()), kDateFormat);
+        item.TelephoneNumber = QString::fromUtf8(LoadDbString(ee.TelephoneNumber).c_str());
+        item.SickBedId       = QString::fromUtf8(LoadDbString(ee.SickBedId).c_str());
+        item.UserItem1       = QString::fromUtf8(LoadDbString(ee.UserItem1).c_str());
+        item.UserItem2       = QString::fromUtf8(LoadDbString(ee.UserItem2).c_str());
+        item.DrReportName    = QString::fromUtf8(LoadDbString(ee.DrReportName).c_str());
+        item.ExamType        = ee.ExamType;
+    }
+
+    // --- сторона отчёта -----------------------------------------------------
+    KReportEntity re;
+    if (KReportDBTableHandler::GetEntity(sId, re) == 0) {
+        item.ExamImg = ChangeStringToFileList(
+            QString::fromLatin1(LoadDbString(re.ExamImg).c_str()));
+        item.ReportDate = QDate::fromString(
+            QString::fromLatin1(LoadDbString(re.ReportDate).c_str()), kDateFormat);
+        item.ExamFindings   = QString::fromUtf8(LoadDbString(re.ExamFindings).c_str());
+        item.Diagnose       = QString::fromUtf8(LoadDbString(re.Diagnose).c_str());
+        item.DiseaseName    = QString::fromUtf8(LoadDbString(re.DiseaseName).c_str());
+        item.SurgicalMethod = QString::fromUtf8(LoadDbString(re.SurgicalMethod).c_str());
+        item.SurgeryFinding = QString::fromUtf8(LoadDbString(re.SurgeryFinding).c_str());
+        item.Suggest        = QString::fromUtf8(LoadDbString(re.Suggest).c_str());
+        item.CustomField1   = QString::fromUtf8(LoadDbString(re.CustomField1).c_str());
+        item.CustomField2   = QString::fromUtf8(LoadDbString(re.CustomField2).c_str());
+        item.Biopsy         = QString::fromUtf8(LoadDbString(re.Biopsy).c_str());
+        item.HPType         = re.HPType;
+        item.AssistDoctor   = QString::fromUtf8(LoadDbString(re.AssistDoctor).c_str());
+    }
+
+    // Реф.: БЕЗУСЛОВНЫЙ хвост — он же посадочная площадка обеих неудач.
+    item.TriofReference = QObject::tr("TR_TRIOFReference");
+    return 0;
+}
+
+int KReportEditDataSource::InsertReportItem(const QString &examId, report_edit::KReportItem &item)
+{
+    LogPrintf("[APP][I]: ", "InsertReportItem str_exam_id=%s", examId.toStdString().c_str());
+    const std::string sId = examId.toStdString();
+
+    KReportEntity re;
+    re.ExamId = sId;
+    re.ReportDate = QDate::currentDate().toString(kDateFormat).toStdString();
+    re.ExamFindings   = item.ExamFindings.toStdString();
+    re.Diagnose       = item.Diagnose.toStdString();
+    re.DiseaseName    = item.DiseaseName.toStdString();
+    re.SurgicalMethod = item.SurgicalMethod.toStdString();
+    re.SurgeryFinding = item.SurgeryFinding.toStdString();
+    re.Biopsy         = item.Biopsy.toStdString();
+    re.CustomField1   = item.CustomField1.toStdString();
+    re.CustomField2   = item.CustomField2.toStdString();
+    re.Suggest        = item.Suggest.toStdString();
+    re.HPType         = item.HPType;          // реф.: без "%d", прямое присваивание
+    re.AssistDoctor   = item.AssistDoctor.toStdString();
+    re.ExamImg        = ChangeFileListToString(item.ExamImg).toStdString();
+
+    // Реф.: проба существования выбирает ветку — обновление либо вставка.
+    KReportEntity probe;
+    if (KReportDBTableHandler::GetEntity(sId, probe) == 0)
+        KReportDBTableHandler::UpdateReportEntity(sId, re);
+    else
+        KReportDBTableHandler::AddNewReportEntity(re);
+
+    // --- сторона списка осмотров -------------------------------------------
+    KExamEntry ee;
+    if (KExamListDBTableHandler::GetExamEntity(sId, ee) != 0)
+        return 0;   // реф.: всё нижеследующее пропускается, но код всё равно 0
+
+    ee.PatientName = item.PatientName.toStdString();
+    // Реф.: ИМЕННО ЗДЕСЬ используется формат "%d" (а не для HPType).
+    ee.PatientSex  = std::to_string(item.PatientSex);
+    ee.PatientAge  = item.PatientAge;
+    ee.PatientID   = item.PatientID.toStdString();
+    ee.Applicants  = item.Applicants.toStdString();
+    // НЕ УСТАНОВЛЕНО ТОЧНО: источник DrExamName (переиспользование регистра x27);
+    // оба врача заполняются из item.DrReportName.
+    ee.DrExamName   = item.DrReportName.toStdString();
+    ee.DrReportName = item.DrReportName.toStdString();
+    ee.PatientBirthday = item.PatientBirthday.toString(kDateFormat).toStdString();
+    ee.TelephoneNumber = item.TelephoneNumber.toStdString();
+    ee.SickBedId       = item.SickBedId.toStdString();
+    ee.UserItem1       = item.UserItem1.toStdString();
+    ee.UserItem2       = item.UserItem2.toStdString();
+
+    // Реф.: статус «осмотр идёт»/«отчёта нет» сменяется на ОДИН ПРОБЕЛ.
+    if (ee.ReportStatus == "Eg" || ee.ReportStatus == "--")
+        ee.ReportStatus = " ";
+
+    KExamListDBTableHandler::UpdateExamEntity(sId, ee);
+    KExamBussinessHandler::GetInstance()->UpdatePatientInfoFromReport(sId);
+    // Реф.: временный стековый KObject только ради публикации сообщения.
+    KObject().PublishMsg(kMsgReportSaved, -1, -1LL, std::string());
+    return 0;
 }

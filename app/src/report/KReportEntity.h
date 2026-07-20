@@ -18,25 +18,35 @@
 // Здесь заведён ФАКТИЧЕСКИЙ слой референса; KEntityReport НЕ ТРОГАЕТСЯ, чтобы
 // не сломать существующие self-test (`reportdb` и др.). Дублирование временное.
 
-// 15 колонок, имена ВЕРБАТИМ из реверса. Единственная целочисленная — HPType.
+// 16 колонок, имена и ПОРЯДОК (= смещения) ВЕРБАТИМ из KReportEntity::ConvertToMap
+// (@0x429ef0). sizeof == 0x1e8. Единственная целочисленная — HPType.
+//
+// ИСПРАВЛЕНО ПО ВТОРОМУ ЗАХОДУ РЕВЕРСА (первая версия этого файла была неверной):
+//   • колонка **Diagnose** (0x60) ОТСУТСТВОВАЛА. Её ключ в ConvertToMap — не литерал
+//     в .rodata, а 8-байтовый непосредственный операнд "Diagnose", поэтому греп по
+//     строкам его не находил;
+//   • **HPType стоит на 0x160**, между Suggest и AssistDoctor, а не последним полем.
 struct KReportEntity {
-    std::string ExamId;          // главный ключ
-    std::string ReportDate;      // формат "yyyy-MM-dd"
-    std::string ExamFindings;
-    std::string DiseaseName;
-    std::string SurgicalMethod;
-    std::string SurgeryFinding;
-    std::string Biopsy;
-    std::string CustomField1;
-    std::string CustomField2;
-    std::string Suggest;
-    std::string AssistDoctor;
-    std::string ExamImg;         // ЕДИНСТВЕННАЯ колонка через ChangeFileListToString
-    std::string Reserved1;
-    std::string Reserved2;
-    int         HPType = -1;     // отображается как TR_Ngtv(-)/TR_Pstv(+)
+    std::string ExamId;          // 0x000 главный ключ
+    std::string ReportDate;      // 0x020 формат "yyyy-MM-dd"
+    std::string ExamFindings;    // 0x040
+    std::string Diagnose;        // 0x060
+    std::string DiseaseName;     // 0x080
+    std::string SurgicalMethod;  // 0x0a0
+    std::string SurgeryFinding;  // 0x0c0
+    std::string Biopsy;          // 0x0e0
+    std::string CustomField1;    // 0x100
+    std::string CustomField2;    // 0x120
+    std::string Suggest;         // 0x140
+    int         HPType = -1;     // 0x160 — TR_Ngtv(-)/TR_Pstv(+)
+    std::string AssistDoctor;    // 0x168
+    std::string ExamImg;         // 0x188 ЕДИНСТВЕННАЯ колонка через ChangeFileListToString
+    std::string Reserved1;       // 0x1a8
+    std::string Reserved2;       // 0x1c8
 
     // Реф. ConvertToMap/ConvertToEntry — обмен с KEntityManage идёт картой.
+    // КВИРК реф.: ConvertToMap ПРОПУСКАЕТ поля, равные "INVALID_STRING", и
+    // пропускает HPType при значении -1.
     std::map<std::string, std::string> ConvertToMap() const;
     void ConvertToEntry(const std::map<std::string, std::string> &m);
 };

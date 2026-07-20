@@ -131,6 +131,7 @@ public:
 #include "alg/KImageProcess.h"
 #include "report/KReportEditDataSource.h"
 #include "report/KReportEntity.h"
+#include "report/KReportItem.h"
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
@@ -6204,6 +6205,93 @@ int main(int argc, char **argv)
         const bool delOk = KReportEditDataSource::DeleteReportByExamId("E100") == 0
                         && KReportDBTableHandler::GetRecordNumber() == 0;
 
+        // 9. Колонка Diagnose (была ПОТЕРЯНА в первой версии — её ключ не литерал
+        //    в .rodata, а 8-байтовый immediate) и позиция HPType между Suggest
+        //    и AssistDoctor.
+        KReportEntity dg;
+        dg.ExamId = "E200"; dg.Diagnose = "diagnose-text"; dg.HPType = 0;
+        dg.AssistDoctor = "asst";
+        KReportDBTableHandler::AddNewReportEntity(dg);
+        KReportEntity dgGot;
+        const bool diagOk = KReportDBTableHandler::GetEntity("E200", dgGot) == 0
+                         && dgGot.Diagnose == "diagnose-text"
+                         && dgGot.HPType == 0 && dgGot.AssistDoctor == "asst";
+        // ConvertToMap ПРОПУСКАЕТ "INVALID_STRING" и HPType == -1 (квирк реф.).
+        KReportEntity skip;
+        skip.ExamId = "E201"; skip.Diagnose = "INVALID_STRING"; skip.HPType = -1;
+        const auto smap = skip.ConvertToMap();
+        const bool skipOk = smap.count("Diagnose") == 0 && smap.count("HPType") == 0
+                         && smap.count("ExamId") == 1;
+
+        // 10. GetReportItem — сбои выборок НЕ прерывают, код всегда 0,
+        //     хвостовое поле TR_TRIOFReference ставится БЕЗУСЛОВНО.
+        report_edit::KReportItem it;
+        const int gri = KReportEditDataSource::GetReportItem("нет-такого", it);
+        const bool griMissOk = gri == 0 && it.TriofReference == "TR_TRIOFReference"
+                            && it.PatientName.isEmpty();   // блоки пропущены
+        // Полный путь: нужна и строка осмотра — заводим tb_ExamList на том же
+        // соединении и запись с тем же ExamId.
+        KExamListDBTableHandler::CreateTable(conn);
+        KUsbDevice::GetInstance()->SetUsbPath("/media/usb0");
+        KExamEntry ex;
+        ex.ExamId = "E200"; ex.PatientName = "Ivanov"; ex.PatientSex = "1";
+        ex.PatientAge = 46;  ex.ExamDate = "2026-07-19";
+        ex.PatientBirthday = "1980-02-03"; ex.RecordPath = "/endodata/E200";
+        ex.ExamType = 3;     ex.DrReportName = "Dr.House";
+        ex.ReportStatus = "Eg";
+        KExamListDBTableHandler::AddExamEntity(ex);
+
+        report_edit::KReportItem it2;
+        const int gri2 = KReportEditDataSource::GetReportItem("E200", it2);
+        const bool griOk = gri2 == 0 && it2.ExamId == "E200"        // из аргумента
+                        && it2.Diagnose == "diagnose-text"           // из отчёта
+                        && it2.PatientName == "Ivanov"               // из осмотра
+                        && it2.PatientAge == 46
+                        && it2.PatientSex == 1                       // LoadDbInt, <= 3
+                        && it2.ExamType == 3
+                        && it2.ExamDate == QDate(2026, 7, 19)        // "yyyy-MM-dd"
+                        && it2.PatientBirthday == QDate(1980, 2, 3)
+                        // Префикс USB подставляется РОВНО в RecordPath:
+                        && it2.RecordPath == "/media/usb0/endodata/E200"
+                        && it2.TriofReference == "TR_TRIOFReference";
+        // Квирк реф.: PatientSex принимается только при значении <= 3.
+        KExamEntry exBig = ex;
+        exBig.ExamId = "E202"; exBig.PatientSex = "9";
+        KExamListDBTableHandler::AddExamEntity(exBig);
+        report_edit::KReportItem it3;
+        it3.PatientSex = 7;                       // заведомо отличное значение
+        KReportEditDataSource::GetReportItem("E202", it3);
+        const bool sexGateOk = it3.PatientSex == 7;   // 9 > 3 ⇒ поле НЕ тронуто
+
+        // 11. InsertReportItem — проба выбирает ветку: запись есть → UPDATE,
+        //     нет → INSERT (при повторном сохранении число строк НЕ растёт).
+        report_edit::KReportItem ins;
+        ins.Diagnose = "d1"; ins.DiseaseName = "dn1"; ins.HPType = 1;
+        ins.ExamImg = QStringList() << "x.jpg";
+        const int numBefore = KReportDBTableHandler::GetRecordNumber();
+        const bool insRc1 = KReportEditDataSource::InsertReportItem("E300", ins) == 0;
+        const bool insertedOk = KReportDBTableHandler::GetRecordNumber() == numBefore + 1;
+        ins.Diagnose = "d2";
+        const bool insRc2 = KReportEditDataSource::InsertReportItem("E300", ins) == 0;
+        KReportEntity after;
+        KReportDBTableHandler::GetEntity("E300", after);
+        const bool updatedOk = KReportDBTableHandler::GetRecordNumber() == numBefore + 1
+                            && after.Diagnose == "d2"
+                            && after.ExamImg == "$#x.jpg"
+                            && after.ReportDate == QDate::currentDate()
+                                   .toString("yyyy-MM-dd").toStdString();
+        // InsertReportItem меняет ReportStatus "Eg"/"--" на ОДИН ПРОБЕЛ.
+        report_edit::KReportItem st;
+        st.PatientName = "Petrov";
+        KReportEditDataSource::InsertReportItem("E200", st);
+        KExamEntry exAfter;
+        KExamListDBTableHandler::GetExamEntity("E200", exAfter);
+        const bool statusOk = exAfter.ReportStatus == " "
+                           && exAfter.PatientName == "Petrov";
+
+        KReportDBTableHandler::DeleteEntity("E200");
+        KReportDBTableHandler::DeleteEntity("E300");
+
         QSqlDatabase::database(conn).close();
         QSqlDatabase::removeDatabase(conn);
 
@@ -6219,11 +6307,20 @@ int main(int argc, char **argv)
                 << "| DeleteEntites не поддержан:" << notSupOk << "| query:" << queryOk;
         qInfo() << "GetOneRecordFromReportTB:" << oneRecOk << "rc=" << rc
                 << "| нет записи:" << missOk << "| удаление:" << delOk;
+        qInfo() << "колонка Diagnose + позиция HPType:" << diagOk
+                << "| ConvertToMap пропускает INVALID_STRING/-1:" << skipOk;
+        qInfo() << "GetReportItem (сбой не прерывает):" << griMissOk << "| успех:" << griOk
+                << "| InsertReportItem INSERT:" << insRc1 << insertedOk
+                << "UPDATE:" << insRc2 << updatedOk;
+        qInfo() << "квирк PatientSex <= 3:" << sexGateOk
+                << "| ReportStatus Eg→\" \":" << statusOk;
 
         const bool ok = serOk && deserOk && guardOk && tailOk && noEscapeOk && organOk
                      && typeOk && regionOk && cursorOk && loadStrOk && loadIntOk
                      && loadIntErrOk && devOk && ddlOk && addOk && getOk && numOk
-                     && keyOk && notSupOk && queryOk && oneRecOk && missOk && delOk;
+                     && keyOk && notSupOk && queryOk && oneRecOk && missOk && delOk
+                     && diagOk && skipOk && griMissOk && griOk && insRc1 && insertedOk
+                     && insRc2 && updatedOk && sexGateOk && statusOk;
         qInfo() << (ok ? "reportedit: PASS" : "reportedit: FAIL");
         return ok ? 0 : 65;
     }

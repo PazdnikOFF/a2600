@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "report/KScopeClass.h"
+#include "report/KReportItem.h"
 
 // Источник данных редактора отчёта (реф. KReportEditDataSource, X-2600;
 // исходник реф. — dialog/patient/reportedit/KReportEditDataSource.cpp).
@@ -81,4 +82,13 @@ public:
     static int GetOneRecordFromReportTB(const std::string &examId,
                                         std::vector<std::string> &outImgs,
                                         std::string &outPath);
+
+    // Реф.: ВСЕГДА возвращает 0 — сбои обеих выборок только пропускают
+    // соответствующий блок присваиваний, раннего выхода нет.
+    // Префикс пути USB подставляется РОВНО в одно поле — RecordPath, и
+    // склейка происходит на std::string ДО LoadDbString.
+    static int GetReportItem(const QString &examId, report_edit::KReportItem &item);
+    // Реф.: тоже ВСЕГДА 0. Проба GetEntity выбирает ветку:
+    // найдено → UpdateReportEntity, не найдено → AddNewReportEntity.
+    static int InsertReportItem(const QString &examId, report_edit::KReportItem &item);
 };

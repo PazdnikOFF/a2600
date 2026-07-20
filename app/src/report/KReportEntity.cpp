@@ -15,10 +15,12 @@ QString g_conn = QStringLiteral("endo_main");
 
 // Порядок — как в реверсе KReportEntity::ConvertToMap.
 const char *const kCols[] = {
-    "ExamId", "ReportDate", "ExamFindings", "DiseaseName", "SurgicalMethod",
-    "SurgeryFinding", "Biopsy", "CustomField1", "CustomField2", "Suggest",
-    "AssistDoctor", "ExamImg", "Reserved1", "Reserved2", "HPType",
+    "ExamId", "ReportDate", "ExamFindings", "Diagnose", "DiseaseName",
+    "SurgicalMethod", "SurgeryFinding", "Biopsy", "CustomField1", "CustomField2",
+    "Suggest", "HPType", "AssistDoctor", "ExamImg", "Reserved1", "Reserved2",
 };
+// Индекс единственной целочисленной колонки (HPType) в kCols.
+const int kIntCol = 11;
 const int kColCount = int(sizeof(kCols) / sizeof(kCols[0]));
 
 QString colList()
@@ -31,20 +33,44 @@ QString colList()
     return s;
 }
 
+// Привязка значений в порядке kCols (HPType — целочисленный, на своём месте).
+void bindEntity(QSqlQuery &q, const KReportEntity &e)
+{
+    const std::string vals[] = {
+        e.ExamId, e.ReportDate, e.ExamFindings, e.Diagnose, e.DiseaseName,
+        e.SurgicalMethod, e.SurgeryFinding, e.Biopsy, e.CustomField1,
+        e.CustomField2, e.Suggest, std::string(), e.AssistDoctor, e.ExamImg,
+        e.Reserved1, e.Reserved2,
+    };
+    for (int i = 0; i < kColCount; ++i) {
+        if (i == kIntCol)
+            q.addBindValue(e.HPType);
+        else
+            q.addBindValue(QString::fromStdString(vals[i]));
+    }
+}
+
 } // namespace
 
 std::map<std::string, std::string> KReportEntity::ConvertToMap() const
 {
     std::map<std::string, std::string> m;
-    m["ExamId"] = ExamId;                 m["ReportDate"] = ReportDate;
-    m["ExamFindings"] = ExamFindings;     m["DiseaseName"] = DiseaseName;
-    m["SurgicalMethod"] = SurgicalMethod; m["SurgeryFinding"] = SurgeryFinding;
-    m["Biopsy"] = Biopsy;                 m["CustomField1"] = CustomField1;
-    m["CustomField2"] = CustomField2;     m["Suggest"] = Suggest;
-    m["AssistDoctor"] = AssistDoctor;     m["ExamImg"] = ExamImg;
-    m["Reserved1"] = Reserved1;           m["Reserved2"] = Reserved2;
-    // Реф.: HPType выводится через snprintf("%d").
-    m["HPType"] = std::to_string(HPType);
+    // Реф.: поля, равные "INVALID_STRING", в карту НЕ попадают.
+    const auto put = [&m](const char *k, const std::string &v) {
+        if (v != "INVALID_STRING")
+            m[k] = v;
+    };
+    put("ExamId", ExamId);                 put("ReportDate", ReportDate);
+    put("ExamFindings", ExamFindings);     put("Diagnose", Diagnose);
+    put("DiseaseName", DiseaseName);       put("SurgicalMethod", SurgicalMethod);
+    put("SurgeryFinding", SurgeryFinding); put("Biopsy", Biopsy);
+    put("CustomField1", CustomField1);     put("CustomField2", CustomField2);
+    put("Suggest", Suggest);               put("AssistDoctor", AssistDoctor);
+    put("ExamImg", ExamImg);               put("Reserved1", Reserved1);
+    put("Reserved2", Reserved2);
+    // Реф.: HPType выводится через snprintf("%d") и ПРОПУСКАЕТСЯ при -1.
+    if (HPType != -1)
+        m["HPType"] = std::to_string(HPType);
     return m;
 }
 
@@ -55,7 +81,8 @@ void KReportEntity::ConvertToEntry(const std::map<std::string, std::string> &m)
         return it == m.end() ? std::string() : it->second;
     };
     ExamId = get("ExamId");                 ReportDate = get("ReportDate");
-    ExamFindings = get("ExamFindings");     DiseaseName = get("DiseaseName");
+    ExamFindings = get("ExamFindings");     Diagnose = get("Diagnose");
+    DiseaseName = get("DiseaseName");
     SurgicalMethod = get("SurgicalMethod"); SurgeryFinding = get("SurgeryFinding");
     Biopsy = get("Biopsy");                 CustomField1 = get("CustomField1");
     CustomField2 = get("CustomField2");     Suggest = get("Suggest");
@@ -84,7 +111,7 @@ bool KReportDBTableHandler::CreateTable(const QString &connectionName)
     for (int i = 0; i < kColCount; ++i) {
         if (i) ddl += ", ";
         ddl += QLatin1String(kCols[i]);
-        ddl += (i == kColCount - 1) ? " INTEGER" : " TEXT";
+        ddl += (i == kIntCol) ? " INTEGER" : " TEXT";
     }
     ddl += ", PRIMARY KEY (ExamId))";
     if (!q.exec(ddl)) {
@@ -100,10 +127,7 @@ int KReportDBTableHandler::AddNewReportEntity(const KReportEntity &e)
     QString marks;
     for (int i = 0; i < kColCount; ++i) marks += (i ? ", ?" : "?");
     q.prepare("INSERT OR REPLACE INTO Report (" + colList() + ") VALUES (" + marks + ")");
-    const auto m = e.ConvertToMap();
-    for (int i = 0; i < kColCount - 1; ++i)
-        q.addBindValue(QString::fromStdString(m.at(kCols[i])));
-    q.addBindValue(e.HPType);
+    bindEntity(q, e);
     if (!q.exec()) {
         qWarning() << "KReportDBTableHandler::AddNewReportEntity:" << q.lastError().text();
         return -1;
@@ -121,10 +145,7 @@ int KReportDBTableHandler::UpdateReportEntity(const std::string &examId, const K
         sets += "=?";
     }
     q.prepare("UPDATE Report SET " + sets + " WHERE ExamId=?");
-    const auto m = e.ConvertToMap();
-    for (int i = 0; i < kColCount - 1; ++i)
-        q.addBindValue(QString::fromStdString(m.at(kCols[i])));
-    q.addBindValue(e.HPType);
+    bindEntity(q, e);
     q.addBindValue(QString::fromStdString(examId));
     if (!q.exec()) {
         qWarning() << "KReportDBTableHandler::UpdateReportEntity:" << q.lastError().text();
