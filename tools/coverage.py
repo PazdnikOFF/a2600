@@ -360,6 +360,17 @@ def fmt_cfgs(cfgs, limit=3):
     return out
 
 
+# Классы, помеченные ✅ по эвристике имён, но реализовывать которые НЕ НАДО:
+# в бинарнике у них нет ни одного вызывающего (мёртвый код — как правило,
+# предыдущая итерация той же семантики, оставшаяся в сборке). Без этого списка
+# они всплывают первыми в ТОП-40 и на них тратят итерацию. Проверка «мёртвости»:
+# найти адрес символа в objdump -t и грепнуть `bl <адрес>` по всему дизасму.
+DEAD_CLASSES = {
+    "KTemplateEditDocument":
+        "0 вызывающих; живой аналог KDocumentGenerator (12 вызывающих). См. PROGRESS §10",
+}
+
+
 def main():
     if not os.path.exists(BIN):
         sys.exit("нет бинарника: %s" % BIN)
@@ -434,7 +445,12 @@ def main():
     cand = [r for r in rows if r["ver"] == "✅" and r["done"] == 0]
     cand.sort(key=lambda r: -r["total"])
     for r in cand[:40]:
-        note = "есть заголовок, но свой API — сверить имена" if r["impl"] else "не начат"
+        if r["cls"] in DEAD_CLASSES:
+            note = "❌ МЁРТВЫЙ КОД — %s" % DEAD_CLASSES[r["cls"]]
+        elif r["impl"]:
+            note = "есть заголовок, но свой API — сверить имена"
+        else:
+            note = "не начат"
         W("| `%s` | %s | %d | %s | %s |\n" % (r["cls"], r["dom"], r["total"], fmt_cfgs(r["cfg"]), note))
     W("\n")
 

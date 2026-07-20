@@ -42,7 +42,7 @@
 
 | Класс | Домен | Методов | Конфиги | Заметка |
 |---|---|---:|---|---|
-| `KTemplateEditDocument` | REPORT | 38 | — | не начат |
+| `KTemplateEditDocument` | REPORT | 38 | — | ❌ МЁРТВЫЙ КОД — 0 вызывающих; живой аналог KDocumentGenerator (12 вызывающих). См. PROGRESS §10 |
 | `KDocumentGenerator` | REPORT | 31 | — | есть заголовок, но свой API — сверить имена |
 | `KUpdateAction` | UPDATE | 16 | — | не начат |
 | `KDataOprEventDeal` | DB | 16 | — | не начат |
