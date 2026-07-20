@@ -530,7 +530,7 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **95 self-test-режимов** (все PASS, регрессия —
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **96 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`).
 
 **ПОСЛЕДНЕЕ (итерация 4): под-элементная CRUD-модель `KDocumentGenerator`**
@@ -594,9 +594,13 @@ KRTCreatorContext* m_pContext, +0x10 KReportTemplateDataNew* m_pData, +0x18 std:
 - `KRTCreatorContext::GetFontSize` @0x547690/@0x547400 — QFont("Source Han Sans CN",16,0x32);
   без спец-конфига QGuiApplication::primaryScreen()->physicalDotsPerInch()+setPointSize; иначе
   attr FONTTYPE. ❌ экран/DPI — для min можно упростить до фикс-шрифта (пометить отступление).
-- **`KScreenMng`** — НЕ СОЗДАН. `GetInstance()/GetRatioTo1K()` — множитель «под 1K» в pointSizeF.
-  ЖЕЛЕЗО → заглушка (нужен дизасм GetRatioTo1K для честного значения; в ui_preview → 1.0 с
-  пометкой). Синглтон.
+- **`KScreenMng`** — ✅ СДЕЛАН (self-test `screenmng`, `app/src/ui/KScreenMng.*`). ОКАЗАЛСЯ
+  НЕ железом, а ЧИСТЫМ Qt (QGuiApplication::primaryScreen) → реимплементирован faithfully,
+  не заглушкой. sizeof 0x20: +0x00 QSize m_mainResolution (дефолт 1920×1080 → перезапись
+  реальным экраном), +0x08 widthRatio=W/1920, +0x10 heightRatio=H/1080 (кламп к 1.0 только
+  при ≤0), +0x18 m_ratio=widthRatio (его отдаёт GetRatioTo1K). Синглтон call_once. Под
+  offscreen читает offscreen-экран (в тесте 2560×1440 → ratio 1.333). Формула сверена дизасмом
+  ctor (@0x4b9d10: fdiv/fcsel hi).
 - Заглушки/вспом.: `PutFooterOnBottom` (Qt via InsertBlockLineAfterItem), `GetSplitLineInfo`
   (есть? проверить), `InsertSplitLine` (только при PageCount>1 → для min no-op).
 Творцы Image/ImageGroup/Table/SubData (0x536240/0x535a08/0x53a400/0x537438) — ВНЕ min-итерации

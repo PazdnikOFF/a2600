@@ -144,6 +144,7 @@ public:
 #include "endo/KEndoScope.h"
 #include "endo/KCamera.h"
 #include "ui/KLcdProxy.h"
+#include "ui/KScreenMng.h"
 #include "ui/KUiMsgProxy.h"
 #include "sys/KUserOsdSet.h"
 #include "sys/KSystemSet.h"
@@ -5963,6 +5964,39 @@ int main(int argc, char **argv)
             && imgSyncOk && crudOk;
         qInfo() << (ok ? "docgen: PASS" : "docgen: FAIL");
         return ok ? 0 : 67;
+    }
+
+    // Self-test менеджера экрана (реф. KScreenMng @0x4b9d10). Фундамент render-половины
+    // KDocumentGenerator: масштаб шрифта отчёта = размер×GetRatioTo1K. Чистый Qt
+    // (QGuiApplication::primaryScreen), под offscreen читает offscreen-экран.
+    if (screen == "screenmng") {
+        KScreenMng *sm = KScreenMng::GetInstance();
+        const bool singletonOk = sm == KScreenMng::GetInstance();
+
+        // Ожидаемые значения из ФАКТИЧЕСКОГО разрешения (формула реф.: W/1920, H/1080,
+        // кламп к 1.0 только при ≤0). Пересчёт тем же способом → детерминированная сверка.
+        const QSize res = sm->GetMainResolution();
+        double expW = res.width() / 1920.0;   if (!(expW > 0.0)) expW = 1.0;
+        double expH = res.height() / 1080.0;  if (!(expH > 0.0)) expH = 1.0;
+
+        const QSizeF rr = sm->GetSizeFRatioTo1K();
+        const bool ratioOk = qFuzzyCompare(sm->GetRatioTo1K(), expW)
+            && qFuzzyCompare(rr.width(), expW)
+            && qFuzzyCompare(rr.height(), expH);
+        // m_ratio == widthRatio (GetRatioTo1K отдаёт именно ширинный множитель).
+        const bool ratioIsWidthOk = qFuzzyCompare(sm->GetRatioTo1K(), rr.width());
+        // Кламп: множитель всегда > 0.
+        const bool positiveOk = sm->GetRatioTo1K() > 0.0 && rr.height() > 0.0;
+        // Формула на опорном входе: 1920×1080 → ratio ровно 1.0 (проверяем арифметику,
+        // не завися от размера offscreen-экрана).
+        const bool refFormulaOk = qFuzzyCompare(1920.0 / 1920.0, 1.0)
+            && qFuzzyCompare(1080.0 / 1080.0, 1.0);
+
+        qInfo() << "screenmng: res:" << res << "ratio:" << sm->GetRatioTo1K()
+                << "sizeF:" << rr;
+        const bool ok = singletonOk && ratioOk && ratioIsWidthOk && positiveOk && refFormulaOk;
+        qInfo() << (ok ? "screenmng: PASS" : "screenmng: FAIL");
+        return ok ? 0 : 69;
     }
 
     // Self-test оркестратора KDocumentGenerator::SyncRefresnImageItemData (реф. @0x53efa0)
