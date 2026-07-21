@@ -24,6 +24,7 @@
 #include "ui/KSysPrinter.h"
 #include "ui/KCustomEdit.h"
 #include "ui/KDICOMServiceEditDlg.h"
+#include "ui/KPatientListAddDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9051,6 +9052,8 @@ int main(int argc, char **argv)
         w = new KCustomEdit;       // UI-порт: редактор параметров изображения (реф. KCustomEdit)
     } else if (screen == "dicomsvcedit") {
         w = new KDICOMServiceEditDlg;  // UI-порт: форма DICOM-сервиса (реф. KDICOMServiceEditDlg)
+    } else if (screen == "patientadd") {
+        w = new KPatientListAddDlg;    // UI-порт: ввод нового пациента (реф. KPatientListAddDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
