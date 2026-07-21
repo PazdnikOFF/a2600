@@ -55,6 +55,7 @@
 #include "ui/KAddPrinterDlg.h"
 #include "ui/KAddPrinterDriverDlg.h"
 #include "ui/KPUserLoginDlg.h"
+#include "ui/KProcessorControl.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9144,6 +9145,8 @@ int main(int argc, char **argv)
         w = new KAddPrinterDriverDlg;  // UI-порт: выбор драйвера принтера (реф. KAddPrinterDriverDlg)
     } else if (screen == "puserlogin") {
         w = new KPUserLoginDlg;        // UI-порт: вход привилегированного пользователя (реф. KPUserLoginDlg)
+    } else if (screen == "procctl") {
+        w = new KProcessorControl;     // UI-порт: управление процессором (реф. KProcessorControl)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
