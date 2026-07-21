@@ -150,6 +150,7 @@ set(SOURCES
     src/ui/KPatientListWidget.cpp
     src/ui/KPatientManagmentUi.cpp
     src/ui/KDicomQueueOptUi.cpp
+    src/ui/KPatientListEditDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -471,6 +472,7 @@ add_executable(ui_preview
     src/ui/KPatientListWidget.cpp
     src/ui/KPatientManagmentUi.cpp
     src/ui/KDicomQueueOptUi.cpp
+    src/ui/KPatientListEditDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

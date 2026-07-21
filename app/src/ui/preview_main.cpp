@@ -94,6 +94,7 @@
 #include "ui/KPatientListViewUi.h"
 #include "ui/KPatientManagmentUi.h"
 #include "ui/KDicomQueueOptUi.h"
+#include "ui/KPatientListEditDlg.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9673,6 +9674,9 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "patienteditdlg") {
+        // Форма редактирования пациента — реальные KMemComboBox + KPatientDateEdit + ДР↔возраст.
+        w = new KPatientListEditDlg;
     } else if (screen == "dicomqueueopt") {
         w = new KDicomQueueOptUi;   // тулбар очереди DICOM (3 кнопки refresh/resend/delete)
     } else if (screen == "patientmgmt") {
