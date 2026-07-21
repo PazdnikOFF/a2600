@@ -35,6 +35,7 @@
 #include "ui/KReportEditAddMarkView.h"
 #include "ui/KPrintSettingsDlg.h"
 #include "ui/KDicomQueueViewUi.h"
+#include "ui/KPasswordEdit.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9084,6 +9085,8 @@ int main(int argc, char **argv)
         w = new KPrintSettingsDlg;     // UI-порт: настройки печати (реф. KPrintSettingsDlg)
     } else if (screen == "dicomqueue") {
         w = new KDicomQueueViewUi;     // UI-порт: очередь DICOM-заданий (реф. KDicomQueueViewUi)
+    } else if (screen == "passwordedit") {
+        w = new KPasswordEdit;         // UI-порт: смена пароля (реф. KPasswordEdit)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
