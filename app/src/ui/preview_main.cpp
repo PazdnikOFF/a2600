@@ -83,6 +83,7 @@
 #include "ui/KPasswordLineEdit.h"
 #include "ui/KTableView.h"
 #include "ui/KGridWidget.h"
+#include "ui/KMessageFrame.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9529,6 +9530,15 @@ int main(int argc, char **argv)
         grid->MarkWidgetVisible(QStringLiteral("cell3"), false);   // скрыть C3
         grid->Relayout();             // плотная переукладка: C4..C7 занимают место C3
         w = grid;
+    } else if (screen == "messageframe") {
+        // Кастом-виджет KMessageFrame: 5-строчный лог с «-»-префиксом и дедупом.
+        KMessageFrame *mf = new KMessageFrame;
+        mf->setStyleSheet(QStringLiteral("background:#202020;color:#ddd;"));
+        mf->AddShowMessage(QStringLiteral("Probe connected"), 100);
+        mf->AddShowMessage(QStringLiteral("Freeze released"), 100);
+        mf->AddShowMessage(QStringLiteral("Recording started\nGain 65%"), 100);  // многострочное → 2 строки
+        mf->AddShowMessage(QStringLiteral("Probe connected"), 100);   // дедуп: старое удалится, встанет в конец
+        w = mf;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
