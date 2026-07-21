@@ -169,6 +169,9 @@ set(SOURCES
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
     src/ui/KNewTempletEditor.cpp
+    src/ui/KMySlider.cpp
+    src/ui/KSpinAge.cpp
+    src/ui/KDateEdit.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -509,6 +512,9 @@ add_executable(ui_preview
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
     src/ui/KNewTempletEditor.cpp
+    src/ui/KMySlider.cpp
+    src/ui/KSpinAge.cpp
+    src/ui/KDateEdit.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

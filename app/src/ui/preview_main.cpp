@@ -111,6 +111,9 @@
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
 #include "ui/KNewTempletEditor.h"
+#include "ui/KMySlider.h"
+#include "ui/KSpinAge.h"
+#include "ui/KDateEdit.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9691,6 +9694,32 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "inputwidgets") {
+        // KMySlider + KSpinAge + KDateEdit — три малых инпут-виджета.
+        QWidget *host = new QWidget;
+        host->resize(320, 180);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("KMySlider (value label):"), host));
+        KMySlider *sl = new KMySlider(Qt::Horizontal, host);
+        sl->setRange(-10, 10);
+        sl->SetValue(4);   // метка «+4» у ползунка
+        vb->addWidget(sl);
+        vb->addWidget(new QLabel(QStringLiteral("KSpinAge (1..199):"), host));
+        KSpinAge *age = new KSpinAge(host);
+        age->setValue(45);
+        vb->addWidget(age);
+        vb->addWidget(new QLabel(QStringLiteral("KDateEdit (blank / set):"), host));
+        QHBoxLayout *hb = new QHBoxLayout();
+        KDateEdit *d1 = new KDateEdit(host);
+        d1->setDisplayFormat(QStringLiteral("MM/dd/yyyy"));   // пустой → бланк-маска
+        hb->addWidget(d1);
+        KDateEdit *d2 = new KDateEdit(host);
+        d2->setDisplayFormat(QStringLiteral("MM/dd/yyyy"));
+        d2->setDate(QDate(2026, 8, 15));   // с датой
+        hb->addWidget(d2);
+        vb->addLayout(hb);
+        vb->addStretch();
+        w = host;
     } else if (screen == "floatingmsg") {
         // Плавающий оверлей-список (реф. KFloatingMsg): 3 сообщения склеены.
         KFloatingMsg *fm = new KFloatingMsg;
