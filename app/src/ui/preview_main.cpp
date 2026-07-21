@@ -98,6 +98,7 @@
 #include "ui/KPatientListSetupDlg.h"
 #include "ui/KExamListCancelDlg.h"
 #include "ui/KCalendarWidget.h"
+#include "ui/KReservedWidget.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9677,6 +9678,20 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "reservedwidget") {
+        // Кастом-виджет KReservedWidget: метка+вход по E_EDITOR_TYPE (line/date).
+        QWidget *host = new QWidget;
+        QHBoxLayout *hb = new QHBoxLayout(host);
+        KReservedWidget *rl = new KReservedWidget(host, KReservedWidget::E_LINEEDIT);
+        rl->SetLabel(QStringLiteral("Comment (line):"));
+        rl->SetLineEditText(QStringLiteral("Normal findings"));
+        rl->SetMaxInputLen(64);
+        hb->addWidget(rl);
+        KReservedWidget *rd = new KReservedWidget(host, KReservedWidget::E_DATEEDIT);
+        rd->SetLabel(QStringLiteral("Follow-up (date):"));
+        rd->SetDate(QDate(2026, 8, 15));
+        hb->addWidget(rd);
+        w = host;
     } else if (screen == "calendar") {
         // Кастомный date-picker (реф. форк QCalendarWidget). Выбрана сегодняшняя дата.
         KCalendarWidget *cal = new KCalendarWidget;

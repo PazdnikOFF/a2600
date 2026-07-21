@@ -156,6 +156,7 @@ set(SOURCES
     src/ui/KCheckBoxHeaderView.cpp
     src/ui/KCalendarWidget.cpp
     src/ui/KFullScreenDialog.cpp
+    src/ui/KReservedWidget.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -483,6 +484,7 @@ add_executable(ui_preview
     src/ui/KCheckBoxHeaderView.cpp
     src/ui/KCalendarWidget.cpp
     src/ui/KFullScreenDialog.cpp
+    src/ui/KReservedWidget.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
