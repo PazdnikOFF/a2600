@@ -76,6 +76,7 @@ set(SOURCES
     src/ui/KControlInfo.cpp
     src/ui/KAuthMachineDlg.cpp
     src/ui/KSystemSetDlg.cpp
+    src/ui/KSysPrinter.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -323,6 +324,7 @@ add_executable(ui_preview
     src/ui/KControlInfo.cpp
     src/ui/KAuthMachineDlg.cpp
     src/ui/KSystemSetDlg.cpp
+    src/ui/KSysPrinter.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
