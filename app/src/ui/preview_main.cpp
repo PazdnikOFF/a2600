@@ -78,6 +78,7 @@
 #include "ui/KQuickInputWidget.h"
 #include "ui/KQuickInputComboBox.h"
 #include "ui/KOptionListButton.h"
+#include "ui/KOsdMenuCell.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9414,6 +9415,25 @@ int main(int argc, char **argv)
         seg2->setFixedSize(200, 40);
         vb->addWidget(seg2);   // авто-выбор index 0 (Freeze)
         vb->addStretch();
+        w = host;
+    } else if (screen == "osdmenucell") {
+        // Кастом-виджет KOsdMenuCell: три ячейки в разных состояниях (реальные OSD-ассеты).
+        QWidget *host = new QWidget;
+        host->setStyleSheet(QStringLiteral("background:#101010;"));
+        QHBoxLayout *hb = new QHBoxLayout(host);
+        hb->setContentsMargins(16, 16, 16, 16); hb->setSpacing(16);
+        auto mkCell = [&](const QString &title) {
+            KOsdMenuCell *c = new KOsdMenuCell(host);
+            c->SetIcons(QStringLiteral("equipment_select.png"),
+                        QStringLiteral("equipment_normal.png"),
+                        QStringLiteral("equipment_select_grey.png"));
+            c->SetTitle(title);
+            return c;
+        };
+        KOsdMenuCell *cNorm = mkCell(QStringLiteral("Equip"));    // normal (авто UnSelect)
+        KOsdMenuCell *cSel = mkCell(QStringLiteral("Preset"));    cSel->Select();
+        KOsdMenuCell *cFoc = mkCell(QStringLiteral("Measure"));   cFoc->Select(); cFoc->Focus();
+        hb->addWidget(cNorm); hb->addWidget(cSel); hb->addWidget(cFoc);
         w = host;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
