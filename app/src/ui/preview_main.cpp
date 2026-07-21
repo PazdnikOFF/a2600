@@ -37,6 +37,7 @@
 #include "ui/KDicomQueueViewUi.h"
 #include "ui/KPasswordEdit.h"
 #include "ui/KExamListSetupDlg.h"
+#include "ui/KServerInfoDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9090,6 +9091,8 @@ int main(int argc, char **argv)
         w = new KPasswordEdit;         // UI-порт: смена пароля (реф. KPasswordEdit)
     } else if (screen == "examlistsetup") {
         w = new KExamListSetupDlg;     // UI-порт: настройка списка обследований (реф. KExamListSetupDlg)
+    } else if (screen == "serverinfo") {
+        w = new KServerInfoDlg;        // UI-порт: настройки сервера DNS/прокси (реф. KServerInfoDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
