@@ -12,21 +12,21 @@
 |---|---|
 | Пользовательских классов в референсе | **486** |
 | Методов в них (уникальные имена) | **7008** |
-| Классов затронуто у нас | **113** (23%) |
-| Методов реализовано (совпало по имени) | **1396** (19.9%) |
+| Классов затронуто у нас | **181** (37%) |
+| Методов реализовано (совпало по имени) | **1842** (26.3%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
-| **UI** | 167 | 2665 | 100 | 3.8% | 10 |
-| **CORE** | 60 | 1251 | 493 | 39.4% | 28 |
-| **REPORT** | 73 | 829 | 233 | 28.1% | 23 |
-| **MISC** | 27 | 669 | 148 | 22.1% | 13 |
-| **HW** | 40 | 625 | 194 | 31.0% | 7 |
-| **DICOM** | 60 | 455 | 63 | 13.8% | 10 |
-| **DB** | 47 | 368 | 140 | 38.0% | 16 |
-| **UPDATE** | 12 | 146 | 25 | 17.1% | 6 |
+| **UI** | 167 | 2665 | 463 | 17.4% | 65 |
+| **CORE** | 60 | 1251 | 498 | 39.8% | 29 |
+| **REPORT** | 73 | 829 | 251 | 30.3% | 26 |
+| **MISC** | 27 | 669 | 165 | 24.7% | 14 |
+| **HW** | 40 | 625 | 209 | 33.4% | 9 |
+| **DICOM** | 60 | 455 | 81 | 17.8% | 13 |
+| **DB** | 47 | 368 | 142 | 38.6% | 17 |
+| **UPDATE** | 12 | 146 | 33 | 22.6% | 8 |
 
 ## 3. Верифицируемость off-device
 
@@ -43,23 +43,19 @@
 | Класс | Домен | Методов | Конфиги | Заметка |
 |---|---|---:|---|---|
 | `KTemplateEditDocument` | REPORT | 38 | — | ❌ МЁРТВЫЙ КОД — 0 вызывающих; живой аналог KDocumentGenerator (12 вызывающих). См. PROGRESS §10 |
-| `KUpdateAction` | UPDATE | 17 | — | не начат |
 | `KDataOprEventDeal` | DB | 16 | — | не начат |
 | `KRTTeCreatorContext` | REPORT | 16 | — | не начат |
 | `KEntityManage` | DB | 15 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityBase` | DB | 14 | — | не начат |
-| `KUpdatePrepare` | UPDATE | 13 | — | не начат |
 | `KDataFileOpr` | DB | 12 | — | не начат |
 | `KEntityService` | DB | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KRTAbsDataSource` | REPORT | 11 | — | не начат |
 | `KRTDataSourceReal` | REPORT | 11 | — | есть заголовок, но свой API — сверить имена |
 | `KRecordItem` | DB | 10 | — | не начат |
-| `KImportRules` | DB | 10 | — | не начат |
-| `KFunTest` | CORE | 10 | `testcaselist.txt` | не начат |
 | `KTimeMng` | CORE | 10 | — | не начат |
 | `KSelfTest` | CORE | 10 | `testenv.ini` | не начат |
 | `KRptTempletNodeInfo` | REPORT | 9 | — | не начат |
-| `KVersion` | UPDATE | 9 | — | не начат |
+| `KVersion` | UPDATE | 9 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityReport` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
 | `KRTDataSourceDemo` | REPORT | 8 | — | есть заголовок, но свой API — сверить имена |
 | `KEntityQuickInputDoctor` | DB | 8 | — | не начат |
@@ -76,12 +72,16 @@
 | `KPicMng` | CORE | 7 | — | не начат |
 | `KExamData` | DB | 7 | — | не начат |
 | `KVideoPlay` | CORE | 6 | — | не начат |
-| `KRecordCase` | DB | 6 | `casename.txt`, `testenv.ini` | не начат |
+| `KRecordCase` | DB | 6 | `casename.txt`, `testenv.ini` | есть заголовок, но свой API — сверить имена |
 | `KReportEditUIConfig` | REPORT | 6 | — | не начат |
 | `KPdf2Pics` | REPORT | 6 | — | не начат |
 | `KEntityDEC` | DB | 5 | — | не начат |
 | `KForceLogout` | CORE | 5 | — | не начат |
 | `KProcMessage` | CORE | 5 | — | не начат |
+| `KTempletNode` | REPORT | 5 | — | не начат |
+| `KProcShMemory` | CORE | 5 | — | не начат |
+| `KSaveImageFile` | CORE | 5 | — | не начат |
+| `KDecDBTableHandler` | DB | 5 | — | не начат |
 
 ## 5. Частично реализованные (есть методы, но не все)
 
@@ -92,26 +92,26 @@
 | `KViewSoftEndo` | UI | 89 | 4 | 4% |
 | `KVideoProxy` | CORE | 116 | 50 | 43% |
 | `AlgParaManager` | MISC | 63 | 10 | 16% |
+| `KExamListViewUi` | UI | 60 | 7 | 12% |
+| `KTempletTreeWidget` | REPORT | 53 | 3 | 6% |
 | `KUiMsgProxy` | UI | 55 | 8 | 15% |
 | `KImgList` | UI | 50 | 8 | 16% |
+| `KPatientListViewUi` | UI | 52 | 11 | 21% |
 | `KVideoSet` | CORE | 58 | 18 | 31% |
 | `KDccuParam` | CORE | 93 | 54 | 58% |
 | `KFactoryOptions` | UPDATE | 46 | 8 | 17% |
+| `KDicomQueueViewUi` | DICOM | 45 | 7 | 16% |
 | `KEndoScope` | HW | 79 | 42 | 53% |
+| `KImgTableModel` | UI | 37 | 2 | 5% |
 | `KSystem` | CORE | 51 | 17 | 33% |
 | `KVideoCal` | UI | 35 | 3 | 9% |
+| `KImgTableItem` | UI | 38 | 7 | 18% |
 | `KUpdateConf` | UPDATE | 29 | 1 | 3% |
 | `KVideoParam` | CORE | 44 | 17 | 39% |
 | `KUserOsdSet` | CORE | 34 | 8 | 24% |
+| `KPatientManagmentUi` | UI | 32 | 8 | 25% |
 | `KUserSet` | CORE | 27 | 3 | 11% |
 | `KUsbDevice` | HW | 25 | 2 | 8% |
-| `KEncStyle` | CORE | 39 | 18 | 46% |
-| `KProjectSet` | CORE | 31 | 14 | 45% |
-| `KSaveFile` | DB | 20 | 3 | 15% |
-| `KDicomInterface` | DICOM | 27 | 11 | 41% |
-| `KSystemStatus` | CORE | 47 | 34 | 72% |
-| `KThesaurusOpt` | REPORT | 15 | 2 | 13% |
-| `KPlControl` | CORE | 72 | 60 | 83% |
 
 ### 5.1 Оговорка о точности метрики
 
@@ -119,7 +119,7 @@
 оценка**. Там, где мы сознательно переосмыслили API (свои имена вместо оригинальных),
 метрика показывает 0 при фактически рабочем коде:
 
-- **Свой API при наличии класса-референса (7):** `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KExamEntry`, `KRTDataSourceDemo`, `KRTDataSourceReal`
+- **Свой API при наличии класса-референса (58):** `KAddPrinterDlg`, `KAddPrinterDriverDlg`, `KAlgParamAjustDlg`, `KAuthMachineDlg`, `KCameraInfoEdit`, `KColdlightAdjust`, `KControlInfo`, `KCustomEdit`, `KDICOMServiceEditDlg`, `KDeviceInfo`, `KEndoScopeControl`, `KEndoScopeSN`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KErrorRate`, `KExamDetailInfoUi`, `KExamEntry`, `KExamListSetupDlg`, `KGeneralSetDlg`, `KHospitalInfoEditDlg`, `KImageEditor`, `KLogView`, `KNetPrintList`, `KNewTempletEditor`, `KPUserLoginDlg`, `KPasswordEdit`, `KPatientListAddDlg`, `KPatientListSearch`, `KPrintSettingsDlg`, `KProcessorControl`, `KProcessorSN`, `KProgressDlg`, `KQRCode`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KRecordCase`, `KReportEditAddMarkView`, `KReportEditUi`, `KReportPreviewDlg`, `KReportTempletEditDlg`, `KRigidEndoBtnGuide`, `KScopeInfoEdit`, `KServerInfoDlg`, `KSysDicom`, `KSysPrinter`, `KSystemSetDlg`, `KSystemTemperature`, `KTempletTreeWidgetItem`, `KThesaurusSaveUi`, `KThsaurusManageMentUi`, `KUnusedImgPlayBar`, `KUserSrvSet`, `KVersion`, `KVideoPlayerOSD`, `KViewHardEndo`, `ReportConfigDlg`
 
 - **Наши абстракции без класса-референса (25):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KRemoteSwitchConfig`, `KReportDataSource`, `KReportHtmlGenerator`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `x2000monitor`, `x2000video`, `yxyDES2`
 
