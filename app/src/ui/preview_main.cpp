@@ -10,6 +10,7 @@
 #include "ui/KUpdatePrepare.h"
 #include "ui/KImportRules.h"
 #include "ui/KUpdateAction.h"
+#include "ui/KFunTest.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9011,6 +9012,8 @@ int main(int argc, char **argv)
         w = new KImportRules;      // UI-порт: диалог импорта правил logcheck (реф. KImportRules)
     } else if (screen == "updateaction") {
         w = new KUpdateAction;     // UI-порт: диалог прошивки разделов (реф. KUpdateAction)
+    } else if (screen == "funtest") {
+        w = new KFunTest;          // UI-порт: диалог функционального теста (реф. KFunTest)
     } else if (screen == "desktop") {
         auto *desktop = new KUIDesktop;
         // Для проверки списка снимков: папка осмотра из ENDO_EXAM.
