@@ -38,6 +38,7 @@
 #include "ui/KPasswordEdit.h"
 #include "ui/KExamListSetupDlg.h"
 #include "ui/KServerInfoDlg.h"
+#include "ui/KColdlightAdjust.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9093,6 +9094,8 @@ int main(int argc, char **argv)
         w = new KExamListSetupDlg;     // UI-порт: настройка списка обследований (реф. KExamListSetupDlg)
     } else if (screen == "serverinfo") {
         w = new KServerInfoDlg;        // UI-порт: настройки сервера DNS/прокси (реф. KServerInfoDlg)
+    } else if (screen == "coldlightadj") {
+        w = new KColdlightAdjust;      // UI-порт: настройка источника света (реф. KColdlightAdjust)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
