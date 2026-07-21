@@ -40,6 +40,7 @@
 #include "ui/KServerInfoDlg.h"
 #include "ui/KColdlightAdjust.h"
 #include "ui/KScopeInfoEdit.h"
+#include "ui/KCameraInfoEdit.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9099,6 +9100,8 @@ int main(int argc, char **argv)
         w = new KColdlightAdjust;      // UI-порт: настройка источника света (реф. KColdlightAdjust)
     } else if (screen == "scopeinfo") {
         w = new KScopeInfoEdit;        // UI-порт: редактор инфо эндоскопа (реф. KScopeInfoEdit)
+    } else if (screen == "camerainfo") {
+        w = new KCameraInfoEdit;       // UI-порт: редактор инфо камеры (реф. KCameraInfoEdit)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
