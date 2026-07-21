@@ -1,0 +1,1028 @@
+// ==== setupUi @ 005ea010 ==== (GhidraScript)  
+
+/* Ui_KThsaurusManageMentUi::setupUi(QDialog*) */
+
+void __thiscall Ui_KThsaurusManageMentUi::setupUi(Ui_KThsaurusManageMentUi *this,QDialog *param_1)
+
+{
+  int iVar1;
+  int iVar2;
+  char cVar3;
+  bool bVar4;
+  uint uVar5;
+  QVBoxLayout *pQVar6;
+  QString *pQVar7;
+  QGridLayout *this_00;
+  QComboBox *pQVar8;
+  QLineEdit *this_01;
+  QTextEdit *pQVar9;
+  QHBoxLayout *pQVar10;
+  QTreeWidget *this_02;
+  QTreeWidgetItem *this_03;
+  KTextEdit *this_04;
+  long *plVar11;
+  long *plVar12;
+  QPushButton *pQVar13;
+  long lVar14;
+  code *pcVar15;
+  QArrayData *local_18;
+  QArrayData *local_10 [2];
+  
+  QObject::objectName();
+  iVar2 = *(int *)(local_10[0] + 4);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb6fc:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar1 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar1 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_005eb6fc;
+  }
+  if (iVar2 == 0) {
+    QString::fromUtf8_helper("KThsaurusManageMentUi",0x15);
+                    /* try { // try from 005ea084 to 005ea087 has its CatchHandler @ 005ebb6c */
+    QObject::setObjectName((QString *)param_1);
+    if (*(int *)local_10[0] == 0) {
+LAB_005eba48:
+      QArrayData::deallocate(local_10[0],2,8);
+    }
+    else if (*(int *)local_10[0] != -1) {
+      do {
+        iVar2 = *(int *)local_10[0];
+        cVar3 = '\x01';
+        bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+        if (bVar4) {
+          *(int *)local_10[0] = iVar2 + -1;
+          cVar3 = ExclusiveMonitorsStatus();
+        }
+      } while (cVar3 != '\0');
+      if (iVar2 + -1 == 0) goto LAB_005eba48;
+    }
+  }
+  local_10[0] = (QArrayData *)&DAT_30000000400;
+  QWidget::resize(param_1);
+  pQVar6 = (QVBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005ea0d8 to 005ea0db has its CatchHandler @ 005ebae8 */
+  QVBoxLayout::QVBoxLayout(pQVar6,(QWidget *)param_1);
+  *(QVBoxLayout **)this = pQVar6;
+  QString::fromUtf8_helper("verticalLayout",0xe);
+                    /* try { // try from 005ea0fc to 005ea0ff has its CatchHandler @ 005ebafc */
+  QObject::setObjectName((QString *)pQVar6);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eba30:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eba30;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)this,-1,0x29,-1);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea154 to 005ea157 has its CatchHandler @ 005ebab8 */
+  QWidget::QWidget((QWidget *)pQVar7,param_1,0);
+  *(QString **)(this + 8) = pQVar7;
+  QString::fromUtf8_helper("widget_glryedit",0xf);
+                    /* try { // try from 005ea178 to 005ea17b has its CatchHandler @ 005ebab0 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eba18:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eba18;
+  }
+  pQVar6 = (QVBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005ea1b4 to 005ea1b7 has its CatchHandler @ 005ebb04 */
+  QVBoxLayout::QVBoxLayout(pQVar6,*(QWidget **)(this + 8));
+  *(QVBoxLayout **)(this + 0x10) = pQVar6;
+  QBoxLayout::setSpacing((int)pQVar6);
+  pQVar7 = *(QString **)(this + 0x10);
+  QString::fromUtf8_helper("verticalLayout_4",0x10);
+                    /* try { // try from 005ea1e8 to 005ea1eb has its CatchHandler @ 005ebaf4 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eba00:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eba00;
+  }
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea228 to 005ea22b has its CatchHandler @ 005eba9c */
+  QWidget::QWidget((QWidget *)pQVar7,*(undefined8 *)(this + 8),0);
+  *(QString **)(this + 0x18) = pQVar7;
+  QString::fromUtf8_helper("widget_diseagroup",0x11);
+                    /* try { // try from 005ea24c to 005ea24f has its CatchHandler @ 005ebaa8 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb9e8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb9e8;
+  }
+  this_00 = (QGridLayout *)operator_new(0x20);
+                    /* try { // try from 005ea288 to 005ea28b has its CatchHandler @ 005ebb48 */
+  QGridLayout::QGridLayout(this_00,*(QWidget **)(this + 0x18));
+  *(QGridLayout **)(this + 0x20) = this_00;
+  QString::fromUtf8_helper("gridLayout",10);
+                    /* try { // try from 005ea2ac to 005ea2af has its CatchHandler @ 005ebb40 */
+  QObject::setObjectName((QString *)this_00);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb9d0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb9d0;
+  }
+  QGridLayout::setHorizontalSpacing((int)*(undefined8 *)(this + 0x20));
+  QGridLayout::setVerticalSpacing((int)*(undefined8 *)(this + 0x20));
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0x20),0x1e,0x13,0x2d);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea31c to 005ea31f has its CatchHandler @ 005ebb64 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x18),0);
+  *(QString **)(this + 0x28) = pQVar7;
+  QString::fromUtf8_helper("label_groupstar",0xf);
+                    /* try { // try from 005ea340 to 005ea343 has its CatchHandler @ 005ebb5c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb9b8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb9b8;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x28),(uVar5 >> 0x1d & 1) << 0x1d);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x28),6);
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x28),0,0,1,1,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea3d0 to 005ea3d3 has its CatchHandler @ 005ebb74 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x18),0);
+  *(QString **)(this + 0x30) = pQVar7;
+  QString::fromUtf8_helper("label_group",0xb);
+                    /* try { // try from 005ea3f4 to 005ea3f7 has its CatchHandler @ 005ebb0c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb9a0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb9a0;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x30),(uVar5 >> 0x1d & 1) << 0x1d);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x30),0x7c);
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x30),0,1,1,1,0);
+  pQVar8 = (QComboBox *)operator_new(0x30);
+                    /* try { // try from 005ea47c to 005ea47f has its CatchHandler @ 005ebb54 */
+  QComboBox::QComboBox(pQVar8,*(QWidget **)(this + 0x18));
+  *(QComboBox **)(this + 0x38) = pQVar8;
+  QString::fromUtf8_helper("cmb_group",9);
+                    /* try { // try from 005ea4a0 to 005ea4a3 has its CatchHandler @ 005ebb50 */
+  QObject::setObjectName((QString *)pQVar8);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb988:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb988;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x38),uVar5 & 0x20000000 | 0x70000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x38),0x30a);
+  QComboBox::setEditable(SUB81(*(undefined8 *)(this + 0x38),0));
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x38),0,2,1,1,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea534 to 005ea537 has its CatchHandler @ 005ebb80 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x18),0);
+  *(QString **)(this + 0x40) = pQVar7;
+  QString::fromUtf8_helper("label_titlestar",0xf);
+                    /* try { // try from 005ea558 to 005ea55b has its CatchHandler @ 005ebb7c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb970:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb970;
+  }
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x40),1,0,1,1,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea5b8 to 005ea5bb has its CatchHandler @ 005ebb98 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x18),0);
+  *(QString **)(this + 0x48) = pQVar7;
+  QString::fromUtf8_helper("label_title",0xb);
+                    /* try { // try from 005ea5dc to 005ea5df has its CatchHandler @ 005ebb94 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb958:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb958;
+  }
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x48),0x7c);
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x48),1,1,1,1,0);
+  this_01 = (QLineEdit *)operator_new(0x30);
+                    /* try { // try from 005ea648 to 005ea64b has its CatchHandler @ 005ebac4 */
+  QLineEdit::QLineEdit(this_01,*(QWidget **)(this + 0x18));
+  *(QLineEdit **)(this + 0x50) = this_01;
+  QString::fromUtf8_helper("edit_title",10);
+                    /* try { // try from 005ea66c to 005ea66f has its CatchHandler @ 005ebac0 */
+  QObject::setObjectName((QString *)this_01);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb940:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb940;
+  }
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x50),0x30a);
+  QGridLayout::addWidget(*(undefined8 *)(this + 0x20),*(undefined8 *)(this + 0x50),1,2,1,1,0);
+  QGridLayout::setColumnStretch((int)*(undefined8 *)(this + 0x20),0);
+  QGridLayout::setColumnStretch((int)*(undefined8 *)(this + 0x20),1);
+  QGridLayout::setColumnStretch((int)*(undefined8 *)(this + 0x20),2);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x10),*(undefined8 *)(this + 0x18),0,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea71c to 005ea71f has its CatchHandler @ 005ebb8c */
+  QWidget::QWidget((QWidget *)pQVar7,*(undefined8 *)(this + 8),0);
+  *(QString **)(this + 0x58) = pQVar7;
+  QString::fromUtf8_helper("widget_diag",0xb);
+                    /* try { // try from 005ea740 to 005ea743 has its CatchHandler @ 005ebb88 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb928:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb928;
+  }
+  pQVar6 = (QVBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005ea77c to 005ea77f has its CatchHandler @ 005ebb10 */
+  QVBoxLayout::QVBoxLayout(pQVar6,*(QWidget **)(this + 0x58));
+  *(QVBoxLayout **)(this + 0x60) = pQVar6;
+  QString::fromUtf8_helper("verticalLayout_3",0x10);
+                    /* try { // try from 005ea7a0 to 005ea7a3 has its CatchHandler @ 005ebc58 */
+  QObject::setObjectName((QString *)pQVar6);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb910:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb910;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0x60),0x1e,-1,0x26);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea7f8 to 005ea7fb has its CatchHandler @ 005ebc50 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x58),0);
+  *(QString **)(this + 0x68) = pQVar7;
+  QString::fromUtf8_helper("label_examfinding",0x11);
+                    /* try { // try from 005ea81c to 005ea81f has its CatchHandler @ 005ebc4c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb8f8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb8f8;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x68),(uVar5 >> 0x1d & 1) << 0x1d);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x68),0x61);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x60),*(undefined8 *)(this + 0x68),0,0);
+  pQVar9 = (QTextEdit *)operator_new(0x30);
+                    /* try { // try from 005ea894 to 005ea897 has its CatchHandler @ 005ebae0 */
+  QTextEdit::QTextEdit(pQVar9,*(QWidget **)(this + 0x58));
+  *(QTextEdit **)(this + 0x70) = pQVar9;
+  QString::fromUtf8_helper("edit_examfinding",0x10);
+                    /* try { // try from 005ea8b8 to 005ea8bb has its CatchHandler @ 005ebadc */
+  QObject::setObjectName((QString *)pQVar9);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb8e0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb8e0;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x70),(uVar5 >> 0x1d & 1) << 0x1d | 0x700000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x70),0x391);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x60),*(undefined8 *)(this + 0x70),0,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005ea93c to 005ea93f has its CatchHandler @ 005ebc48 */
+  QLabel::QLabel((QLabel *)pQVar7,*(undefined8 *)(this + 0x58),0);
+  *(QString **)(this + 0x78) = pQVar7;
+  QString::fromUtf8_helper("label_diagresult",0x10);
+                    /* try { // try from 005ea960 to 005ea963 has its CatchHandler @ 005ebc60 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb8c8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb8c8;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x78),(uVar5 >> 0x1d & 1) << 0x1d);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x78),0x61);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x60),*(undefined8 *)(this + 0x78),0,0);
+  pQVar9 = (QTextEdit *)operator_new(0x30);
+                    /* try { // try from 005ea9dc to 005ea9df has its CatchHandler @ 005ebba4 */
+  QTextEdit::QTextEdit(pQVar9,*(QWidget **)(this + 0x58));
+  *(QTextEdit **)(this + 0x80) = pQVar9;
+  QString::fromUtf8_helper("edit_diagresult",0xf);
+                    /* try { // try from 005eaa00 to 005eaa03 has its CatchHandler @ 005ebba0 */
+  QObject::setObjectName((QString *)pQVar9);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb8b0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb8b0;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x80),(uVar5 >> 0x1d & 1) << 0x1d | 0x700000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x80),0x391);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x60),*(undefined8 *)(this + 0x80),0,0);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x10),*(undefined8 *)(this + 0x58),0,0);
+  QBoxLayout::setStretch((int)*(undefined8 *)(this + 0x10),1);
+  QBoxLayout::addWidget(*(undefined8 *)this,*(undefined8 *)(this + 8),0,0);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005eaab4 to 005eaab7 has its CatchHandler @ 005ebc3c */
+  QWidget::QWidget((QWidget *)pQVar7,param_1,0);
+  *(QString **)(this + 0x88) = pQVar7;
+  QString::fromUtf8_helper("widget_glry",0xb);
+                    /* try { // try from 005eaad8 to 005eaadb has its CatchHandler @ 005ebc38 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb898:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb898;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x88),(uVar5 >> 0x1d & 1) << 0x1d | 0x750000);
+  pQVar10 = (QHBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005eab34 to 005eab37 has its CatchHandler @ 005ebbb0 */
+  QHBoxLayout::QHBoxLayout(pQVar10,*(QWidget **)(this + 0x88));
+  *(QHBoxLayout **)(this + 0x90) = pQVar10;
+  QBoxLayout::setSpacing((int)pQVar10);
+  pQVar7 = *(QString **)(this + 0x90);
+  QString::fromUtf8_helper("horizontalLayout_3",0x12);
+                    /* try { // try from 005eab68 to 005eab6b has its CatchHandler @ 005ebbac */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb880:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb880;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0x90),0x1c,-1,0x1c);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005eabc0 to 005eabc3 has its CatchHandler @ 005ebc30 */
+  QWidget::QWidget((QWidget *)pQVar7,*(undefined8 *)(this + 0x88),0);
+  *(QString **)(this + 0x98) = pQVar7;
+  QString::fromUtf8_helper("widget_tree",0xb);
+                    /* try { // try from 005eabe4 to 005eabe7 has its CatchHandler @ 005ebc2c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb868:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb868;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x98),(uVar5 >> 0x1d & 1) << 0x1d | 0x700000);
+  pQVar10 = (QHBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005eac3c to 005eac3f has its CatchHandler @ 005ebbec */
+  QHBoxLayout::QHBoxLayout(pQVar10,*(QWidget **)(this + 0x98));
+  *(QHBoxLayout **)(this + 0xa0) = pQVar10;
+  QBoxLayout::setSpacing((int)pQVar10);
+  pQVar7 = *(QString **)(this + 0xa0);
+  QString::fromUtf8_helper("horizontalLayout_2",0x12);
+                    /* try { // try from 005eac70 to 005eac73 has its CatchHandler @ 005ebc08 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb850:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb850;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0xa0),-1,0,-1);
+  pQVar6 = (QVBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005eacc0 to 005eacc3 has its CatchHandler @ 005ebc14 */
+  QVBoxLayout::QVBoxLayout(pQVar6);
+  *(QVBoxLayout **)(this + 0xa8) = pQVar6;
+  QBoxLayout::setSpacing((int)pQVar6);
+  pQVar7 = *(QString **)(this + 0xa8);
+  QString::fromUtf8_helper("verticalLayout_2",0x10);
+                    /* try { // try from 005eacf4 to 005eacf7 has its CatchHandler @ 005ebbfc */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb838:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb838;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0xa8),0xf,0x13,0xf);
+  pQVar8 = (QComboBox *)operator_new(0x30);
+                    /* try { // try from 005ead48 to 005ead4b has its CatchHandler @ 005ebb38 */
+  QComboBox::QComboBox(pQVar8,*(QWidget **)(this + 0x98));
+  *(QComboBox **)(this + 0xb0) = pQVar8;
+  QString::fromUtf8_helper("cmb_device",10);
+                    /* try { // try from 005ead6c to 005ead6f has its CatchHandler @ 005ebc44 */
+  QObject::setObjectName((QString *)pQVar8);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb820:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb820;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0xb0),(uVar5 >> 0x1d & 1) << 0x1d | 0x50000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0xb0),0x13d);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xa8),*(undefined8 *)(this + 0xb0),0,0);
+  this_02 = (QTreeWidget *)operator_new(0x30);
+                    /* try { // try from 005eade8 to 005eadeb has its CatchHandler @ 005ebbe4 */
+  QTreeWidget::QTreeWidget(this_02,*(QWidget **)(this + 0x98));
+  *(QTreeWidget **)(this + 0xb8) = this_02;
+  this_03 = (QTreeWidgetItem *)operator_new(0x40);
+                    /* try { // try from 005eae00 to 005eae03 has its CatchHandler @ 005ebbdc */
+  QTreeWidgetItem::QTreeWidgetItem(this_03,0);
+  QString::fromUtf8_helper("1",1);
+  pcVar15 = *(code **)(*(long *)this_03 + 0x20);
+                    /* try { // try from 005eae2c to 005eae2f has its CatchHandler @ 005ebbd4 */
+  QVariant::QVariant((QVariant *)local_10,(QString *)&local_18);
+                    /* try { // try from 005eae40 to 005eae43 has its CatchHandler @ 005ebbb8 */
+  (*pcVar15)(this_03,0,0,(QVariant *)local_10);
+  QVariant::~QVariant((QVariant *)local_10);
+  if (*(int *)local_18 == 0) {
+LAB_005eb808:
+    QArrayData::deallocate(local_18,2,8);
+  }
+  else if (*(int *)local_18 != -1) {
+    do {
+      iVar2 = *(int *)local_18;
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_18,0x10);
+      if (bVar4) {
+        *(int *)local_18 = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb808;
+  }
+  QTreeWidget::setHeaderItem(*(QTreeWidgetItem **)(this + 0xb8));
+  pQVar7 = *(QString **)(this + 0xb8);
+  QString::fromUtf8_helper("tree_model",10);
+                    /* try { // try from 005eaea0 to 005eaea3 has its CatchHandler @ 005ebbf8 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb7f0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb7f0;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0xb8),(uVar5 >> 0x1d & 1) << 0x1d | 0x500000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0xb8),0x13d);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xa8),*(undefined8 *)(this + 0xb8),0,0);
+  QBoxLayout::addLayout(*(QLayout **)(this + 0xa0),(int)*(undefined8 *)(this + 0xa8));
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x90),*(undefined8 *)(this + 0x98),0,0);
+  this_04 = (KTextEdit *)operator_new(0x40);
+                    /* try { // try from 005eaf3c to 005eaf3f has its CatchHandler @ 005ebc00 */
+  KTextEdit::KTextEdit(this_04,*(QWidget **)(this + 0x88));
+  *(KTextEdit **)(this + 0xc0) = this_04;
+  QString::fromUtf8_helper("edit_content",0xc);
+                    /* try { // try from 005eaf60 to 005eaf63 has its CatchHandler @ 005ebbf4 */
+  QObject::setObjectName((QString *)this_04);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb7d8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb7d8;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0xc0),(uVar5 >> 0x1d & 1) << 0x1d | 0x550000);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0x90),*(undefined8 *)(this + 0xc0),0,0);
+  QBoxLayout::setStretch((int)*(undefined8 *)(this + 0x90),0);
+  QBoxLayout::setStretch((int)*(undefined8 *)(this + 0x90),1);
+  QBoxLayout::addWidget(*(undefined8 *)this,*(undefined8 *)(this + 0x88),0,0);
+  plVar11 = (long *)operator_new(0x28);
+  plVar12 = *(long **)this;
+  plVar11[1] = 0x700000000;
+  plVar11[2] = 0x1000000000007;
+  lVar14 = *plVar12;
+  *plVar11 = (long)(PTR_vtable_00b442f8 + 0x10);
+  plVar11[3] = 0;
+  pcVar15 = *(code **)(lVar14 + 0x70);
+  plVar11[4] = -1;
+  *(long **)(this + 200) = plVar11;
+  (*pcVar15)(plVar12,plVar11);
+  pQVar7 = (QString *)operator_new(0x30);
+                    /* try { // try from 005eb058 to 005eb05b has its CatchHandler @ 005ebb24 */
+  QLabel::QLabel((QLabel *)pQVar7,param_1,0);
+  *(QString **)(this + 0xd0) = pQVar7;
+  QString::fromUtf8_helper("label_input_tip",0xf);
+                    /* try { // try from 005eb07c to 005eb07f has its CatchHandler @ 005ebb30 */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb7c0:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb7c0;
+  }
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0xd0),0x192);
+  QLabel::setAlignment(*(undefined8 *)(this + 0xd0),0x84);
+  QBoxLayout::addWidget(*(undefined8 *)this,*(undefined8 *)(this + 0xd0),0,0);
+  plVar11 = (long *)operator_new(0x28);
+  plVar12 = *(long **)this;
+  plVar11[1] = 0x1400000000;
+  plVar11[2] = 0x1000000000010;
+  lVar14 = *plVar12;
+  *plVar11 = (long)(PTR_vtable_00b442f8 + 0x10);
+  plVar11[3] = 0;
+  pcVar15 = *(code **)(lVar14 + 0x70);
+  plVar11[4] = -1;
+  *(long **)(this + 0xd8) = plVar11;
+  (*pcVar15)(plVar12,plVar11);
+  pQVar10 = (QHBoxLayout *)operator_new(0x20);
+                    /* try { // try from 005eb130 to 005eb133 has its CatchHandler @ 005ebc0c */
+  QHBoxLayout::QHBoxLayout(pQVar10);
+  *(QHBoxLayout **)(this + 0xe0) = pQVar10;
+  QBoxLayout::setSpacing((int)pQVar10);
+  pQVar7 = *(QString **)(this + 0xe0);
+  QString::fromUtf8_helper("horizontalLayout",0x10);
+                    /* try { // try from 005eb164 to 005eb167 has its CatchHandler @ 005ebb2c */
+  QObject::setObjectName(pQVar7);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb7a8:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb7a8;
+  }
+  QLayout::setContentsMargins((int)*(undefined8 *)(this + 0xe0),0,0,0);
+  plVar11 = (long *)operator_new(0x28);
+  plVar12 = *(long **)(this + 0xe0);
+  plVar11[1] = 0x2800000000;
+  plVar11[2] = 0x17000000000014;
+  lVar14 = *plVar12;
+  *plVar11 = (long)(PTR_vtable_00b442f8 + 0x10);
+  plVar11[3] = 0;
+  pcVar15 = *(code **)(lVar14 + 0x70);
+  plVar11[4] = -1;
+  *(long **)(this + 0xe8) = plVar11;
+  (*pcVar15)(plVar12,plVar11);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb204 to 005eb207 has its CatchHandler @ 005eba6c */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0xf0) = pQVar13;
+  QString::fromUtf8_helper("btn_add",7);
+                    /* try { // try from 005eb228 to 005eb22b has its CatchHandler @ 005eba58 */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb790:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb790;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0xf0),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0xf0),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0xf0),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0xf0),0,0);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb2b8 to 005eb2bb has its CatchHandler @ 005ebb20 */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0xf8) = pQVar13;
+  QString::fromUtf8_helper("btn_modify",10);
+                    /* try { // try from 005eb2dc to 005eb2df has its CatchHandler @ 005ebb34 */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb778:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb778;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0xf8),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0xf8),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0xf8),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0xf8),0,0);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb368 to 005eb36b has its CatchHandler @ 005ebc5c */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0x100) = pQVar13;
+  QString::fromUtf8_helper("btn_clone",9);
+                    /* try { // try from 005eb38c to 005eb38f has its CatchHandler @ 005ebb1c */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb760:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb760;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x100),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x100),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0x100),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0x100),0,0);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb418 to 005eb41b has its CatchHandler @ 005eba84 */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0x108) = pQVar13;
+  QString::fromUtf8_helper("btn_delete",10);
+                    /* try { // try from 005eb43c to 005eb43f has its CatchHandler @ 005ebb18 */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb748:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb748;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x108),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x108),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0x108),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0x108),0,0);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb4c8 to 005eb4cb has its CatchHandler @ 005ebc20 */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0x110) = pQVar13;
+  QString::fromUtf8_helper("btn_ok",6);
+                    /* try { // try from 005eb4ec to 005eb4ef has its CatchHandler @ 005ebc28 */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] == 0) {
+LAB_005eb730:
+    QArrayData::deallocate(local_10[0],2,8);
+  }
+  else if (*(int *)local_10[0] != -1) {
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 == 0) goto LAB_005eb730;
+  }
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x110),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x110),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0x110),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0x110),0,0);
+  pQVar13 = (QPushButton *)operator_new(0x30);
+                    /* try { // try from 005eb578 to 005eb57b has its CatchHandler @ 005ebc1c */
+  QPushButton::QPushButton(pQVar13,(QWidget *)param_1);
+  *(QPushButton **)(this + 0x118) = pQVar13;
+  QString::fromUtf8_helper("btn_cancel",10);
+                    /* try { // try from 005eb59c to 005eb59f has its CatchHandler @ 005ebc24 */
+  QObject::setObjectName((QString *)pQVar13);
+  if (*(int *)local_10[0] != 0) {
+    if (*(int *)local_10[0] == -1) goto LAB_005eb5c8;
+    do {
+      iVar2 = *(int *)local_10[0];
+      cVar3 = '\x01';
+      bVar4 = (bool)ExclusiveMonitorPass(local_10[0],0x10);
+      if (bVar4) {
+        *(int *)local_10[0] = iVar2 + -1;
+        cVar3 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar3 != '\0');
+    if (iVar2 + -1 != 0) goto LAB_005eb5c8;
+  }
+  QArrayData::deallocate(local_10[0],2,8);
+LAB_005eb5c8:
+  uVar5 = QWidget::sizePolicy();
+  QWidget::setSizePolicy(*(undefined8 *)(this + 0x118),(uVar5 >> 0x1d & 1) << 0x1d | 0x770000);
+  QWidget::setMinimumSize((int)*(undefined8 *)(this + 0x118),0x85);
+  QWidget::setMaximumSize((int)*(undefined8 *)(this + 0x118),0x85);
+  QBoxLayout::addWidget(*(undefined8 *)(this + 0xe0),*(undefined8 *)(this + 0x118),0,0);
+  plVar11 = (long *)operator_new(0x28);
+  plVar12 = *(long **)(this + 0xe0);
+  plVar11[1] = 0x2800000000;
+  plVar11[2] = 0x17000000000014;
+  lVar14 = *plVar12;
+  plVar11[3] = 0;
+  pcVar15 = *(code **)(lVar14 + 0x70);
+  *plVar11 = (long)(PTR_vtable_00b442f8 + 0x10);
+  plVar11[4] = -1;
+  *(long **)(this + 0x120) = plVar11;
+  (*pcVar15)(plVar12,plVar11);
+  QBoxLayout::addLayout(*(QLayout **)this,(int)*(undefined8 *)(this + 0xe0));
+  QBoxLayout::setStretch((int)*(undefined8 *)this,0);
+  QBoxLayout::setStretch((int)*(undefined8 *)this,1);
+  QBoxLayout::setStretch((int)*(undefined8 *)this,2);
+  QBoxLayout::setStretch((int)*(undefined8 *)this,3);
+  QBoxLayout::setStretch((int)*(undefined8 *)this,4);
+  QBoxLayout::setStretch((int)*(undefined8 *)this,5);
+  retranslateUi(this,param_1);
+  QMetaObject::connectSlotsByName((QObject *)param_1);
+  return;
+}
+
+ (GhidraScript)  
+INFO  REPORT: Save succeeded for processed file: /X2000 (HeadlessAnalyzer)  

@@ -28,6 +28,7 @@
 #include "ui/KPatientListSearch.h"
 #include "ui/KReportEditUi.h"
 #include "ui/KThesaurusSaveUi.h"
+#include "ui/KThsaurusManageMentUi.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9063,6 +9064,8 @@ int main(int argc, char **argv)
         w = new KReportEditUi;         // UI-порт: редактор отчёта обследования (реф. KReportEditUi)
     } else if (screen == "thesaurussave") {
         w = new KThesaurusSaveUi;      // UI-порт: сохранение фразы в глоссарий (реф. KThesaurusSaveUi)
+    } else if (screen == "thesaurusmgr") {
+        w = new KThsaurusManageMentUi; // UI-порт: управление глоссарием (реф. KThsaurusManageMentUi)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
