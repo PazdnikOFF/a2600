@@ -84,6 +84,7 @@
 #include "ui/KTableView.h"
 #include "ui/KGridWidget.h"
 #include "ui/KMessageFrame.h"
+#include "ui/KExamListOptUi.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9539,6 +9540,9 @@ int main(int argc, char **argv)
         mf->AddShowMessage(QStringLiteral("Recording started\nGain 65%"), 100);  // многострочное → 2 строки
         mf->AddShowMessage(QStringLiteral("Probe connected"), 100);   // дедуп: старое удалится, встанет в конец
         w = mf;
+    } else if (screen == "examlistopt") {
+        // Встраиваемая панель действий списка осмотров (6 кнопок, фикс 270×385).
+        w = new KExamListOptUi;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
