@@ -1,4 +1,5 @@
 #include "KTableView.h"
+#include "KCheckBoxHeaderView.h"
 #include "sys/KEnvConfig.h"
 
 #include <QPainter>
@@ -192,6 +193,22 @@ void KTableView::InitTableView(const QVector<KHeaderProperty> &headers, const QS
         m_delegate->SetDelegateView(this);
         setItemDelegate(m_delegate);
         m_defaultSelCol = defaultSelCol;
+
+        // Заголовок с чекбоксом «выбрать всё» в колонке 0 (реф. KCheckBoxHeaderView).
+        KCheckBoxHeaderView *hdr = new KCheckBoxHeaderView(0, Qt::Horizontal, this);
+        setHorizontalHeader(hdr);
+        // Заголовок → строки: чекнуть/снять все строки страницы в колонке 0.
+        connect(hdr, &KCheckBoxHeaderView::SigCheckStausChange, this, [this](int c) {
+            if (!m_model) return;
+            for (int r = 0; r < m_model->rowCount(); ++r)
+                m_model->setData(m_model->index(r, 0),
+                                 c ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+        });
+        // Строки → заголовок: держать индикатор в согласии (any→partial, none→unchecked).
+        connect(m_model, &KTableModel::SigHeaderCheckBoxStateChange, this, [this, hdr]() {
+            hdr->SetCheckState(m_model->GetCheckedItemNumber() > 0
+                                   ? Qt::PartiallyChecked : Qt::Unchecked);
+        });
     }
     SetTableColumnWidth(headers);
     SetTableColumnHidden(headers);
