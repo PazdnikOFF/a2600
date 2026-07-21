@@ -1,0 +1,66 @@
+// ==== AllConnect @ 0080bdc8 ==== (GhidraScript)  
+
+/* KUserSrvSet::AllConnect() */
+
+void __thiscall KUserSrvSet::AllConnect(KUserSrvSet *this)
+
+{
+  undefined8 uVar1;
+  Connection aCStack_8 [8];
+  
+  uVar1 = GetSystemStatus();
+  QObject::connect(aCStack_8,uVar1,"2SystemStatusChange(int,int)",this,
+                   "1SystemStatusChangeAct(int,int)",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  uVar1 = GetEndoScope();
+  QObject::connect(aCStack_8,uVar1,"2ShowEndoInfoCIDRecRet(int)",this,"1RecEndoInfoRec(int)",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  uVar1 = GetEndoScope();
+  QObject::connect(aCStack_8,uVar1,"2ShowEndoInfoEepromRecRet(int, int)",this,
+                   "1RecEndoInfoRec(int, int)",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  uVar1 = GetCamera();
+  QObject::connect(aCStack_8,uVar1,"2ShowCameraInfoCIDRecRet(int)",this,"1RecScopeRestoreRsp(int)",0
+                  );
+  QMetaObject::Connection::~Connection(aCStack_8);
+  uVar1 = GetEndoScope();
+  QObject::connect(aCStack_8,uVar1,"2EndoScopeStatusChanged(int)",this,"1UpdateEndoInfo()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  uVar1 = GetCamera();
+  QObject::connect(aCStack_8,uVar1,"2CameraStatusChanged(int)",this,"1UpdateEndoInfo()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x20),"2clicked()",this,
+                   "1ClickProcessorCtl()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x28),"2clicked()",this,
+                   "1ClickEndoCtl()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x60),"2clicked()",this,
+                   "1ClickBackupLog()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x68),"2clicked()",this,
+                   "1ClickViewLog()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x50),"2clicked()",this,
+                   "1ClickRecovery()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x48),"2clicked()",this,
+                   "1ClickUpgrade()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0xa0),"2clicked()",this,
+                   "1ClickBtnLightConfig()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x98),"2clicked()",this,
+                   "1ClickBtnVideoCal()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(*(long *)(this + 0x50) + 0x150),"2clicked()",this,
+                   "1ClickExit()",0);
+  QMetaObject::Connection::~Connection(aCStack_8);
+  QObject::connect(aCStack_8,*(undefined8 *)(this + 0x60),"2timeout()",this,"1TimerTaskRecovery()",0
+                  );
+  QMetaObject::Connection::~Connection(aCStack_8);
+  return;
+}
+
+ (GhidraScript)  
+INFO  REPORT: Save succeeded for processed file: /X2000 (HeadlessAnalyzer)  

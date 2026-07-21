@@ -1,0 +1,73 @@
+// ==== KUserSrvSet @ 0080c0b8 ==== (GhidraScript)  
+
+/* KUserSrvSet::KUserSrvSet(QWidget*) */
+
+void __thiscall KUserSrvSet::KUserSrvSet(KUserSrvSet *this,QWidget *param_1)
+
+{
+  undefined *puVar1;
+  char cVar2;
+  bool bVar3;
+  int iVar4;
+  Ui_KUserSrvSet *this_00;
+  undefined8 uVar5;
+  QTimer *this_01;
+  KAccount *this_02;
+  QArrayData *local_8;
+  
+  KDialog::KDialog((KDialog *)this,param_1,false);
+  puVar1 = PTR_vtable_00b433f8 + 0x1f0;
+  *(undefined **)this = PTR_vtable_00b433f8 + 0x10;
+  *(undefined **)(this + 0x10) = puVar1;
+                    /* try { // try from 0080c0f0 to 0080c12f has its CatchHandler @ 0080c20c */
+  this_00 = (Ui_KUserSrvSet *)operator_new(0x160);
+  *(Ui_KUserSrvSet **)(this + 0x50) = this_00;
+  Ui_KUserSrvSet::setupUi(this_00,(QDialog *)this);
+  KDialog::SetKStyle((KDialog *)this,2);
+  QMetaObject::tr(PTR_PTR_00b43a00,"TR_Svce",0);
+                    /* try { // try from 0080c138 to 0080c13b has its CatchHandler @ 0080c234 */
+  KDialog::setWindowTitle((KDialog *)this,&local_8);
+  if (*(int *)local_8 != 0) {
+    if (*(int *)local_8 == -1) goto LAB_0080c164;
+    do {
+      iVar4 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar4 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar4 + -1 != 0) goto LAB_0080c164;
+  }
+  QArrayData::deallocate(local_8,2,8);
+LAB_0080c164:
+                    /* try { // try from 0080c168 to 0080c16f has its CatchHandler @ 0080c20c */
+  InitWidget(this);
+  uVar5 = GetKUiMsgProxy();
+  *(undefined8 *)(this + 0x58) = uVar5;
+  *(undefined4 *)(this + 0x68) = 0;
+  puVar1 = PTR_nothrow_00b43140;
+  this[0x6c] = (KUserSrvSet)0x0;
+  *(undefined4 *)(this + 0x70) = 0;
+  *(undefined2 *)(this + 0x74) = 0;
+  this_01 = (QTimer *)operator_new(0x20,(nothrow_t *)puVar1);
+  if (this_01 == (QTimer *)0x0) {
+    *(undefined8 *)(this + 0x60) = 0;
+    return;
+  }
+                    /* try { // try from 0080c1a0 to 0080c1a3 has its CatchHandler @ 0080c214 */
+  QTimer::QTimer(this_01,(QObject *)0x0);
+  *(QTimer **)(this + 0x60) = this_01;
+                    /* try { // try from 0080c1a8 to 0080c1df has its CatchHandler @ 0080c20c */
+  this_02 = (KAccount *)GetKAccount();
+  iVar4 = KAccount::CurrentRole(this_02);
+  if (iVar4 < 3) {
+    QWidget::setEnabled(SUB81(*(undefined8 *)(*(long *)(this + 0x50) + 0xa0),0));
+  }
+  AllConnect(this);
+  return;
+}
+
+ (GhidraScript)  
+INFO  REPORT: Save succeeded for processed file: /X2000 (HeadlessAnalyzer)  

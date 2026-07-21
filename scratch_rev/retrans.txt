@@ -1,0 +1,514 @@
+// ==== retranslateUi @ 0080f650 ==== (GhidraScript)  
+
+/* Ui_KUserSrvSet::retranslateUi(QDialog*) */
+
+void __thiscall Ui_KUserSrvSet::retranslateUi(Ui_KUserSrvSet *this,QDialog *param_1)
+
+{
+  int iVar1;
+  char cVar2;
+  bool bVar3;
+  undefined *puVar4;
+  QString *pQVar5;
+  QArrayData *local_8;
+  
+  QCoreApplication::translate("KUserSrvSet","TR_Dlg",(char *)0x0,-1);
+                    /* try { // try from 0080f694 to 0080f697 has its CatchHandler @ 008100f8 */
+  QWidget::setWindowTitle((QString *)param_1);
+  if (*(int *)local_8 == 0) {
+LAB_0080fe48:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fe48;
+  }
+  pQVar5 = *(QString **)(this + 8);
+  QCoreApplication::translate("KUserSrvSet","TR_Fnctn",(char *)0x0,-1);
+                    /* try { // try from 0080f6e8 to 0080f6eb has its CatchHandler @ 0081010c */
+  QGroupBox::setTitle(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810090:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810090;
+  }
+  pQVar5 = *(QString **)(this + 0x20);
+  QCoreApplication::translate("KUserSrvSet","TR_Prcssr",(char *)0x0,-1);
+                    /* try { // try from 0080f73c to 0080f73f has its CatchHandler @ 008100e4 */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810078:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810078;
+  }
+  pQVar5 = *(QString **)(this + 0x28);
+  QCoreApplication::translate("KUserSrvSet","TR_Escpe",(char *)0x0,-1);
+                    /* try { // try from 0080f790 to 0080f793 has its CatchHandler @ 008100dc */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810060:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810060;
+  }
+  pQVar5 = *(QString **)(this + 0x48);
+  QCoreApplication::translate("KUserSrvSet","TR_Ugde",(char *)0x0,-1);
+                    /* try { // try from 0080f7e4 to 0080f7e7 has its CatchHandler @ 008100c4 */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810048:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810048;
+  }
+  pQVar5 = *(QString **)(this + 0x50);
+  QCoreApplication::translate("KUserSrvSet","TR_Rcvry",(char *)0x0,-1);
+                    /* try { // try from 0080f838 to 0080f83b has its CatchHandler @ 0081013c */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810030:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810030;
+  }
+  pQVar5 = *(QString **)(this + 0x60);
+  QCoreApplication::translate("KUserSrvSet","TR_Bkp",(char *)0x0,-1);
+                    /* try { // try from 0080f88c to 0080f88f has its CatchHandler @ 008100bc */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810018:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810018;
+  }
+  pQVar5 = *(QString **)(this + 0x68);
+  QCoreApplication::translate("KUserSrvSet","TR_Vw",(char *)0x0,-1);
+                    /* try { // try from 0080f8e0 to 0080f8e3 has its CatchHandler @ 008100cc */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_00810000:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_00810000;
+  }
+  pQVar5 = *(QString **)(this + 0x78);
+  QCoreApplication::translate("KUserSrvSet","TR_Log:",(char *)0x0,-1);
+                    /* try { // try from 0080f934 to 0080f937 has its CatchHandler @ 008100f0 */
+  QLabel::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ffe8:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ffe8;
+  }
+  pQVar5 = *(QString **)(this + 0x80);
+  QCoreApplication::translate("KUserSrvSet","TR_Otr:",(char *)0x0,-1);
+                    /* try { // try from 0080f988 to 0080f98b has its CatchHandler @ 00810130 */
+  QLabel::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ffd0:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ffd0;
+  }
+  pQVar5 = *(QString **)(this + 0x88);
+  QCoreApplication::translate("KUserSrvSet","TR_MMControl:",(char *)0x0,-1);
+                    /* try { // try from 0080f9dc to 0080f9df has its CatchHandler @ 00810128 */
+  QLabel::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ffb8:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ffb8;
+  }
+  pQVar5 = *(QString **)(this + 0x98);
+  QCoreApplication::translate("KUserSrvSet","TR_VCal",(char *)0x0,-1);
+                    /* try { // try from 0080fa30 to 0080fa33 has its CatchHandler @ 008100d4 */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ffa0:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ffa0;
+  }
+  pQVar5 = *(QString **)(this + 0xa0);
+  QCoreApplication::translate("KUserSrvSet","TR_LSConfiguration",(char *)0x0,-1);
+                    /* try { // try from 0080fa84 to 0080fa87 has its CatchHandler @ 00810144 */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ff88:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff88;
+  }
+  pQVar5 = *(QString **)(this + 0xa8);
+  QCoreApplication::translate("KUserSrvSet","TR_EInformaion",(char *)0x0,-1);
+                    /* try { // try from 0080fad8 to 0080fadb has its CatchHandler @ 00810120 */
+  QGroupBox::setTitle(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ff70:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff70;
+  }
+  pQVar5 = *(QString **)(this + 0xc0);
+  QCoreApplication::translate("KUserSrvSet","TR_FOUse:",(char *)0x0,-1);
+                    /* try { // try from 0080fb2c to 0080fb2f has its CatchHandler @ 008100b4 */
+  QLabel::setText(pQVar5);
+  if (*(int *)local_8 == 0) {
+LAB_0080ff58:
+    QArrayData::deallocate(local_8,2,8);
+  }
+  else if (*(int *)local_8 != -1) {
+    do {
+      iVar1 = *(int *)local_8;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(local_8,0x10);
+      if (bVar3) {
+        *(int *)local_8 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff58;
+  }
+  puVar4 = PTR_shared_null_00b45408;
+                    /* try { // try from 0080fb6c to 0080fb6f has its CatchHandler @ 0081014c */
+  QLabel::setText(*(QString **)(this + 200));
+  if (*(int *)puVar4 == 0) {
+LAB_0080ff40:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff40;
+  }
+  pQVar5 = *(QString **)(this + 0xd8);
+  QCoreApplication::translate("KUserSrvSet","TR_ESN:",(char *)0x0,-1);
+                    /* try { // try from 0080fbc4 to 0080fbc7 has its CatchHandler @ 00810138 */
+  QLabel::setText(pQVar5);
+  if (*(int *)puVar4 == 0) {
+LAB_0080ff28:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff28;
+  }
+  puVar4 = PTR_shared_null_00b45408;
+                    /* try { // try from 0080fc00 to 0080fc03 has its CatchHandler @ 00810118 */
+  QLabel::setText(*(QString **)(this + 0xe0));
+  if (*(int *)puVar4 == 0) {
+LAB_0080ff10:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080ff10;
+  }
+  pQVar5 = *(QString **)(this + 0xf0);
+  QCoreApplication::translate("KUserSrvSet","TR_IPSN:",(char *)0x0,-1);
+                    /* try { // try from 0080fc54 to 0080fc57 has its CatchHandler @ 00810114 */
+  QLabel::setText(pQVar5);
+  if (*(int *)puVar4 == 0) {
+LAB_0080fef8:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fef8;
+  }
+  puVar4 = PTR_shared_null_00b45408;
+                    /* try { // try from 0080fc90 to 0080fc93 has its CatchHandler @ 0081011c */
+  QLabel::setText(*(QString **)(this + 0xf8));
+  if (*(int *)puVar4 == 0) {
+LAB_0080fee0:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fee0;
+  }
+  pQVar5 = *(QString **)(this + 0x108);
+  QCoreApplication::translate("KUserSrvSet","TR_AWTOCMLamp:",(char *)0x0,-1);
+                    /* try { // try from 0080fce4 to 0080fce7 has its CatchHandler @ 00810100 */
+  QLabel::setText(pQVar5);
+  if (*(int *)puVar4 == 0) {
+LAB_0080fec8:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fec8;
+  }
+  puVar4 = PTR_shared_null_00b45408;
+                    /* try { // try from 0080fd20 to 0080fd23 has its CatchHandler @ 008100ec */
+  QLabel::setText(*(QString **)(this + 0x110));
+  if (*(int *)puVar4 == 0) {
+LAB_0080feb0:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080feb0;
+  }
+  pQVar5 = *(QString **)(this + 0x120);
+  QCoreApplication::translate("KUserSrvSet","TR_AWTOAMLamp:",(char *)0x0,-1);
+                    /* try { // try from 0080fd74 to 0080fd77 has its CatchHandler @ 00810108 */
+  QLabel::setText(pQVar5);
+  if (*(int *)puVar4 == 0) {
+LAB_0080fe98:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fe98;
+  }
+  puVar4 = PTR_shared_null_00b45408;
+                    /* try { // try from 0080fdb0 to 0080fdb3 has its CatchHandler @ 00810104 */
+  QLabel::setText(*(QString **)(this + 0x128));
+  if (*(int *)puVar4 == 0) {
+LAB_0080fe80:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+  }
+  else if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fe80;
+  }
+  pQVar5 = *(QString **)(this + 0x150);
+  QCoreApplication::translate("KUserSrvSet","TR_Ext",(char *)0x0,-1);
+                    /* try { // try from 0080fe04 to 0080fe07 has its CatchHandler @ 008100a0 */
+  QAbstractButton::setText(pQVar5);
+  if (*(int *)puVar4 == 0) {
+LAB_0080fe5c:
+    QArrayData::deallocate((QArrayData *)puVar4,2,8);
+    return;
+  }
+  if (*(int *)puVar4 != -1) {
+    do {
+      iVar1 = *(int *)puVar4;
+      cVar2 = '\x01';
+      bVar3 = (bool)ExclusiveMonitorPass(puVar4,0x10);
+      if (bVar3) {
+        *(int *)puVar4 = iVar1 + -1;
+        cVar2 = ExclusiveMonitorsStatus();
+      }
+    } while (cVar2 != '\0');
+    if (iVar1 + -1 == 0) goto LAB_0080fe5c;
+  }
+  return;
+}
+
+ (GhidraScript)  
+INFO  REPORT: Save succeeded for processed file: /X2000 (HeadlessAnalyzer)  

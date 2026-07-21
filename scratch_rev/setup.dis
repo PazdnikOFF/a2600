@@ -1,0 +1,1591 @@
+
+bin/X2000:     формат файла elf64-littleaarch64
+
+
+Дизассемблирование раздела .text:
+
+0000000000710158 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog>:
+  710158:	a9bb7bfd 	stp	x29, x30, [sp, #-80]!
+  71015c:	910003fd 	mov	x29, sp
+  710160:	a90153f3 	stp	x19, x20, [sp, #16]
+  710164:	910123f4 	add	x20, sp, #0x48
+  710168:	aa0003f3 	mov	x19, x0
+  71016c:	aa1403e8 	mov	x8, x20
+  710170:	aa0103e0 	mov	x0, x1
+  710174:	a9025bf5 	stp	x21, x22, [sp, #32]
+  710178:	aa0103f5 	mov	x21, x1
+  71017c:	97ebb731 	bl	1fde40 <_ZNK7QObject10objectNameEv@plt>
+  710180:	f94027e0 	ldr	x0, [sp, #72]
+  710184:	b9400416 	ldr	w22, [x0, #4]
+  710188:	b9400001 	ldr	w1, [x0]
+  71018c:	3400c461 	cbz	w1, 711a18 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18c0>
+  710190:	3100043f 	cmn	w1, #0x1
+  710194:	540000c0 	b.eq	7101ac <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x54>  // b.none
+  710198:	885ffc01 	ldaxr	w1, [x0]
+  71019c:	51000421 	sub	w1, w1, #0x1
+  7101a0:	8802fc01 	stlxr	w2, w1, [x0]
+  7101a4:	35ffffa2 	cbnz	w2, 710198 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x40>
+  7101a8:	3400c381 	cbz	w1, 711a18 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18c0>
+  7101ac:	35000276 	cbnz	w22, 7101f8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xa0>
+  7101b0:	aa1403e8 	mov	x8, x20
+  7101b4:	52800161 	mov	w1, #0xb                   	// #11
+  7101b8:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7101bc:	912f2000 	add	x0, x0, #0xbc8
+  7101c0:	97ebdc38 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7101c4:	aa1403e1 	mov	x1, x20
+  7101c8:	aa1503e0 	mov	x0, x21
+  7101cc:	97ebd495 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7101d0:	f94027e0 	ldr	x0, [sp, #72]
+  7101d4:	b9400001 	ldr	w1, [x0]
+  7101d8:	3400e1c1 	cbz	w1, 711e10 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1cb8>
+  7101dc:	3100043f 	cmn	w1, #0x1
+  7101e0:	540000c0 	b.eq	7101f8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xa0>  // b.none
+  7101e4:	885ffc01 	ldaxr	w1, [x0]
+  7101e8:	51000421 	sub	w1, w1, #0x1
+  7101ec:	8802fc01 	stlxr	w2, w1, [x0]
+  7101f0:	35ffffa2 	cbnz	w2, 7101e4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x8c>
+  7101f4:	3400e0a1 	cbz	w1, 711e08 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1cb0>
+  7101f8:	d2803982 	mov	x2, #0x1cc                 	// #460
+  7101fc:	aa1403e1 	mov	x1, x20
+  710200:	f2c06002 	movk	x2, #0x300, lsl #32
+  710204:	aa1503e0 	mov	x0, x21
+  710208:	f90027e2 	str	x2, [sp, #72]
+  71020c:	97ebd6a5 	bl	205ca0 <_ZN7QWidget6resizeERK5QSize@plt>
+  710210:	d2800400 	mov	x0, #0x20                  	// #32
+  710214:	97ebca0b 	bl	202a40 <_Znwm@plt>
+  710218:	aa1503e1 	mov	x1, x21
+  71021c:	aa0003f6 	mov	x22, x0
+  710220:	97ebcbac 	bl	2030d0 <_ZN11QGridLayoutC1EP7QWidget@plt>
+  710224:	aa1403e8 	mov	x8, x20
+  710228:	f9000276 	str	x22, [x19]
+  71022c:	52800181 	mov	w1, #0xc                   	// #12
+  710230:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710234:	91120000 	add	x0, x0, #0x480
+  710238:	97ebdc1a 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  71023c:	aa1403e1 	mov	x1, x20
+  710240:	aa1603e0 	mov	x0, x22
+  710244:	97ebd477 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710248:	f94027e0 	ldr	x0, [sp, #72]
+  71024c:	b9400001 	ldr	w1, [x0]
+  710250:	3400dd41 	cbz	w1, 711df8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ca0>
+  710254:	3100043f 	cmn	w1, #0x1
+  710258:	540000c0 	b.eq	710270 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x118>  // b.none
+  71025c:	885ffc01 	ldaxr	w1, [x0]
+  710260:	51000421 	sub	w1, w1, #0x1
+  710264:	8802fc01 	stlxr	w2, w1, [x0]
+  710268:	35ffffa2 	cbnz	w2, 71025c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x104>
+  71026c:	3400dc21 	cbz	w1, 711df0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c98>
+  710270:	f9400260 	ldr	x0, [x19]
+  710274:	52800283 	mov	w3, #0x14                  	// #20
+  710278:	2a0303e1 	mov	w1, w3
+  71027c:	528003c4 	mov	w4, #0x1e                  	// #30
+  710280:	52800502 	mov	w2, #0x28                  	// #40
+  710284:	97ebb51b 	bl	1fd6f0 <_ZN7QLayout18setContentsMarginsEiiii@plt>
+  710288:	d2800600 	mov	x0, #0x30                  	// #48
+  71028c:	97ebc9ed 	bl	202a40 <_Znwm@plt>
+  710290:	aa1503e1 	mov	x1, x21
+  710294:	aa0003f6 	mov	x22, x0
+  710298:	97ebcd3e 	bl	203790 <_ZN9QGroupBoxC1EP7QWidget@plt>
+  71029c:	aa1403e8 	mov	x8, x20
+  7102a0:	f9000676 	str	x22, [x19, #8]
+  7102a4:	528001c1 	mov	w1, #0xe                   	// #14
+  7102a8:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7102ac:	91312000 	add	x0, x0, #0xc48
+  7102b0:	97ebdbfc 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7102b4:	aa1403e1 	mov	x1, x20
+  7102b8:	aa1603e0 	mov	x0, x22
+  7102bc:	97ebd459 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7102c0:	f94027e0 	ldr	x0, [sp, #72]
+  7102c4:	b9400001 	ldr	w1, [x0]
+  7102c8:	3400d8c1 	cbz	w1, 711de0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c88>
+  7102cc:	3100043f 	cmn	w1, #0x1
+  7102d0:	540000c0 	b.eq	7102e8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x190>  // b.none
+  7102d4:	885ffc01 	ldaxr	w1, [x0]
+  7102d8:	51000421 	sub	w1, w1, #0x1
+  7102dc:	8802fc01 	stlxr	w2, w1, [x0]
+  7102e0:	35ffffa2 	cbnz	w2, 7102d4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x17c>
+  7102e4:	3400d7a1 	cbz	w1, 711dd8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c80>
+  7102e8:	d2800400 	mov	x0, #0x20                  	// #32
+  7102ec:	97ebc9d5 	bl	202a40 <_Znwm@plt>
+  7102f0:	f9400661 	ldr	x1, [x19, #8]
+  7102f4:	aa0003f6 	mov	x22, x0
+  7102f8:	97ebcb76 	bl	2030d0 <_ZN11QGridLayoutC1EP7QWidget@plt>
+  7102fc:	aa1403e8 	mov	x8, x20
+  710300:	f9000a76 	str	x22, [x19, #16]
+  710304:	52800181 	mov	w1, #0xc                   	// #12
+  710308:	d0000b80 	adrp	x0, 882000 <_ZZ21OpenKAlgParamAjustDlgvE12__FUNCTION__+0x3d8>
+  71030c:	91046000 	add	x0, x0, #0x118
+  710310:	97ebdbe4 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710314:	aa1403e1 	mov	x1, x20
+  710318:	aa1603e0 	mov	x0, x22
+  71031c:	97ebd441 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710320:	f94027e0 	ldr	x0, [sp, #72]
+  710324:	b9400001 	ldr	w1, [x0]
+  710328:	3400d501 	cbz	w1, 711dc8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c70>
+  71032c:	3100043f 	cmn	w1, #0x1
+  710330:	540000c0 	b.eq	710348 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1f0>  // b.none
+  710334:	885ffc01 	ldaxr	w1, [x0]
+  710338:	51000421 	sub	w1, w1, #0x1
+  71033c:	8802fc01 	stlxr	w2, w1, [x0]
+  710340:	35ffffa2 	cbnz	w2, 710334 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1dc>
+  710344:	3400d3e1 	cbz	w1, 711dc0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c68>
+  710348:	f9400a60 	ldr	x0, [x19, #16]
+  71034c:	52800282 	mov	w2, #0x14                  	// #20
+  710350:	2a0203e1 	mov	w1, w2
+  710354:	52800124 	mov	w4, #0x9                   	// #9
+  710358:	12800003 	mov	w3, #0xffffffff            	// #-1
+  71035c:	97ebb4e5 	bl	1fd6f0 <_ZN7QLayout18setContentsMarginsEiiii@plt>
+  710360:	d2800400 	mov	x0, #0x20                  	// #32
+  710364:	97ebc9b7 	bl	202a40 <_Znwm@plt>
+  710368:	aa0003f6 	mov	x22, x0
+  71036c:	97ebc5d1 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710370:	aa1403e8 	mov	x8, x20
+  710374:	f9000e76 	str	x22, [x19, #24]
+  710378:	52800241 	mov	w1, #0x12                  	// #18
+  71037c:	d0000ae0 	adrp	x0, 86e000 <_ZZN5boost13serialization6detail17singleton_wrapperINS_7archive6detail11oserializerINS3_13text_oarchiveESt4pairIKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE12KImgEditInfoEEEEC4EvE19__PRETTY_FUNCTION__+0x90>
+  710380:	9136c000 	add	x0, x0, #0xdb0
+  710384:	97ebdbc7 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710388:	aa1403e1 	mov	x1, x20
+  71038c:	aa1603e0 	mov	x0, x22
+  710390:	97ebd424 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710394:	f94027e0 	ldr	x0, [sp, #72]
+  710398:	b9400001 	ldr	w1, [x0]
+  71039c:	3400d0a1 	cbz	w1, 711db0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c58>
+  7103a0:	3100043f 	cmn	w1, #0x1
+  7103a4:	540000c0 	b.eq	7103bc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x264>  // b.none
+  7103a8:	885ffc01 	ldaxr	w1, [x0]
+  7103ac:	51000421 	sub	w1, w1, #0x1
+  7103b0:	8802fc01 	stlxr	w2, w1, [x0]
+  7103b4:	35ffffa2 	cbnz	w2, 7103a8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x250>
+  7103b8:	3400cf81 	cbz	w1, 711da8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c50>
+  7103bc:	d2800600 	mov	x0, #0x30                  	// #48
+  7103c0:	97ebc9a0 	bl	202a40 <_Znwm@plt>
+  7103c4:	f9400661 	ldr	x1, [x19, #8]
+  7103c8:	aa0003f6 	mov	x22, x0
+  7103cc:	97ebcc71 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  7103d0:	aa1403e8 	mov	x8, x20
+  7103d4:	f9001276 	str	x22, [x19, #32]
+  7103d8:	52800281 	mov	w1, #0x14                  	// #20
+  7103dc:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7103e0:	91316000 	add	x0, x0, #0xc58
+  7103e4:	97ebdbaf 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7103e8:	aa1403e1 	mov	x1, x20
+  7103ec:	aa1603e0 	mov	x0, x22
+  7103f0:	97ebd40c 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7103f4:	a90363f7 	stp	x23, x24, [sp, #48]
+  7103f8:	f94027e0 	ldr	x0, [sp, #72]
+  7103fc:	b9400001 	ldr	w1, [x0]
+  710400:	3400ccc1 	cbz	w1, 711d98 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c40>
+  710404:	3100043f 	cmn	w1, #0x1
+  710408:	540000c0 	b.eq	710420 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x2c8>  // b.none
+  71040c:	885ffc01 	ldaxr	w1, [x0]
+  710410:	51000421 	sub	w1, w1, #0x1
+  710414:	8802fc01 	stlxr	w2, w1, [x0]
+  710418:	35ffffa2 	cbnz	w2, 71040c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x2b4>
+  71041c:	3400cba1 	cbz	w1, 711d90 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c38>
+  710420:	f9401260 	ldr	x0, [x19, #32]
+  710424:	52a000f6 	mov	w22, #0x70000               	// #458752
+  710428:	97ebc5ce 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  71042c:	531d7401 	ubfx	w1, w0, #29, #1
+  710430:	f9401260 	ldr	x0, [x19, #32]
+  710434:	33030036 	bfi	w22, w1, #29, #1
+  710438:	2a1603e1 	mov	w1, w22
+  71043c:	97ebd4e9 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710440:	f9401260 	ldr	x0, [x19, #32]
+  710444:	52800002 	mov	w2, #0x0                   	// #0
+  710448:	52800c81 	mov	w1, #0x64                  	// #100
+  71044c:	97ebc035 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710450:	f9401260 	ldr	x0, [x19, #32]
+  710454:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710458:	2a0203e1 	mov	w1, w2
+  71045c:	97ebcc95 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710460:	f9401260 	ldr	x0, [x19, #32]
+  710464:	52800021 	mov	w1, #0x1                   	// #1
+  710468:	97ebb85e 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  71046c:	a9418660 	ldp	x0, x1, [x19, #24]
+  710470:	52800003 	mov	w3, #0x0                   	// #0
+  710474:	52800002 	mov	w2, #0x0                   	// #0
+  710478:	97ebd5ee 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71047c:	d2800600 	mov	x0, #0x30                  	// #48
+  710480:	97ebc970 	bl	202a40 <_Znwm@plt>
+  710484:	f9400661 	ldr	x1, [x19, #8]
+  710488:	aa0003f7 	mov	x23, x0
+  71048c:	97ebcc41 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  710490:	aa1403e8 	mov	x8, x20
+  710494:	f9001677 	str	x23, [x19, #40]
+  710498:	528001e1 	mov	w1, #0xf                   	// #15
+  71049c:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7104a0:	9131c000 	add	x0, x0, #0xc70
+  7104a4:	97ebdb7f 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7104a8:	aa1403e1 	mov	x1, x20
+  7104ac:	aa1703e0 	mov	x0, x23
+  7104b0:	97ebd3dc 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7104b4:	f94027e0 	ldr	x0, [sp, #72]
+  7104b8:	b9400001 	ldr	w1, [x0]
+  7104bc:	3400c621 	cbz	w1, 711d80 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c28>
+  7104c0:	3100043f 	cmn	w1, #0x1
+  7104c4:	540000c0 	b.eq	7104dc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x384>  // b.none
+  7104c8:	885ffc01 	ldaxr	w1, [x0]
+  7104cc:	51000421 	sub	w1, w1, #0x1
+  7104d0:	8802fc01 	stlxr	w2, w1, [x0]
+  7104d4:	35ffffa2 	cbnz	w2, 7104c8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x370>
+  7104d8:	3400c501 	cbz	w1, 711d78 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c20>
+  7104dc:	f9401660 	ldr	x0, [x19, #40]
+  7104e0:	97ebc5a0 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  7104e4:	531d7401 	ubfx	w1, w0, #29, #1
+  7104e8:	f9401660 	ldr	x0, [x19, #40]
+  7104ec:	33030036 	bfi	w22, w1, #29, #1
+  7104f0:	2a1603e1 	mov	w1, w22
+  7104f4:	97ebd4bb 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  7104f8:	f9401660 	ldr	x0, [x19, #40]
+  7104fc:	52800002 	mov	w2, #0x0                   	// #0
+  710500:	52800c81 	mov	w1, #0x64                  	// #100
+  710504:	97ebc007 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710508:	f9401660 	ldr	x0, [x19, #40]
+  71050c:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710510:	2a0203e1 	mov	w1, w2
+  710514:	97ebcc67 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710518:	f9401660 	ldr	x0, [x19, #40]
+  71051c:	52800021 	mov	w1, #0x1                   	// #1
+  710520:	97ebb830 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  710524:	f9400e60 	ldr	x0, [x19, #24]
+  710528:	52800003 	mov	w3, #0x0                   	// #0
+  71052c:	f9401661 	ldr	x1, [x19, #40]
+  710530:	52800002 	mov	w2, #0x0                   	// #0
+  710534:	97ebd5bf 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710538:	a9410660 	ldp	x0, x1, [x19, #16]
+  71053c:	52800025 	mov	w5, #0x1                   	// #1
+  710540:	2a0503e4 	mov	w4, w5
+  710544:	2a0503e3 	mov	w3, w5
+  710548:	52800062 	mov	w2, #0x3                   	// #3
+  71054c:	52800006 	mov	w6, #0x0                   	// #0
+  710550:	97ebb9b8 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710554:	d2800600 	mov	x0, #0x30                  	// #48
+  710558:	97ebc93a 	bl	202a40 <_Znwm@plt>
+  71055c:	f9400661 	ldr	x1, [x19, #8]
+  710560:	aa0003f6 	mov	x22, x0
+  710564:	52800002 	mov	w2, #0x0                   	// #0
+  710568:	97ebcb96 	bl	2033c0 <_ZN6QFrameC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  71056c:	aa1403e8 	mov	x8, x20
+  710570:	f9001a76 	str	x22, [x19, #48]
+  710574:	528001a1 	mov	w1, #0xd                   	// #13
+  710578:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  71057c:	91320000 	add	x0, x0, #0xc80
+  710580:	97ebdb48 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710584:	aa1403e1 	mov	x1, x20
+  710588:	aa1603e0 	mov	x0, x22
+  71058c:	97ebd3a5 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710590:	f94027e0 	ldr	x0, [sp, #72]
+  710594:	b9400001 	ldr	w1, [x0]
+  710598:	3400be81 	cbz	w1, 711d68 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c10>
+  71059c:	3100043f 	cmn	w1, #0x1
+  7105a0:	540000c0 	b.eq	7105b8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x460>  // b.none
+  7105a4:	885ffc01 	ldaxr	w1, [x0]
+  7105a8:	51000421 	sub	w1, w1, #0x1
+  7105ac:	8802fc01 	stlxr	w2, w1, [x0]
+  7105b0:	35ffffa2 	cbnz	w2, 7105a4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x44c>
+  7105b4:	3400bd61 	cbz	w1, 711d60 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1c08>
+  7105b8:	d2800400 	mov	x0, #0x20                  	// #32
+  7105bc:	97ebc921 	bl	202a40 <_Znwm@plt>
+  7105c0:	f9401a61 	ldr	x1, [x19, #48]
+  7105c4:	aa0003f6 	mov	x22, x0
+  7105c8:	97ebcac2 	bl	2030d0 <_ZN11QGridLayoutC1EP7QWidget@plt>
+  7105cc:	f9001e76 	str	x22, [x19, #56]
+  7105d0:	aa1603e0 	mov	x0, x22
+  7105d4:	52800001 	mov	w1, #0x0                   	// #0
+  7105d8:	97ebcb92 	bl	203420 <_ZN11QGridLayout10setSpacingEi@plt>
+  7105dc:	aa1403e8 	mov	x8, x20
+  7105e0:	52800181 	mov	w1, #0xc                   	// #12
+  7105e4:	f9401e76 	ldr	x22, [x19, #56]
+  7105e8:	d0000aa0 	adrp	x0, 866000 <_ZZN10KUIDesktop9AltKeyActEiE12__FUNCTION__+0xd38>
+  7105ec:	91226000 	add	x0, x0, #0x898
+  7105f0:	97ebdb2c 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7105f4:	aa1403e1 	mov	x1, x20
+  7105f8:	aa1603e0 	mov	x0, x22
+  7105fc:	97ebd389 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710600:	f94027e0 	ldr	x0, [sp, #72]
+  710604:	b9400001 	ldr	w1, [x0]
+  710608:	3400ba41 	cbz	w1, 711d50 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bf8>
+  71060c:	3100043f 	cmn	w1, #0x1
+  710610:	540000c0 	b.eq	710628 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x4d0>  // b.none
+  710614:	885ffc01 	ldaxr	w1, [x0]
+  710618:	51000421 	sub	w1, w1, #0x1
+  71061c:	8802fc01 	stlxr	w2, w1, [x0]
+  710620:	35ffffa2 	cbnz	w2, 710614 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x4bc>
+  710624:	3400b921 	cbz	w1, 711d48 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bf0>
+  710628:	f9401e60 	ldr	x0, [x19, #56]
+  71062c:	52800004 	mov	w4, #0x0                   	// #0
+  710630:	52800003 	mov	w3, #0x0                   	// #0
+  710634:	52800002 	mov	w2, #0x0                   	// #0
+  710638:	52800001 	mov	w1, #0x0                   	// #0
+  71063c:	97ebb42d 	bl	1fd6f0 <_ZN7QLayout18setContentsMarginsEiiii@plt>
+  710640:	f9400a60 	ldr	x0, [x19, #16]
+  710644:	52800025 	mov	w5, #0x1                   	// #1
+  710648:	f9401a61 	ldr	x1, [x19, #48]
+  71064c:	2a0503e4 	mov	w4, w5
+  710650:	2a0503e3 	mov	w3, w5
+  710654:	52800006 	mov	w6, #0x0                   	// #0
+  710658:	52800082 	mov	w2, #0x4                   	// #4
+  71065c:	97ebcff1 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710660:	d2800400 	mov	x0, #0x20                  	// #32
+  710664:	97ebc8f7 	bl	202a40 <_Znwm@plt>
+  710668:	aa0003f6 	mov	x22, x0
+  71066c:	97ebc511 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710670:	aa1403e8 	mov	x8, x20
+  710674:	f9002276 	str	x22, [x19, #64]
+  710678:	52800241 	mov	w1, #0x12                  	// #18
+  71067c:	d0000ae0 	adrp	x0, 86e000 <_ZZN5boost13serialization6detail17singleton_wrapperINS_7archive6detail11oserializerINS3_13text_oarchiveESt4pairIKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE12KImgEditInfoEEEEC4EvE19__PRETTY_FUNCTION__+0x90>
+  710680:	91330000 	add	x0, x0, #0xcc0
+  710684:	97ebdb07 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710688:	aa1403e1 	mov	x1, x20
+  71068c:	aa1603e0 	mov	x0, x22
+  710690:	97ebd364 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710694:	f94027e0 	ldr	x0, [sp, #72]
+  710698:	b9400001 	ldr	w1, [x0]
+  71069c:	3400b4e1 	cbz	w1, 711d38 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1be0>
+  7106a0:	3100043f 	cmn	w1, #0x1
+  7106a4:	540000c0 	b.eq	7106bc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x564>  // b.none
+  7106a8:	885ffc01 	ldaxr	w1, [x0]
+  7106ac:	51000421 	sub	w1, w1, #0x1
+  7106b0:	8802fc01 	stlxr	w2, w1, [x0]
+  7106b4:	35ffffa2 	cbnz	w2, 7106a8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x550>
+  7106b8:	3400b3c1 	cbz	w1, 711d30 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bd8>
+  7106bc:	d2800600 	mov	x0, #0x30                  	// #48
+  7106c0:	97ebc8e0 	bl	202a40 <_Znwm@plt>
+  7106c4:	f9400661 	ldr	x1, [x19, #8]
+  7106c8:	aa0003f6 	mov	x22, x0
+  7106cc:	97ebcbb1 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  7106d0:	aa1403e8 	mov	x8, x20
+  7106d4:	f9002676 	str	x22, [x19, #72]
+  7106d8:	52800161 	mov	w1, #0xb                   	// #11
+  7106dc:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7106e0:	91324000 	add	x0, x0, #0xc90
+  7106e4:	97ebdaef 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7106e8:	aa1403e1 	mov	x1, x20
+  7106ec:	aa1603e0 	mov	x0, x22
+  7106f0:	97ebd34c 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7106f4:	f94027e0 	ldr	x0, [sp, #72]
+  7106f8:	b9400001 	ldr	w1, [x0]
+  7106fc:	3400b121 	cbz	w1, 711d20 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bc8>
+  710700:	3100043f 	cmn	w1, #0x1
+  710704:	540000c0 	b.eq	71071c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x5c4>  // b.none
+  710708:	885ffc01 	ldaxr	w1, [x0]
+  71070c:	51000421 	sub	w1, w1, #0x1
+  710710:	8802fc01 	stlxr	w2, w1, [x0]
+  710714:	35ffffa2 	cbnz	w2, 710708 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x5b0>
+  710718:	3400b001 	cbz	w1, 711d18 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bc0>
+  71071c:	f9402660 	ldr	x0, [x19, #72]
+  710720:	52a00076 	mov	w22, #0x30000               	// #196608
+  710724:	97ebc50f 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710728:	531d7401 	ubfx	w1, w0, #29, #1
+  71072c:	f9402660 	ldr	x0, [x19, #72]
+  710730:	33030036 	bfi	w22, w1, #29, #1
+  710734:	2a1603e1 	mov	w1, w22
+  710738:	97ebd42a 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  71073c:	f9402660 	ldr	x0, [x19, #72]
+  710740:	52800002 	mov	w2, #0x0                   	// #0
+  710744:	52800f01 	mov	w1, #0x78                  	// #120
+  710748:	97ebbf76 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  71074c:	f9402660 	ldr	x0, [x19, #72]
+  710750:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710754:	2a0203e1 	mov	w1, w2
+  710758:	97ebcbd6 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  71075c:	f9402660 	ldr	x0, [x19, #72]
+  710760:	52800021 	mov	w1, #0x1                   	// #1
+  710764:	97ebb79f 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  710768:	a9440660 	ldp	x0, x1, [x19, #64]
+  71076c:	52800003 	mov	w3, #0x0                   	// #0
+  710770:	52800002 	mov	w2, #0x0                   	// #0
+  710774:	97ebd52f 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710778:	d2800600 	mov	x0, #0x30                  	// #48
+  71077c:	97ebc8b1 	bl	202a40 <_Znwm@plt>
+  710780:	f9400661 	ldr	x1, [x19, #8]
+  710784:	aa0003f7 	mov	x23, x0
+  710788:	97ebcb82 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  71078c:	aa1403e8 	mov	x8, x20
+  710790:	f9002a77 	str	x23, [x19, #80]
+  710794:	52800181 	mov	w1, #0xc                   	// #12
+  710798:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  71079c:	91328000 	add	x0, x0, #0xca0
+  7107a0:	97ebdac0 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7107a4:	aa1403e1 	mov	x1, x20
+  7107a8:	aa1703e0 	mov	x0, x23
+  7107ac:	97ebd31d 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7107b0:	f94027e0 	ldr	x0, [sp, #72]
+  7107b4:	b9400001 	ldr	w1, [x0]
+  7107b8:	3400aa81 	cbz	w1, 711d08 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1bb0>
+  7107bc:	3100043f 	cmn	w1, #0x1
+  7107c0:	540000c0 	b.eq	7107d8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x680>  // b.none
+  7107c4:	885ffc01 	ldaxr	w1, [x0]
+  7107c8:	51000421 	sub	w1, w1, #0x1
+  7107cc:	8802fc01 	stlxr	w2, w1, [x0]
+  7107d0:	35ffffa2 	cbnz	w2, 7107c4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x66c>
+  7107d4:	3400a961 	cbz	w1, 711d00 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ba8>
+  7107d8:	f9402a60 	ldr	x0, [x19, #80]
+  7107dc:	97ebc4e1 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  7107e0:	531d7401 	ubfx	w1, w0, #29, #1
+  7107e4:	f9402a60 	ldr	x0, [x19, #80]
+  7107e8:	33030036 	bfi	w22, w1, #29, #1
+  7107ec:	2a1603e1 	mov	w1, w22
+  7107f0:	97ebd3fc 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  7107f4:	f9402a60 	ldr	x0, [x19, #80]
+  7107f8:	52800002 	mov	w2, #0x0                   	// #0
+  7107fc:	52800f01 	mov	w1, #0x78                  	// #120
+  710800:	97ebbf48 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710804:	f9402a60 	ldr	x0, [x19, #80]
+  710808:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  71080c:	2a0203e1 	mov	w1, w2
+  710810:	97ebcba8 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710814:	f9402a60 	ldr	x0, [x19, #80]
+  710818:	52800021 	mov	w1, #0x1                   	// #1
+  71081c:	97ebb771 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  710820:	f9402260 	ldr	x0, [x19, #64]
+  710824:	52800003 	mov	w3, #0x0                   	// #0
+  710828:	f9402a61 	ldr	x1, [x19, #80]
+  71082c:	52800002 	mov	w2, #0x0                   	// #0
+  710830:	97ebd500 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710834:	f9400a60 	ldr	x0, [x19, #16]
+  710838:	52800025 	mov	w5, #0x1                   	// #1
+  71083c:	f9402261 	ldr	x1, [x19, #64]
+  710840:	2a0503e4 	mov	w4, w5
+  710844:	2a0503e3 	mov	w3, w5
+  710848:	52800006 	mov	w6, #0x0                   	// #0
+  71084c:	528000a2 	mov	w2, #0x5                   	// #5
+  710850:	97ebb8f8 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710854:	d2800400 	mov	x0, #0x20                  	// #32
+  710858:	97ebc87a 	bl	202a40 <_Znwm@plt>
+  71085c:	aa0003f7 	mov	x23, x0
+  710860:	97ebc494 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710864:	aa1403e8 	mov	x8, x20
+  710868:	f9002e77 	str	x23, [x19, #88]
+  71086c:	52800201 	mov	w1, #0x10                  	// #16
+  710870:	d0000a60 	adrp	x0, 85e000 <_ZZN15KVideoPlayerOSD15CheckSplitVideoEvE12__FUNCTION__+0x100>
+  710874:	9106a000 	add	x0, x0, #0x1a8
+  710878:	97ebda8a 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  71087c:	aa1403e1 	mov	x1, x20
+  710880:	aa1703e0 	mov	x0, x23
+  710884:	97ebd2e7 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710888:	f94027e0 	ldr	x0, [sp, #72]
+  71088c:	b9400001 	ldr	w1, [x0]
+  710890:	3400a301 	cbz	w1, 711cf0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b98>
+  710894:	3100043f 	cmn	w1, #0x1
+  710898:	540000c0 	b.eq	7108b0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x758>  // b.none
+  71089c:	885ffc01 	ldaxr	w1, [x0]
+  7108a0:	51000421 	sub	w1, w1, #0x1
+  7108a4:	8802fc01 	stlxr	w2, w1, [x0]
+  7108a8:	35ffffa2 	cbnz	w2, 71089c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x744>
+  7108ac:	3400a1e1 	cbz	w1, 711ce8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b90>
+  7108b0:	d2800600 	mov	x0, #0x30                  	// #48
+  7108b4:	97ebc863 	bl	202a40 <_Znwm@plt>
+  7108b8:	f9400661 	ldr	x1, [x19, #8]
+  7108bc:	aa0003f7 	mov	x23, x0
+  7108c0:	97ebcb34 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  7108c4:	aa1403e8 	mov	x8, x20
+  7108c8:	f9003277 	str	x23, [x19, #96]
+  7108cc:	52800141 	mov	w1, #0xa                   	// #10
+  7108d0:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7108d4:	9132c000 	add	x0, x0, #0xcb0
+  7108d8:	97ebda72 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7108dc:	aa1403e1 	mov	x1, x20
+  7108e0:	aa1703e0 	mov	x0, x23
+  7108e4:	97ebd2cf 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7108e8:	f94027e0 	ldr	x0, [sp, #72]
+  7108ec:	b9400001 	ldr	w1, [x0]
+  7108f0:	34009f41 	cbz	w1, 711cd8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b80>
+  7108f4:	3100043f 	cmn	w1, #0x1
+  7108f8:	540000c0 	b.eq	710910 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x7b8>  // b.none
+  7108fc:	885ffc01 	ldaxr	w1, [x0]
+  710900:	51000421 	sub	w1, w1, #0x1
+  710904:	8802fc01 	stlxr	w2, w1, [x0]
+  710908:	35ffffa2 	cbnz	w2, 7108fc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x7a4>
+  71090c:	34009e21 	cbz	w1, 711cd0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b78>
+  710910:	f9403260 	ldr	x0, [x19, #96]
+  710914:	52a00037 	mov	w23, #0x10000               	// #65536
+  710918:	97ebc492 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  71091c:	531d7401 	ubfx	w1, w0, #29, #1
+  710920:	f9403260 	ldr	x0, [x19, #96]
+  710924:	33030037 	bfi	w23, w1, #29, #1
+  710928:	2a1703e1 	mov	w1, w23
+  71092c:	97ebd3ad 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710930:	f9403260 	ldr	x0, [x19, #96]
+  710934:	52800002 	mov	w2, #0x0                   	// #0
+  710938:	52800c81 	mov	w1, #0x64                  	// #100
+  71093c:	97ebbef9 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710940:	f9403260 	ldr	x0, [x19, #96]
+  710944:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710948:	2a0203e1 	mov	w1, w2
+  71094c:	97ebcb59 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710950:	f9403260 	ldr	x0, [x19, #96]
+  710954:	52800021 	mov	w1, #0x1                   	// #1
+  710958:	97ebb722 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  71095c:	a9458660 	ldp	x0, x1, [x19, #88]
+  710960:	52800003 	mov	w3, #0x0                   	// #0
+  710964:	52800002 	mov	w2, #0x0                   	// #0
+  710968:	97ebd4b2 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71096c:	d2800600 	mov	x0, #0x30                  	// #48
+  710970:	97ebc834 	bl	202a40 <_Znwm@plt>
+  710974:	f9400661 	ldr	x1, [x19, #8]
+  710978:	aa0003f8 	mov	x24, x0
+  71097c:	97ebcb05 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  710980:	aa1403e8 	mov	x8, x20
+  710984:	f9003678 	str	x24, [x19, #104]
+  710988:	52800101 	mov	w1, #0x8                   	// #8
+  71098c:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  710990:	91330000 	add	x0, x0, #0xcc0
+  710994:	97ebda43 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710998:	aa1403e1 	mov	x1, x20
+  71099c:	aa1803e0 	mov	x0, x24
+  7109a0:	97ebd2a0 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7109a4:	f94027e0 	ldr	x0, [sp, #72]
+  7109a8:	b9400001 	ldr	w1, [x0]
+  7109ac:	340098a1 	cbz	w1, 711cc0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b68>
+  7109b0:	3100043f 	cmn	w1, #0x1
+  7109b4:	540000c0 	b.eq	7109cc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x874>  // b.none
+  7109b8:	885ffc01 	ldaxr	w1, [x0]
+  7109bc:	51000421 	sub	w1, w1, #0x1
+  7109c0:	8802fc01 	stlxr	w2, w1, [x0]
+  7109c4:	35ffffa2 	cbnz	w2, 7109b8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x860>
+  7109c8:	34009781 	cbz	w1, 711cb8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b60>
+  7109cc:	f9403660 	ldr	x0, [x19, #104]
+  7109d0:	97ebc464 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  7109d4:	531d7401 	ubfx	w1, w0, #29, #1
+  7109d8:	f9403660 	ldr	x0, [x19, #104]
+  7109dc:	33030037 	bfi	w23, w1, #29, #1
+  7109e0:	2a1703e1 	mov	w1, w23
+  7109e4:	97ebd37f 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  7109e8:	f9403660 	ldr	x0, [x19, #104]
+  7109ec:	52800002 	mov	w2, #0x0                   	// #0
+  7109f0:	52800c81 	mov	w1, #0x64                  	// #100
+  7109f4:	97ebbecb 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  7109f8:	f9403660 	ldr	x0, [x19, #104]
+  7109fc:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710a00:	2a0203e1 	mov	w1, w2
+  710a04:	97ebcb2b 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710a08:	f9403660 	ldr	x0, [x19, #104]
+  710a0c:	52800021 	mov	w1, #0x1                   	// #1
+  710a10:	97ebb6f4 	bl	1fe5e0 <_ZN7QWidget14setFocusPolicyEN2Qt11FocusPolicyE@plt>
+  710a14:	f9402e60 	ldr	x0, [x19, #88]
+  710a18:	52800003 	mov	w3, #0x0                   	// #0
+  710a1c:	f9403661 	ldr	x1, [x19, #104]
+  710a20:	52800002 	mov	w2, #0x0                   	// #0
+  710a24:	97ebd483 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710a28:	f9400a60 	ldr	x0, [x19, #16]
+  710a2c:	52800025 	mov	w5, #0x1                   	// #1
+  710a30:	f9402e61 	ldr	x1, [x19, #88]
+  710a34:	2a0503e4 	mov	w4, w5
+  710a38:	2a0503e3 	mov	w3, w5
+  710a3c:	2a0503e2 	mov	w2, w5
+  710a40:	52800006 	mov	w6, #0x0                   	// #0
+  710a44:	97ebb87b 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710a48:	d2800400 	mov	x0, #0x20                  	// #32
+  710a4c:	97ebc7fd 	bl	202a40 <_Znwm@plt>
+  710a50:	aa0003f7 	mov	x23, x0
+  710a54:	97ebc417 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710a58:	aa1403e8 	mov	x8, x20
+  710a5c:	f9003a77 	str	x23, [x19, #112]
+  710a60:	52800261 	mov	w1, #0x13                  	// #19
+  710a64:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710a68:	910fe000 	add	x0, x0, #0x3f8
+  710a6c:	97ebda0d 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710a70:	aa1403e1 	mov	x1, x20
+  710a74:	aa1703e0 	mov	x0, x23
+  710a78:	97ebd26a 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710a7c:	f94027e0 	ldr	x0, [sp, #72]
+  710a80:	b9400001 	ldr	w1, [x0]
+  710a84:	34009121 	cbz	w1, 711ca8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b50>
+  710a88:	3100043f 	cmn	w1, #0x1
+  710a8c:	540000c0 	b.eq	710aa4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x94c>  // b.none
+  710a90:	885ffc01 	ldaxr	w1, [x0]
+  710a94:	51000421 	sub	w1, w1, #0x1
+  710a98:	8802fc01 	stlxr	w2, w1, [x0]
+  710a9c:	35ffffa2 	cbnz	w2, 710a90 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x938>
+  710aa0:	34009001 	cbz	w1, 711ca0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b48>
+  710aa4:	f9400a60 	ldr	x0, [x19, #16]
+  710aa8:	52800025 	mov	w5, #0x1                   	// #1
+  710aac:	f9403a61 	ldr	x1, [x19, #112]
+  710ab0:	2a0503e4 	mov	w4, w5
+  710ab4:	2a0503e3 	mov	w3, w5
+  710ab8:	52800002 	mov	w2, #0x0                   	// #0
+  710abc:	52800006 	mov	w6, #0x0                   	// #0
+  710ac0:	97ebb85c 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710ac4:	d2800600 	mov	x0, #0x30                  	// #48
+  710ac8:	97ebc7de 	bl	202a40 <_Znwm@plt>
+  710acc:	f9400661 	ldr	x1, [x19, #8]
+  710ad0:	aa0003f7 	mov	x23, x0
+  710ad4:	52800002 	mov	w2, #0x0                   	// #0
+  710ad8:	97ebb6c6 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  710adc:	aa1403e8 	mov	x8, x20
+  710ae0:	f9003e77 	str	x23, [x19, #120]
+  710ae4:	528000e1 	mov	w1, #0x7                   	// #7
+  710ae8:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710aec:	9105a000 	add	x0, x0, #0x168
+  710af0:	97ebd9ec 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710af4:	aa1403e1 	mov	x1, x20
+  710af8:	aa1703e0 	mov	x0, x23
+  710afc:	97ebd249 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710b00:	f94027e0 	ldr	x0, [sp, #72]
+  710b04:	b9400001 	ldr	w1, [x0]
+  710b08:	34008c41 	cbz	w1, 711c90 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b38>
+  710b0c:	3100043f 	cmn	w1, #0x1
+  710b10:	540000c0 	b.eq	710b28 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x9d0>  // b.none
+  710b14:	885ffc01 	ldaxr	w1, [x0]
+  710b18:	51000421 	sub	w1, w1, #0x1
+  710b1c:	8802fc01 	stlxr	w2, w1, [x0]
+  710b20:	35ffffa2 	cbnz	w2, 710b14 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x9bc>
+  710b24:	34008b21 	cbz	w1, 711c88 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b30>
+  710b28:	f9403e60 	ldr	x0, [x19, #120]
+  710b2c:	52a000b7 	mov	w23, #0x50000               	// #327680
+  710b30:	97ebc40c 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710b34:	531d7401 	ubfx	w1, w0, #29, #1
+  710b38:	f9403e60 	ldr	x0, [x19, #120]
+  710b3c:	33030037 	bfi	w23, w1, #29, #1
+  710b40:	2a1703e1 	mov	w1, w23
+  710b44:	97ebd327 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710b48:	f9403e60 	ldr	x0, [x19, #120]
+  710b4c:	52800002 	mov	w2, #0x0                   	// #0
+  710b50:	52800001 	mov	w1, #0x0                   	// #0
+  710b54:	97ebbe73 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710b58:	f9400a60 	ldr	x0, [x19, #16]
+  710b5c:	52800025 	mov	w5, #0x1                   	// #1
+  710b60:	f9403e61 	ldr	x1, [x19, #120]
+  710b64:	2a0503e4 	mov	w4, w5
+  710b68:	52800002 	mov	w2, #0x0                   	// #0
+  710b6c:	52800006 	mov	w6, #0x0                   	// #0
+  710b70:	52800003 	mov	w3, #0x0                   	// #0
+  710b74:	97ebceab 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710b78:	d2800600 	mov	x0, #0x30                  	// #48
+  710b7c:	97ebc7b1 	bl	202a40 <_Znwm@plt>
+  710b80:	f9400661 	ldr	x1, [x19, #8]
+  710b84:	aa0003f8 	mov	x24, x0
+  710b88:	52800002 	mov	w2, #0x0                   	// #0
+  710b8c:	97ebb699 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  710b90:	aa1403e8 	mov	x8, x20
+  710b94:	f9004278 	str	x24, [x19, #128]
+  710b98:	52800101 	mov	w1, #0x8                   	// #8
+  710b9c:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710ba0:	910a8000 	add	x0, x0, #0x2a0
+  710ba4:	97ebd9bf 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710ba8:	aa1403e1 	mov	x1, x20
+  710bac:	aa1803e0 	mov	x0, x24
+  710bb0:	97ebd21c 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710bb4:	f94027e0 	ldr	x0, [sp, #72]
+  710bb8:	b9400001 	ldr	w1, [x0]
+  710bbc:	340085e1 	cbz	w1, 711c78 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b20>
+  710bc0:	3100043f 	cmn	w1, #0x1
+  710bc4:	540000c0 	b.eq	710bdc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xa84>  // b.none
+  710bc8:	885ffc01 	ldaxr	w1, [x0]
+  710bcc:	51000421 	sub	w1, w1, #0x1
+  710bd0:	8802fc01 	stlxr	w2, w1, [x0]
+  710bd4:	35ffffa2 	cbnz	w2, 710bc8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xa70>
+  710bd8:	340084c1 	cbz	w1, 711c70 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b18>
+  710bdc:	f9404260 	ldr	x0, [x19, #128]
+  710be0:	97ebc3e0 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710be4:	531d7401 	ubfx	w1, w0, #29, #1
+  710be8:	f9404260 	ldr	x0, [x19, #128]
+  710bec:	33030037 	bfi	w23, w1, #29, #1
+  710bf0:	2a1703e1 	mov	w1, w23
+  710bf4:	97ebd2fb 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710bf8:	f9404260 	ldr	x0, [x19, #128]
+  710bfc:	52800002 	mov	w2, #0x0                   	// #0
+  710c00:	52800001 	mov	w1, #0x0                   	// #0
+  710c04:	97ebbe47 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710c08:	f9400a60 	ldr	x0, [x19, #16]
+  710c0c:	52800025 	mov	w5, #0x1                   	// #1
+  710c10:	f9404261 	ldr	x1, [x19, #128]
+  710c14:	2a0503e4 	mov	w4, w5
+  710c18:	52800082 	mov	w2, #0x4                   	// #4
+  710c1c:	52800006 	mov	w6, #0x0                   	// #0
+  710c20:	52800003 	mov	w3, #0x0                   	// #0
+  710c24:	97ebce7f 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710c28:	d2800600 	mov	x0, #0x30                  	// #48
+  710c2c:	97ebc785 	bl	202a40 <_Znwm@plt>
+  710c30:	f9400661 	ldr	x1, [x19, #8]
+  710c34:	aa0003f8 	mov	x24, x0
+  710c38:	52800002 	mov	w2, #0x0                   	// #0
+  710c3c:	97ebb66d 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  710c40:	aa1403e8 	mov	x8, x20
+  710c44:	f9004678 	str	x24, [x19, #136]
+  710c48:	528000e1 	mov	w1, #0x7                   	// #7
+  710c4c:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710c50:	9107a000 	add	x0, x0, #0x1e8
+  710c54:	97ebd993 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710c58:	aa1403e1 	mov	x1, x20
+  710c5c:	aa1803e0 	mov	x0, x24
+  710c60:	97ebd1f0 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710c64:	f94027e0 	ldr	x0, [sp, #72]
+  710c68:	b9400001 	ldr	w1, [x0]
+  710c6c:	34007fa1 	cbz	w1, 711c60 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b08>
+  710c70:	3100043f 	cmn	w1, #0x1
+  710c74:	540000c0 	b.eq	710c8c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xb34>  // b.none
+  710c78:	885ffc01 	ldaxr	w1, [x0]
+  710c7c:	51000421 	sub	w1, w1, #0x1
+  710c80:	8802fc01 	stlxr	w2, w1, [x0]
+  710c84:	35ffffa2 	cbnz	w2, 710c78 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xb20>
+  710c88:	34007e81 	cbz	w1, 711c58 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1b00>
+  710c8c:	f9404660 	ldr	x0, [x19, #136]
+  710c90:	97ebc3b4 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710c94:	531d7401 	ubfx	w1, w0, #29, #1
+  710c98:	f9404660 	ldr	x0, [x19, #136]
+  710c9c:	33030037 	bfi	w23, w1, #29, #1
+  710ca0:	2a1703e1 	mov	w1, w23
+  710ca4:	97ebd2cf 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710ca8:	f9404660 	ldr	x0, [x19, #136]
+  710cac:	52800002 	mov	w2, #0x0                   	// #0
+  710cb0:	52800001 	mov	w1, #0x0                   	// #0
+  710cb4:	97ebbe1b 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710cb8:	f9404660 	ldr	x0, [x19, #136]
+  710cbc:	52801021 	mov	w1, #0x81                  	// #129
+  710cc0:	97ebd79c 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710cc4:	f9404660 	ldr	x0, [x19, #136]
+  710cc8:	52800001 	mov	w1, #0x0                   	// #0
+  710ccc:	97ebbfe1 	bl	200c50 <_ZN6QLabel11setWordWrapEb@plt>
+  710cd0:	f9400a60 	ldr	x0, [x19, #16]
+  710cd4:	52800045 	mov	w5, #0x2                   	// #2
+  710cd8:	f9404661 	ldr	x1, [x19, #136]
+  710cdc:	2a0503e2 	mov	w2, w5
+  710ce0:	52800006 	mov	w6, #0x0                   	// #0
+  710ce4:	52800024 	mov	w4, #0x1                   	// #1
+  710ce8:	52800003 	mov	w3, #0x0                   	// #0
+  710cec:	97ebce4d 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710cf0:	d2800400 	mov	x0, #0x20                  	// #32
+  710cf4:	97ebc753 	bl	202a40 <_Znwm@plt>
+  710cf8:	aa0003f7 	mov	x23, x0
+  710cfc:	97ebc36d 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710d00:	aa1403e8 	mov	x8, x20
+  710d04:	f9004a77 	str	x23, [x19, #144]
+  710d08:	52800241 	mov	w1, #0x12                  	// #18
+  710d0c:	d0000ae0 	adrp	x0, 86e000 <_ZZN5boost13serialization6detail17singleton_wrapperINS_7archive6detail11oserializerINS3_13text_oarchiveESt4pairIKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE12KImgEditInfoEEEEC4EvE19__PRETTY_FUNCTION__+0x90>
+  710d10:	913a0000 	add	x0, x0, #0xe80
+  710d14:	97ebd963 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710d18:	aa1403e1 	mov	x1, x20
+  710d1c:	aa1703e0 	mov	x0, x23
+  710d20:	97ebd1c0 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710d24:	f94027e0 	ldr	x0, [sp, #72]
+  710d28:	b9400001 	ldr	w1, [x0]
+  710d2c:	340078e1 	cbz	w1, 711c48 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1af0>
+  710d30:	3100043f 	cmn	w1, #0x1
+  710d34:	540000c0 	b.eq	710d4c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xbf4>  // b.none
+  710d38:	885ffc01 	ldaxr	w1, [x0]
+  710d3c:	51000421 	sub	w1, w1, #0x1
+  710d40:	8802fc01 	stlxr	w2, w1, [x0]
+  710d44:	35ffffa2 	cbnz	w2, 710d38 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xbe0>
+  710d48:	340077c1 	cbz	w1, 711c40 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ae8>
+  710d4c:	d2800600 	mov	x0, #0x30                  	// #48
+  710d50:	97ebc73c 	bl	202a40 <_Znwm@plt>
+  710d54:	f9400661 	ldr	x1, [x19, #8]
+  710d58:	aa0003f7 	mov	x23, x0
+  710d5c:	97ebca0d 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  710d60:	aa1403e8 	mov	x8, x20
+  710d64:	f9004e77 	str	x23, [x19, #152]
+  710d68:	52800181 	mov	w1, #0xc                   	// #12
+  710d6c:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  710d70:	91334000 	add	x0, x0, #0xcd0
+  710d74:	97ebd94b 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710d78:	aa1403e1 	mov	x1, x20
+  710d7c:	aa1703e0 	mov	x0, x23
+  710d80:	97ebd1a8 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710d84:	f94027e0 	ldr	x0, [sp, #72]
+  710d88:	b9400001 	ldr	w1, [x0]
+  710d8c:	34007521 	cbz	w1, 711c30 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ad8>
+  710d90:	3100043f 	cmn	w1, #0x1
+  710d94:	540000c0 	b.eq	710dac <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xc54>  // b.none
+  710d98:	885ffc01 	ldaxr	w1, [x0]
+  710d9c:	51000421 	sub	w1, w1, #0x1
+  710da0:	8802fc01 	stlxr	w2, w1, [x0]
+  710da4:	35ffffa2 	cbnz	w2, 710d98 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xc40>
+  710da8:	34007401 	cbz	w1, 711c28 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ad0>
+  710dac:	f9404e60 	ldr	x0, [x19, #152]
+  710db0:	97ebc36c 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710db4:	531d7401 	ubfx	w1, w0, #29, #1
+  710db8:	f9404e60 	ldr	x0, [x19, #152]
+  710dbc:	33030036 	bfi	w22, w1, #29, #1
+  710dc0:	2a1603e1 	mov	w1, w22
+  710dc4:	97ebd287 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710dc8:	f9404e60 	ldr	x0, [x19, #152]
+  710dcc:	52800002 	mov	w2, #0x0                   	// #0
+  710dd0:	52800f01 	mov	w1, #0x78                  	// #120
+  710dd4:	97ebbdd3 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710dd8:	f9404e60 	ldr	x0, [x19, #152]
+  710ddc:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  710de0:	2a0203e1 	mov	w1, w2
+  710de4:	97ebca33 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  710de8:	a9490660 	ldp	x0, x1, [x19, #144]
+  710dec:	52800003 	mov	w3, #0x0                   	// #0
+  710df0:	52800002 	mov	w2, #0x0                   	// #0
+  710df4:	97ebd38f 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710df8:	d2800600 	mov	x0, #0x30                  	// #48
+  710dfc:	97ebc711 	bl	202a40 <_Znwm@plt>
+  710e00:	f9400661 	ldr	x1, [x19, #8]
+  710e04:	aa0003f7 	mov	x23, x0
+  710e08:	97ebc9e2 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  710e0c:	aa1403e8 	mov	x8, x20
+  710e10:	f9005277 	str	x23, [x19, #160]
+  710e14:	528001e1 	mov	w1, #0xf                   	// #15
+  710e18:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  710e1c:	91338000 	add	x0, x0, #0xce0
+  710e20:	97ebd920 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710e24:	aa1403e1 	mov	x1, x20
+  710e28:	aa1703e0 	mov	x0, x23
+  710e2c:	97ebd17d 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710e30:	f94027e0 	ldr	x0, [sp, #72]
+  710e34:	b9400001 	ldr	w1, [x0]
+  710e38:	34006f01 	cbz	w1, 711c18 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ac0>
+  710e3c:	3100043f 	cmn	w1, #0x1
+  710e40:	540000c0 	b.eq	710e58 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xd00>  // b.none
+  710e44:	885ffc01 	ldaxr	w1, [x0]
+  710e48:	51000421 	sub	w1, w1, #0x1
+  710e4c:	8802fc01 	stlxr	w2, w1, [x0]
+  710e50:	35ffffa2 	cbnz	w2, 710e44 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xcec>
+  710e54:	34006de1 	cbz	w1, 711c10 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1ab8>
+  710e58:	f9405260 	ldr	x0, [x19, #160]
+  710e5c:	97ebc341 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710e60:	531d7401 	ubfx	w1, w0, #29, #1
+  710e64:	f9405260 	ldr	x0, [x19, #160]
+  710e68:	33030036 	bfi	w22, w1, #29, #1
+  710e6c:	2a1603e1 	mov	w1, w22
+  710e70:	97ebd25c 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710e74:	f9405260 	ldr	x0, [x19, #160]
+  710e78:	52800002 	mov	w2, #0x0                   	// #0
+  710e7c:	52800f01 	mov	w1, #0x78                  	// #120
+  710e80:	97ebbda8 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  710e84:	f9404a60 	ldr	x0, [x19, #144]
+  710e88:	52800003 	mov	w3, #0x0                   	// #0
+  710e8c:	f9405261 	ldr	x1, [x19, #160]
+  710e90:	52800002 	mov	w2, #0x0                   	// #0
+  710e94:	97ebd367 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710e98:	f9400a60 	ldr	x0, [x19, #16]
+  710e9c:	52800025 	mov	w5, #0x1                   	// #1
+  710ea0:	f9404a61 	ldr	x1, [x19, #144]
+  710ea4:	2a0503e4 	mov	w4, w5
+  710ea8:	2a0503e3 	mov	w3, w5
+  710eac:	52800006 	mov	w6, #0x0                   	// #0
+  710eb0:	528000c2 	mov	w2, #0x6                   	// #6
+  710eb4:	97ebb75f 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710eb8:	a9400660 	ldp	x0, x1, [x19]
+  710ebc:	52800025 	mov	w5, #0x1                   	// #1
+  710ec0:	2a0503e4 	mov	w4, w5
+  710ec4:	52800006 	mov	w6, #0x0                   	// #0
+  710ec8:	52800003 	mov	w3, #0x0                   	// #0
+  710ecc:	52800002 	mov	w2, #0x0                   	// #0
+  710ed0:	97ebcdd4 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  710ed4:	d2800600 	mov	x0, #0x30                  	// #48
+  710ed8:	97ebc6da 	bl	202a40 <_Znwm@plt>
+  710edc:	aa1503e1 	mov	x1, x21
+  710ee0:	aa0003f6 	mov	x22, x0
+  710ee4:	97ebca2b 	bl	203790 <_ZN9QGroupBoxC1EP7QWidget@plt>
+  710ee8:	aa1403e8 	mov	x8, x20
+  710eec:	f9005676 	str	x22, [x19, #168]
+  710ef0:	52800181 	mov	w1, #0xc                   	// #12
+  710ef4:	90000c20 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  710ef8:	9133c000 	add	x0, x0, #0xcf0
+  710efc:	97ebd8e9 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710f00:	aa1403e1 	mov	x1, x20
+  710f04:	aa1603e0 	mov	x0, x22
+  710f08:	97ebd146 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710f0c:	f94027e0 	ldr	x0, [sp, #72]
+  710f10:	b9400001 	ldr	w1, [x0]
+  710f14:	34006761 	cbz	w1, 711c00 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1aa8>
+  710f18:	3100043f 	cmn	w1, #0x1
+  710f1c:	540000c0 	b.eq	710f34 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xddc>  // b.none
+  710f20:	885ffc01 	ldaxr	w1, [x0]
+  710f24:	51000421 	sub	w1, w1, #0x1
+  710f28:	8802fc01 	stlxr	w2, w1, [x0]
+  710f2c:	35ffffa2 	cbnz	w2, 710f20 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xdc8>
+  710f30:	34006641 	cbz	w1, 711bf8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1aa0>
+  710f34:	f9405660 	ldr	x0, [x19, #168]
+  710f38:	52a00ab6 	mov	w22, #0x550000              	// #5570560
+  710f3c:	97ebc309 	bl	201b60 <_ZNK7QWidget10sizePolicyEv@plt>
+  710f40:	531d7401 	ubfx	w1, w0, #29, #1
+  710f44:	f9405660 	ldr	x0, [x19, #168]
+  710f48:	33030036 	bfi	w22, w1, #29, #1
+  710f4c:	2a1603e1 	mov	w1, w22
+  710f50:	97ebd224 	bl	2057e0 <_ZN7QWidget13setSizePolicyE11QSizePolicy@plt>
+  710f54:	d2800400 	mov	x0, #0x20                  	// #32
+  710f58:	97ebc6ba 	bl	202a40 <_Znwm@plt>
+  710f5c:	f9405661 	ldr	x1, [x19, #168]
+  710f60:	aa0003f6 	mov	x22, x0
+  710f64:	97ebc85b 	bl	2030d0 <_ZN11QGridLayoutC1EP7QWidget@plt>
+  710f68:	aa1403e8 	mov	x8, x20
+  710f6c:	f9005a76 	str	x22, [x19, #176]
+  710f70:	52800141 	mov	w1, #0xa                   	// #10
+  710f74:	b0000aa0 	adrp	x0, 865000 <_ZTSSt15_Sp_counted_ptrIP12KForceLogoutLN9__gnu_cxx12_Lock_policyE2EE+0x40>
+  710f78:	91024000 	add	x0, x0, #0x90
+  710f7c:	97ebd8c9 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  710f80:	aa1403e1 	mov	x1, x20
+  710f84:	aa1603e0 	mov	x0, x22
+  710f88:	97ebd126 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  710f8c:	f94027e0 	ldr	x0, [sp, #72]
+  710f90:	b9400001 	ldr	w1, [x0]
+  710f94:	340062a1 	cbz	w1, 711be8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a90>
+  710f98:	3100043f 	cmn	w1, #0x1
+  710f9c:	540000c0 	b.eq	710fb4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xe5c>  // b.none
+  710fa0:	885ffc01 	ldaxr	w1, [x0]
+  710fa4:	51000421 	sub	w1, w1, #0x1
+  710fa8:	8802fc01 	stlxr	w2, w1, [x0]
+  710fac:	35ffffa2 	cbnz	w2, 710fa0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xe48>
+  710fb0:	34006181 	cbz	w1, 711be0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a88>
+  710fb4:	f9405a60 	ldr	x0, [x19, #176]
+  710fb8:	52800181 	mov	w1, #0xc                   	// #12
+  710fbc:	97ebcf99 	bl	204e20 <_ZN11QGridLayout18setVerticalSpacingEi@plt>
+  710fc0:	f9405a60 	ldr	x0, [x19, #176]
+  710fc4:	12800004 	mov	w4, #0xffffffff            	// #-1
+  710fc8:	52800282 	mov	w2, #0x14                  	// #20
+  710fcc:	2a0403e3 	mov	w3, w4
+  710fd0:	2a0203e1 	mov	w1, w2
+  710fd4:	97ebb1c7 	bl	1fd6f0 <_ZN7QLayout18setContentsMarginsEiiii@plt>
+  710fd8:	d2800400 	mov	x0, #0x20                  	// #32
+  710fdc:	97ebc699 	bl	202a40 <_Znwm@plt>
+  710fe0:	aa0003f6 	mov	x22, x0
+  710fe4:	97ebc2b3 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  710fe8:	aa1403e8 	mov	x8, x20
+  710fec:	f9005e76 	str	x22, [x19, #184]
+  710ff0:	52800261 	mov	w1, #0x13                  	// #19
+  710ff4:	f0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  710ff8:	910c2000 	add	x0, x0, #0x308
+  710ffc:	97ebd8a9 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711000:	aa1403e1 	mov	x1, x20
+  711004:	aa1603e0 	mov	x0, x22
+  711008:	97ebd106 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  71100c:	f94027e0 	ldr	x0, [sp, #72]
+  711010:	b9400001 	ldr	w1, [x0]
+  711014:	34005de1 	cbz	w1, 711bd0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a78>
+  711018:	3100043f 	cmn	w1, #0x1
+  71101c:	540000c0 	b.eq	711034 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xedc>  // b.none
+  711020:	885ffc01 	ldaxr	w1, [x0]
+  711024:	51000421 	sub	w1, w1, #0x1
+  711028:	8802fc01 	stlxr	w2, w1, [x0]
+  71102c:	35ffffa2 	cbnz	w2, 711020 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xec8>
+  711030:	34005cc1 	cbz	w1, 711bc8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a70>
+  711034:	d2800600 	mov	x0, #0x30                  	// #48
+  711038:	97ebc682 	bl	202a40 <_Znwm@plt>
+  71103c:	f9405661 	ldr	x1, [x19, #168]
+  711040:	aa0003f6 	mov	x22, x0
+  711044:	52800002 	mov	w2, #0x0                   	// #0
+  711048:	97ebb56a 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  71104c:	aa1403e8 	mov	x8, x20
+  711050:	f9006276 	str	x22, [x19, #192]
+  711054:	528002c1 	mov	w1, #0x16                  	// #22
+  711058:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  71105c:	91340000 	add	x0, x0, #0xd00
+  711060:	97ebd890 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711064:	aa1403e1 	mov	x1, x20
+  711068:	aa1603e0 	mov	x0, x22
+  71106c:	97ebd0ed 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  711070:	f94027e0 	ldr	x0, [sp, #72]
+  711074:	b9400001 	ldr	w1, [x0]
+  711078:	34005a01 	cbz	w1, 711bb8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a60>
+  71107c:	3100043f 	cmn	w1, #0x1
+  711080:	540000c0 	b.eq	711098 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xf40>  // b.none
+  711084:	885ffc01 	ldaxr	w1, [x0]
+  711088:	51000421 	sub	w1, w1, #0x1
+  71108c:	8802fc01 	stlxr	w2, w1, [x0]
+  711090:	35ffffa2 	cbnz	w2, 711084 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xf2c>
+  711094:	340058e1 	cbz	w1, 711bb0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a58>
+  711098:	a94b8660 	ldp	x0, x1, [x19, #184]
+  71109c:	52800002 	mov	w2, #0x0                   	// #0
+  7110a0:	52800003 	mov	w3, #0x0                   	// #0
+  7110a4:	97ebd2e3 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7110a8:	d2800600 	mov	x0, #0x30                  	// #48
+  7110ac:	97ebc665 	bl	202a40 <_Znwm@plt>
+  7110b0:	f9405661 	ldr	x1, [x19, #168]
+  7110b4:	aa0003f6 	mov	x22, x0
+  7110b8:	52800002 	mov	w2, #0x0                   	// #0
+  7110bc:	97ebb54d 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  7110c0:	aa1403e8 	mov	x8, x20
+  7110c4:	f9006676 	str	x22, [x19, #200]
+  7110c8:	52800241 	mov	w1, #0x12                  	// #18
+  7110cc:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7110d0:	91346000 	add	x0, x0, #0xd18
+  7110d4:	97ebd873 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7110d8:	aa1403e1 	mov	x1, x20
+  7110dc:	aa1603e0 	mov	x0, x22
+  7110e0:	97ebd0d0 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7110e4:	f94027e0 	ldr	x0, [sp, #72]
+  7110e8:	b9400001 	ldr	w1, [x0]
+  7110ec:	340055a1 	cbz	w1, 711ba0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a48>
+  7110f0:	3100043f 	cmn	w1, #0x1
+  7110f4:	540000c0 	b.eq	71110c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xfb4>  // b.none
+  7110f8:	885ffc01 	ldaxr	w1, [x0]
+  7110fc:	51000421 	sub	w1, w1, #0x1
+  711100:	8802fc01 	stlxr	w2, w1, [x0]
+  711104:	35ffffa2 	cbnz	w2, 7110f8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0xfa0>
+  711108:	34005481 	cbz	w1, 711b98 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a40>
+  71110c:	f9406660 	ldr	x0, [x19, #200]
+  711110:	52801041 	mov	w1, #0x82                  	// #130
+  711114:	97ebd687 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711118:	f9405e60 	ldr	x0, [x19, #184]
+  71111c:	52800003 	mov	w3, #0x0                   	// #0
+  711120:	f9406661 	ldr	x1, [x19, #200]
+  711124:	52800002 	mov	w2, #0x0                   	// #0
+  711128:	97ebd2c2 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71112c:	a94b0660 	ldp	x0, x1, [x19, #176]
+  711130:	52800025 	mov	w5, #0x1                   	// #1
+  711134:	2a0503e4 	mov	w4, w5
+  711138:	52800006 	mov	w6, #0x0                   	// #0
+  71113c:	52800003 	mov	w3, #0x0                   	// #0
+  711140:	52800082 	mov	w2, #0x4                   	// #4
+  711144:	97ebb6bb 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711148:	d2800400 	mov	x0, #0x20                  	// #32
+  71114c:	97ebc63d 	bl	202a40 <_Znwm@plt>
+  711150:	aa0003f6 	mov	x22, x0
+  711154:	97ebc257 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  711158:	aa1403e8 	mov	x8, x20
+  71115c:	f9006a76 	str	x22, [x19, #208]
+  711160:	52800261 	mov	w1, #0x13                  	// #19
+  711164:	d0000b00 	adrp	x0, 873000 <_ZZN19KReportEditUIConfig10LoadConfigEvE12__FUNCTION__+0x160>
+  711168:	910d6000 	add	x0, x0, #0x358
+  71116c:	97ebd84d 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711170:	aa1403e1 	mov	x1, x20
+  711174:	aa1603e0 	mov	x0, x22
+  711178:	97ebd0aa 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  71117c:	f94027e0 	ldr	x0, [sp, #72]
+  711180:	b9400001 	ldr	w1, [x0]
+  711184:	34005021 	cbz	w1, 711b88 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a30>
+  711188:	3100043f 	cmn	w1, #0x1
+  71118c:	540000c0 	b.eq	7111a4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x104c>  // b.none
+  711190:	885ffc01 	ldaxr	w1, [x0]
+  711194:	51000421 	sub	w1, w1, #0x1
+  711198:	8802fc01 	stlxr	w2, w1, [x0]
+  71119c:	35ffffa2 	cbnz	w2, 711190 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1038>
+  7111a0:	34004f01 	cbz	w1, 711b80 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a28>
+  7111a4:	d2800600 	mov	x0, #0x30                  	// #48
+  7111a8:	97ebc626 	bl	202a40 <_Znwm@plt>
+  7111ac:	f9405661 	ldr	x1, [x19, #168]
+  7111b0:	aa0003f6 	mov	x22, x0
+  7111b4:	52800002 	mov	w2, #0x0                   	// #0
+  7111b8:	97ebb50e 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  7111bc:	aa1403e8 	mov	x8, x20
+  7111c0:	f9006e76 	str	x22, [x19, #216]
+  7111c4:	52800201 	mov	w1, #0x10                  	// #16
+  7111c8:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7111cc:	9134c000 	add	x0, x0, #0xd30
+  7111d0:	97ebd834 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7111d4:	aa1403e1 	mov	x1, x20
+  7111d8:	aa1603e0 	mov	x0, x22
+  7111dc:	97ebd091 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7111e0:	f94027e0 	ldr	x0, [sp, #72]
+  7111e4:	b9400001 	ldr	w1, [x0]
+  7111e8:	34004c41 	cbz	w1, 711b70 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a18>
+  7111ec:	3100043f 	cmn	w1, #0x1
+  7111f0:	540000c0 	b.eq	711208 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x10b0>  // b.none
+  7111f4:	885ffc01 	ldaxr	w1, [x0]
+  7111f8:	51000421 	sub	w1, w1, #0x1
+  7111fc:	8802fc01 	stlxr	w2, w1, [x0]
+  711200:	35ffffa2 	cbnz	w2, 7111f4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x109c>
+  711204:	34004b21 	cbz	w1, 711b68 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a10>
+  711208:	a94d0660 	ldp	x0, x1, [x19, #208]
+  71120c:	52800002 	mov	w2, #0x0                   	// #0
+  711210:	52800003 	mov	w3, #0x0                   	// #0
+  711214:	97ebd287 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711218:	d2800600 	mov	x0, #0x30                  	// #48
+  71121c:	97ebc609 	bl	202a40 <_Znwm@plt>
+  711220:	f9405661 	ldr	x1, [x19, #168]
+  711224:	aa0003f6 	mov	x22, x0
+  711228:	52800002 	mov	w2, #0x0                   	// #0
+  71122c:	97ebb4f1 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  711230:	aa1403e8 	mov	x8, x20
+  711234:	f9007276 	str	x22, [x19, #224]
+  711238:	52800181 	mov	w1, #0xc                   	// #12
+  71123c:	f0000b80 	adrp	x0, 884000 <_ZZ17OpenKErrorRateDlgvE12__FUNCTION__+0xcf8>
+  711240:	91222000 	add	x0, x0, #0x888
+  711244:	97ebd817 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711248:	aa1403e1 	mov	x1, x20
+  71124c:	aa1603e0 	mov	x0, x22
+  711250:	97ebd074 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  711254:	f94027e0 	ldr	x0, [sp, #72]
+  711258:	b9400001 	ldr	w1, [x0]
+  71125c:	340047e1 	cbz	w1, 711b58 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1a00>
+  711260:	3100043f 	cmn	w1, #0x1
+  711264:	540000c0 	b.eq	71127c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1124>  // b.none
+  711268:	885ffc01 	ldaxr	w1, [x0]
+  71126c:	51000421 	sub	w1, w1, #0x1
+  711270:	8802fc01 	stlxr	w2, w1, [x0]
+  711274:	35ffffa2 	cbnz	w2, 711268 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1110>
+  711278:	340046c1 	cbz	w1, 711b50 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19f8>
+  71127c:	f9407260 	ldr	x0, [x19, #224]
+  711280:	52801041 	mov	w1, #0x82                  	// #130
+  711284:	97ebd62b 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711288:	f9406a60 	ldr	x0, [x19, #208]
+  71128c:	52800003 	mov	w3, #0x0                   	// #0
+  711290:	f9407261 	ldr	x1, [x19, #224]
+  711294:	52800002 	mov	w2, #0x0                   	// #0
+  711298:	97ebd266 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71129c:	f9405a60 	ldr	x0, [x19, #176]
+  7112a0:	52800025 	mov	w5, #0x1                   	// #1
+  7112a4:	f9406a61 	ldr	x1, [x19, #208]
+  7112a8:	2a0503e4 	mov	w4, w5
+  7112ac:	52800006 	mov	w6, #0x0                   	// #0
+  7112b0:	52800003 	mov	w3, #0x0                   	// #0
+  7112b4:	52800062 	mov	w2, #0x3                   	// #3
+  7112b8:	97ebb65e 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7112bc:	d2800400 	mov	x0, #0x20                  	// #32
+  7112c0:	97ebc5e0 	bl	202a40 <_Znwm@plt>
+  7112c4:	aa0003f6 	mov	x22, x0
+  7112c8:	97ebc1fa 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  7112cc:	aa1403e8 	mov	x8, x20
+  7112d0:	f9007676 	str	x22, [x19, #232]
+  7112d4:	52800241 	mov	w1, #0x12                  	// #18
+  7112d8:	b0000b00 	adrp	x0, 872000 <_ZZN13KReportEditUi13ClickBtnPrintEvE12__FUNCTION__+0xfa0>
+  7112dc:	91050000 	add	x0, x0, #0x140
+  7112e0:	97ebd7f0 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7112e4:	aa1403e1 	mov	x1, x20
+  7112e8:	aa1603e0 	mov	x0, x22
+  7112ec:	97ebd04d 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7112f0:	f94027e0 	ldr	x0, [sp, #72]
+  7112f4:	b9400001 	ldr	w1, [x0]
+  7112f8:	34004241 	cbz	w1, 711b40 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19e8>
+  7112fc:	3100043f 	cmn	w1, #0x1
+  711300:	540000c0 	b.eq	711318 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x11c0>  // b.none
+  711304:	885ffc01 	ldaxr	w1, [x0]
+  711308:	51000421 	sub	w1, w1, #0x1
+  71130c:	8802fc01 	stlxr	w2, w1, [x0]
+  711310:	35ffffa2 	cbnz	w2, 711304 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x11ac>
+  711314:	34004121 	cbz	w1, 711b38 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19e0>
+  711318:	d2800600 	mov	x0, #0x30                  	// #48
+  71131c:	97ebc5c9 	bl	202a40 <_Znwm@plt>
+  711320:	f9405661 	ldr	x1, [x19, #168]
+  711324:	aa0003f6 	mov	x22, x0
+  711328:	52800002 	mov	w2, #0x0                   	// #0
+  71132c:	97ebb4b1 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  711330:	aa1403e8 	mov	x8, x20
+  711334:	f9007a76 	str	x22, [x19, #240]
+  711338:	528002a1 	mov	w1, #0x15                  	// #21
+  71133c:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  711340:	91352000 	add	x0, x0, #0xd48
+  711344:	97ebd7d7 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711348:	aa1403e1 	mov	x1, x20
+  71134c:	aa1603e0 	mov	x0, x22
+  711350:	97ebd034 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  711354:	f94027e0 	ldr	x0, [sp, #72]
+  711358:	b9400001 	ldr	w1, [x0]
+  71135c:	34003e61 	cbz	w1, 711b28 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19d0>
+  711360:	3100043f 	cmn	w1, #0x1
+  711364:	540000c0 	b.eq	71137c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1224>  // b.none
+  711368:	885ffc01 	ldaxr	w1, [x0]
+  71136c:	51000421 	sub	w1, w1, #0x1
+  711370:	8802fc01 	stlxr	w2, w1, [x0]
+  711374:	35ffffa2 	cbnz	w2, 711368 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1210>
+  711378:	34003d41 	cbz	w1, 711b20 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19c8>
+  71137c:	a94e8660 	ldp	x0, x1, [x19, #232]
+  711380:	52800002 	mov	w2, #0x0                   	// #0
+  711384:	52800003 	mov	w3, #0x0                   	// #0
+  711388:	97ebd22a 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71138c:	d2800600 	mov	x0, #0x30                  	// #48
+  711390:	97ebc5ac 	bl	202a40 <_Znwm@plt>
+  711394:	f9405661 	ldr	x1, [x19, #168]
+  711398:	aa0003f6 	mov	x22, x0
+  71139c:	52800002 	mov	w2, #0x0                   	// #0
+  7113a0:	97ebb494 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  7113a4:	aa1403e8 	mov	x8, x20
+  7113a8:	f9007e76 	str	x22, [x19, #248]
+  7113ac:	52800221 	mov	w1, #0x11                  	// #17
+  7113b0:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7113b4:	91358000 	add	x0, x0, #0xd60
+  7113b8:	97ebd7ba 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7113bc:	aa1403e1 	mov	x1, x20
+  7113c0:	aa1603e0 	mov	x0, x22
+  7113c4:	97ebd017 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7113c8:	f94027e0 	ldr	x0, [sp, #72]
+  7113cc:	b9400001 	ldr	w1, [x0]
+  7113d0:	34003a01 	cbz	w1, 711b10 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19b8>
+  7113d4:	3100043f 	cmn	w1, #0x1
+  7113d8:	540000c0 	b.eq	7113f0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1298>  // b.none
+  7113dc:	885ffc01 	ldaxr	w1, [x0]
+  7113e0:	51000421 	sub	w1, w1, #0x1
+  7113e4:	8802fc01 	stlxr	w2, w1, [x0]
+  7113e8:	35ffffa2 	cbnz	w2, 7113dc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1284>
+  7113ec:	340038e1 	cbz	w1, 711b08 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19b0>
+  7113f0:	f9407e60 	ldr	x0, [x19, #248]
+  7113f4:	52801041 	mov	w1, #0x82                  	// #130
+  7113f8:	97ebd5ce 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7113fc:	f9407660 	ldr	x0, [x19, #232]
+  711400:	52800003 	mov	w3, #0x0                   	// #0
+  711404:	f9407e61 	ldr	x1, [x19, #248]
+  711408:	52800002 	mov	w2, #0x0                   	// #0
+  71140c:	97ebd209 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711410:	f9405a60 	ldr	x0, [x19, #176]
+  711414:	52800025 	mov	w5, #0x1                   	// #1
+  711418:	f9407661 	ldr	x1, [x19, #232]
+  71141c:	2a0503e4 	mov	w4, w5
+  711420:	52800006 	mov	w6, #0x0                   	// #0
+  711424:	52800003 	mov	w3, #0x0                   	// #0
+  711428:	52800002 	mov	w2, #0x0                   	// #0
+  71142c:	97ebb601 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711430:	d2800400 	mov	x0, #0x20                  	// #32
+  711434:	97ebc583 	bl	202a40 <_Znwm@plt>
+  711438:	aa0003f6 	mov	x22, x0
+  71143c:	97ebc19d 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  711440:	aa1403e8 	mov	x8, x20
+  711444:	f9008276 	str	x22, [x19, #256]
+  711448:	52800241 	mov	w1, #0x12                  	// #18
+  71144c:	90000b00 	adrp	x0, 871000 <_ZTSSt23_Sp_counted_ptr_inplaceI21KReportTempletEditDlgSaIS0_ELN9__gnu_cxx12_Lock_policyE2EE+0x48>
+  711450:	91150000 	add	x0, x0, #0x540
+  711454:	97ebd793 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711458:	aa1403e1 	mov	x1, x20
+  71145c:	aa1603e0 	mov	x0, x22
+  711460:	97ebcff0 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  711464:	f94027e0 	ldr	x0, [sp, #72]
+  711468:	b9400001 	ldr	w1, [x0]
+  71146c:	34003461 	cbz	w1, 711af8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x19a0>
+  711470:	3100043f 	cmn	w1, #0x1
+  711474:	540000c0 	b.eq	71148c <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1334>  // b.none
+  711478:	885ffc01 	ldaxr	w1, [x0]
+  71147c:	51000421 	sub	w1, w1, #0x1
+  711480:	8802fc01 	stlxr	w2, w1, [x0]
+  711484:	35ffffa2 	cbnz	w2, 711478 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1320>
+  711488:	34003341 	cbz	w1, 711af0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1998>
+  71148c:	d2800600 	mov	x0, #0x30                  	// #48
+  711490:	97ebc56c 	bl	202a40 <_Znwm@plt>
+  711494:	f9405661 	ldr	x1, [x19, #168]
+  711498:	aa0003f6 	mov	x22, x0
+  71149c:	52800002 	mov	w2, #0x0                   	// #0
+  7114a0:	97ebb454 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  7114a4:	aa1403e8 	mov	x8, x20
+  7114a8:	f9008676 	str	x22, [x19, #264]
+  7114ac:	528003a1 	mov	w1, #0x1d                  	// #29
+  7114b0:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7114b4:	9135e000 	add	x0, x0, #0xd78
+  7114b8:	97ebd77a 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7114bc:	aa1403e1 	mov	x1, x20
+  7114c0:	aa1603e0 	mov	x0, x22
+  7114c4:	97ebcfd7 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7114c8:	f94027e0 	ldr	x0, [sp, #72]
+  7114cc:	b9400001 	ldr	w1, [x0]
+  7114d0:	34003081 	cbz	w1, 711ae0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1988>
+  7114d4:	3100043f 	cmn	w1, #0x1
+  7114d8:	540000c0 	b.eq	7114f0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1398>  // b.none
+  7114dc:	885ffc01 	ldaxr	w1, [x0]
+  7114e0:	51000421 	sub	w1, w1, #0x1
+  7114e4:	8802fc01 	stlxr	w2, w1, [x0]
+  7114e8:	35ffffa2 	cbnz	w2, 7114dc <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1384>
+  7114ec:	34002f61 	cbz	w1, 711ad8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1980>
+  7114f0:	a9500660 	ldp	x0, x1, [x19, #256]
+  7114f4:	52800002 	mov	w2, #0x0                   	// #0
+  7114f8:	52800003 	mov	w3, #0x0                   	// #0
+  7114fc:	97ebd1cd 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711500:	d2800600 	mov	x0, #0x30                  	// #48
+  711504:	97ebc54f 	bl	202a40 <_Znwm@plt>
+  711508:	f9405661 	ldr	x1, [x19, #168]
+  71150c:	aa0003f6 	mov	x22, x0
+  711510:	52800002 	mov	w2, #0x0                   	// #0
+  711514:	97ebb437 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  711518:	aa1403e8 	mov	x8, x20
+  71151c:	f9008a76 	str	x22, [x19, #272]
+  711520:	52800321 	mov	w1, #0x19                  	// #25
+  711524:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  711528:	91366000 	add	x0, x0, #0xd98
+  71152c:	97ebd75d 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711530:	aa1403e1 	mov	x1, x20
+  711534:	aa1603e0 	mov	x0, x22
+  711538:	97ebcfba 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  71153c:	f94027e0 	ldr	x0, [sp, #72]
+  711540:	b9400001 	ldr	w1, [x0]
+  711544:	34002c21 	cbz	w1, 711ac8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1970>
+  711548:	3100043f 	cmn	w1, #0x1
+  71154c:	540000c0 	b.eq	711564 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x140c>  // b.none
+  711550:	885ffc01 	ldaxr	w1, [x0]
+  711554:	51000421 	sub	w1, w1, #0x1
+  711558:	8802fc01 	stlxr	w2, w1, [x0]
+  71155c:	35ffffa2 	cbnz	w2, 711550 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x13f8>
+  711560:	34002b01 	cbz	w1, 711ac0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1968>
+  711564:	f9408a60 	ldr	x0, [x19, #272]
+  711568:	52801041 	mov	w1, #0x82                  	// #130
+  71156c:	97ebd571 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711570:	f9408260 	ldr	x0, [x19, #256]
+  711574:	52800003 	mov	w3, #0x0                   	// #0
+  711578:	f9408a61 	ldr	x1, [x19, #272]
+  71157c:	52800002 	mov	w2, #0x0                   	// #0
+  711580:	97ebd1ac 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711584:	f9405a60 	ldr	x0, [x19, #176]
+  711588:	52800025 	mov	w5, #0x1                   	// #1
+  71158c:	f9408261 	ldr	x1, [x19, #256]
+  711590:	2a0503e4 	mov	w4, w5
+  711594:	2a0503e2 	mov	w2, w5
+  711598:	52800006 	mov	w6, #0x0                   	// #0
+  71159c:	52800003 	mov	w3, #0x0                   	// #0
+  7115a0:	97ebb5a4 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7115a4:	d2800400 	mov	x0, #0x20                  	// #32
+  7115a8:	97ebc526 	bl	202a40 <_Znwm@plt>
+  7115ac:	aa0003f6 	mov	x22, x0
+  7115b0:	97ebc140 	bl	201ab0 <_ZN11QHBoxLayoutC1Ev@plt>
+  7115b4:	aa1403e8 	mov	x8, x20
+  7115b8:	f9008e76 	str	x22, [x19, #280]
+  7115bc:	52800261 	mov	w1, #0x13                  	// #19
+  7115c0:	90000b00 	adrp	x0, 871000 <_ZTSSt23_Sp_counted_ptr_inplaceI21KReportTempletEditDlgSaIS0_ELN9__gnu_cxx12_Lock_policyE2EE+0x48>
+  7115c4:	9122a000 	add	x0, x0, #0x8a8
+  7115c8:	97ebd736 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7115cc:	aa1403e1 	mov	x1, x20
+  7115d0:	aa1603e0 	mov	x0, x22
+  7115d4:	97ebcf93 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7115d8:	f94027e0 	ldr	x0, [sp, #72]
+  7115dc:	b9400001 	ldr	w1, [x0]
+  7115e0:	34002681 	cbz	w1, 711ab0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1958>
+  7115e4:	3100043f 	cmn	w1, #0x1
+  7115e8:	540000c0 	b.eq	711600 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x14a8>  // b.none
+  7115ec:	885ffc01 	ldaxr	w1, [x0]
+  7115f0:	51000421 	sub	w1, w1, #0x1
+  7115f4:	8802fc01 	stlxr	w2, w1, [x0]
+  7115f8:	35ffffa2 	cbnz	w2, 7115ec <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1494>
+  7115fc:	34002561 	cbz	w1, 711aa8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1950>
+  711600:	d2800600 	mov	x0, #0x30                  	// #48
+  711604:	97ebc50f 	bl	202a40 <_Znwm@plt>
+  711608:	f9405661 	ldr	x1, [x19, #168]
+  71160c:	aa0003f6 	mov	x22, x0
+  711610:	52800002 	mov	w2, #0x0                   	// #0
+  711614:	97ebb3f7 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  711618:	aa1403e8 	mov	x8, x20
+  71161c:	f9009276 	str	x22, [x19, #288]
+  711620:	52800321 	mov	w1, #0x19                  	// #25
+  711624:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  711628:	9136e000 	add	x0, x0, #0xdb8
+  71162c:	97ebd71d 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711630:	aa1403e1 	mov	x1, x20
+  711634:	aa1603e0 	mov	x0, x22
+  711638:	97ebcf7a 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  71163c:	f94027e0 	ldr	x0, [sp, #72]
+  711640:	b9400001 	ldr	w1, [x0]
+  711644:	340022a1 	cbz	w1, 711a98 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1940>
+  711648:	3100043f 	cmn	w1, #0x1
+  71164c:	540000c0 	b.eq	711664 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x150c>  // b.none
+  711650:	885ffc01 	ldaxr	w1, [x0]
+  711654:	51000421 	sub	w1, w1, #0x1
+  711658:	8802fc01 	stlxr	w2, w1, [x0]
+  71165c:	35ffffa2 	cbnz	w2, 711650 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x14f8>
+  711660:	34002181 	cbz	w1, 711a90 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1938>
+  711664:	a9518660 	ldp	x0, x1, [x19, #280]
+  711668:	52800002 	mov	w2, #0x0                   	// #0
+  71166c:	52800003 	mov	w3, #0x0                   	// #0
+  711670:	97ebd170 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711674:	d2800600 	mov	x0, #0x30                  	// #48
+  711678:	97ebc4f2 	bl	202a40 <_Znwm@plt>
+  71167c:	f9405661 	ldr	x1, [x19, #168]
+  711680:	aa0003f6 	mov	x22, x0
+  711684:	52800002 	mov	w2, #0x0                   	// #0
+  711688:	97ebb3da 	bl	1fe5f0 <_ZN6QLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  71168c:	aa1403e8 	mov	x8, x20
+  711690:	f9009676 	str	x22, [x19, #296]
+  711694:	528002a1 	mov	w1, #0x15                  	// #21
+  711698:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  71169c:	91376000 	add	x0, x0, #0xdd8
+  7116a0:	97ebd700 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7116a4:	aa1403e1 	mov	x1, x20
+  7116a8:	aa1603e0 	mov	x0, x22
+  7116ac:	97ebcf5d 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7116b0:	f94027e0 	ldr	x0, [sp, #72]
+  7116b4:	b9400001 	ldr	w1, [x0]
+  7116b8:	34001e41 	cbz	w1, 711a80 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1928>
+  7116bc:	3100043f 	cmn	w1, #0x1
+  7116c0:	540000c0 	b.eq	7116d8 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1580>  // b.none
+  7116c4:	885ffc01 	ldaxr	w1, [x0]
+  7116c8:	51000421 	sub	w1, w1, #0x1
+  7116cc:	8802fc01 	stlxr	w2, w1, [x0]
+  7116d0:	35ffffa2 	cbnz	w2, 7116c4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x156c>
+  7116d4:	34001d21 	cbz	w1, 711a78 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1920>
+  7116d8:	f9409660 	ldr	x0, [x19, #296]
+  7116dc:	52801041 	mov	w1, #0x82                  	// #130
+  7116e0:	f0001996 	adrp	x22, a44000 <_GLOBAL_OFFSET_TABLE_+0x12a0>
+  7116e4:	97ebd513 	bl	206b30 <_ZN6QLabel12setAlignmentE6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7116e8:	f9408e60 	ldr	x0, [x19, #280]
+  7116ec:	52800003 	mov	w3, #0x0                   	// #0
+  7116f0:	f9409661 	ldr	x1, [x19, #296]
+  7116f4:	52800002 	mov	w2, #0x0                   	// #0
+  7116f8:	97ebd14e 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7116fc:	f9405a60 	ldr	x0, [x19, #176]
+  711700:	52800025 	mov	w5, #0x1                   	// #1
+  711704:	f9408e61 	ldr	x1, [x19, #280]
+  711708:	2a0503e4 	mov	w4, w5
+  71170c:	52800006 	mov	w6, #0x0                   	// #0
+  711710:	52800003 	mov	w3, #0x0                   	// #0
+  711714:	52800042 	mov	w2, #0x2                   	// #2
+  711718:	97ebb546 	bl	1fec30 <_ZN11QGridLayout9addLayoutEP7QLayoutiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71171c:	f9400260 	ldr	x0, [x19]
+  711720:	52800025 	mov	w5, #0x1                   	// #1
+  711724:	f9405661 	ldr	x1, [x19, #168]
+  711728:	2a0503e4 	mov	w4, w5
+  71172c:	2a0503e2 	mov	w2, w5
+  711730:	52800006 	mov	w6, #0x0                   	// #0
+  711734:	52800003 	mov	w3, #0x0                   	// #0
+  711738:	97ebcbba 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  71173c:	d2800500 	mov	x0, #0x28                  	// #40
+  711740:	97ebc4c0 	bl	202a40 <_Znwm@plt>
+  711744:	f9417ec8 	ldr	x8, [x22, #760]
+  711748:	aa0003e7 	mov	x7, x0
+  71174c:	aa0003e1 	mov	x1, x0
+  711750:	d2801c0a 	mov	x10, #0xe0                  	// #224
+  711754:	f9400260 	ldr	x0, [x19]
+  711758:	91004108 	add	x8, x8, #0x10
+  71175c:	52800025 	mov	w5, #0x1                   	// #1
+  711760:	d2c02e0b 	mov	x11, #0x17000000000         	// #1580547964928
+  711764:	f2e00e2a 	movk	x10, #0x71, lsl #48
+  711768:	92800009 	mov	x9, #0xffffffffffffffff    	// #-1
+  71176c:	2a0503e4 	mov	w4, w5
+  711770:	a9002ce8 	stp	x8, x11, [x7]
+  711774:	52800042 	mov	w2, #0x2                   	// #2
+  711778:	a9017cea 	stp	x10, xzr, [x7, #16]
+  71177c:	52800006 	mov	w6, #0x0                   	// #0
+  711780:	52800003 	mov	w3, #0x0                   	// #0
+  711784:	f90010e9 	str	x9, [x7, #32]
+  711788:	f9009a67 	str	x7, [x19, #304]
+  71178c:	97ebb975 	bl	1ffd60 <_ZN11QGridLayout7addItemEP11QLayoutItemiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711790:	d2800600 	mov	x0, #0x30                  	// #48
+  711794:	97ebc4ab 	bl	202a40 <_Znwm@plt>
+  711798:	52800002 	mov	w2, #0x0                   	// #0
+  71179c:	aa0003f7 	mov	x23, x0
+  7117a0:	aa1503e1 	mov	x1, x21
+  7117a4:	97ebc707 	bl	2033c0 <_ZN6QFrameC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE@plt>
+  7117a8:	aa1403e8 	mov	x8, x20
+  7117ac:	f9009e77 	str	x23, [x19, #312]
+  7117b0:	52800161 	mov	w1, #0xb                   	// #11
+  7117b4:	f0000c00 	adrp	x0, 894000 <_ZTS14KImgProcThread+0x2d0>
+  7117b8:	9137c000 	add	x0, x0, #0xdf0
+  7117bc:	97ebd6b9 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7117c0:	aa1403e1 	mov	x1, x20
+  7117c4:	aa1703e0 	mov	x0, x23
+  7117c8:	97ebcf16 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7117cc:	f94027e0 	ldr	x0, [sp, #72]
+  7117d0:	b9400001 	ldr	w1, [x0]
+  7117d4:	340014a1 	cbz	w1, 711a68 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1910>
+  7117d8:	3100043f 	cmn	w1, #0x1
+  7117dc:	540000c0 	b.eq	7117f4 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x169c>  // b.none
+  7117e0:	885ffc01 	ldaxr	w1, [x0]
+  7117e4:	51000421 	sub	w1, w1, #0x1
+  7117e8:	8802fc01 	stlxr	w2, w1, [x0]
+  7117ec:	35ffffa2 	cbnz	w2, 7117e0 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1688>
+  7117f0:	34001381 	cbz	w1, 711a60 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1908>
+  7117f4:	d2800400 	mov	x0, #0x20                  	// #32
+  7117f8:	97ebc492 	bl	202a40 <_Znwm@plt>
+  7117fc:	f9409e61 	ldr	x1, [x19, #312]
+  711800:	aa0003f7 	mov	x23, x0
+  711804:	97ebce77 	bl	2051e0 <_ZN11QHBoxLayoutC1EP7QWidget@plt>
+  711808:	aa1403e8 	mov	x8, x20
+  71180c:	f900a277 	str	x23, [x19, #320]
+  711810:	52800241 	mov	w1, #0x12                  	// #18
+  711814:	b0000a60 	adrp	x0, 85e000 <_ZZN15KVideoPlayerOSD15CheckSplitVideoEvE12__FUNCTION__+0x100>
+  711818:	91070000 	add	x0, x0, #0x1c0
+  71181c:	97ebd6a1 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  711820:	aa1403e1 	mov	x1, x20
+  711824:	aa1703e0 	mov	x0, x23
+  711828:	97ebcefe 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  71182c:	f94027e0 	ldr	x0, [sp, #72]
+  711830:	b9400001 	ldr	w1, [x0]
+  711834:	340010e1 	cbz	w1, 711a50 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18f8>
+  711838:	3100043f 	cmn	w1, #0x1
+  71183c:	540000c0 	b.eq	711854 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x16fc>  // b.none
+  711840:	885ffc01 	ldaxr	w1, [x0]
+  711844:	51000421 	sub	w1, w1, #0x1
+  711848:	8802fc01 	stlxr	w2, w1, [x0]
+  71184c:	35ffffa2 	cbnz	w2, 711840 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x16e8>
+  711850:	34000fc1 	cbz	w1, 711a48 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18f0>
+  711854:	d2800500 	mov	x0, #0x28                  	// #40
+  711858:	97ebc47a 	bl	202a40 <_Znwm@plt>
+  71185c:	aa0003e2 	mov	x2, x0
+  711860:	d2800281 	mov	x1, #0x14                  	// #20
+  711864:	f940a260 	ldr	x0, [x19, #320]
+  711868:	d2c00503 	mov	x3, #0x2800000000          	// #171798691840
+  71186c:	f2e002a1 	movk	x1, #0x15, lsl #48
+  711870:	a9008443 	stp	x3, x1, [x2, #8]
+  711874:	92800005 	mov	x5, #0xffffffffffffffff    	// #-1
+  711878:	f9417ec3 	ldr	x3, [x22, #760]
+  71187c:	aa0203e1 	mov	x1, x2
+  711880:	f9400004 	ldr	x4, [x0]
+  711884:	91004063 	add	x3, x3, #0x10
+  711888:	f9000043 	str	x3, [x2]
+  71188c:	f9000c5f 	str	xzr, [x2, #24]
+  711890:	f9403883 	ldr	x3, [x4, #112]
+  711894:	f9001045 	str	x5, [x2, #32]
+  711898:	f900a662 	str	x2, [x19, #328]
+  71189c:	d63f0060 	blr	x3
+  7118a0:	d2800600 	mov	x0, #0x30                  	// #48
+  7118a4:	97ebc467 	bl	202a40 <_Znwm@plt>
+  7118a8:	f9409e61 	ldr	x1, [x19, #312]
+  7118ac:	aa0003f7 	mov	x23, x0
+  7118b0:	97ebc738 	bl	203590 <_ZN11QPushButtonC1EP7QWidget@plt>
+  7118b4:	aa1403e8 	mov	x8, x20
+  7118b8:	f900aa77 	str	x23, [x19, #336]
+  7118bc:	52800101 	mov	w1, #0x8                   	// #8
+  7118c0:	b0000a60 	adrp	x0, 85e000 <_ZZN15KVideoPlayerOSD15CheckSplitVideoEvE12__FUNCTION__+0x100>
+  7118c4:	9109c000 	add	x0, x0, #0x270
+  7118c8:	97ebd676 	bl	2072a0 <_ZN7QString15fromUtf8_helperEPKci@plt>
+  7118cc:	aa1403e1 	mov	x1, x20
+  7118d0:	aa1703e0 	mov	x0, x23
+  7118d4:	97ebced3 	bl	205420 <_ZN7QObject13setObjectNameERK7QString@plt>
+  7118d8:	f94027e0 	ldr	x0, [sp, #72]
+  7118dc:	b9400001 	ldr	w1, [x0]
+  7118e0:	34000ac1 	cbz	w1, 711a38 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18e0>
+  7118e4:	3100043f 	cmn	w1, #0x1
+  7118e8:	540000c0 	b.eq	711900 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x17a8>  // b.none
+  7118ec:	885ffc01 	ldaxr	w1, [x0]
+  7118f0:	51000421 	sub	w1, w1, #0x1
+  7118f4:	8802fc01 	stlxr	w2, w1, [x0]
+  7118f8:	35ffffa2 	cbnz	w2, 7118ec <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x1794>
+  7118fc:	340009a1 	cbz	w1, 711a30 <_ZN14Ui_KUserSrvSet7setupUiEP7QDialog+0x18d8>
+  711900:	f940aa60 	ldr	x0, [x19, #336]
+  711904:	52800002 	mov	w2, #0x0                   	// #0
+  711908:	52800f01 	mov	w1, #0x78                  	// #120
+  71190c:	97ebbb05 	bl	200520 <_ZN7QWidget14setMinimumSizeEii@plt>
+  711910:	f940aa60 	ldr	x0, [x19, #336]
+  711914:	12bfe002 	mov	w2, #0xffffff              	// #16777215
+  711918:	52800f01 	mov	w1, #0x78                  	// #120
+  71191c:	97ebc765 	bl	2036b0 <_ZN7QWidget14setMaximumSizeEii@plt>
+  711920:	f940a260 	ldr	x0, [x19, #320]
+  711924:	52800003 	mov	w3, #0x0                   	// #0
+  711928:	f940aa61 	ldr	x1, [x19, #336]
+  71192c:	52800002 	mov	w2, #0x0                   	// #0
+  711930:	97ebd0c0 	bl	205c30 <_ZN10QBoxLayout9addWidgetEP7QWidgeti6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  711934:	d2800500 	mov	x0, #0x28                  	// #40
+  711938:	97ebc442 	bl	202a40 <_Znwm@plt>
+  71193c:	aa0003e2 	mov	x2, x0
+  711940:	d2800281 	mov	x1, #0x14                  	// #20
+  711944:	f940a260 	ldr	x0, [x19, #320]
+  711948:	d2c00503 	mov	x3, #0x2800000000          	// #171798691840
+  71194c:	f2e002a1 	movk	x1, #0x15, lsl #48
+  711950:	a9008443 	stp	x3, x1, [x2, #8]
+  711954:	92800004 	mov	x4, #0xffffffffffffffff    	// #-1
+  711958:	f9400003 	ldr	x3, [x0]
+  71195c:	f9000c5f 	str	xzr, [x2, #24]
+  711960:	f9417ed6 	ldr	x22, [x22, #760]
+  711964:	aa0203e1 	mov	x1, x2
+  711968:	f9403863 	ldr	x3, [x3, #112]
+  71196c:	910042d6 	add	x22, x22, #0x10
+  711970:	f9000056 	str	x22, [x2]
+  711974:	f9001044 	str	x4, [x2, #32]
+  711978:	f900ae62 	str	x2, [x19, #344]
+  71197c:	d63f0060 	blr	x3
+  711980:	f9400260 	ldr	x0, [x19]
+  711984:	52800025 	mov	w5, #0x1                   	// #1
+  711988:	f9409e61 	ldr	x1, [x19, #312]
+  71198c:	2a0503e4 	mov	w4, w5
+  711990:	52800006 	mov	w6, #0x0                   	// #0
+  711994:	52800003 	mov	w3, #0x0                   	// #0
+  711998:	52800062 	mov	w2, #0x3                   	// #3
+  71199c:	97ebcb21 	bl	204620 <_ZN11QGridLayout9addWidgetEP7QWidgetiiii6QFlagsIN2Qt13AlignmentFlagEE@plt>
+  7119a0:	a9460660 	ldp	x0, x1, [x19, #96]
+  7119a4:	97ebd6f3 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119a8:	f9401261 	ldr	x1, [x19, #32]
+  7119ac:	f9403660 	ldr	x0, [x19, #104]
+  7119b0:	97ebd6f0 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119b4:	a9420660 	ldp	x0, x1, [x19, #32]
+  7119b8:	97ebd6ee 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119bc:	f9401660 	ldr	x0, [x19, #40]
+  7119c0:	f9402661 	ldr	x1, [x19, #72]
+  7119c4:	97ebd6eb 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119c8:	a9448660 	ldp	x0, x1, [x19, #72]
+  7119cc:	97ebd6e9 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119d0:	f9402a60 	ldr	x0, [x19, #80]
+  7119d4:	f9404e61 	ldr	x1, [x19, #152]
+  7119d8:	97ebd6e6 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119dc:	a9498660 	ldp	x0, x1, [x19, #152]
+  7119e0:	97ebd6e4 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119e4:	f9405260 	ldr	x0, [x19, #160]
+  7119e8:	f940aa61 	ldr	x1, [x19, #336]
+  7119ec:	97ebd6e1 	bl	207570 <_ZN7QWidget11setTabOrderEPS_S0_@plt>
+  7119f0:	aa1503e1 	mov	x1, x21
+  7119f4:	aa1303e0 	mov	x0, x19
+  7119f8:	97fff716 	bl	70f650 <_ZN14Ui_KUserSrvSet13retranslateUiEP7QDialog>
+  7119fc:	aa1503e0 	mov	x0, x21
+  711a00:	97ebbc50 	bl	200b40 <_ZN11QMetaObject18connectSlotsByNameEP7QObject@plt>
+  711a04:	a94153f3 	ldp	x19, x20, [sp, #16]
+  711a08:	a9425bf5 	ldp	x21, x22, [sp, #32]
+  711a0c:	a94363f7 	ldp	x23, x24, [sp, #48]
+  711a10:	a8c57bfd 	ldp	x29, x30, [sp], #80
+  711a14:	d65f03c0 	ret

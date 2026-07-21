@@ -104,6 +104,7 @@ set(SOURCES
     src/ui/KRecordCase.cpp
     src/ui/KNetPrintList.cpp
     src/ui/KHospitalInfoEditDlg.cpp
+    src/ui/KUserSrvSet.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -379,6 +380,7 @@ add_executable(ui_preview
     src/ui/KRecordCase.cpp
     src/ui/KNetPrintList.cpp
     src/ui/KHospitalInfoEditDlg.cpp
+    src/ui/KUserSrvSet.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
