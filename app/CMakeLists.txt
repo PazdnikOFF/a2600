@@ -60,6 +60,7 @@ set(SOURCES
     src/ui/KUiMsgProxy.cpp
     src/ui/KLcdProxy.cpp
     src/ui/KScreenMng.cpp
+    src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
@@ -292,6 +293,7 @@ add_executable(ui_preview
     src/ui/KUiMsgProxy.cpp
     src/ui/KLcdProxy.cpp
     src/ui/KScreenMng.cpp
+    src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp

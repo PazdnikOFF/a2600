@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QDialog>
+#include "ui/KDialog.h"
 
 class QFrame;
 class QToolButton;
@@ -21,7 +21,7 @@ class QTimer;
 //   (7,1) progress_rar [QProgressBar, max-width 600, формат "%p%"] — initWidget прячет, value 0, max 40
 //   (1,1)/(9,1) v-спейсеры. Титул окна = TR_Ugde (реф. ctor перекрывает TR_Dlg из setupUi).
 // setStyleSheet НЕ вызывается нигде — весь вид от KDialog::SetKStyle(1).
-class KUpdatePrepare : public QDialog
+class KUpdatePrepare : public KDialog
 {
     Q_OBJECT
 public:

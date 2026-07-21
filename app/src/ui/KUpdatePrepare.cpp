@@ -11,11 +11,13 @@
 #include <QWidget>
 
 KUpdatePrepare::KUpdatePrepare(QWidget *parent)
-    : QDialog(parent)
+    : KDialog(parent, /*subscribeStatus=*/false)
 {
     // Реф. ctor @0x6e2130: KDialog(parent,false) → setupUi → SetKStyle(1) → title TR_Ugde →
-    // initWidget → connect(btn_update.clicked → StartUpdate). SetKStyle/KDialog-хром опущены.
+    // initWidget → connect(btn_update.clicked → StartUpdate).
     setupUi();
+    SetKStyle(KDLG_FULLSCREEN);      // реф. SetKStyle(1)
+    SetTitle(tr("TR_Ugde"));         // реф. перекрывает TR_Dlg
     initWidget();
     timer = new QTimer(this);
     connect(btn_update, &QToolButton::clicked, this, &KUpdatePrepare::StartUpdate);
@@ -29,7 +31,9 @@ void KUpdatePrepare::setupUi()
     setObjectName(QStringLiteral("KUpdatePrepare"));
     resize(800, 600);
 
-    QGridLayout *grid = new QGridLayout(this);
+    // Контент кладём в область под титул-баром KDialog (реф. подкласс — на сам диалог).
+    QWidget *host = ContentArea();
+    QGridLayout *grid = new QGridLayout(host);
     grid->setObjectName(QStringLiteral("gridLayout"));
 
     grid->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding),
@@ -71,9 +75,7 @@ void KUpdatePrepare::setupUi()
 
     grid->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding),
                   9, 1, 1, 1);
-
-    // Реф. ctor перекрывает TR_Dlg (из setupUi) на TR_Ugde.
-    setWindowTitle(tr("TR_Ugde"));
+    // Титул ставит ctor через KDialog::SetTitle (реф. перекрывает TR_Dlg на TR_Ugde).
 }
 
 void KUpdatePrepare::initWidget()
