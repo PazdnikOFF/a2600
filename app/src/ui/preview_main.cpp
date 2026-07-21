@@ -26,6 +26,7 @@
 #include "ui/KDICOMServiceEditDlg.h"
 #include "ui/KPatientListAddDlg.h"
 #include "ui/KPatientListSearch.h"
+#include "ui/KReportEditUi.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9057,6 +9058,8 @@ int main(int argc, char **argv)
         w = new KPatientListAddDlg;    // UI-порт: ввод нового пациента (реф. KPatientListAddDlg)
     } else if (screen == "patientsearch") {
         w = new KPatientListSearch;    // UI-порт: панель поиска пациентов (реф. KPatientListSearch)
+    } else if (screen == "reporteditui") {
+        w = new KReportEditUi;         // UI-порт: редактор отчёта обследования (реф. KReportEditUi)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
