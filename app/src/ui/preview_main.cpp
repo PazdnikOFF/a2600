@@ -57,6 +57,7 @@
 #include "ui/KPUserLoginDlg.h"
 #include "ui/KProcessorControl.h"
 #include "ui/KEndoScopeControl.h"
+#include "ui/KEndoScopeSN.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9150,6 +9151,8 @@ int main(int argc, char **argv)
         w = new KProcessorControl;     // UI-порт: управление процессором (реф. KProcessorControl)
     } else if (screen == "endoctl") {
         w = new KEndoScopeControl;     // UI-порт: управление эндоскопом (реф. KEndoScopeControl)
+    } else if (screen == "endosn") {
+        w = new KEndoScopeSN;          // UI-порт: ввод серийника эндоскопа (реф. KEndoScopeSN)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
