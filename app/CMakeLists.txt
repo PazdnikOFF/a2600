@@ -146,6 +146,7 @@ set(SOURCES
     src/ui/KDicomQueueSearch.cpp
     src/ui/KPageLineEdit.cpp
     src/ui/KLayOut.cpp
+    src/ui/KPatientListViewUi.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -463,6 +464,7 @@ add_executable(ui_preview
     src/ui/KDicomQueueSearch.cpp
     src/ui/KPageLineEdit.cpp
     src/ui/KLayOut.cpp
+    src/ui/KPatientListViewUi.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

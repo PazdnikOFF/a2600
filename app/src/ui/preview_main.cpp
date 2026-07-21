@@ -91,6 +91,7 @@
 #include "ui/KDicomQueueSearch.h"
 #include "ui/KPageLineEdit.h"
 #include "ui/KLayOut.h"
+#include "ui/KPatientListViewUi.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9601,6 +9602,30 @@ int main(int argc, char **argv)
         lo->setTitle(QStringLiteral("Panel Title"));
         lo->setNoCloseBtn(false);   // показать btn_close
         w = lo;
+    } else if (screen == "patientlistview") {
+        // КУЛЬМИНАЦИЯ: родительский вью списка пациентов (embedded search + KTableView +
+        // пейджер-бар из 4 KPagePushButton + KPageLineEdit). DB — фикстуры.
+        KPatientListViewUi *view = new KPatientListViewUi;
+        auto provider = [](int page) -> QVector<QMap<QString, QString>> {
+            QVector<QMap<QString, QString>> rows;
+            const char *names[5] = {"John Smith", "Jane Doe", "Bob Lee", "Anna Kim", "Wei Chen"};
+            for (int i = 0; i < 5; ++i) {
+                QMap<QString, QString> r;
+                r.insert(QStringLiteral("PID"), QStringLiteral("P%1%2").arg(page).arg(1000 + i));
+                r.insert(QStringLiteral("Name"), QString::fromUtf8(names[i]));
+                r.insert(QStringLiteral("Gender"), i % 2 ? QStringLiteral("F") : QStringLiteral("M"));
+                r.insert(QStringLiteral("Age"), QString::number(30 + i));
+                r.insert(QStringLiteral("ExamItem"), QStringLiteral("Gastroscopy"));
+                r.insert(QStringLiteral("Application"), QStringLiteral("Routine"));
+                r.insert(QStringLiteral("PatientDate"), QStringLiteral("2026-07-2%1").arg(i));
+                r.insert(QStringLiteral("AcqDate"), QStringLiteral("2026-07-2%1").arg(i));
+                r.insert(QStringLiteral("Status"), QStringLiteral("Examined"));
+                rows.append(r);
+            }
+            return rows;
+        };
+        view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
+        w = view;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
