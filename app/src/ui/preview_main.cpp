@@ -97,6 +97,7 @@
 #include "ui/KPatientListEditDlg.h"
 #include "ui/KPatientListSetupDlg.h"
 #include "ui/KExamListCancelDlg.h"
+#include "ui/KCalendarWidget.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9676,6 +9677,11 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "calendar") {
+        // Кастомный date-picker (реф. форк QCalendarWidget). Выбрана сегодняшняя дата.
+        KCalendarWidget *cal = new KCalendarWidget;
+        cal->setSelectedDate(QDate(2026, 7, 22));
+        w = cal;
     } else if (screen == "examcanceldlg") {
         w = new KExamListCancelDlg(QStringLiteral("EXAM-GUID-001"));   // пикер причины отмены (17 причин)
     } else if (screen == "patientsetupdlg") {

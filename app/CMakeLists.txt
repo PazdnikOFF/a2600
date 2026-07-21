@@ -154,6 +154,7 @@ set(SOURCES
     src/ui/KPatientListSetupDlg.cpp
     src/ui/KExamListCancelDlg.cpp
     src/ui/KCheckBoxHeaderView.cpp
+    src/ui/KCalendarWidget.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -479,6 +480,7 @@ add_executable(ui_preview
     src/ui/KPatientListSetupDlg.cpp
     src/ui/KExamListCancelDlg.cpp
     src/ui/KCheckBoxHeaderView.cpp
+    src/ui/KCalendarWidget.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

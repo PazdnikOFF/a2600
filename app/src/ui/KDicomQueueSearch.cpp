@@ -80,6 +80,7 @@ void KDicomQueueSearch::setupUi()
         QPushButton *b = new QPushButton(w);
         b->setObjectName(QString::fromLatin1(btnName));
         b->setFixedWidth(24);
+        connect(b, &QPushButton::clicked, d, &KPatientDateEdit::PopupCalendar);   // календарь-попап
         h->addWidget(d); h->addWidget(b);
         return qMakePair(w, d);
     };

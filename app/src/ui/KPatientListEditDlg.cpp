@@ -62,9 +62,10 @@ void KPatientListEditDlg::buildUi()
         if (maxDate.isValid())
             d->setMaximumDate(maxDate);
         d->setDate(KPatientDateEdit::InvalidDate());
-        QPushButton *b = new QPushButton(w);   // календарь-попап (реф. KCalendarWidget — seam)
+        QPushButton *b = new QPushButton(w);   // календарь-попап (реф. KCalendarWidget)
         b->setObjectName(QString::fromLatin1(btnName));
         b->setFixedWidth(24);
+        connect(b, &QPushButton::clicked, d, &KPatientDateEdit::PopupCalendar);
         h->addWidget(d); h->addWidget(b);
         return qMakePair(w, d);
     };

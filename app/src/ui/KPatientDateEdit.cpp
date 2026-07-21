@@ -1,4 +1,5 @@
 #include "KPatientDateEdit.h"
+#include "KCalendarWidget.h"
 
 #include <QLineEdit>
 #include <QKeyEvent>
@@ -96,6 +97,24 @@ void KPatientDateEdit::DateChangedSlot(const QDate &d)
 void KPatientDateEdit::SlotToChangeTextColor(const QString &)
 {
     applyTextColor();
+}
+
+void KPatientDateEdit::PopupCalendar()
+{
+    // Показать KCalendarWidget попапом под полем; clicked(QDate) → setDate + скрыть.
+    KCalendarWidget *cal = new KCalendarWidget(this);
+    cal->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+    cal->setAttribute(Qt::WA_DeleteOnClose);
+    cal->setMinimumDate(minimumDate());
+    cal->setMaximumDate(maximumDate());
+    const QDate cur = date();
+    cal->setSelectedDate(cur == InvalidDate() ? QDate::currentDate() : cur);
+    connect(cal, &QCalendarWidget::clicked, this, [this, cal](const QDate &d) {
+        setDate(d);
+        cal->close();
+    });
+    cal->move(mapToGlobal(rect().bottomLeft()));
+    cal->show();
 }
 
 void KPatientDateEdit::focusInEvent(QFocusEvent *e)

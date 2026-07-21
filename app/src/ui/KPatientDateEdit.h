@@ -24,6 +24,11 @@ public:
     void SetPlaceholderText(const QString &t);
     void SetTextMargins(int l, int t, int r, int b);
 
+public slots:
+    // Показать KCalendarWidget попапом под полем; выбор → setDate (реф. владелец так
+    // связывает calendar-кнопку). Реюзабельный хук интеграции с портом KCalendarWidget.
+    void PopupCalendar();
+
 protected:
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;
