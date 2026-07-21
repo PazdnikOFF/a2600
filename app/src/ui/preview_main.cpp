@@ -88,6 +88,7 @@
 #include "ui/KPatientListOptUi.h"
 #include "ui/KPatientDateEdit.h"
 #include "ui/KExamListSearch.h"
+#include "ui/KDicomQueueSearch.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9572,6 +9573,11 @@ int main(int argc, char **argv)
         // Панель поиска списка осмотров — полная точность: реальные KMemComboBox + KPatientDateEdit.
         KExamListSearch *s = new KExamListSearch;
         s->resize(900, 120);
+        w = s;
+    } else if (screen == "dicomqueuesearch") {
+        // Панель поиска очереди DICOM (близнец examlistsearch, + msgtype, реальный KPatientDateEdit).
+        KDicomQueueSearch *s = new KDicomQueueSearch;
+        s->resize(950, 120);
         w = s;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.

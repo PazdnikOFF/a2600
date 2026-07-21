@@ -143,6 +143,7 @@ set(SOURCES
     src/ui/KPatientListOptUi.cpp
     src/ui/KPatientDateEdit.cpp
     src/ui/KExamListSearch.cpp
+    src/ui/KDicomQueueSearch.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -457,6 +458,7 @@ add_executable(ui_preview
     src/ui/KPatientListOptUi.cpp
     src/ui/KPatientDateEdit.cpp
     src/ui/KExamListSearch.cpp
+    src/ui/KDicomQueueSearch.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
