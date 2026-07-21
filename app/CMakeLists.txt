@@ -15,7 +15,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ---- Qt5 ----
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Network Sql Xml)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Network Sql Xml PrintSupport)
 
 # ---- GStreamer (через pkg-config) ----
 # Необязателен на этапе конфигурации: без него собирается только Qt-only ui_preview
@@ -173,6 +173,7 @@ set(SOURCES
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
     src/ui/KIpLineEdit.cpp
+    src/ui/KReportPreviewCenterDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -305,7 +306,7 @@ if(GST_FOUND)
     add_executable(endostation ${SOURCES} ${HEADERS})
     target_include_directories(endostation PRIVATE src)
     target_link_libraries(endostation PRIVATE
-        Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Sql Qt5::Xml
+        Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Sql Qt5::Xml Qt5::PrintSupport
         PkgConfig::GST)
     target_compile_definitions(endostation PRIVATE HAVE_GST=1)  # видео-тракт KVideoProxy
 
@@ -517,6 +518,7 @@ add_executable(ui_preview
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
     src/ui/KIpLineEdit.cpp
+    src/ui/KReportPreviewCenterDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
@@ -558,7 +560,7 @@ add_executable(ui_preview
     src/video/KVideoProxy.cpp   # off-device-логика (gst-тракт спрятан за HAVE_GST)
 )
 target_include_directories(ui_preview PRIVATE src)
-target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml Qt5::Network sqlite3)
+target_link_libraries(ui_preview PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Sql Qt5::Xml Qt5::Network Qt5::PrintSupport sqlite3)
 # iconv: на macOS отдельная libiconv, на Xilinx-target — в glibc (линкуется через libc).
 find_library(ICONV_LIB NAMES iconv)
 if(ICONV_LIB)

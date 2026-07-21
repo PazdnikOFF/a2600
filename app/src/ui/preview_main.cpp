@@ -115,6 +115,7 @@
 #include "ui/KSpinAge.h"
 #include "ui/KDateEdit.h"
 #include "ui/KIpLineEdit.h"
+#include "ui/KReportPreviewCenterDlg.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9695,6 +9696,21 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "reportpreviewcenter") {
+        // Поверхность превью отчёта (реф. KReportPreviewCenterDlg): QPrintPreviewWidget.
+        // Контент реф. — report-template модель (DEVICE); здесь стаб-html.
+        KReportPreviewCenterDlg *rp = new KReportPreviewCenterDlg;
+        rp->resize(500, 400);
+        rp->SetPreviewHtml(QStringLiteral(
+            "<div style='font-family:sans-serif'>"
+            "<h2 style='text-align:center'>Endoscopy Report</h2>"
+            "<p><b>Patient:</b> John Smith &nbsp; <b>ID:</b> P100234 &nbsp; <b>Date:</b> 2026-07-22</p>"
+            "<table width='100%'><tr><td bgcolor='#3a95be' height='2'></td></tr></table>"
+            "<h3>Findings</h3><p>Normal esophageal and gastric mucosa. No lesions identified.</p>"
+            "<h3>Diagnosis</h3><p>No abnormality detected.</p>"
+            "<p style='margin-top:40px'><b>Physician:</b> Dr. Kim</p></div>"));
+        rp->OnBtnFitWidth();
+        w = rp;
     } else if (screen == "iplineedit") {
         // Одно-полевой IP-редактор (реф. KIpLineEdit): ручная маска в одном QLineEdit.
         QWidget *host = new QWidget;
