@@ -108,6 +108,9 @@
 #include "ui/KImageButton.h"
 #include "ui/KOsdSubMenu.h"
 #include "ui/KTextEdit.h"
+#include "ui/KFloatingMsg.h"
+#include "ui/KMsgPopup.h"
+#include "ui/KNewTempletEditor.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9688,6 +9691,28 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "floatingmsg") {
+        // Плавающий оверлей-список (реф. KFloatingMsg): 3 сообщения склеены.
+        KFloatingMsg *fm = new KFloatingMsg;
+        fm->resize(260, 120);
+        fm->AddText(QStringLiteral("Probe overheated"));
+        fm->AddText(QStringLiteral("Recording paused"));
+        fm->AddText(QStringLiteral("USB disconnected"));
+        w = fm;
+    } else if (screen == "msgpopup") {
+        // Авто-скрывающийся тост (реф. KMsgPopup): показываем сообщение (таймер в grab не тикает).
+        KMsgPopup *mp = new KMsgPopup;
+        mp->setStyleSheet(QStringLiteral("QLabel{background:#333;color:#0dd;border:1px solid #0dd;}"));
+        mp->Display(QStringLiteral("Image saved to exam"));
+        w = mp;
+    } else if (screen == "newtempleteditor") {
+        // Read-only превью отчёта (реф. KNewTempletEditor). Контент — стаб-html.
+        KNewTempletEditor *ne = new KNewTempletEditor;
+        ne->resize(320, 180);
+        ne->SetPreviewHtml(QStringLiteral(
+            "<h3>Gastroscopy Report</h3><p><b>Findings:</b> Normal mucosa, no lesions.</p>"
+            "<p><b>Diagnosis:</b> No abnormality detected.</p><p><i>(read-only preview)</i></p>"));
+        w = ne;
     } else if (screen == "ktextedit") {
         // Кастом-виджет KTextEdit: QTextEdit с тач-скроллом. Многострочный текст → скроллбар.
         KTextEdit *te = new KTextEdit;

@@ -166,6 +166,9 @@ set(SOURCES
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp
     src/ui/KTextEdit.cpp
+    src/ui/KFloatingMsg.cpp
+    src/ui/KMsgPopup.cpp
+    src/ui/KNewTempletEditor.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -503,6 +506,9 @@ add_executable(ui_preview
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp
     src/ui/KTextEdit.cpp
+    src/ui/KFloatingMsg.cpp
+    src/ui/KMsgPopup.cpp
+    src/ui/KNewTempletEditor.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
