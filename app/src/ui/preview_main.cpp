@@ -48,6 +48,7 @@
 #include "ui/KRigidEndoBtnGuide.h"
 #include "ui/KRecordCase.h"
 #include "ui/KNetPrintList.h"
+#include "ui/KHospitalInfoEditDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9123,6 +9124,8 @@ int main(int argc, char **argv)
         w = new KRecordCase;           // UI-порт: запись автотест-кейса (реф. KRecordCase)
     } else if (screen == "netprint") {
         w = new KNetPrintList;         // UI-порт: поиск сетевых принтеров (реф. KNetPrintList)
+    } else if (screen == "hospitalinfo") {
+        w = new KHospitalInfoEditDlg;  // UI-порт: инфо больницы (реф. KHospitalInfoEditDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
