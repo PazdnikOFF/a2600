@@ -71,6 +71,7 @@
 #include "ui/KPagePushButton.h"
 #include "ui/KCounterTextEdit.h"
 #include "ui/KImgPushButton.h"
+#include "ui/KIpAddrEdit.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9274,6 +9275,24 @@ int main(int argc, char **argv)
         mk([](KImgPushButton *b) { b->setCheckable(true); b->setChecked(true); }); // checked-пиксмап
         mk([](KImgPushButton *b) { b->setEnabled(false); });                       // disable-пиксмап
         w = bar;
+    } else if (screen == "ipaddredit") {
+        // Кастом-виджет KIpAddrEdit: 4 октета + 3 точки, предзаполнено через SetText (сплит по «.»).
+        QWidget *host = new QWidget;
+        host->resize(340, 120);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("IP address:"), host));
+        KIpAddrEdit *ip = new KIpAddrEdit(host);
+        ip->setFixedSize(200, 40);   // реф. resize(200,40); в layout нужен явный размер (нет sizeHint)
+        ip->setStyleSheet(QStringLiteral("KIpAddrEdit{border:1px solid #808080;background:#fff;}"
+                                         "QLineEdit{background:transparent;} QLabel{color:#000;}"));
+        ip->SetText(QStringLiteral("192.168.1.100"));   // регекс-валидация + сплит на 4 октета
+        vb->addWidget(ip);
+        QLabel *echo = new QLabel(host);   // эхо джойна text()
+        QObject::connect(ip, &KIpAddrEdit::textChanged, echo, &QLabel::setText);
+        echo->setText(QStringLiteral("joined: ") + ip->text());
+        vb->addWidget(echo);
+        vb->addStretch();
+        w = host;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
