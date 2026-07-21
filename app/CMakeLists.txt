@@ -124,6 +124,8 @@ set(SOURCES
     src/ui/KParamSetBtn.cpp
     src/ui/KLineH.cpp
     src/ui/KPagePushButton.cpp
+    src/ui/KCounterTextEdit.cpp
+    src/ui/KImgPushButton.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -419,6 +421,8 @@ add_executable(ui_preview
     src/ui/KParamSetBtn.cpp
     src/ui/KLineH.cpp
     src/ui/KPagePushButton.cpp
+    src/ui/KCounterTextEdit.cpp
+    src/ui/KImgPushButton.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

@@ -69,6 +69,8 @@
 #include "ui/KParamSetBtn.h"
 #include "ui/KLineH.h"
 #include "ui/KPagePushButton.h"
+#include "ui/KCounterTextEdit.h"
+#include "ui/KImgPushButton.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9232,6 +9234,45 @@ int main(int argc, char **argv)
             if (i == 3) b->setEnabled(false);   // tail → disabled-пиксмап
             hb->addWidget(b);
         }
+        w = bar;
+    } else if (screen == "countertextedit") {
+        // Кастом-виджет KCounterTextEdit: QTextEdit + внешний счётчик через сигнал.
+        // Демо: cap=30, предзаполнено текстом > cap → показываем обрезку и счётчик "30/30".
+        QWidget *host = new QWidget;
+        host->resize(360, 160);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        KCounterTextEdit *ed = new KCounterTextEdit(host);
+        QLabel *counter = new QLabel(host);
+        counter->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        // Внешняя метка подписана на сигнал (как в реф. форме).
+        QObject::connect(ed, &KCounterTextEdit::ChangeCounterShowText, counter, &QLabel::setText);
+        ed->InitWidget(30);
+        ed->setPlainText(QStringLiteral("The quick brown fox jumps over the lazy dog"));  // 43 > 30
+        vb->addWidget(ed);
+        vb->addWidget(counter);
+        w = host;
+    } else if (screen == "imgpushbtn") {
+        // Кастом-виджет KImgPushButton: 4-состояний картиночная кнопка. Демо тремя кнопками
+        // в форсируемых состояниях (normal / checked / disabled; hover не форсится в grab).
+        const QString base = QDir(QString::fromStdString(KEnvConfig::GetInstance().GetReadOnlyBaseDir()))
+                                 .absoluteFilePath(QStringLiteral("mainapp/application/qss/icon/pageturning/"));
+        const QString nrm = base + "page_head_normal.png";
+        const QString hov = base + "page_head_hover.png";
+        const QString chk = base + "page_next_normal.png";   // визуально отличная картинка для checked
+        const QString dis = base + "page_head_disable.png";
+        QWidget *bar = new QWidget;
+        bar->setStyleSheet(QStringLiteral("background:#c8c8c8;"));
+        QHBoxLayout *hb = new QHBoxLayout(bar);
+        hb->setSpacing(10); hb->setContentsMargins(10, 10, 10, 10);
+        auto mk = [&](void (*cfg)(KImgPushButton *)) {
+            KImgPushButton *b = new KImgPushButton(bar);
+            b->InitButtons(nrm, hov, chk, dis, QSize(48, 32), false);
+            cfg(b);
+            hb->addWidget(b);
+        };
+        mk([](KImgPushButton *b) { /* normal */ (void)b; });
+        mk([](KImgPushButton *b) { b->setCheckable(true); b->setChecked(true); }); // checked-пиксмап
+        mk([](KImgPushButton *b) { b->setEnabled(false); });                       // disable-пиксмап
         w = bar;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
