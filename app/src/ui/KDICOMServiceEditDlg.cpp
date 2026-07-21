@@ -1,4 +1,5 @@
 #include "KDICOMServiceEditDlg.h"
+#include "KIpAddrEdit.h"
 
 #include <QComboBox>
 #include <QGridLayout>
@@ -64,9 +65,8 @@ void KDICOMServiceEditDlg::setupUi()
     QStackedWidget *stkServer = new QStackedWidget(host);
     stkServer->setObjectName(QStringLiteral("widget_server"));
     stkServer->setMinimumSize(192, 32);
-    QLineEdit *edIP = new QLineEdit(stkServer);     // реф. KIpAddrEdit → QLineEdit c маской
+    KIpAddrEdit *edIP = new KIpAddrEdit(stkServer);   // АПГРЕЙД: реальный KIpAddrEdit (был QLineEdit+маска)
     edIP->setObjectName(QStringLiteral("IPAddr"));
-    edIP->setInputMask(QStringLiteral("000.000.000.000;_"));
     QLineEdit *edDomain = new QLineEdit(stkServer);
     edDomain->setObjectName(QStringLiteral("ledit_domain"));
     stkServer->addWidget(edIP);
