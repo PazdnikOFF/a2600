@@ -18,6 +18,7 @@
 #include "ui/KLogin.h"
 #include "ui/KDeviceInfo.h"
 #include "ui/KGeneralSetDlg.h"
+#include "ui/KControlInfo.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9033,6 +9034,8 @@ int main(int argc, char **argv)
         w = new KDeviceInfo;       // UI-порт: экран публичного знака (реф. KDeviceInfo)
     } else if (screen == "generalset") {
         w = new KGeneralSetDlg;    // UI-порт: диалог общих настроек (реф. KGeneralSetDlg)
+    } else if (screen == "controlinfo") {
+        w = new KControlInfo;      // UI-порт: диалог машинного контроля/лицензии (реф. KControlInfo)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
