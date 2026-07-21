@@ -74,6 +74,8 @@
 #include "ui/KIpAddrEdit.h"
 #include "ui/KOsdSpin.h"
 #include "ui/KOsdDoubleSpin.h"
+#include "ui/KMemComboBox.h"
+#include "ui/KQuickInputWidget.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9328,6 +9330,40 @@ int main(int argc, char **argv)
         QObject::connect(s, &KOsdDoubleSpin::valueChanged, echo,
                          [echo](double v){ echo->setText(QStringLiteral("MI=%1").arg(v, 0, 'f', 1)); });
         vb->addWidget(echo);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "memcombobox") {
+        // Кастом-виджет KMemComboBox: редактируемый комбо + find-попап. DEVICE-DB заменён
+        // in-memory провайдером. Реальный попап — отдельное Popup-окно (в grab не попадёт),
+        // поэтому показываем ОТДЕЛЬНЫЙ KQuickInputWidget с теми же записями для сверки списка.
+        QWidget *host = new QWidget;
+        host->resize(340, 220);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("Patient (type to search):"), host));
+
+        static const QStringList kDb = {
+            QStringLiteral("John Smith - 100234"), QStringLiteral("Johann Bach - 100871"),
+            QStringLiteral("Joan Miro - 101002"),  QStringLiteral("Jane Doe - 100555")};
+        auto provider = [](const QString &prefix) -> QStringList {
+            QStringList out;
+            for (const QString &rec : kDb)
+                if (rec.section(QStringLiteral(" - "), 0, 0).startsWith(prefix, Qt::CaseInsensitive))
+                    out << rec;
+            return out;
+        };
+
+        KMemComboBox *combo = new KMemComboBox(host);
+        combo->SetMatchProvider(provider);
+        combo->SetTableName(QStringLiteral("tb_QuickInputPatient"), true);
+        combo->setText(QStringLiteral("Jo"));   // программно, без попапа (реф. setText)
+        vb->addWidget(combo);
+
+        // Отдельная копия find-списка (совпадения по «Jo») — для визуальной сверки попапа.
+        KQuickInputWidget *findList = new KQuickInputWidget(host);
+        findList->SetItems(provider(QStringLiteral("Jo")));
+        findList->setFixedHeight(110);
+        vb->addWidget(new QLabel(QStringLiteral("find-popup contents:"), host));
+        vb->addWidget(findList);
         vb->addStretch();
         w = host;
     } else if (screen == "messagebox") {
