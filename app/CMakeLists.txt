@@ -107,6 +107,7 @@ set(SOURCES
     src/ui/KUserSrvSet.cpp
     src/ui/KExamDetailInfoUi.cpp
     src/ui/KAlgParamAjustDlg.cpp
+    src/ui/KAddPrinterDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -385,6 +386,7 @@ add_executable(ui_preview
     src/ui/KUserSrvSet.cpp
     src/ui/KExamDetailInfoUi.cpp
     src/ui/KAlgParamAjustDlg.cpp
+    src/ui/KAddPrinterDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
