@@ -114,6 +114,7 @@
 #include "ui/KMySlider.h"
 #include "ui/KSpinAge.h"
 #include "ui/KDateEdit.h"
+#include "ui/KIpLineEdit.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9694,6 +9695,20 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "iplineedit") {
+        // Одно-полевой IP-редактор (реф. KIpLineEdit): ручная маска в одном QLineEdit.
+        QWidget *host = new QWidget;
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("KIpLineEdit (single-field):"), host));
+        KIpLineEdit *ip = new KIpLineEdit(host);
+        ip->setText(QStringLiteral("192.168.1.100"));
+        vb->addWidget(ip);
+        QLabel *info = new QLabel(host);
+        info->setText(QStringLiteral("text()=\"%1\" valid=%2")
+                          .arg(ip->text()).arg(ip->isValidIP() ? "yes" : "no"));
+        vb->addWidget(info);
+        vb->addStretch();
+        w = host;
     } else if (screen == "inputwidgets") {
         // KMySlider + KSpinAge + KDateEdit — три малых инпут-виджета.
         QWidget *host = new QWidget;
