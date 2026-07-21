@@ -61,6 +61,7 @@
 #include "ui/KProcessorSN.h"
 #include "ui/KExamListViewUi.h"
 #include "ui/KQRCode.h"
+#include "ui/ReportConfigDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9162,6 +9163,8 @@ int main(int argc, char **argv)
         w = new KExamListViewUi;       // UI-порт: список обследований (реф. KExamListViewUi)
     } else if (screen == "qrcode") {
         w = new KQRCode;               // UI-порт: панель QR-кода (реф. KQRCode)
+    } else if (screen == "reportconfig") {
+        w = new ReportConfigDlg;       // UI-порт: настройка полей отчёта (реф. ReportConfigDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
