@@ -99,6 +99,8 @@
 #include "ui/KExamListCancelDlg.h"
 #include "ui/KCalendarWidget.h"
 #include "ui/KReservedWidget.h"
+#include "ui/KThesaurusWidgetUi.h"
+#include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9678,6 +9680,20 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "thesauruspick") {
+        // Пикер глоссария (реф. KThesaurusWidgetUi). DEVICE-дерево заменено демо-провайдером.
+        KThesaurusWidgetUi *th = new KThesaurusWidgetUi;
+        th->SetTreeProvider([](QTreeWidget *tree, int) {
+            auto *g1 = new QTreeWidgetItem(tree, {QStringLiteral("Esophagus")});
+            new QTreeWidgetItem(g1, {QStringLiteral("Normal mucosa")});
+            new QTreeWidgetItem(g1, {QStringLiteral("Reflux esophagitis")});
+            auto *g2 = new QTreeWidgetItem(tree, {QStringLiteral("Stomach")});
+            new QTreeWidgetItem(g2, {QStringLiteral("Chronic gastritis")});
+            new QTreeWidgetItem(g2, {QStringLiteral("Gastric ulcer")});
+            new QTreeWidgetItem(g2, {QStringLiteral("No abnormality")});
+            g1->setExpanded(true); g2->setExpanded(true);
+        });
+        w = th;
     } else if (screen == "reservedwidget") {
         // Кастом-виджет KReservedWidget: метка+вход по E_EDITOR_TYPE (line/date).
         QWidget *host = new QWidget;
