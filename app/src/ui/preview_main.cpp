@@ -32,6 +32,7 @@
 #include "ui/KReportPreviewDlg.h"
 #include "ui/KReportTempletEditDlg.h"
 #include "ui/KImageEditor.h"
+#include "ui/KReportEditAddMarkView.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9075,6 +9076,8 @@ int main(int argc, char **argv)
         w = new KReportTempletEditDlg; // UI-порт: редактор шаблонов отчёта (реф. KReportTempletEditDlg)
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
+    } else if (screen == "addmarkview") {
+        w = new KReportEditAddMarkView; // UI-порт: панель добавления меток (реф. KReportEditAddMarkView)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),

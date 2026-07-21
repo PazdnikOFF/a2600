@@ -87,6 +87,7 @@ set(SOURCES
     src/ui/KReportPreviewDlg.cpp
     src/ui/KReportTempletEditDlg.cpp
     src/ui/KImageEditor.cpp
+    src/ui/KReportEditAddMarkView.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -345,6 +346,7 @@ add_executable(ui_preview
     src/ui/KReportPreviewDlg.cpp
     src/ui/KReportTempletEditDlg.cpp
     src/ui/KImageEditor.cpp
+    src/ui/KReportEditAddMarkView.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
