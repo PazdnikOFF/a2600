@@ -1,6 +1,6 @@
 #pragma once
 
-#include "KDialog.h"
+#include "KFullScreenDialog.h"
 
 class QGroupBox;
 class QStackedWidget;
@@ -22,7 +22,7 @@ class KDicomQueueOptUi;
 // btn_exit), справа stackedWidget_tableview (вью). Выбор строки nav переключает ОБА стека.
 // Ленивые Init*View-фабрики создают вью+тулбар и addWidget в оба стека.
 // Базу KFullScreenDialog подставляем KDialog(KDLG_FULLSCREEN). DEVICE-STUB: disk-поток/IPC.
-class KPatientManagmentUi : public KDialog
+class KPatientManagmentUi : public KFullScreenDialog
 {
     Q_OBJECT
 public:

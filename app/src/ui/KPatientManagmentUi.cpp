@@ -17,11 +17,11 @@
 #include <QFrame>
 
 KPatientManagmentUi::KPatientManagmentUi(QWidget *parent)
-    : KDialog(parent, false)
+    : KFullScreenDialog(parent, 2000)   // реф. KFullScreenDialog(parent, 2000) — KObject-ID шины
 {
-    // Реф. ctor @0x7a6ea0: KFullScreenDialog → setupUi → title → InitListWidgetItem →
+    // Реф. ctor @0x7a6ea0: KFullScreenDialog(2000) → setupUi → title → InitListWidgetItem →
     // InitHorizontalLine → std::thread InitDiskLabel (DEVICE) → InitConnect → SubscribeMsg.
-    SetKStyle(KDLG_FULLSCREEN);   // реф. KFullScreenDialog
+    // Фуллскрин-стиль ставит база KFullScreenDialog (SetKStyle(FULLSCREEN)).
     SetTitle(tr("TR_PManagement"));
     buildUi();
     InitListWidgetItem();
