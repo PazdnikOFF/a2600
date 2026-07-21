@@ -107,6 +107,7 @@
 #include "ui/KOsdMenuCell.h"
 #include "ui/KImageButton.h"
 #include "ui/KOsdSubMenu.h"
+#include "ui/KTextEdit.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9687,6 +9688,15 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "ktextedit") {
+        // Кастом-виджет KTextEdit: QTextEdit с тач-скроллом. Многострочный текст → скроллбар.
+        KTextEdit *te = new KTextEdit;
+        te->resize(300, 140);
+        QString txt;
+        for (int i = 1; i <= 12; ++i)
+            txt += QStringLiteral("Line %1: findings and observations\n").arg(i);
+        te->setPlainText(txt);
+        w = te;
     } else if (screen == "osdsubmenu") {
         // OSD-подменю (реф. KOsdSubMenu) хостит портированные KOsdSpin/KOsdDoubleSpin.
         KOsdSubMenu *sub = new KOsdSubMenu(nullptr, true);

@@ -165,6 +165,7 @@ set(SOURCES
     src/ui/KOsdMenu.cpp
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp
+    src/ui/KTextEdit.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -501,6 +502,7 @@ add_executable(ui_preview
     src/ui/KOsdMenu.cpp
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp
+    src/ui/KTextEdit.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
