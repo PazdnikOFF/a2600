@@ -14,6 +14,7 @@
 #include "ui/KMessageBox.h"
 #include "ui/KWaitProgressBar.h"
 #include "ui/KVersion.h"
+#include "ui/KSysDicom.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9021,6 +9022,8 @@ int main(int argc, char **argv)
         w = new KWaitProgressBar;  // UI-порт: модальный индикатор ожидания (реф. KWaitProgressBar)
     } else if (screen == "version2") {
         w = new KVersion;          // UI-порт: диалог версий ПО/железа (реф. KVersion)
+    } else if (screen == "sysdicom") {
+        w = new KSysDicom;         // UI-порт: диалог настроек DICOM (реф. KSysDicom)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
