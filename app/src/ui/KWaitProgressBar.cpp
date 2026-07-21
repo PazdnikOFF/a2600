@@ -1,8 +1,9 @@
 #include "KWaitProgressBar.h"
 
+#include "ui/KProgressBar.h"
+
 #include <QGridLayout>
 #include <QKeyEvent>
-#include <QProgressBar>
 #include <QWidget>
 
 KWaitProgressBar::KWaitProgressBar(QWidget *parent)
@@ -19,9 +20,8 @@ KWaitProgressBar::KWaitProgressBar(QWidget *parent)
     grid->setObjectName(QStringLiteral("gridLayout"));
     grid->setContentsMargins(0, 0, 0, 0);
 
-    m_progressbar = new QProgressBar(ContentArea());
+    m_progressbar = new KProgressBar(ContentArea());
     m_progressbar->setObjectName(QStringLiteral("progressbar"));
-    m_progressbar->setRange(0, 0);   // indeterminate — «крутилка»-подобно (реф. KProgressBar-крутилка)
     grid->addWidget(m_progressbar, 0, 0);
 
     // Реф. connect(progressbar, readToClose(), this, close()) — сигнал KProgressBar; опущен

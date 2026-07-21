@@ -2,7 +2,7 @@
 
 #include "ui/KDialog.h"
 
-class QProgressBar;
+class KProgressBar;
 
 // Модальный индикатор ожидания (реф. KWaitProgressBar : KDialog, ctor @0x609bf8). UI-порт.
 // ТОНКАЯ ОБЁРТКА: диалог 480×160, WindowModal, в QGridLayout один дочерний виджет KProgressBar
@@ -16,12 +16,12 @@ class KWaitProgressBar : public KDialog
 public:
     explicit KWaitProgressBar(QWidget *parent = nullptr);
 
-    // Реф. GetProgressBar() @0x60a038 → KProgressBar* (у нас QProgressBar-заглушка).
-    QProgressBar *GetProgressBar() const { return m_progressbar; }
+    // Реф. GetProgressBar() @0x60a038 → KProgressBar*.
+    KProgressBar *GetProgressBar() const { return m_progressbar; }
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;   // реф. @0x60ae80: игнорит Esc
 
 private:
-    QProgressBar *m_progressbar = nullptr;   // реф. KProgressBar (отдельный класс)
+    KProgressBar *m_progressbar = nullptr;   // реф. KProgressBar (виджет-содержимое)
 };

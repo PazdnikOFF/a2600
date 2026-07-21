@@ -66,6 +66,7 @@ set(SOURCES
     src/ui/KUpdateAction.cpp
     src/ui/KFunTest.cpp
     src/ui/KMessageBox.cpp
+    src/ui/KProgressBar.cpp
     src/ui/KWaitProgressBar.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
@@ -304,6 +305,7 @@ add_executable(ui_preview
     src/ui/KUpdateAction.cpp
     src/ui/KFunTest.cpp
     src/ui/KMessageBox.cpp
+    src/ui/KProgressBar.cpp
     src/ui/KWaitProgressBar.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
