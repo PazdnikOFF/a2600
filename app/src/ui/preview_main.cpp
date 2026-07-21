@@ -89,6 +89,8 @@
 #include "ui/KPatientDateEdit.h"
 #include "ui/KExamListSearch.h"
 #include "ui/KDicomQueueSearch.h"
+#include "ui/KPageLineEdit.h"
+#include "ui/KLayOut.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9579,6 +9581,26 @@ int main(int argc, char **argv)
         KDicomQueueSearch *s = new KDicomQueueSearch;
         s->resize(950, 120);
         w = s;
+    } else if (screen == "pagelineedit") {
+        // Кастом-виджет KPageLineEdit: поле номера страницы (валидатор [1,max]) + «/M».
+        QWidget *host = new QWidget;
+        QHBoxLayout *hb = new QHBoxLayout(host);
+        hb->addWidget(new QLabel(QStringLiteral("Page"), host));
+        KPageLineEdit *pe = new KPageLineEdit(host);
+        pe->setFixedWidth(56);
+        pe->setAlignment(Qt::AlignCenter);
+        pe->SetMaximumValue(50);        // валидатор [1,50]
+        pe->setText(QStringLiteral("3"));   // коммит текущей = 3
+        hb->addWidget(pe);
+        hb->addWidget(new QLabel(QStringLiteral("/ 50"), host));
+        hb->addStretch();
+        w = host;
+    } else if (screen == "layout") {
+        // Кастом-виджет KLayOut: chrome панели с заголовком + кнопкой закрытия (реальная иконка).
+        KLayOut *lo = new KLayOut;
+        lo->setTitle(QStringLiteral("Panel Title"));
+        lo->setNoCloseBtn(false);   // показать btn_close
+        w = lo;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
