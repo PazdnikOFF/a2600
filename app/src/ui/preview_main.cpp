@@ -51,6 +51,7 @@
 #include "ui/KHospitalInfoEditDlg.h"
 #include "ui/KUserSrvSet.h"
 #include "ui/KExamDetailInfoUi.h"
+#include "ui/KAlgParamAjustDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9132,6 +9133,8 @@ int main(int argc, char **argv)
         w = new KUserSrvSet;           // UI-порт: сервисные настройки (реф. KUserSrvSet)
     } else if (screen == "examdetail") {
         w = new KExamDetailInfoUi;     // UI-порт: панель деталей обследования (реф. KExamDetailInfoUi)
+    } else if (screen == "algparam") {
+        w = new KAlgParamAjustDlg;     // UI-порт: настройка параметров алгоритма (реф. KAlgParamAjustDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),

@@ -106,6 +106,7 @@ set(SOURCES
     src/ui/KHospitalInfoEditDlg.cpp
     src/ui/KUserSrvSet.cpp
     src/ui/KExamDetailInfoUi.cpp
+    src/ui/KAlgParamAjustDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -383,6 +384,7 @@ add_executable(ui_preview
     src/ui/KHospitalInfoEditDlg.cpp
     src/ui/KUserSrvSet.cpp
     src/ui/KExamDetailInfoUi.cpp
+    src/ui/KAlgParamAjustDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
