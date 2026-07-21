@@ -102,6 +102,7 @@ set(SOURCES
     src/ui/KSystemTemperature.cpp
     src/ui/KRigidEndoBtnGuide.cpp
     src/ui/KRecordCase.cpp
+    src/ui/KNetPrintList.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -375,6 +376,7 @@ add_executable(ui_preview
     src/ui/KSystemTemperature.cpp
     src/ui/KRigidEndoBtnGuide.cpp
     src/ui/KRecordCase.cpp
+    src/ui/KNetPrintList.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
