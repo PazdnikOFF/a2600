@@ -85,6 +85,9 @@
 #include "ui/KGridWidget.h"
 #include "ui/KMessageFrame.h"
 #include "ui/KExamListOptUi.h"
+#include "ui/KPatientListOptUi.h"
+#include "ui/KPatientDateEdit.h"
+#include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9543,6 +9546,27 @@ int main(int argc, char **argv)
     } else if (screen == "examlistopt") {
         // Встраиваемая панель действий списка осмотров (6 кнопок, фикс 270×385).
         w = new KExamListOptUi;
+    } else if (screen == "patientlistopt") {
+        w = new KPatientListOptUi;   // панель действий списка пациентов (6 кнопок, 270×385)
+    } else if (screen == "patientdateedit") {
+        // Кастом-виджет KPatientDateEdit: дата с плейсхолдером. Два инстанса — пустой и с датой.
+        QWidget *host = new QWidget;
+        host->resize(300, 130);
+        host->setStyleSheet(QStringLiteral("background:#e8e8e8;"));
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        QPushButton *focusSink = new QPushButton(QStringLiteral("(focus sink)"), host);
+        vb->addWidget(focusSink);   // забирает начальный фокус, чтобы d1 остался пустым (не авто-сеет)
+        vb->addWidget(new QLabel(QStringLiteral("empty (placeholder, grey):"), host));
+        KPatientDateEdit *d1 = new KPatientDateEdit(host);
+        d1->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));   // плейсхолдер YYYY-MM-DD
+        vb->addWidget(d1);
+        vb->addWidget(new QLabel(QStringLiteral("with date (dark):"), host));
+        KPatientDateEdit *d2 = new KPatientDateEdit(host);
+        d2->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+        d2->setDate(QDate(2026, 7, 22));
+        vb->addWidget(d2);
+        vb->addStretch();
+        w = host;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
