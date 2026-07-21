@@ -103,6 +103,8 @@
 #include "ui/KTempletTreeWidget.h"
 #include "ui/KImgTableView.h"
 #include "ui/KTimeWasteBar.h"
+#include "ui/KOsdMenu.h"
+#include "ui/KOsdMenuCell.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9683,6 +9685,21 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "osdmenu") {
+        // OSD-меню-контейнер (реф. KOsdMenu) хостит портированные KOsdMenuCell. DEVICE-cells
+        // заменены демо-ячейками; nav Down выбирает вторую (highlight).
+        KOsdMenu *menu = new KOsdMenu;
+        const char *titles[4] = {"Iris", "Record", "Image", "Exit"};
+        for (int i = 0; i < 4; ++i) {
+            KOsdMenuCell *cell = new KOsdMenuCell(menu);
+            cell->SetIcons(QStringLiteral("equipment_select.png"),
+                           QStringLiteral("equipment_normal.png"),
+                           QStringLiteral("equipment_select_grey.png"));
+            cell->SetTitle(QString::fromLatin1(titles[i]));
+            menu->AddItem(cell);
+        }
+        menu->DownKeyAct();   // перейти на вторую ячейку (Record) — highlight
+        w = menu;
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).
