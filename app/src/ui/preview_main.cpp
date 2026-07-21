@@ -73,6 +73,7 @@
 #include "ui/KImgPushButton.h"
 #include "ui/KIpAddrEdit.h"
 #include "ui/KOsdSpin.h"
+#include "ui/KOsdDoubleSpin.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9310,6 +9311,22 @@ int main(int argc, char **argv)
         QLabel *echo = new QLabel(QStringLiteral("Gain=65"), host);
         QObject::connect(s1, &KOsdSpin::valueChanged, echo,
                          [echo](int v){ echo->setText(QStringLiteral("Gain=%1").arg(v)); });
+        vb->addWidget(echo);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "osddoublespin") {
+        // Кастом-виджет KOsdDoubleSpin: сиблинг KOsdSpin с QDoubleSpinBox.
+        QWidget *host = new QWidget;
+        host->resize(300, 100);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        KOsdDoubleSpinConfig c; c.title = QStringLiteral("MI"); c.min = 0.0; c.max = 1.9; c.step = 0.1;
+        c.def = 0.7; c.decimals = 1;
+        KOsdDoubleSpin *s = new KOsdDoubleSpin(c, host);
+        s->SetDoubleValue(1.2);
+        vb->addWidget(s);
+        QLabel *echo = new QLabel(QStringLiteral("MI=1.2"), host);
+        QObject::connect(s, &KOsdDoubleSpin::valueChanged, echo,
+                         [echo](double v){ echo->setText(QStringLiteral("MI=%1").arg(v, 0, 'f', 1)); });
         vb->addWidget(echo);
         vb->addStretch();
         w = host;
