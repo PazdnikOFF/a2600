@@ -67,6 +67,11 @@
 #include "ui/KUnusedImgPlayBar.h"
 #include "ui/KViewHardEndo.h"
 #include "ui/KParamSetBtn.h"
+#include "ui/KLineH.h"
+#include "ui/KPagePushButton.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9183,6 +9188,51 @@ int main(int argc, char **argv)
         psb->SetBtnCustomFuncName("General (F2)", "Param (F3)", "Device (F4)");
         psb->SetTotalPageNum(3);
         w = psb;
+    } else if (screen == "lineh") {
+        // Кастом-виджеты KLineH/KLineV: гравированные разделители. Демо на тёмном фоне.
+        QWidget *host = new QWidget;
+        host->setStyleSheet(QStringLiteral("background:#202020;"));
+        host->resize(360, 160);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->setContentsMargins(20, 16, 20, 16);
+        auto *lblA = new QLabel(QStringLiteral("Above"), host); lblA->setStyleSheet("color:#ddd;");
+        vb->addWidget(lblA);
+        vb->addWidget(new KLineH(host));            // 2px горизонтальный разделитель
+        auto *lblB = new QLabel(QStringLiteral("Below"), host); lblB->setStyleSheet("color:#ddd;");
+        vb->addWidget(lblB);
+        // Горизонтальная пара с вертикальным разделителем между колонок.
+        QHBoxLayout *hb = new QHBoxLayout;
+        auto *lblL = new QLabel(QStringLiteral("Left"), host); lblL->setStyleSheet("color:#ddd;");
+        auto *lblR = new QLabel(QStringLiteral("Right"), host); lblR->setStyleSheet("color:#ddd;");
+        hb->addWidget(lblL); hb->addWidget(new KLineV(host)); hb->addWidget(lblR);
+        vb->addLayout(hb);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "pagepushbtn") {
+        // Кастом-виджет KPagePushButton: пейджер-бар из 4 иконочных кнопок (head/front/next/tail)
+        // с РЕАЛЬНЫМИ ассетами прошивки (normal/hover/disable). tail демонстрирует disabled-пиксмап.
+        const QString base = QDir(QString::fromStdString(KEnvConfig::GetInstance().GetReadOnlyBaseDir()))
+                                 .absoluteFilePath(QStringLiteral("mainapp/application/qss/icon/pageturning/"));
+        QWidget *bar = new QWidget;
+        // Светлый фон демо — сами ассеты имеют тёмно-серую подложку #33383D со светлой
+        // стрелкой; на контрастном фоне кнопки/стрелки чётко видны для сверки.
+        bar->setStyleSheet(QStringLiteral("background:#c8c8c8;"));
+        QHBoxLayout *hb = new QHBoxLayout(bar);
+        hb->setContentsMargins(8, 8, 8, 8);
+        hb->setSpacing(6);
+        const char *types[4] = {"head", "front", "next", "tail"};
+        for (int i = 0; i < 4; ++i) {
+            const QString t = QString::fromLatin1(types[i]);
+            QMap<QString, QString> icons;
+            icons.insert(QStringLiteral("normalIcon"), base + "page_" + t + "_normal.png");
+            icons.insert(QStringLiteral("hoverIcon"), base + "page_" + t + "_hover.png");
+            icons.insert(QStringLiteral("disableIcon"), base + "page_" + t + "_disable.png");
+            KPagePushButton *b = new KPagePushButton(bar);
+            b->InitButton(icons);
+            if (i == 3) b->setEnabled(false);   // tail → disabled-пиксмап
+            hb->addWidget(b);
+        }
+        w = bar;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
