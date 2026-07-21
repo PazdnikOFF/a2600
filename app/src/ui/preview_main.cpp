@@ -43,6 +43,7 @@
 #include "ui/KCameraInfoEdit.h"
 #include "ui/KLogView.h"
 #include "ui/KErrorRate.h"
+#include "ui/KStatisticInfo.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9108,6 +9109,8 @@ int main(int argc, char **argv)
         w = new KLogView;              // UI-порт: просмотр логов (реф. KLogView)
     } else if (screen == "errorrate") {
         w = new KErrorRate;            // UI-порт: тест частоты ошибок (реф. KErrorRate)
+    } else if (screen == "statinfo") {
+        w = new KStatisticInfo;        // UI-порт: панель статистики устройства (реф. KStatisticInfo)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
