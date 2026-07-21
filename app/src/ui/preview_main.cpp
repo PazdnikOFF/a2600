@@ -77,6 +77,7 @@
 #include "ui/KMemComboBox.h"
 #include "ui/KQuickInputWidget.h"
 #include "ui/KQuickInputComboBox.h"
+#include "ui/KOptionListButton.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9392,6 +9393,26 @@ int main(int argc, char **argv)
                           .arg(dupRc).arg(combo->count()));
         info->setWordWrap(true);
         vb->addWidget(info);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "optionlistbutton") {
+        // Кастом-виджет KOptionListButton: сегментный переключатель (кастом-paint).
+        QWidget *host = new QWidget;
+        host->resize(360, 150);
+        host->setStyleSheet(QStringLiteral("background:#202020;"));
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->setContentsMargins(20, 20, 20, 20);
+        // 3 опции, выбрана средняя (SetIndex).
+        KOptionListButton *seg = new KOptionListButton(
+            QStringList{QStringLiteral("2D"), QStringLiteral("Color"), QStringLiteral("PW")}, host);
+        seg->setFixedSize(300, 40);
+        seg->SetIndex(1);   // выбрать «Color»
+        vb->addWidget(seg);
+        // Одиночная опция (заливка всей ячейки highlight'ом при выборе).
+        KOptionListButton *seg2 = new KOptionListButton(
+            QStringList{QStringLiteral("Freeze"), QStringLiteral("Live")}, host);
+        seg2->setFixedSize(200, 40);
+        vb->addWidget(seg2);   // авто-выбор index 0 (Freeze)
         vb->addStretch();
         w = host;
     } else if (screen == "messagebox") {

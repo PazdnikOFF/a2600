@@ -132,6 +132,7 @@ set(SOURCES
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp
     src/ui/KQuickInputComboBox.cpp
+    src/ui/KOptionListButton.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -435,6 +436,7 @@ add_executable(ui_preview
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp
     src/ui/KQuickInputComboBox.cpp
+    src/ui/KOptionListButton.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
