@@ -119,6 +119,7 @@ set(SOURCES
     src/ui/ReportConfigDlg.cpp
     src/ui/KProgressDlg.cpp
     src/ui/KVideoPlayerOSD.cpp
+    src/ui/KUnusedImgPlayBar.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -409,6 +410,7 @@ add_executable(ui_preview
     src/ui/ReportConfigDlg.cpp
     src/ui/KProgressDlg.cpp
     src/ui/KVideoPlayerOSD.cpp
+    src/ui/KUnusedImgPlayBar.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
