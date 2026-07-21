@@ -79,6 +79,7 @@
 #include "ui/KQuickInputComboBox.h"
 #include "ui/KOptionListButton.h"
 #include "ui/KOsdMenuCell.h"
+#include "ui/KScopeStaus.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9434,6 +9435,19 @@ int main(int argc, char **argv)
         KOsdMenuCell *cSel = mkCell(QStringLiteral("Preset"));    cSel->Select();
         KOsdMenuCell *cFoc = mkCell(QStringLiteral("Measure"));   cFoc->Select(); cFoc->Focus();
         hb->addWidget(cNorm); hb->addWidget(cSel); hb->addWidget(cFoc);
+        w = host;
+    } else if (screen == "scopestaus") {
+        // Кастом-виджет KScopeStaus: панель статуса эндоскопа (модель+SN+биопсия). Числовые
+        // спеки подаются device-сигналами — здесь проверяем структуру/модель/SN.
+        QWidget *host = new QWidget;
+        host->setStyleSheet(QStringLiteral("background:#1a1a1a;"));
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        KScopeStaus *scope = new KScopeStaus(host);
+        scope->setFixedSize(105, 260);   // реф. resize(105,260); в layout нужен явный размер
+        scope->SetScopeConnect(true);
+        scope->SetScopeModel(QStringLiteral("EC-X20L"));
+        scope->SetScopeSN(QStringLiteral("SN12345678"));
+        vb->addWidget(scope, 0, Qt::AlignCenter);
         w = host;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
