@@ -9144,7 +9144,30 @@ int main(int argc, char **argv)
     } else if (screen == "printsettings") {
         w = new KPrintSettingsDlg;     // UI-порт: настройки печати (реф. KPrintSettingsDlg)
     } else if (screen == "dicomqueue") {
-        w = new KDicomQueueViewUi;     // UI-порт: очередь DICOM-заданий (реф. KDicomQueueViewUi)
+        // Апгрейд до полной точности: embedded KDicomQueueSearch + KTableView + пейджер из
+        // реальных KPagePushButton/KPageLineEdit; DB — фикстуры.
+        KDicomQueueViewUi *dv = new KDicomQueueViewUi;
+        dv->SetPageProvider([](int page) -> QVector<QMap<QString, QString>> {
+            QVector<QMap<QString, QString>> rows;
+            const char *types[3] = {"Storage", "MPPS", "Commitment"};
+            const char *st[3] = {"Successful", "Waiting", "In progress"};
+            for (int i = 0; i < 3; ++i) {
+                QMap<QString, QString> r;
+                r.insert(QStringLiteral("id"), QStringLiteral("U%1%2").arg(page).arg(i));
+                r.insert(QStringLiteral("Type"), QString::fromLatin1(types[i]));
+                r.insert(QStringLiteral("Service"), QStringLiteral("PACS-Main"));
+                r.insert(QStringLiteral("PID"), QStringLiteral("P%1").arg(3000 + i));
+                r.insert(QStringLiteral("Name"), QStringLiteral("Patient %1").arg(i + 1));
+                r.insert(QStringLiteral("SendTime"), QStringLiteral("2026-07-22 1%1:00").arg(i));
+                r.insert(QStringLiteral("Filename"), QStringLiteral("IMG_%1.dcm").arg(100 + i));
+                r.insert(QStringLiteral("Size"), QStringLiteral("%1 KB").arg(512 + i * 128));
+                r.insert(QStringLiteral("Status"), QString::fromLatin1(st[i]));
+                r.insert(QStringLiteral("Details"), QStringLiteral("-"));
+                rows.append(r);
+            }
+            return rows;
+        }, 2, 6);
+        w = dv;
     } else if (screen == "passwordedit") {
         w = new KPasswordEdit;         // UI-порт: смена пароля (реф. KPasswordEdit)
     } else if (screen == "examlistsetup") {
