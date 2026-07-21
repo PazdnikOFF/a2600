@@ -80,6 +80,7 @@
 #include "ui/KOptionListButton.h"
 #include "ui/KOsdMenuCell.h"
 #include "ui/KScopeStaus.h"
+#include "ui/KPasswordLineEdit.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9448,6 +9449,23 @@ int main(int argc, char **argv)
         scope->SetScopeModel(QStringLiteral("EC-X20L"));
         scope->SetScopeSN(QStringLiteral("SN12345678"));
         vb->addWidget(scope, 0, Qt::AlignCenter);
+        w = host;
+    } else if (screen == "passwordlineedit") {
+        // Кастом-виджет KPasswordLineEdit: QLineEdit с regexp-фильтром. echoMode ставит вызывающий.
+        QWidget *host = new QWidget;
+        host->resize(340, 150);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("PIN (digits only, echo=Password):"), host));
+        KPasswordLineEdit *pin = new KPasswordLineEdit(host);
+        pin->setEchoMode(QLineEdit::Password);   // ответственность вызывающего (реф.)
+        pin->setValidator(new QRegExpValidator(QRegExp(QStringLiteral("\\d*")), pin));  // только цифры
+        pin->setText(QStringLiteral("12a34"));   // «a» будет отфильтровано → «12» (хвост-обрезка)
+        vb->addWidget(pin);
+        QLabel *plain = new QLabel(host);
+        // Показываем реальное содержимое (echo его прячет) — для сверки фильтра.
+        plain->setText(QStringLiteral("stored text after filter: \"%1\"").arg(pin->text()));
+        vb->addWidget(plain);
+        vb->addStretch();
         w = host;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
