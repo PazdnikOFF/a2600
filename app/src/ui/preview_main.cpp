@@ -76,6 +76,7 @@
 #include "ui/KOsdDoubleSpin.h"
 #include "ui/KMemComboBox.h"
 #include "ui/KQuickInputWidget.h"
+#include "ui/KQuickInputComboBox.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9364,6 +9365,33 @@ int main(int argc, char **argv)
         findList->setFixedHeight(110);
         vb->addWidget(new QLabel(QStringLiteral("find-popup contents:"), host));
         vb->addWidget(findList);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "quickinputcombo") {
+        // Кастом-виджет KQuickInputComboBox: MRU-комбо с Init(провайдер) + Save() (дедуп).
+        QWidget *host = new QWidget;
+        host->resize(340, 160);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->addWidget(new QLabel(QStringLiteral("Report title (quick input):"), host));
+        KQuickInputComboBox *combo = new KQuickInputComboBox(host);
+        combo->SetLoadProvider([](const QString &, const QString &) -> QStringList {
+            return {QStringLiteral("Normal examination"), QStringLiteral("No abnormality found"),
+                    QStringLiteral("Follow-up recommended")};
+        });
+        combo->Init(QStringLiteral("tb_Report"), QStringLiteral("title"));
+        // Демонстрация Save(): дедуп существующего + вставка нового в начало.
+        combo->setCurrentText(QStringLiteral("No abnormality found"));
+        const int dupRc = combo->Save();   // дубликат → -1
+        combo->setCurrentText(QStringLiteral("Biopsy taken"));
+        combo->Save();                       // новый → вставка в начало (index 0)
+        combo->setCurrentIndex(0);
+        vb->addWidget(combo);
+        QLabel *info = new QLabel(host);
+        info->setText(QStringLiteral("Save('No abnormality found')=%1 (dup); "
+                                     "then inserted 'Biopsy taken' at top; count=%2")
+                          .arg(dupRc).arg(combo->count()));
+        info->setWordWrap(true);
+        vb->addWidget(info);
         vb->addStretch();
         w = host;
     } else if (screen == "messagebox") {
