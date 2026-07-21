@@ -100,6 +100,7 @@
 #include "ui/KCalendarWidget.h"
 #include "ui/KReservedWidget.h"
 #include "ui/KThesaurusWidgetUi.h"
+#include "ui/KTempletTreeWidget.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9680,6 +9681,25 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "templettree") {
+        // Чекбокс-дерево шаблонов отчёта (реф. KTempletTreeWidget). DEVICE-данные → демо.
+        KTempletTreeWidget *tt = new KTempletTreeWidget;
+        tt->resize(320, 400);
+        tt->SetTreeProvider([](KTempletTreeWidget *tree) {
+            auto *cat1 = new KTempletTreeWidgetItem(QStringLiteral("Gastroscopy"));
+            tree->addTopLevelItem(cat1);
+            new KTempletTreeWidgetItem(QStringLiteral("Normal Gastroscopy"), QStringLiteral("tpl_gs_norm"));
+            cat1->addChild(new KTempletTreeWidgetItem(QStringLiteral("Gastric Ulcer Report"), QStringLiteral("tpl_gs_ulcer")));
+            cat1->addChild(new KTempletTreeWidgetItem(QStringLiteral("Gastritis Report"), QStringLiteral("tpl_gs_gastritis")));
+            auto *cat2 = new KTempletTreeWidgetItem(QStringLiteral("Colonoscopy"));
+            tree->addTopLevelItem(cat2);
+            cat2->addChild(new KTempletTreeWidgetItem(QStringLiteral("Normal Colonoscopy"), QStringLiteral("tpl_co_norm")));
+            cat2->addChild(new KTempletTreeWidgetItem(QStringLiteral("Polyp Report"), QStringLiteral("tpl_co_polyp")));
+        });
+        // Отметить один лист для наглядности чекбоксов.
+        if (tt->topLevelItem(0) && tt->topLevelItem(0)->child(0))
+            tt->topLevelItem(0)->child(0)->setCheckState(0, Qt::Checked);
+        w = tt;
     } else if (screen == "thesauruspick") {
         // Пикер глоссария (реф. KThesaurusWidgetUi). DEVICE-дерево заменено демо-провайдером.
         KThesaurusWidgetUi *th = new KThesaurusWidgetUi;
