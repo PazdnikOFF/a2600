@@ -22,6 +22,7 @@
 #include "ui/KAuthMachineDlg.h"
 #include "ui/KSystemSetDlg.h"
 #include "ui/KSysPrinter.h"
+#include "ui/KCustomEdit.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9045,6 +9046,8 @@ int main(int argc, char **argv)
         w = new KSystemSetDlg;     // UI-порт: диалог системных настроек (реф. KSystemSetDlg)
     } else if (screen == "sysprinter") {
         w = new KSysPrinter;       // UI-порт: диалог настроек принтеров (реф. KSysPrinter)
+    } else if (screen == "customedit") {
+        w = new KCustomEdit;       // UI-порт: редактор параметров изображения (реф. KCustomEdit)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
