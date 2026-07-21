@@ -87,6 +87,7 @@
 #include "ui/KExamListOptUi.h"
 #include "ui/KPatientListOptUi.h"
 #include "ui/KPatientDateEdit.h"
+#include "ui/KExamListSearch.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9567,6 +9568,11 @@ int main(int argc, char **argv)
         vb->addWidget(d2);
         vb->addStretch();
         w = host;
+    } else if (screen == "examlistsearch") {
+        // Панель поиска списка осмотров — полная точность: реальные KMemComboBox + KPatientDateEdit.
+        KExamListSearch *s = new KExamListSearch;
+        s->resize(900, 120);
+        w = s;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),

@@ -47,6 +47,13 @@ void KMemComboBox::SetMatchProvider(std::function<QStringList(const QString &)> 
     m_matchProvider = std::move(fn);
 }
 
+void KMemComboBox::setMaxLength(int len)
+{
+    // Реф. @0x690cd8: ограничение длины на внутреннем lineEdit.
+    if (lineEdit())
+        lineEdit()->setMaxLength(len);
+}
+
 QString KMemComboBox::currentText() const
 {
     return QComboBox::currentText().trimmed();

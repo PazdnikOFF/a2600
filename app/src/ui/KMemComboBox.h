@@ -32,6 +32,7 @@ public:
     void SetDisplayId(bool displayId);                          // реф. @0x691370
     void SetMatchProvider(std::function<QStringList(const QString &)> fn);  // DEVICE-STUB инъекция
 
+    void setMaxLength(int len);    // реф. @0x690cd8 — на lineEdit
     QString currentText() const;   // trimmed (реф. @0x690e00)
     QString text() const;          // алиас (реф. @0x690e98)
     void setText(const QString &t);// без триггера попапа (реф. @0x690ec0)
