@@ -137,6 +137,7 @@ set(SOURCES
     src/ui/KScopeStaus.cpp
     src/ui/KPasswordLineEdit.cpp
     src/ui/KTableView.cpp
+    src/ui/KGridWidget.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -445,6 +446,7 @@ add_executable(ui_preview
     src/ui/KScopeStaus.cpp
     src/ui/KPasswordLineEdit.cpp
     src/ui/KTableView.cpp
+    src/ui/KGridWidget.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

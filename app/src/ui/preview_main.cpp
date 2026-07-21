@@ -82,6 +82,7 @@
 #include "ui/KScopeStaus.h"
 #include "ui/KPasswordLineEdit.h"
 #include "ui/KTableView.h"
+#include "ui/KGridWidget.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9510,6 +9511,24 @@ int main(int argc, char **argv)
             tv->selectRow(1);
         }
         w = tv;
+    } else if (screen == "gridwidget") {
+        // Кастом-виджет KGridWidget: переукладка внешнего QGridLayout. Демо: 7 кнопок в 3
+        // колонки, скрываем «C3» → плотная переукладка закрывает дырку (C4..C7 сдвигаются).
+        KGridWidget *grid = new KGridWidget;
+        grid->resize(340, 200);
+        QGridLayout *gl = new QGridLayout(grid);
+        gl->setSpacing(6); gl->setContentsMargins(8, 8, 8, 8);
+        const int cols = 3;
+        for (int i = 0; i < 7; ++i) {
+            QPushButton *b = new QPushButton(QStringLiteral("C%1").arg(i + 1), grid);
+            b->setObjectName(QStringLiteral("cell%1").arg(i + 1));
+            b->setFixedSize(90, 40);
+            gl->addWidget(b, i / cols, i % cols);   // caller раскладывает
+        }
+        grid->InitWidget(gl, cols);   // снапшот
+        grid->MarkWidgetVisible(QStringLiteral("cell3"), false);   // скрыть C3
+        grid->Relayout();             // плотная переукладка: C4..C7 занимают место C3
+        w = grid;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
