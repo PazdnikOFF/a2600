@@ -106,6 +106,7 @@
 #include "ui/KOsdMenu.h"
 #include "ui/KOsdMenuCell.h"
 #include "ui/KImageButton.h"
+#include "ui/KOsdSubMenu.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9686,6 +9687,20 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "osdsubmenu") {
+        // OSD-подменю (реф. KOsdSubMenu) хостит портированные KOsdSpin/KOsdDoubleSpin.
+        KOsdSubMenu *sub = new KOsdSubMenu(nullptr, true);
+        KOsdSpinConfig c1; c1.title = QStringLiteral("Gain"); c1.min = 0; c1.max = 100; c1.step = 5; c1.def = 50;
+        sub->AddItem(c1);
+        KOsdSpinConfig c2; c2.title = QStringLiteral("Depth"); c2.min = 1; c2.max = 20; c2.step = 1; c2.def = 8;
+        sub->AddItem(c2);
+        KOsdDoubleSpinConfig c3; c3.title = QStringLiteral("MI"); c3.min = 0.0; c3.max = 1.9; c3.step = 0.1;
+        c3.def = 0.7; c3.decimals = 1;
+        sub->AddItem(c3);
+        sub->InitWidget(QPoint(0, 0));
+        sub->SetValue(0, 65);     // фан-аут значения в первый спин (Gain=65)
+        sub->SetValue(2, 1.2);    // MI=1.2
+        w = sub;
     } else if (screen == "imagebutton") {
         // Кастом-виджет KImageButton: QSS-кнопка с 4 состояниями + текст (реальные ассеты).
         QWidget *host = new QWidget;
