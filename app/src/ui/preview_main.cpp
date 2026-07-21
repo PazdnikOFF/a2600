@@ -30,6 +30,7 @@
 #include "ui/KThesaurusSaveUi.h"
 #include "ui/KThsaurusManageMentUi.h"
 #include "ui/KReportPreviewDlg.h"
+#include "ui/KReportTempletEditDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9069,6 +9070,8 @@ int main(int argc, char **argv)
         w = new KThsaurusManageMentUi; // UI-порт: управление глоссарием (реф. KThsaurusManageMentUi)
     } else if (screen == "reportpreview") {
         w = new KReportPreviewDlg;     // UI-порт: предпросмотр печати отчёта (реф. KReportPreviewDlg)
+    } else if (screen == "templeteedit") {
+        w = new KReportTempletEditDlg; // UI-порт: редактор шаблонов отчёта (реф. KReportTempletEditDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),

@@ -85,6 +85,7 @@ set(SOURCES
     src/ui/KThesaurusSaveUi.cpp
     src/ui/KThsaurusManageMentUi.cpp
     src/ui/KReportPreviewDlg.cpp
+    src/ui/KReportTempletEditDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -341,6 +342,7 @@ add_executable(ui_preview
     src/ui/KThesaurusSaveUi.cpp
     src/ui/KThsaurusManageMentUi.cpp
     src/ui/KReportPreviewDlg.cpp
+    src/ui/KReportTempletEditDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
