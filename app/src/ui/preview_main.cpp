@@ -105,6 +105,7 @@
 #include "ui/KTimeWasteBar.h"
 #include "ui/KOsdMenu.h"
 #include "ui/KOsdMenuCell.h"
+#include "ui/KImageButton.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9685,6 +9686,28 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "imagebutton") {
+        // Кастом-виджет KImageButton: QSS-кнопка с 4 состояниями + текст (реальные ассеты).
+        QWidget *host = new QWidget;
+        host->setStyleSheet(QStringLiteral("background:#202020;"));
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        vb->setContentsMargins(20, 20, 20, 20);
+        const QString base = QDir(theme::root()).absoluteFilePath(QStringLiteral("qss/black/osd"));
+        KImageButton *b1 = new KImageButton(host);
+        b1->SetCustomBasePath(base);
+        b1->SetImage(QStringLiteral("button_normal.png"), QStringLiteral("button_select.png"),
+                     QStringLiteral("button_select.png"), QStringLiteral("button_normal.png"));
+        b1->setText(QStringLiteral("Menu"));
+        vb->addWidget(b1);
+        KImageButton *b2 = new KImageButton(host);   // disabled → invalid-состояние
+        b2->SetCustomBasePath(base);
+        b2->SetImage(QStringLiteral("button_normal.png"), QStringLiteral("button_select.png"),
+                     QStringLiteral("button_select.png"), QStringLiteral("button_normal.png"));
+        b2->setText(QStringLiteral("Disabled"));
+        b2->setEnabled(false);
+        vb->addWidget(b2);
+        vb->addStretch();
+        w = host;
     } else if (screen == "osdmenu") {
         // OSD-меню-контейнер (реф. KOsdMenu) хостит портированные KOsdMenuCell. DEVICE-cells
         // заменены демо-ячейками; nav Down выбирает вторую (highlight).
