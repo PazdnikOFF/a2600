@@ -68,6 +68,7 @@ set(SOURCES
     src/ui/KMessageBox.cpp
     src/ui/KProgressBar.cpp
     src/ui/KWaitProgressBar.cpp
+    src/ui/KVersion.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -307,6 +308,7 @@ add_executable(ui_preview
     src/ui/KMessageBox.cpp
     src/ui/KProgressBar.cpp
     src/ui/KWaitProgressBar.cpp
+    src/ui/KVersion.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
