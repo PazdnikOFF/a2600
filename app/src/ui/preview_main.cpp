@@ -20,6 +20,7 @@
 #include "ui/KGeneralSetDlg.h"
 #include "ui/KControlInfo.h"
 #include "ui/KAuthMachineDlg.h"
+#include "ui/KSystemSetDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9039,6 +9040,8 @@ int main(int argc, char **argv)
         w = new KControlInfo;      // UI-порт: диалог машинного контроля/лицензии (реф. KControlInfo)
     } else if (screen == "authmachine") {
         w = new KAuthMachineDlg;   // UI-порт: диалог авторизации машины (реф. KAuthMachineDlg)
+    } else if (screen == "systemset") {
+        w = new KSystemSetDlg;     // UI-порт: диалог системных настроек (реф. KSystemSetDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
