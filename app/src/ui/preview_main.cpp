@@ -33,6 +33,7 @@
 #include "ui/KReportTempletEditDlg.h"
 #include "ui/KImageEditor.h"
 #include "ui/KReportEditAddMarkView.h"
+#include "ui/KPrintSettingsDlg.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9078,6 +9079,8 @@ int main(int argc, char **argv)
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {
         w = new KReportEditAddMarkView; // UI-порт: панель добавления меток (реф. KReportEditAddMarkView)
+    } else if (screen == "printsettings") {
+        w = new KPrintSettingsDlg;     // UI-порт: настройки печати (реф. KPrintSettingsDlg)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
