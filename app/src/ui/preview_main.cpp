@@ -95,6 +95,7 @@
 #include "ui/KPatientManagmentUi.h"
 #include "ui/KDicomQueueOptUi.h"
 #include "ui/KPatientListEditDlg.h"
+#include "ui/KPatientListSetupDlg.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9674,6 +9675,8 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "patientsetupdlg") {
+        w = new KPatientListSetupDlg;   // настройка колонок списка/worklist (14 чекбоксов)
     } else if (screen == "patienteditdlg") {
         // Форма редактирования пациента — реальные KMemComboBox + KPatientDateEdit + ДР↔возраст.
         w = new KPatientListEditDlg;
