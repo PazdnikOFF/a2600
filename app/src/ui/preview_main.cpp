@@ -9194,7 +9194,29 @@ int main(int argc, char **argv)
     } else if (screen == "procsn") {
         w = new KProcessorSN;          // UI-порт: ввод серийника процессора (реф. KProcessorSN)
     } else if (screen == "examlist") {
-        w = new KExamListViewUi;       // UI-порт: список обследований (реф. KExamListViewUi)
+        // Апгрейд до полной точности: embedded KExamListSearch + KTableView + пейджер из
+        // реальных KPagePushButton/KPageLineEdit; DB — фикстуры.
+        KExamListViewUi *ev = new KExamListViewUi;
+        ev->SetPageProvider([](int page) -> QVector<QMap<QString, QString>> {
+            QVector<QMap<QString, QString>> rows;
+            const char *names[4] = {"John Smith", "Jane Doe", "Bob Lee", "Wei Chen"};
+            for (int i = 0; i < 4; ++i) {
+                QMap<QString, QString> r;
+                r.insert(QStringLiteral("PID"), QStringLiteral("E%1%2").arg(page).arg(2000 + i));
+                r.insert(QStringLiteral("Name"), QString::fromUtf8(names[i]));
+                r.insert(QStringLiteral("Gender"), i % 2 ? QStringLiteral("F") : QStringLiteral("M"));
+                r.insert(QStringLiteral("Age"), QString::number(40 + i));
+                r.insert(QStringLiteral("ExamDate"), QStringLiteral("2026-07-2%1").arg(i));
+                r.insert(QStringLiteral("Application"), QStringLiteral("Routine"));
+                r.insert(QStringLiteral("Doctor"), QStringLiteral("Dr.Kim"));
+                r.insert(QStringLiteral("EndoModel"), QStringLiteral("EC-X20L"));
+                r.insert(QStringLiteral("EndoSN"), QStringLiteral("SN%1").arg(12340 + i));
+                r.insert(QStringLiteral("Status"), QStringLiteral("Diagnosed"));
+                rows.append(r);
+            }
+            return rows;
+        }, 2, 8);
+        w = ev;
     } else if (screen == "qrcode") {
         w = new KQRCode;               // UI-порт: панель QR-кода (реф. KQRCode)
     } else if (screen == "reportconfig") {
