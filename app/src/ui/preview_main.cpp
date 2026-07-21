@@ -15,6 +15,7 @@
 #include "ui/KWaitProgressBar.h"
 #include "ui/KVersion.h"
 #include "ui/KSysDicom.h"
+#include "ui/KLogin.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9024,6 +9025,8 @@ int main(int argc, char **argv)
         w = new KVersion;          // UI-порт: диалог версий ПО/железа (реф. KVersion)
     } else if (screen == "sysdicom") {
         w = new KSysDicom;         // UI-порт: диалог настроек DICOM (реф. KSysDicom)
+    } else if (screen == "login") {
+        w = new KLogin;            // UI-порт: диалог входа (реф. KLogin)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
