@@ -127,6 +127,7 @@ set(SOURCES
     src/ui/KCounterTextEdit.cpp
     src/ui/KImgPushButton.cpp
     src/ui/KIpAddrEdit.cpp
+    src/ui/KOsdSpin.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -425,6 +426,7 @@ add_executable(ui_preview
     src/ui/KCounterTextEdit.cpp
     src/ui/KImgPushButton.cpp
     src/ui/KIpAddrEdit.cpp
+    src/ui/KOsdSpin.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

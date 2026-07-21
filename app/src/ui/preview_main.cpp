@@ -72,6 +72,7 @@
 #include "ui/KCounterTextEdit.h"
 #include "ui/KImgPushButton.h"
 #include "ui/KIpAddrEdit.h"
+#include "ui/KOsdSpin.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9290,6 +9291,25 @@ int main(int argc, char **argv)
         QLabel *echo = new QLabel(host);   // эхо джойна text()
         QObject::connect(ip, &KIpAddrEdit::textChanged, echo, &QLabel::setText);
         echo->setText(QStringLiteral("joined: ") + ip->text());
+        vb->addWidget(echo);
+        vb->addStretch();
+        w = host;
+    } else if (screen == "osdspin") {
+        // Кастом-виджет KOsdSpin: контейнер QSpinBox + «-»/«+» + заголовок. Демо двумя спинами
+        // с разными конфигами (заголовок и без), значение задано через SetIntValue.
+        QWidget *host = new QWidget;
+        host->resize(300, 130);
+        QVBoxLayout *vb = new QVBoxLayout(host);
+        KOsdSpinConfig c1; c1.title = QStringLiteral("Gain"); c1.min = 0; c1.max = 100; c1.step = 5; c1.def = 50;
+        KOsdSpin *s1 = new KOsdSpin(c1, host);
+        s1->SetIntValue(65);
+        vb->addWidget(s1);
+        KOsdSpinConfig c2; c2.min = 1; c2.max = 10; c2.step = 1; c2.def = 3;   // без заголовка → spacer 0
+        KOsdSpin *s2 = new KOsdSpin(c2, host);
+        vb->addWidget(s2);
+        QLabel *echo = new QLabel(QStringLiteral("Gain=65"), host);
+        QObject::connect(s1, &KOsdSpin::valueChanged, echo,
+                         [echo](int v){ echo->setText(QStringLiteral("Gain=%1").arg(v)); });
         vb->addWidget(echo);
         vb->addStretch();
         w = host;
