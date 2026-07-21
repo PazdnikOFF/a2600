@@ -13,6 +13,7 @@ class KPatientListOptUi;
 class KExamListViewUi;
 class KExamListOptUi;
 class KDicomQueueViewUi;
+class KDicomQueueOptUi;
 
 // Оболочка управления пациентами (реф. KPatientManagmentUi @ctor 0x7a6ea0, base
 // KFullScreenDialog, setupUi @0x7a75f8, 1920×1080). КАПСТОУН — собирает семью patient/exam/
@@ -58,5 +59,5 @@ private:
     KExamListViewUi *m_examView = nullptr;         // +0xC0
     KExamListOptUi *m_examOpt = nullptr;           // +0xA8
     KDicomQueueViewUi *m_dicomView = nullptr;      // +0xC8
-    QWidget *m_dicomOptPlaceholder = nullptr;      // KDicomQueueOptUi не портирован → заглушка
+    KDicomQueueOptUi *m_dicomOpt = nullptr;        // +0xB0
 };

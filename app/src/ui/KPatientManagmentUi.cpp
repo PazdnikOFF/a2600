@@ -5,6 +5,7 @@
 #include "KExamListViewUi.h"
 #include "KExamListOptUi.h"
 #include "KDicomQueueViewUi.h"
+#include "KDicomQueueOptUi.h"
 
 #include <QGroupBox>
 #include <QStackedWidget>
@@ -132,9 +133,8 @@ void KPatientManagmentUi::InitDicomQueueView()
         return;
     m_dicomView = new KDicomQueueViewUi(this);
     m_stackView->addWidget(m_dicomView);
-    // KDicomQueueOptUi не портирован → заглушка-панель.
-    m_dicomOptPlaceholder = new QWidget(m_stackOpt);
-    m_stackOpt->addWidget(m_dicomOptPlaceholder);
+    m_dicomOpt = new KDicomQueueOptUi(m_stackOpt);   // реальный тулбар (3 кнопки)
+    m_stackOpt->addWidget(m_dicomOpt);
 }
 
 void KPatientManagmentUi::SwitchPage()
@@ -155,7 +155,7 @@ void KPatientManagmentUi::SwitchPage()
     case E_DICOM:
         InitDicomQueueView();
         m_stackView->setCurrentWidget(m_dicomView);
-        m_stackOpt->setCurrentWidget(m_dicomOptPlaceholder);
+        m_stackOpt->setCurrentWidget(m_dicomOpt);
         break;
     default:
         break;

@@ -93,6 +93,7 @@
 #include "ui/KLayOut.h"
 #include "ui/KPatientListViewUi.h"
 #include "ui/KPatientManagmentUi.h"
+#include "ui/KDicomQueueOptUi.h"
 #include <QDate>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -9672,6 +9673,8 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "dicomqueueopt") {
+        w = new KDicomQueueOptUi;   // тулбар очереди DICOM (3 кнопки refresh/resend/delete)
     } else if (screen == "patientmgmt") {
         // КАПСТОУН: оболочка управления пациентами — nav-меню + два параллельных стека
         // (тулбар + вью). Инъектируем провайдер в patient-вью для наглядности.
