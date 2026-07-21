@@ -72,6 +72,7 @@ set(SOURCES
     src/ui/KSysDicom.cpp
     src/ui/KLogin.cpp
     src/ui/KDeviceInfo.cpp
+    src/ui/KGeneralSetDlg.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -315,6 +316,7 @@ add_executable(ui_preview
     src/ui/KSysDicom.cpp
     src/ui/KLogin.cpp
     src/ui/KDeviceInfo.cpp
+    src/ui/KGeneralSetDlg.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
