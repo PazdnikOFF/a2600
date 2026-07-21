@@ -8,6 +8,7 @@
 #include "ui/Theme.h"
 #include "ui/KUIDesktop.h"
 #include "ui/KUpdatePrepare.h"
+#include "ui/KImportRules.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9005,6 +9006,8 @@ int main(int argc, char **argv)
         // UI-порт: диалог подготовки обновления (реф. KUpdatePrepare). Скриншот:
         //   ui_preview updateprepare <out.png>  → верификация раскладки.
         w = new KUpdatePrepare;
+    } else if (screen == "importrules") {
+        w = new KImportRules;      // UI-порт: диалог импорта правил logcheck (реф. KImportRules)
     } else if (screen == "desktop") {
         auto *desktop = new KUIDesktop;
         // Для проверки списка снимков: папка осмотра из ENDO_EXAM.

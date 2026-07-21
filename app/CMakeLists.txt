@@ -62,6 +62,7 @@ set(SOURCES
     src/ui/KScreenMng.cpp
     src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
+    src/ui/KImportRules.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -295,6 +296,7 @@ add_executable(ui_preview
     src/ui/KScreenMng.cpp
     src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
+    src/ui/KImportRules.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp

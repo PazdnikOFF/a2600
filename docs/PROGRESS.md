@@ -565,8 +565,10 @@ objectName-ы (KFBackground/KFUpbar/label_title/btn_close) 1:1 с прошиво
 m_titleLabel — у нас встроен в KDialog (визуально эквивалентно, помечено). **KUpdatePrepare
 ретрофичен под KDialog** (контент в ContentArea, SetKStyle(FULLSCREEN)+SetTitle из ctor).
 СКРИНШОТ СВЕРЕН: тёмный титул-бар с TR_Ugde + ✕, контент-кнопка по центру.
-СЛЕДУЮЩЕЕ ПО UI: остальные диалоги поверх KDialog (KUpdateAction/KImportRules/KFunTest — все
-QDialog-подклассы). Иконка btn_close — реф. close.png (device asset), у нас текст ✕. Существующие
+СЛЕДУЮЩЕЕ ПО UI: остальные диалоги поверх KDialog. ✅ KImportRules ПОРТИРОВАН (режим `importrules`):
+label(китайская подсказка)+cb_rules+textEdit+btn_import(Import), абсолютная геометрия 588×420,
+в ContentArea; скриншот сверен. USB-логика (GetRulesFile/ReadFileToTextEdit/OnClickImport) —
+заглушки (device). Осталось: KUpdateAction/KFunTest и др. Иконка btn_close — реф. close.png (device asset), у нас текст ✕. Существующие
 UI-классы строят layout ВРУЧНУЮ (без Ui_-файлов), стили — через `theme::` (qss прошивки).
 
 **(историческое) СЛЕДУЮЩИЙ ЗАХОД ТРЕБОВАЛ РЕШЕНИЯ ПОЛЬЗОВАТЕЛЯ О НАПРАВЛЕНИИ** (device-bound):
