@@ -65,6 +65,7 @@
 #include "ui/KProgressDlg.h"
 #include "ui/KVideoPlayerOSD.h"
 #include "ui/KUnusedImgPlayBar.h"
+#include "ui/KViewHardEndo.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9174,6 +9175,8 @@ int main(int argc, char **argv)
         w = new KVideoPlayerOSD;       // UI-порт: OSD видеоплеера (реф. KVideoPlayerOSD)
     } else if (screen == "imgplaybar") {
         w = new KUnusedImgPlayBar;     // UI-порт: пейджер-бар изображений (реф. KUnusedImgPlayBar)
+    } else if (screen == "viewhardendo") {
+        w = new KViewHardEndo;         // UI-порт: OSD-оверлей жёсткого эндоскопа (реф. KViewHardEndo)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
