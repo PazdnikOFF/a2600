@@ -101,6 +101,7 @@
 #include "ui/KReservedWidget.h"
 #include "ui/KThesaurusWidgetUi.h"
 #include "ui/KTempletTreeWidget.h"
+#include "ui/KImgTableView.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9681,6 +9682,22 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "imgtable") {
+        // Грид-таблица тумбнейлов (реф. KImgTableView). DEVICE-файлы → реальные ассеты прошивки.
+        KImgTableView *iv = new KImgTableView;
+        iv->resize(560, 320);
+        iv->InitTableView(180, 150, 160, 120);   // ячейка 180×150, тумбнейл 160×120
+        const QString base = QDir(theme::root()).absoluteFilePath(QStringLiteral("qss/black/"));
+        const char *imgs[6] = {"NetWork.png", "QRCodeLogo.png", "Scope.png",
+                               "Scope1.png", "USB.png", "background.png"};
+        QVector<KImgTableItem *> items;
+        for (int i = 0; i < 6; ++i) {
+            KImgTableItem *it = new KImgTableItem(iv);
+            it->SetImgPathThumb(base + QString::fromLatin1(imgs[i]));
+            items.append(it);
+        }
+        iv->ImgModel()->SetImages(items);
+        w = iv;
     } else if (screen == "templettree") {
         // Чекбокс-дерево шаблонов отчёта (реф. KTempletTreeWidget). DEVICE-данные → демо.
         KTempletTreeWidget *tt = new KTempletTreeWidget;
