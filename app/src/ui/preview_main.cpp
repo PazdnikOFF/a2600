@@ -81,6 +81,7 @@
 #include "ui/KOsdMenuCell.h"
 #include "ui/KScopeStaus.h"
 #include "ui/KPasswordLineEdit.h"
+#include "ui/KTableView.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9467,6 +9468,48 @@ int main(int argc, char **argv)
         vb->addWidget(plain);
         vb->addStretch();
         w = host;
+    } else if (screen == "tableview") {
+        // Кастом-виджет KTableView: QTableView + пейджинг-модель + чекбокс-делегат (col 0).
+        KTableView *tv = new KTableView;
+        tv->resize(520, 240);
+        QVector<KHeaderProperty> hdrs = {
+            {QString(), QStringLiteral("sel"), 40, true},        // col 0 — чекбокс
+            {QStringLiteral("Name"), QStringLiteral("name"), 160, true},
+            {QStringLiteral("ID"), QStringLiteral("id"), 100, true},
+            {QStringLiteral("Date"), QStringLiteral("date"), 160, true},
+            {QStringLiteral("hidden"), QStringLiteral("secret"), 80, false}};  // скрытая
+        tv->InitTableView(hdrs, QStringLiteral("id"), 6, 2);
+        // Провайдер данных: страница 0 — фикстуры (реф. SigGetDataFromDB → SetModelData).
+        QObject::connect(tv, &KTableView::SigGetDataFromDB, tv, [tv](int page) {
+            if (page != 0) return;
+            QVector<QMap<QString, QString>> rows;
+            const char *names[3] = {"John Smith", "Jane Doe", "Bob Lee"};
+            for (int i = 0; i < 3; ++i) {
+                QMap<QString, QString> r;
+                r.insert(QStringLiteral("name"), QString::fromUtf8(names[i]));
+                r.insert(QStringLiteral("id"), QStringLiteral("10%1").arg(i));
+                r.insert(QStringLiteral("date"), QStringLiteral("2026-07-%1").arg(10 + i));
+                rows.append(r);
+            }
+            tv->GetModel()->SetModelData(0, rows);
+        }, Qt::DirectConnection);
+        tv->GetModel()->SetModelData(0, {});   // спровоцировать первый SigGetDataFromDB не нужен — заполним прямо
+        // Прямое заполнение + отметить первую строку, выбрать вторую.
+        {
+            QVector<QMap<QString, QString>> rows;
+            const char *names[3] = {"John Smith", "Jane Doe", "Bob Lee"};
+            for (int i = 0; i < 3; ++i) {
+                QMap<QString, QString> r;
+                r.insert(QStringLiteral("name"), QString::fromUtf8(names[i]));
+                r.insert(QStringLiteral("id"), QStringLiteral("10%1").arg(i));
+                r.insert(QStringLiteral("date"), QStringLiteral("2026-07-%1").arg(10 + i));
+                rows.append(r);
+            }
+            tv->GetModel()->SetModelData(0, rows);
+            tv->GetModel()->setData(tv->GetModel()->index(0, 0), Qt::Checked, Qt::CheckStateRole);
+            tv->selectRow(1);
+        }
+        w = tv;
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
