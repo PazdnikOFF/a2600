@@ -102,6 +102,7 @@
 #include "ui/KThesaurusWidgetUi.h"
 #include "ui/KTempletTreeWidget.h"
 #include "ui/KImgTableView.h"
+#include "ui/KTimeWasteBar.h"
 #include <QTreeWidget>
 #include <QDate>
 #include <QVBoxLayout>
@@ -9682,6 +9683,10 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "timewastebar") {
+        // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
+        // таймер в grab не тикает — показываем структуру (label + progress bar).
+        w = new KTimeWasteBar(nullptr, 60);
     } else if (screen == "imgtable") {
         // Грид-таблица тумбнейлов (реф. KImgTableView). DEVICE-файлы → реальные ассеты прошивки.
         KImgTableView *iv = new KImgTableView;
