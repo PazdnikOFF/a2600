@@ -7,6 +7,7 @@
 
 #include "ui/Theme.h"
 #include "ui/KUIDesktop.h"
+#include "ui/KUpdatePrepare.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9000,7 +9001,11 @@ int main(int argc, char **argv)
         return ok ? 0 : 65;
     }
 
-    if (screen == "desktop") {
+    if (screen == "updateprepare") {
+        // UI-порт: диалог подготовки обновления (реф. KUpdatePrepare). Скриншот:
+        //   ui_preview updateprepare <out.png>  → верификация раскладки.
+        w = new KUpdatePrepare;
+    } else if (screen == "desktop") {
         auto *desktop = new KUIDesktop;
         // Для проверки списка снимков: папка осмотра из ENDO_EXAM.
         const QString exam = QProcessEnvironment::systemEnvironment().value("ENDO_EXAM");
