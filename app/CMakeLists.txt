@@ -82,6 +82,7 @@ set(SOURCES
     src/ui/KPatientListAddDlg.cpp
     src/ui/KPatientListSearch.cpp
     src/ui/KReportEditUi.cpp
+    src/ui/KThesaurusSaveUi.cpp
     src/video/KVideoProxy.cpp
     src/video/KViewSoftEndo.cpp
     src/video/KVideoParam.cpp
@@ -335,6 +336,7 @@ add_executable(ui_preview
     src/ui/KPatientListAddDlg.cpp
     src/ui/KPatientListSearch.cpp
     src/ui/KReportEditUi.cpp
+    src/ui/KThesaurusSaveUi.cpp
     src/hal/KMemDevice.cpp
     src/dicom/KDicomFieldMap.cpp
     src/dicom/KDicomDatasetFormat.cpp
