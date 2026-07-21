@@ -60,6 +60,7 @@
 #include "ui/KEndoScopeSN.h"
 #include "ui/KProcessorSN.h"
 #include "ui/KExamListViewUi.h"
+#include "ui/KQRCode.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
 #include "endo/KSoftEndoParam.h"
@@ -9159,6 +9160,8 @@ int main(int argc, char **argv)
         w = new KProcessorSN;          // UI-порт: ввод серийника процессора (реф. KProcessorSN)
     } else if (screen == "examlist") {
         w = new KExamListViewUi;       // UI-порт: список обследований (реф. KExamListViewUi)
+    } else if (screen == "qrcode") {
+        w = new KQRCode;               // UI-порт: панель QR-кода (реф. KQRCode)
     } else if (screen == "messagebox") {
         // UI-порт: окно сообщения (реф. KMessageBox) — с текстом+кнопками для наглядности.
         w = new KMessageBox(QMessageBox::Warning, QString::fromUtf8("Warning"),
