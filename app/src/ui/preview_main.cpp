@@ -33,6 +33,7 @@
 #include "ui/KReportTempletEditDlg.h"
 #include "ui/KImageEditor.h"
 #include "ui/KImageEditorGraphicsView.h"
+#include "ui/KPinyinWidget.h"
 #include "ui/KReportEditAddMarkView.h"
 #include "ui/KPrintSettingsDlg.h"
 #include "ui/KDicomQueueViewUi.h"
@@ -9195,6 +9196,15 @@ int main(int argc, char **argv)
         cv->AddCursorPixmapItem(160, 180, KImageEditorGraphicsView::Point);
         cv->AddCursorPixmapItem(280, 200, KImageEditorGraphicsView::ArrowLeftUp);
         w = cv;
+    } else if (screen == "pinyin") {
+        // Демо попапа пиньинь (реф. KPinyinWidget): целевой edit + набранное "ni" → кандидаты.
+        QLineEdit *demoEdit = new QLineEdit();   // цель (лик — one-shot preview)
+        demoEdit->resize(200, 32);
+        KPinyinWidget &pw = KPinyinWidget::GetInstance();
+        pw.SetEditWidget(demoEdit);
+        pw.AppendPinyin(QStringLiteral("n"));
+        pw.AppendPinyin(QStringLiteral("i"));   // → кандидаты 你/尼/泥/...
+        w = &pw;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

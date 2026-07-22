@@ -89,6 +89,7 @@ set(SOURCES
     src/ui/KImageEditor.cpp
     src/ui/KImageEditorGraphicsView.cpp
     src/ui/KImageEditorSerialization.cpp
+    src/ui/KPinyinWidget.cpp
     src/ui/KReportEditAddMarkView.cpp
     src/ui/KPrintSettingsDlg.cpp
     src/ui/KDicomQueueViewUi.cpp
@@ -459,6 +460,7 @@ add_executable(ui_preview
     src/ui/KImageEditor.cpp
     src/ui/KImageEditorGraphicsView.cpp
     src/ui/KImageEditorSerialization.cpp
+    src/ui/KPinyinWidget.cpp
     src/ui/KReportEditAddMarkView.cpp
     src/ui/KPrintSettingsDlg.cpp
     src/ui/KDicomQueueViewUi.cpp
