@@ -1,5 +1,8 @@
 #include "KVideoPlayerOSD.h"
+#include "KImageButton.h"
+#include "Theme.h"
 
+#include <QDir>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -58,22 +61,44 @@ void KVideoPlayerOSD::setupUi()
     h2->addWidget(lblTot);
     h->addLayout(h2);
     h->addStretch(1);
-    auto btn = [&](const char *name, const QString &text) {   // реф. KImageButton → QPushButton
-        QPushButton *b = new QPushButton(text, widget);
+    // АПГРЕЙД: реальные KImageButton (был QPushButton с текстом). Реверс: 8 transport-кнопок =
+    // KImageButton, LoadStyleSheet зовёт SetImage(normal, hover=selected, selected, invalid).
+    // Реф. base = "02-data/rw-common/picture" (device-путь); локально ассеты в qss/black/player/btn.
+    const QString btnBase = QDir(theme::root()).absoluteFilePath(QStringLiteral("qss/black/player/btn"));
+    auto btn = [&](const char *name, const QString &normal, const QString &selected,
+                   const QString &invalid) {
+        KImageButton *b = new KImageButton(widget);
         b->setObjectName(QString::fromLatin1(name));
-        b->setMinimumWidth(75);
+        b->SetCustomBasePath(btnBase);
+        b->SetImage(normal, selected, selected, invalid);   // реф. SetImage(n, hover=sel, sel, inv)
+        b->SetSize(75, 46);
         b->setFocusPolicy(Qt::NoFocus);
         h->addWidget(b);
         return b;
     };
-    btn("btn_last_frame", QStringLiteral("LastFrame"));   // реф. seek −1 кадр (device)
-    btn("btn_next_frame", QStringLiteral("NextFrame"));
-    btn("btn_last_video", QStringLiteral("LastVideo"));
-    btn("btn_start_pause", QStringLiteral("Play/Pause"));
-    btn("btn_next_video", QStringLiteral("NextVideo"));
-    btn("btn_speed", QStringLiteral("Speed"));
-    btn("btn_save_frame", QStringLiteral("Save"));
-    QPushButton *btnExit = btn("btn_exit", QStringLiteral("Exit"));
+    btn("btn_last_frame", QStringLiteral("last_frame_normal.png"),
+        QStringLiteral("last_frame_selected.png"), QStringLiteral("last_frame_disable.png"));
+    // реф. КВИРК: у next_frame invalid-иконка = next_video_disable.png (баг реф., воспроизводим).
+    btn("btn_next_frame", QStringLiteral("next_frame_normal.png"),
+        QStringLiteral("next_frame_selected.png"), QStringLiteral("next_video_disable.png"));
+    btn("btn_last_video", QStringLiteral("last_video_normal.png"),
+        QStringLiteral("last_video_selected.png"), QStringLiteral("last_video_disable.png"));
+    // реф. start_pause invalid = pause_normal.png (pause_disable.png не существует).
+    btn("btn_start_pause", QStringLiteral("pause_normal.png"),
+        QStringLiteral("pause_selected.png"), QStringLiteral("pause_normal.png"));
+    btn("btn_next_video", QStringLiteral("next_video_normal.png"),
+        QStringLiteral("next_video_selected.png"), QStringLiteral("next_video_disable.png"));
+    // btn_speed — БЕЗ иконки, runtime-текст "X1.0" (реф.).
+    KImageButton *btnSpeed = new KImageButton(widget);
+    btnSpeed->setObjectName(QStringLiteral("btn_speed"));
+    btnSpeed->setText(QStringLiteral("X1.0"));
+    btnSpeed->SetSize(75, 46);
+    btnSpeed->setFocusPolicy(Qt::NoFocus);
+    h->addWidget(btnSpeed);
+    btn("btn_save_frame", QStringLiteral("save_normal.png"),
+        QStringLiteral("save_selected.png"), QStringLiteral("save_disable.png"));
+    KImageButton *btnExit = btn("btn_exit", QStringLiteral("exit_normal.png"),
+        QStringLiteral("exit_selected.png"), QStringLiteral("exit_disable.png"));
     v2->addLayout(h);
     root->addWidget(widget);
 
