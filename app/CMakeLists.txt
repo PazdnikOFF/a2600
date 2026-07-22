@@ -167,6 +167,8 @@ set(SOURCES
     src/ui/KOsdSubMenu.cpp
     src/ui/KOsdSingleSelectLabel.cpp
     src/ui/KOsdSingleSelectMenu.cpp
+    src/ui/KOsdLabel.cpp
+    src/ui/KIrisMenu.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -514,6 +516,8 @@ add_executable(ui_preview
     src/ui/KOsdSubMenu.cpp
     src/ui/KOsdSingleSelectLabel.cpp
     src/ui/KOsdSingleSelectMenu.cpp
+    src/ui/KOsdLabel.cpp
+    src/ui/KIrisMenu.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp

@@ -42,6 +42,8 @@ void KOsdSubMenu::AddItem(QWidget *w)
     m_listWidget->insertItem(m_listWidget->count(), item);
     m_listWidget->setItemWidget(item, w);
     m_items.append(w);
+    if (KFrame *f = qobject_cast<KFrame *>(w))
+        f->SetLocatedMenu(this);   // реф.: строка знает своё меню-владельца (для EnterMenu)
 }
 
 void KOsdSubMenu::AddItem(const KOsdSpinConfig &cfg)
@@ -55,6 +57,12 @@ void KOsdSubMenu::AddItem(const KOsdDoubleSpinConfig &cfg)
     AddItem(new KOsdDoubleSpin(cfg, m_listWidget));
 }
 
+void KOsdSubMenu::AddItem(const KOsdLabelConfig &cfg)
+{
+    // Реф. @0x47baa0: строит KOsdLabel из конфига → базовый хост.
+    AddItem(new KOsdLabel(cfg, m_listWidget));
+}
+
 void KOsdSubMenu::InitWidget(const QPoint &pos)
 {
     // Реф. @0x47bfe0: width 270, height=count*44, клип к экрану 1080, move.
@@ -65,6 +73,10 @@ void KOsdSubMenu::InitWidget(const QPoint &pos)
     while (y + height > 1080 && y > 0)
         y -= 32;
     move(pos.x(), y);
+    // Реф.: строки-метки получают стартовую точку меню для позиционирования под-подменю.
+    for (QWidget *w : m_items)
+        if (KFrame *f = qobject_cast<KFrame *>(w))
+            f->SetStartPoint(pos);
 }
 
 void KOsdSubMenu::RefreshSelectedItem(int oldIdx)

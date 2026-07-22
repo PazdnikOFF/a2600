@@ -108,6 +108,7 @@
 #include "ui/KImageButton.h"
 #include "ui/KOsdSubMenu.h"
 #include "ui/KOsdSingleSelectMenu.h"
+#include "ui/KIrisMenu.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9848,6 +9849,10 @@ int main(int argc, char **argv)
         }
         menu->InitConfig(QPoint(0, 0), list, /*checkedIndex=*/2);   // «Medium» отмечен
         w = menu;
+    } else if (screen == "irismenu") {
+        // Iris OSD-подменю (реф. KIrisMenu : KOsdSubMenu): 2 строки-метки TR_OpMode/TR_IRIS1.
+        // action-колбэки (EnterMenu под-подменю) — DEVICE-seam, no-op.
+        w = new KIrisMenu(QPoint(0, 0));
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).
