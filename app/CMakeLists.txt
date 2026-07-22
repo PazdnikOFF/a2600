@@ -181,6 +181,8 @@ set(SOURCES
     src/ui/KContrastSetting.cpp
     src/ui/KZoomSetting.cpp
     src/ui/KOperationModeSetting.cpp
+    src/ui/KImageEnhSetting.cpp
+    src/ui/KIrisSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -542,6 +544,8 @@ add_executable(ui_preview
     src/ui/KContrastSetting.cpp
     src/ui/KZoomSetting.cpp
     src/ui/KOperationModeSetting.cpp
+    src/ui/KImageEnhSetting.cpp
+    src/ui/KIrisSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp

@@ -120,6 +120,8 @@
 #include "ui/KContrastSetting.h"
 #include "ui/KZoomSetting.h"
 #include "ui/KOperationModeSetting.h"
+#include "ui/KImageEnhSetting.h"
+#include "ui/KIrisSetting.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9918,6 +9920,12 @@ int main(int argc, char **argv)
     } else if (screen == "opmode") {
         // Режим работы (реф. KOperationModeSetting): 10 single-select-строк, checked=0.
         w = new KOperationModeSetting(QPoint(0, 0), /*channel=*/0);
+    } else if (screen == "imgenh") {
+        // Усиление изображения-уровень (реф. KImageEnhSetting): 3 single-select L1/L2/L3, checked=0.
+        w = new KImageEnhSetting(QPoint(0, 0), /*channel=*/0);
+    } else if (screen == "irisset") {
+        // Iris режим-экрана (реф. KIrisSetting): 3 single-select TR_FScreen/WScreen/CScreen, checked=0.
+        w = new KIrisSetting(QPoint(0, 0), /*channel=*/0);
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

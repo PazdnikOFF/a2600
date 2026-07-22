@@ -1,5 +1,6 @@
 #include "KIrisMenu.h"
 #include "KOperationModeSetting.h"
+#include "KIrisSetting.h"
 
 KIrisMenu::KIrisMenu(const QPoint &pos, QWidget *parent)
     : KOsdSubMenu(parent, /*bAddReturnBtn=*/true)   // реф. ctor: KOsdSubMenu(parent, true)
@@ -15,6 +16,8 @@ void KIrisMenu::InitConfig(const QPoint &pos)
     // TR_OpMode → KOperationModeSetting (портирован); action открывает под-подменю.
     AddItem(KOsdLabelConfig{ tr("TR_OpMode"),
         [](QPoint p, int, KOsdSubMenu *) { (new KOperationModeSetting(p))->show(); } });
-    AddItem(KOsdLabelConfig{ tr("TR_IRIS1"), nullptr });    // реф. → KIrisSetting::EnterMenu (DEFERRED)
+    // TR_IRIS1 → KIrisSetting (портирован); action открывает под-подменю.
+    AddItem(KOsdLabelConfig{ tr("TR_IRIS1"),
+        [](QPoint p, int ch, KOsdSubMenu *m) { KIrisSetting::EnterMenu(p, ch, m); } });
     InitWidget(pos);
 }
