@@ -111,6 +111,8 @@
 #include "ui/KIrisMenu.h"
 #include "ui/KSnMenu.h"
 #include "ui/KButtonDefinitionMenu.h"
+#include "ui/KOsdStatusLabel.h"
+#include "ui/KPIPView.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9861,6 +9863,27 @@ int main(int argc, char **argv)
     } else if (screen == "buttondefmenu") {
         // Определение кнопок OSD-подменю (реф. KButtonDefinitionMenu): 5 строк, action→EnterMenu (no-op).
         w = new KButtonDefinitionMenu(QPoint(0, 0));
+    } else if (screen == "osdstatuslabel") {
+        // Строки-статусы OSD-меню (реф. KOsdStatusLabel): заголовок слева | значение справа.
+        // Хостим в баре KOsdSubMenu через AddItem(KOsdStatusLabelConfig). SendToMainCtrl — no-op.
+        KOsdSubMenu *menu = new KOsdSubMenu(nullptr, /*bAddReturnBtn=*/false);
+        menu->AddItem(KOsdStatusLabelConfig{ QStringLiteral("Brightness"), QStringLiteral("50"), 0x10 });
+        menu->AddItem(KOsdStatusLabelConfig{ QStringLiteral("Contrast"), QStringLiteral("70"), 0x11 });
+        menu->AddItem(KOsdStatusLabelConfig{ QStringLiteral("Gamma"), QStringLiteral("1.0"), 0x12 });
+        menu->InitWidget(QPoint(0, 0));
+        w = menu;
+    } else if (screen == "pipview") {
+        // PiP-оверлей-маска (реф. KPIPViewRect): композит-вырез скруглённой дыры. Демо: яркий
+        // хост, тёмный KPIPViewRect поверх со скруглением → сквозь дыру видно хост (углы тёмные).
+        QWidget *host = new QWidget;
+        host->resize(320, 240);
+        host->setStyleSheet(QStringLiteral("background:#1cbcc4;"));   // яркий фон-«видео»
+        KPIPViewRect *pip = new KPIPViewRect(host);
+        pip->setStyleSheet(QStringLiteral("background:#141519;"));    // тёмный скрим (углы)
+        pip->setRect(QRect(20, 20, 280, 200));
+        pip->setRadius(QRect(0, 0, 40, 40));                          // скругление % (x/y)
+        pip->refresh();
+        w = host;
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

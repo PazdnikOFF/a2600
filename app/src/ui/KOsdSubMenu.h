@@ -4,6 +4,7 @@
 #include "KOsdSpin.h"
 #include "KOsdDoubleSpin.h"
 #include "KOsdLabel.h"
+#include "KOsdStatusLabel.h"
 #include <QList>
 #include <QPoint>
 
@@ -28,6 +29,7 @@ public:
     void AddItem(const KOsdSpinConfig &cfg);         // реф. @0x47bd20 → KOsdSpin
     void AddItem(const KOsdDoubleSpinConfig &cfg);   // реф. @0x47be40 → KOsdDoubleSpin
     void AddItem(const KOsdLabelConfig &cfg);        // реф. @0x47baa0 → KOsdLabel
+    void AddItem(const KOsdStatusLabelConfig &cfg);  // реф. → KOsdStatusLabel
     void InitWidget(const QPoint &pos);              // реф. @0x47bfe0: размер/позиция/клип 1080
     void SetValue(int row, int value);               // фан-аут в KOsdSpin
     void SetValue(int row, double value);            // фан-аут в KOsdDoubleSpin
