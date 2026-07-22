@@ -440,6 +440,16 @@ KIrisItem/KRecordItem/KOsdMenuCellGreyedWhenCameraDisconnected) — отдель
 
 ### C. ЛОВУШКИ — разгрести до того, как наступишь
 
+**C8 (2026-07-22) — KReportDisplayParam: коллизия API, блокирует «Simple»-движок отчёта.**
+Наш `app/src/report/KReportDisplayParam.h` = упрощённый свой API (QSet валидных имён;
+`UpdateTemplateDisplayParam(QVector<ReportItem>, const KReportDataSource&)`). Референсный —
+другой класс: встроен по значению в `KRTSimpleDisplay` (+0x10, ~0xd0 байт), его
+`UpdateTemplateDisplayParam` берёт `std::map` конфигов шаблона + item-конфигов; байт-layout
+не декомпилирован. ⇒ `KRTSimpleCreatorContext`/`KRTSimpleDisplay` в лоб НЕ портируются.
+Нужен отдельный заход: реконсиляция двух API в одном классе (как с KReportTemplateManager)
+либо переименование. Фундамент движка — `KRTAbsDataSource`+`KRTDataSourceStub` — УЖЕ портирован
+(коллизий нет, self-test `rtdatasource`, регрессия 107/107).
+
 | # | Что | Статус |
 |---|---|---|
 | C1 | 5 классов с ВЫДУМАННЫМ API (0% совпадения): `KEntityManage`, `KEntityService`, `KRTDataSourceReal`, `KEntityReport`, `KRTDataSourceDemo` | Вынесено отдельной задачей. Шестой (`KDocumentGenerator`) уже разведён — имя освобождено, класс написан. |
