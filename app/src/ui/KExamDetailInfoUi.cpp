@@ -1,5 +1,8 @@
 #include "KExamDetailInfoUi.h"
+#include "KImgPushButton.h"
+#include "sys/KEnvConfig.h"
 
+#include <QDir>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -89,16 +92,23 @@ void KExamDetailInfoUi::setupUi()
     QLabel *lblHint = new QLabel(tr("TR_SCAPage"), host); lblHint->setObjectName(QStringLiteral("label_hint"));
     hBot->addWidget(lblHint);
     hBot->addStretch(1);
-    // Пагинация (реф. KImgPushButton → QPushButton c глифами, 48²).
-    auto pageBtn = [&](const char *name, const QString &glyph) {
-        QPushButton *b = new QPushButton(glyph, host);
+    // Пагинация. АПГРЕЙД: реальный KImgPushButton (был QPushButton с глифами). Реверс: setupUi
+    // создаёт 4× KImgPushButton (виджет 48×48), InitWidget зовёт InitButtons(normal, hover,
+    // checked=hover, disable, QSize(48,32), false). База = GetReadOnlyBaseDir + PAGE_TURNING_ICON_DIR
+    // ("mainapp/application/qss/icon/pageturning/"). Стем btn_pre = page_front (НЕ page_pre!).
+    const QString pgBase = QDir(QString::fromStdString(KEnvConfig::GetInstance().GetReadOnlyBaseDir()))
+                               .absoluteFilePath(QStringLiteral("mainapp/application/qss/icon/pageturning/"));
+    auto pageBtn = [&](const char *name, const QString &stem) {
+        KImgPushButton *b = new KImgPushButton(host);
         b->setObjectName(QString::fromLatin1(name));
-        b->setFixedSize(48, 48);
+        b->InitButtons(pgBase + "page_" + stem + "_normal.png", pgBase + "page_" + stem + "_hover.png",
+                       pgBase + "page_" + stem + "_hover.png", pgBase + "page_" + stem + "_disable.png",
+                       QSize(48, 32), false);   // реф. QSize(48,32), bool=false
         hBot->addWidget(b);
         return b;
     };
-    pageBtn("btn_head", QStringLiteral("|<"));   // реф. OnBtnHeadClicked (device-модель)
-    pageBtn("btn_pre", QStringLiteral("<"));
+    pageBtn("btn_head", QStringLiteral("head"));   // реф. OnBtnHeadClicked (device-модель)
+    pageBtn("btn_pre", QStringLiteral("front"));   // реф. стем page_front_* (не page_pre)
     QLineEdit *edPage = new QLineEdit(host);
     edPage->setObjectName(QStringLiteral("edit_page"));
     edPage->setFixedSize(48, 48);
@@ -108,8 +118,8 @@ void KExamDetailInfoUi::setupUi()
     lblTotalPage->setObjectName(QStringLiteral("label_total_page"));
     lblTotalPage->setFixedSize(48, 48); lblTotalPage->setAlignment(Qt::AlignCenter);
     hBot->addWidget(lblTotalPage);
-    pageBtn("btn_next", QStringLiteral(">"));
-    pageBtn("btn_tail", QStringLiteral(">|"));
+    pageBtn("btn_next", QStringLiteral("next"));
+    pageBtn("btn_tail", QStringLiteral("tail"));
     hBot->addStretch(1);
     vR->addLayout(hBot);
 
