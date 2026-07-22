@@ -530,8 +530,37 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **106 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **108 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 108 / FAIL 0).
+
+**✅ СБОРКА НА LINUX (hermes, 2026-07-22).** Целевая платформа прибора — Linux/aarch64, а
+разработка шла на macOS/libc++, поэтому поднят контейнерный билд на hermes:
+`~/a2600build/{Dockerfile,build.sh}` (образ `a2600-qt5:bookworm`: Debian bookworm + gcc 14 +
+qtbase5-dev/qttools5-dev/libqt5sql5-sqlite/libqt5printsupport5 + pkg-config; `-j 3`, чтобы не
+съесть 4 ядра/7 ГБ хоста). Синк исходников — `tar czf - --no-xattrs <файлы> | ssh hermes
+'tar xzf - -C ~/a2600build/src'` (rsync на hermes НЕТ). Регрессия гоняется там же:
+`docker run … bash /work/src/tools/selftest.sh /work/out/ui_preview /work/src`.
+Первый же прогон вскрыл 4 РЕАЛЬНЫХ бага переносимости, которые libc++ маскировал (коммит
+`c13efd6`): `struct statfs` из `<sys/mount.h>` (на Linux — `<sys/vfs.h>`), отсутствующие
+`<vector>`, `<memory>` (8 файлов), `<cmath>`/`<algorithm>`.
+
+**✅ ИСПРАВЛЕН БАГ В ПОРТЕ `KMemComboBox`/`KQuickInputWidget` (2026-07-22, реверс-сверка).**
+Прежний порт хранил совпадения как строки «name - id» и разбирал их `section()` — обе
+стороны были перепутаны, а структура была не та. Дизасм показал: попап держит `_ListBuff`
+(встроен по +0x48) — ПАРАЛЛЕЛЬНЫЕ МАССИВЫ фиксированной длины **10**:
+`Id[10]` +0x48 (шаг 0x20), `Name[10]` +0x188, `Gender[10]` int +0x2c8, `DoB[10]` +0x2f0
+(формат `yyyy-MM-dd`, литерал @0x85dc10), `Age[10]` int +0x430, `Count` +0x458.
+`SearchMatchItem` @0x692d68 строит строку показа как **`Id + " - " + Name`** (сепаратор —
+литерал @0x88ba80, длина 3), с откатом на голое `Name` при пустом `Id`; слоты с пустым
+`Name` пропускаются целиком (и не считаются в `Count`). `ClearListBuffData` @0x692a70
+ставит `Gender=2` (!), `Age=0`. Геттеры читают ПОЛЯ, не парсят строку; индекс вне [0,9] →
+пусто / `Gender=2` / `Age=0` / невалидная `QDate` (@0x69250c, @0x69269c); пустая `DoB` →
+`QDate(2100,1,1)` (@0x6925a0). `KMemComboBox::Get{Id,Name,Gender,DoB,Age}` @0x690d10..0x690d70 —
+тонкие делегаты (`ldr x0,[x0,#56]` + tail-call); `SelectFindWndItem` @0x691390: флаг +0x34
+(`m_displayId`) ≠ 0 → в поле `Name`, иначе `Id`. Порт приведён к этому: провайдер-сейм
+переехал в попап (`SetMatchProvider(fn(prefix, _ListBuff&))`), добавлены `GetGender/GetDoB/
+GetAge`. Новый self-test-режим **`listbuff`** проверяет порядок «Id - Name», откат без Id,
+пропуск пустого имени, дефолты Clear и границы индекса. Превью `memcombobox` обновлён.
 
 **⚠️ ВЫВОД СЕССИИ 2026-07-21: ЧИСТЫЙ OFF-DEVICE-БАКЕТ ИСЧЕРПАН.** После закрытия
 KDocumentGenerator + всей render-подсистемы прощупаны следующие кандидаты ROADMAP — ВСЕ

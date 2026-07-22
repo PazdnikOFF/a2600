@@ -2095,6 +2095,50 @@ int main(int argc, char **argv)
         return ok ? 0 : 50;
     }
 
+    if (screen == "listbuff") {
+        // Self-test `_ListBuff` + KQuickInputWidget::SearchMatchItem (реф. @0x692d68).
+        // Проверяет ИМЕННО то, что прежний порт делал неверно: порядок «Id - Name».
+        KQuickInputWidget wnd;
+
+        // Дефолты после Clear (реф. ClearListBuffData: Gender=2, Age=0, строки пусты).
+        const bool clrOk = wnd.GetId(0).isEmpty() && wnd.GetName(0).isEmpty()
+                           && wnd.GetGender(0) == 2 && wnd.GetAge(0) == 0;
+
+        wnd.SetMatchProvider([](const QString &prefix, _ListBuff &b) {
+            Q_UNUSED(prefix);
+            b.Id[0] = "100234"; b.Name[0] = "John Smith";
+            b.Gender[0] = 0;    b.DoB[0] = "1971-04-02"; b.Age[0] = 55;
+            b.Id[1] = "";       b.Name[1] = "NoId Guy";      // пустой Id → голое имя
+            b.Gender[1] = 1;    b.DoB[1] = "";  b.Age[1] = 7;
+            b.Id[2] = "999";    b.Name[2] = "";              // пустое имя → слот пропущен
+        });
+        const QStringList shown = wnd.SearchMatchItem(QStringLiteral("J"));
+
+        // Порядок «Id - Name» (реф.: _M_construct(Id) → append(" - ",3) → append(Name)).
+        const bool orderOk = shown.size() == 2
+                             && shown[0] == QStringLiteral("100234 - John Smith")
+                             && shown[1] == QStringLiteral("NoId Guy");   // откат без Id
+        // Get* читают ПОЛЯ, а не парсят строку показа.
+        const bool fieldOk = wnd.GetId(0) == QStringLiteral("100234")
+                             && wnd.GetName(0) == QStringLiteral("John Smith")
+                             && wnd.GetGender(0) == 0 && wnd.GetAge(0) == 55
+                             && wnd.GetDoB(0) == QDate(1971, 4, 2);
+        // Пустая DoB → реф. QDate(2100,1,1) (@0x6925a0).
+        const bool dobOk = wnd.GetDoB(1) == QDate(2100, 1, 1);
+        // Границы: индекс > 9 → пусто / Gender=2 / Age=0 / невалидная дата.
+        const bool boundOk = wnd.GetId(10).isEmpty() && wnd.GetName(10).isEmpty()
+                             && wnd.GetGender(10) == 2 && wnd.GetAge(10) == 0
+                             && !wnd.GetDoB(10).isValid();
+
+        const bool ok = clrOk && orderOk && fieldOk && dobOk && boundOk;
+        qInfo() << "clear-defaults:" << clrOk << "| Id-Name порядок:" << orderOk
+                << "| поля:" << fieldOk << "| пустая DoB→2100:" << dobOk
+                << "| границы:" << boundOk;
+        qInfo() << "показ:" << shown;
+        qInfo() << (ok ? "listbuff: PASS" : "listbuff: FAIL");
+        return ok ? 0 : 17;
+    }
+
     // Self-test свободных функций report_template (сериализация map ⇄ строка, source-id,
     // генерация ID, предикат bold, резолв заголовка).
     if (screen == "rtdatasource") {
@@ -9634,19 +9678,33 @@ int main(int argc, char **argv)
         // in-memory провайдером. Реальный попап — отдельное Popup-окно (в grab не попадёт),
         // поэтому показываем ОТДЕЛЬНЫЙ KQuickInputWidget с теми же записями для сверки списка.
         QWidget *host = new QWidget;
-        host->resize(340, 220);
+        host->resize(340, 300);
         QVBoxLayout *vb = new QVBoxLayout(host);
         vb->addWidget(new QLabel(QStringLiteral("Patient (type to search):"), host));
 
-        static const QStringList kDb = {
-            QStringLiteral("John Smith - 100234"), QStringLiteral("Johann Bach - 100871"),
-            QStringLiteral("Joan Miro - 101002"),  QStringLiteral("Jane Doe - 100555")};
-        auto provider = [](const QString &prefix) -> QStringList {
-            QStringList out;
-            for (const QString &rec : kDb)
-                if (rec.section(QStringLiteral(" - "), 0, 0).startsWith(prefix, Qt::CaseInsensitive))
-                    out << rec;
-            return out;
+        // Записи БД — СТРУКТУРНЫЕ (реф. `_ListBuff`: Id/Name/Gender/DoB/Age), а не строки.
+        // Последняя — с ПУСТЫМ Id: реф. в этом случае показывает голое Name (без « - »).
+        struct Row { const char *id; const char *name; int gender; const char *dob; int age; };
+        static const Row kDb[] = {
+            {"100234", "John Smith",  0, "1971-04-02", 55},
+            {"100871", "Johann Bach", 0, "1685-03-31", 65},
+            {"101002", "Joan Miro",   1, "1893-04-20", 90},
+            {"",       "Jonas NoID",  1, "",            0},
+        };
+        auto provider = [](const QString &prefix, _ListBuff &buff) {
+            int n = 0;
+            for (const Row &r : kDb) {
+                if (n >= _ListBuff::kMaxItems)
+                    break;
+                if (!QString::fromLatin1(r.name).startsWith(prefix, Qt::CaseInsensitive))
+                    continue;
+                buff.Id[n]     = QString::fromLatin1(r.id);
+                buff.Name[n]   = QString::fromLatin1(r.name);
+                buff.Gender[n] = r.gender;
+                buff.DoB[n]    = QString::fromLatin1(r.dob);
+                buff.Age[n]    = r.age;
+                ++n;
+            }
         };
 
         KMemComboBox *combo = new KMemComboBox(host);
@@ -9657,10 +9715,20 @@ int main(int argc, char **argv)
 
         // Отдельная копия find-списка (совпадения по «Jo») — для визуальной сверки попапа.
         KQuickInputWidget *findList = new KQuickInputWidget(host);
-        findList->SetItems(provider(QStringLiteral("Jo")));
-        findList->setFixedHeight(110);
-        vb->addWidget(new QLabel(QStringLiteral("find-popup contents:"), host));
+        findList->SetMatchProvider(provider);
+        const QStringList shown = findList->SearchMatchItem(QStringLiteral("Jo"));
+        findList->SetItems(shown);
+        findList->setFixedHeight(130);
+        vb->addWidget(new QLabel(QStringLiteral("find-popup contents (Id - Name):"), host));
         vb->addWidget(findList);
+        QLabel *fields = new QLabel(host);
+        fields->setText(QStringLiteral("[0] Id=%1 Name=%2 Gender=%3 DoB=%4 Age=%5")
+                            .arg(findList->GetId(0), findList->GetName(0))
+                            .arg(findList->GetGender(0))
+                            .arg(findList->GetDoB(0).toString(QStringLiteral("yyyy-MM-dd")))
+                            .arg(findList->GetAge(0)));
+        fields->setWordWrap(true);
+        vb->addWidget(fields);
         vb->addStretch();
         w = host;
     } else if (screen == "quickinputcombo") {

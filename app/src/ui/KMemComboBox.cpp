@@ -4,9 +4,6 @@
 #include <QLineEdit>
 #include <QRegExpValidator>
 
-// Сепаратор записи «name - id» (реф. литерал @0x88ba80).
-static const QString kSep = QStringLiteral(" - ");
-
 KMemComboBox::KMemComboBox(QWidget *parent)
     : QComboBox(parent)
 {
@@ -33,7 +30,10 @@ KMemComboBox::KMemComboBox(QWidget *parent)
 
 void KMemComboBox::SetTableName(const QString &table, bool displayId)
 {
+    // Реф. @0x691628: имя таблицы уходит в попап (+0x460) — по нему он роутит GetMatchDate.
     m_tableName = table;
+    if (m_popup)
+        m_popup->SetTableName(table);
     m_displayId = displayId;   // реф.: 2-й арг → +0x34
 }
 
@@ -42,9 +42,11 @@ void KMemComboBox::SetDisplayId(bool displayId)
     m_displayId = displayId;   // реф. @0x691370 → +0x34
 }
 
-void KMemComboBox::SetMatchProvider(std::function<QStringList(const QString &)> fn)
+void KMemComboBox::SetMatchProvider(KQuickInputWidget::MatchProvider fn)
 {
-    m_matchProvider = std::move(fn);
+    // Реф.-эквивалент: провайдер живёт в попапе (там же, где SearchMatchItem и _ListBuff).
+    if (m_popup)
+        m_popup->SetMatchProvider(std::move(fn));
 }
 
 void KMemComboBox::setMaxLength(int len)
@@ -72,18 +74,31 @@ void KMemComboBox::setText(const QString &t)
     connect(this, &QComboBox::editTextChanged, this, &KMemComboBox::OnRadarChange);
 }
 
+// Реф. @0x690d38/0x690d10/0x690d60/0x690d68/0x690d70 — `ldr x0,[x0,#56]` + хвостовой вызов
+// одноимённого метода попапа. Никакого разбора строки: поля берутся из `_ListBuff`.
 QString KMemComboBox::GetName(int idx) const
 {
-    if (idx < 0 || idx >= m_records.size())
-        return QString();
-    return m_records[idx].section(kSep, 0, 0);
+    return m_popup ? m_popup->GetName(idx) : QString();
 }
 
 QString KMemComboBox::GetId(int idx) const
 {
-    if (idx < 0 || idx >= m_records.size())
-        return QString();
-    return m_records[idx].section(kSep, 1, 1);
+    return m_popup ? m_popup->GetId(idx) : QString();
+}
+
+int KMemComboBox::GetGender(int idx) const
+{
+    return m_popup ? m_popup->GetGender(idx) : 2;
+}
+
+QDate KMemComboBox::GetDoB(int idx) const
+{
+    return m_popup ? m_popup->GetDoB(idx) : QDate();
+}
+
+int KMemComboBox::GetAge(int idx) const
+{
+    return m_popup ? m_popup->GetAge(idx) : 0;
 }
 
 void KMemComboBox::OnRadarChange(const QString &text)
@@ -96,12 +111,12 @@ void KMemComboBox::OnRadarChange(const QString &text)
 
 void KMemComboBox::ShowFindWnd(const QString &prefix)
 {
-    // Реф. @0x690f68 → SearchMatchItem. DEVICE вынесен в провайдер.
-    if (prefix.trimmed().isEmpty() || !m_matchProvider) {
+    // Реф. @0x690f68 → KQuickInputWidget::SearchMatchItem (там же _ListBuff и DB-роутинг).
+    if (prefix.trimmed().isEmpty() || !m_popup) {
         HideFindWnd();
         return;
     }
-    m_records = m_matchProvider(prefix);
+    m_records = m_popup->SearchMatchItem(prefix);
     if (m_records.isEmpty()) {
         HideFindWnd();
         return;
