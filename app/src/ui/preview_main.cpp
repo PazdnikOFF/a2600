@@ -113,6 +113,10 @@
 #include "ui/KButtonDefinitionMenu.h"
 #include "ui/KOsdStatusLabel.h"
 #include "ui/KPIPView.h"
+#include "ui/KImageEnhTypeSetting.h"
+#include "ui/KImageBrightEQSetting.h"
+#include "ui/KImageDenoiseSetting.h"
+#include "ui/KbuttonSetting.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9884,6 +9888,18 @@ int main(int argc, char **argv)
         pip->setRadius(QRect(0, 0, 40, 40));                          // скругление % (x/y)
         pip->refresh();
         w = host;
+    } else if (screen == "imgenhtype") {
+        // Тип усиления (реф. KImageEnhTypeSetting): 3 KOsdLabel TR_StreA/StreB/Ege2, checked=0.
+        w = new KImageEnhTypeSetting(QPoint(0, 0));
+    } else if (screen == "brighteq") {
+        // Яркостный EQ (реф. KImageBrightEQSetting): single-select "0".."3", checked=0.
+        w = new KImageBrightEQSetting(QPoint(0, 0));
+    } else if (screen == "denoise") {
+        // Шумоподавление (реф. KImageDenoiseSetting): single-select "0".."3", checked=0.
+        w = new KImageDenoiseSetting(QPoint(0, 0));
+    } else if (screen == "buttonsetting") {
+        // Назначение функции кнопке (реф. KbuttonSetting): 12 single-select-строк, checked=0.
+        w = new KbuttonSetting(QPoint(0, 0), /*keyIndex=*/1);
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

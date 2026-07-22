@@ -69,6 +69,13 @@ void KOsdSubMenu::AddItem(const KOsdStatusLabelConfig &cfg)
     AddItem(new KOsdStatusLabel(cfg, m_listWidget));
 }
 
+void KOsdSubMenu::AddItem(const KOsdSingleSelectLabelConfig &cfg)
+{
+    // Реф.: single-select-метка в НЕ-single-select-меню (KbuttonSetting). action-колбэк —
+    // DEVICE-seam (SendToMainCtrl), в порте no-op (nullptr).
+    AddItem(new KOsdSingleSelectLabel(cfg, m_listWidget, nullptr));
+}
+
 void KOsdSubMenu::InitWidget(const QPoint &pos)
 {
     // Реф. @0x47bfe0: width 270, height=count*44, клип к экрану 1080, move.

@@ -173,6 +173,10 @@ set(SOURCES
     src/ui/KButtonDefinitionMenu.cpp
     src/ui/KOsdStatusLabel.cpp
     src/ui/KPIPView.cpp
+    src/ui/KImageEnhTypeSetting.cpp
+    src/ui/KImageBrightEQSetting.cpp
+    src/ui/KImageDenoiseSetting.cpp
+    src/ui/KbuttonSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -526,6 +530,10 @@ add_executable(ui_preview
     src/ui/KButtonDefinitionMenu.cpp
     src/ui/KOsdStatusLabel.cpp
     src/ui/KPIPView.cpp
+    src/ui/KImageEnhTypeSetting.cpp
+    src/ui/KImageBrightEQSetting.cpp
+    src/ui/KImageDenoiseSetting.cpp
+    src/ui/KbuttonSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
