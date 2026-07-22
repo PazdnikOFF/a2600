@@ -366,6 +366,20 @@ offscreen (как KUIDesktop). Порядок по важности:
 4. **Общие виджеты:** KMessageBox, KDialog, KProgressDlg, KCalendarWidget, KMemComboBox,
    KOptionListButton, KPinyinWidget (ввод), KOsdSubMenu/KOsdMenuBase (экранное меню).
 
+**СЕМЬЯ OSD-МЕНЮ (инвентарь 2026-07-22, реверс):** 17 конкретных KOsdSubMenu-подклассов.
+ПОРТИРОВАНЫ: базы (KOsdMenu/KOsdSubMenu/KOsdMenuBase) + item-виджеты (KOsdLabel/KOsdStatusLabel/
+KOsdSingleSelectLabel/KOsdMenuCell/KOsdSpin/KOsdDoubleSpin) + меню KIrisMenu/KSnMenu/
+KButtonDefinitionMenu + KVideoPlayerOSD + KPIPView.
+PORT-NOW (тонкие фабрики, без device-хуков): KImageEnhTypeSetting, KImageBrightEQSetting,
+KImageDenoiseSetting, KbuttonSetting.
+⛔ DEFERRED-10 (переопределяют VideoParamChangeActImpl/SystemStatusChangeActImpl — привязаны к
+НЕРЕШЁННОЙ архитектуре KVideoProxy VideoParamChanged): KFeatureMenu, KImageProcessingMenu,
+KImageColorSetting, KImageEnhSetting, KIrisSetting, KLightLevelSetting, KOperationModeSetting,
+KContrastSetting, KVlsModeSetting, KZoomSetting. Порт — ПОСЛЕ решения по video-proxy-хукам.
+КОРЕНЬ KOsdMenu::InitWidget строит спец-ячейки (KFeaturesItem/KCameraInfoItem/KimageProcesItem/
+KIrisItem/KRecordItem/KOsdMenuCellGreyedWhenCameraDisconnected) — отдельный заход (пререквизит
+корневого меню, НЕ подменю).
+
 ## 4. Рекомендуемый порядок
 
 **Сейчас (off-device, максимальная отдача):** Фаза A → B → D → (off-device части C).
