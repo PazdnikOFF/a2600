@@ -126,6 +126,7 @@
 #include "ui/KLightLevelSetting.h"
 #include "ui/KFeatureMenu.h"
 #include "ui/KImageProcessingMenu.h"
+#include "ui/KVlsModeSetting.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9942,6 +9943,9 @@ int main(int argc, char **argv)
     } else if (screen == "imgprocmenu") {
         // Параметры изображения-хаб (реф. KImageProcessingMenu): 8 KOsdLabel → под-подменю.
         w = new KImageProcessingMenu(QPoint(0, 0));
+    } else if (screen == "vlsmode") {
+        // VLS-режим (реф. KVlsModeSetting): single-select комбо из coldlight.ini.
+        w = new KVlsModeSetting(QPoint(0, 0));
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

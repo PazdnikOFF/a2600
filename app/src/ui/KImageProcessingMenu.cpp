@@ -6,6 +6,7 @@
 #include "KImageColorSetting.h"
 #include "KImageDenoiseSetting.h"
 #include "KImageBrightEQSetting.h"
+#include "KVlsModeSetting.h"
 
 KImageProcessingMenu::KImageProcessingMenu(const QPoint &pos, QWidget *parent)
     : KOsdSubMenu(parent, /*bAddReturnBtn=*/true)
@@ -29,7 +30,8 @@ void KImageProcessingMenu::InitConfig(const QPoint &pos)
         [](QPoint p, int, KOsdSubMenu *) { (new KContrastSetting(p))->show(); } });
     AddItem(KOsdLabelConfig{ tr("TR_Col"),
         [](QPoint p, int, KOsdSubMenu *) { (new KImageColorSetting(p))->show(); } });
-    AddItem(KOsdLabelConfig{ tr("TR_LMode"), nullptr });   // реф. → KVlsModeSetting (DEFERRED, config-driven)
+    AddItem(KOsdLabelConfig{ tr("TR_LMode"),
+        [](QPoint p, int, KOsdSubMenu *) { (new KVlsModeSetting(p))->show(); } });   // реф. → KVlsModeSetting
     AddItem(KOsdLabelConfig{ tr("TR_IDenoise"),
         [](QPoint p, int, KOsdSubMenu *) { (new KImageDenoiseSetting(p))->show(); } });
     AddItem(KOsdLabelConfig{ tr("TR_BEquilibria"),

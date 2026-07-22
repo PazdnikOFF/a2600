@@ -187,6 +187,7 @@ set(SOURCES
     src/ui/KLightLevelSetting.cpp
     src/ui/KFeatureMenu.cpp
     src/ui/KImageProcessingMenu.cpp
+    src/ui/KVlsModeSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -554,6 +555,7 @@ add_executable(ui_preview
     src/ui/KLightLevelSetting.cpp
     src/ui/KFeatureMenu.cpp
     src/ui/KImageProcessingMenu.cpp
+    src/ui/KVlsModeSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
