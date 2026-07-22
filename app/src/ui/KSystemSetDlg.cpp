@@ -1,4 +1,6 @@
 #include "KSystemSetDlg.h"
+#include "KIpLineEdit.h"
+#include "KLineH.h"
 
 #include <QComboBox>
 #include <QDateEdit>
@@ -14,15 +16,8 @@
 #include <QWidget>
 
 namespace {
-// Реф. KLineH — стилизованный горизонтальный сепаратор. У нас QFrame(HLine/Sunken).
-QFrame *mkLineH(QWidget *p)
-{
-    QFrame *f = new QFrame(p);
-    f->setFrameShape(QFrame::HLine);
-    f->setFrameShadow(QFrame::Sunken);
-    return f;
-}
 // Строка-заголовок секции: подпись + горизонтальный разделитель (реф. hLayout_* + KLineH).
+// АПГРЕЙД: реальный KLineH (line_zoom/line_color/line_enhance) — был QFrame(HLine/Sunken).
 QHBoxLayout *sectionHeader(QWidget *p, const QString &text)
 {
     QHBoxLayout *h = new QHBoxLayout();
@@ -30,15 +25,14 @@ QHBoxLayout *sectionHeader(QWidget *p, const QString &text)
     l->setText(text);
     l->setStyleSheet(QStringLiteral("font-weight:bold;"));
     h->addWidget(l);
-    h->addWidget(mkLineH(p), 1);
+    h->addWidget(new KLineH(p), 1);
     return h;
 }
-// Реф. KIpLineEdit — поле ввода IP. У нас QLineEdit c маской (DEVICE-логика опущена).
-QLineEdit *mkIpEdit(QWidget *p, const char *name)
+// АПГРЕЙД: реальный KIpLineEdit (edt_localip/netmask/gateway) — был QLineEdit c маской.
+KIpLineEdit *mkIpEdit(QWidget *p, const char *name)
 {
-    QLineEdit *e = new QLineEdit(p);
+    KIpLineEdit *e = new KIpLineEdit(p);
     e->setObjectName(QString::fromLatin1(name));
-    e->setInputMask(QStringLiteral("000.000.000.000;_"));
     return e;
 }
 } // namespace

@@ -1,4 +1,5 @@
 #include "KAddPrinterDlg.h"
+#include "KIpLineEdit.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -76,8 +77,7 @@ void KAddPrinterDlg::setupUi()
     QComboBox *urlCombo = new QComboBox(stk);   // page0: URL/принтер (device-populated)
     urlCombo->setEditable(true);
     stk->addWidget(urlCombo);
-    QLineEdit *ipEdit = new QLineEdit(stk);     // page1: KIpLineEdit → QLineEdit+маска
-    ipEdit->setInputMask(QStringLiteral("000.000.000.000;_"));
+    KIpLineEdit *ipEdit = new KIpLineEdit(stk);   // АПГРЕЙД: реальный KIpLineEdit (был QLineEdit+маска)
     stk->addWidget(ipEdit);
     g->addWidget(stk, 2, 1);
     g->addWidget(actBtn("m_pSearchBtn", tr("TR_Sch")), 2, 2);   // реф. OnSearchBtnClicked (device)
