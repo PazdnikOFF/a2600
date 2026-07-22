@@ -12,16 +12,16 @@
 |---|---|
 | Пользовательских классов в референсе | **486** |
 | Методов в них (уникальные имена) | **7008** |
-| Классов затронуто у нас | **205** (42%) |
-| Методов реализовано (совпало по имени) | **1889** (27.0%) |
+| Классов затронуто у нас | **210** (43%) |
+| Методов реализовано (совпало по имени) | **1930** (27.5%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
-| **UI** | 167 | 2665 | 508 | 19.1% | 87 |
+| **UI** | 167 | 2665 | 532 | 20.0% | 90 |
 | **CORE** | 60 | 1251 | 498 | 39.8% | 29 |
-| **REPORT** | 73 | 829 | 251 | 30.3% | 26 |
+| **REPORT** | 73 | 829 | 268 | 32.3% | 28 |
 | **MISC** | 27 | 669 | 165 | 24.7% | 14 |
 | **HW** | 40 | 625 | 211 | 33.8% | 11 |
 | **DICOM** | 60 | 455 | 81 | 17.8% | 13 |
@@ -105,9 +105,9 @@
 | `KImgTableModel` | UI | 37 | 2 | 5% |
 | `KSystem` | CORE | 51 | 17 | 33% |
 | `KVideoCal` | UI | 35 | 3 | 9% |
-| `KImgTableItem` | UI | 38 | 7 | 18% |
 | `KUpdateConf` | UPDATE | 29 | 1 | 3% |
 | `KVideoParam` | CORE | 44 | 17 | 39% |
+| `KImgTableItem` | UI | 38 | 11 | 29% |
 | `KUserOsdSet` | CORE | 34 | 8 | 24% |
 | `KPatientManagmentUi` | UI | 32 | 8 | 25% |
 | `KUserSet` | CORE | 27 | 3 | 11% |
@@ -119,7 +119,7 @@
 оценка**. Там, где мы сознательно переосмыслили API (свои имена вместо оригинальных),
 метрика показывает 0 при фактически рабочем коде:
 
-- **Свой API при наличии класса-референса (62):** `KAddPrinterDlg`, `KAddPrinterDriverDlg`, `KAlgParamAjustDlg`, `KAuthMachineDlg`, `KCameraInfoEdit`, `KColdlightAdjust`, `KContrastSetting`, `KControlInfo`, `KCustomEdit`, `KDICOMServiceEditDlg`, `KDeviceInfo`, `KEndoScopeControl`, `KEndoScopeSN`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KErrorRate`, `KExamDetailInfoUi`, `KExamEntry`, `KExamListSetupDlg`, `KGeneralSetDlg`, `KHospitalInfoEditDlg`, `KImageBrightEQSetting`, `KImageDenoiseSetting`, `KImageEditor`, `KLogView`, `KNetPrintList`, `KNewTempletEditor`, `KPUserLoginDlg`, `KPasswordEdit`, `KPatientListAddDlg`, `KPatientListSearch`, `KPrintSettingsDlg`, `KProcessorControl`, `KProcessorSN`, `KProgressDlg`, `KQRCode`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KRecordCase`, `KReportEditAddMarkView`, `KReportEditUi`, `KReportPreviewDlg`, `KReportTempletEditDlg`, `KRigidEndoBtnGuide`, `KScopeInfoEdit`, `KServerInfoDlg`, `KSysDicom`, `KSysPrinter`, `KSystemSetDlg`, `KSystemTemperature`, `KTempletTreeWidgetItem`, `KThesaurusSaveUi`, `KThsaurusManageMentUi`, `KUnusedImgPlayBar`, `KUserSrvSet`, `KVersion`, `KVideoPlayerOSD`, `KViewHardEndo`, `KZoomSetting`, `ReportConfigDlg`
+- **Свой API при наличии класса-референса (63):** `KAddPrinterDlg`, `KAddPrinterDriverDlg`, `KAlgParamAjustDlg`, `KAuthMachineDlg`, `KCameraInfoEdit`, `KColdlightAdjust`, `KContrastSetting`, `KControlInfo`, `KCustomEdit`, `KDICOMServiceEditDlg`, `KDeviceInfo`, `KEndoScopeControl`, `KEndoScopeSN`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KErrorRate`, `KExamDetailInfoUi`, `KExamEntry`, `KExamImgModel`, `KExamListSetupDlg`, `KGeneralSetDlg`, `KHospitalInfoEditDlg`, `KImageBrightEQSetting`, `KImageDenoiseSetting`, `KImageEditor`, `KLogView`, `KNetPrintList`, `KNewTempletEditor`, `KPUserLoginDlg`, `KPasswordEdit`, `KPatientListAddDlg`, `KPatientListSearch`, `KPrintSettingsDlg`, `KProcessorControl`, `KProcessorSN`, `KProgressDlg`, `KQRCode`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KRecordCase`, `KReportEditAddMarkView`, `KReportEditUi`, `KReportPreviewDlg`, `KReportTempletEditDlg`, `KRigidEndoBtnGuide`, `KScopeInfoEdit`, `KServerInfoDlg`, `KSysDicom`, `KSysPrinter`, `KSystemSetDlg`, `KSystemTemperature`, `KTempletTreeWidgetItem`, `KThesaurusSaveUi`, `KThsaurusManageMentUi`, `KUnusedImgPlayBar`, `KUserSrvSet`, `KVersion`, `KVideoPlayerOSD`, `KViewHardEndo`, `KZoomSetting`, `ReportConfigDlg`
 
 - **Наши абстракции без класса-референса (28):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KOsdLabelConfig`, `KRemoteSwitchConfig`, `KReportDataSource`, `KReportHtmlGenerator`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `KbuttonSetting`, `KimageProcesItem`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `x2000monitor`, `x2000video`, `yxyDES2`
 
