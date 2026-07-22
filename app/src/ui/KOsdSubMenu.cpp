@@ -1,4 +1,5 @@
 #include "KOsdSubMenu.h"
+#include "KFrame.h"
 
 #include <QVBoxLayout>
 #include <QListWidget>
@@ -104,7 +105,48 @@ void KOsdSubMenu::ItemClicked(const QModelIndex &idx)
 
 void KOsdSubMenu::ConfirmKeyAct()
 {
-    // Реф.: активация текущего элемента (enter/toggle) + push-index — device, опущено.
+    // Реф. @0x47b080: активация текущего элемента. Для single-select-меток (KFrame-подкласс):
+    // Selected → ConfirmKeyAct(seam) → если IsSingleSelectLabel, коммит checked-индекса + refresh.
+    // Спины (KOsdSpin/KOsdDoubleSpin — НЕ KFrame) сюда не попадают (cast промахивается).
+    const int row = m_selectedIndex;
+    if (row < 0 || row >= m_items.size())
+        return;
+    if (KFrame *f = qobject_cast<KFrame *>(m_items[row])) {
+        f->Selected();                 // реф. item.Selected() (vt+0x1a0)
+        f->ConfirmKeyAct(row);         // реф. item.ConfirmKeyAct(cursor) (vt+0x1e8) → DEVICE-seam
+        if (f->IsSingleSelectLabel()) {   // реф. vt+0x1f0
+            m_checkedIndex = m_selectedIndex;
+            RefreshCheckedItem();
+        }
+    }
+}
+
+void KOsdSubMenu::InitCheckedItem(int idx)
+{
+    // Реф. @0x47b078: курсор+чек на idx, затем refresh иконок.
+    m_selectedIndex = idx;
+    m_checkedIndex = idx;
+    RefreshCheckedItem();
+}
+
+void KOsdSubMenu::RefreshCheckedItem()
+{
+    // Реф. @0x47af90: чекнутая строка → Checked+Selected; прочие → UnSelected+UnChecked.
+    for (int i = 0; i < m_items.size(); ++i) {
+        KFrame *f = qobject_cast<KFrame *>(m_items[i]);
+        if (!f)
+            continue;
+        if (i == m_checkedIndex) {
+            f->Checked();
+            f->Selected();
+        } else {
+            f->UnSelected();
+            f->UnChecked();
+        }
+    }
+    if (m_checkedIndex >= 0 && m_checkedIndex < m_items.size())
+        m_listWidget->setCurrentRow(m_checkedIndex);
+    update();
 }
 
 void KOsdSubMenu::SetValue(int row, int value)

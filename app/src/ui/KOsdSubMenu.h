@@ -30,6 +30,9 @@ public:
     void SetValue(int row, int value);               // фан-аут в KOsdSpin
     void SetValue(int row, double value);            // фан-аут в KOsdDoubleSpin
 
+    void InitCheckedItem(int idx);                   // реф. @0x47b078: коммит + refresh (single-select)
+    void RefreshCheckedItem();                       // реф. @0x47af90: чек/расчек иконок
+
 public slots:
     void UpKeyAct();
     void DownKeyAct();
@@ -44,5 +47,6 @@ private:
     QList<QWidget *> m_items;    // +0x88 (в реф. KFrame*)
     bool m_bAddReturnBtn = false;
     int m_selectedIndex = 0;     // +0x90
+    int m_checkedIndex = -1;     // +0x94 (single-select: закоммиченный выбор)
     QPoint m_pos;                // +0x70/0x74
 };

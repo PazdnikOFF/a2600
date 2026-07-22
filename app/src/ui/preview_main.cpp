@@ -107,6 +107,7 @@
 #include "ui/KOsdMenuCell.h"
 #include "ui/KImageButton.h"
 #include "ui/KOsdSubMenu.h"
+#include "ui/KOsdSingleSelectMenu.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9832,6 +9833,20 @@ int main(int argc, char **argv)
             menu->AddItem(cell);
         }
         menu->DownKeyAct();   // перейти на вторую ячейку (Record) — highlight
+        w = menu;
+    } else if (screen == "osdsingleselect") {
+        // Single-select OSD-меню (реф. KOsdSingleSelectMenu) хостит KOsdSingleSelectLabel-строки
+        // с чек-иконкой. Демо-конфиг из 4 пунктов; confirm-колбэк — no-op (DEVICE-seam).
+        KOsdSingleSelectMenu *menu = new KOsdSingleSelectMenu;
+        const char *items[4] = {"Auto", "Low", "Medium", "High"};
+        QList<KOsdSingleSelectMenu::Item> list;
+        for (int i = 0; i < 4; ++i) {
+            KOsdSingleSelectLabelConfig cfg;
+            cfg.text = QString::fromLatin1(items[i]);
+            cfg.msgType = 0x2100; cfg.msgParam = i;   // демо msg-пара (реф. уходит в SendToMainCtrl)
+            list.append(qMakePair(cfg, KOsdSingleSelectLabel::ConfirmCallback()));
+        }
+        menu->InitConfig(QPoint(0, 0), list, /*checkedIndex=*/2);   // «Medium» отмечен
         w = menu;
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,

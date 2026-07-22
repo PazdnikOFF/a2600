@@ -17,6 +17,9 @@ public:
     virtual void DownKeyAct() {}
     virtual void ReleaseFocus() {}
     virtual void UnChecked() {}
+    virtual void Checked() {}                                    // реф. single-select чек-иконка
+    virtual void ConfirmKeyAct(int value) { Q_UNUSED(value); }  // реф. @0x582bf0: DEVICE-seam в подклассе
+    virtual bool IsSingleSelectLabel() const { return false; }  // реф. @0x47f538 база → false
     virtual void Focused() {}
     virtual void Selected() {}
     virtual void UnSelected() {}
