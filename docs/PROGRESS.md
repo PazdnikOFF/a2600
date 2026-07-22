@@ -530,8 +530,44 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **109 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 109 / FAIL 0).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **110 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 110 / FAIL 0).
+
+**✅ ЗАКРЫТ MVC-СЛОЙ QuickInput (2026-07-22).** `db/KComboBoxItem.h` +
+`ui/KQuickInputModel.*`, self-test `quickinputmodel`, превью `quickinputcombo` переведено
+на реальную модель. Реф.-факты:
+- `KComboBoxItem` (sizeof 0x30): +0x00 int mKey сущности, +0x04 int count, +0x08 QDateTime,
+  +0x10 std::string текст. ИМЕНА ПОЛЕЙ реф. НЕ ВОССТАНОВЛЕНЫ (символов нет, ctor/operator=
+  заинлайнены) — названы по семантике. Реф.-странность: `GetData` парсит время сущности
+  форматом «yyyy-MM-dd hh:mm:ss» (@0x83df48), но в +0x08 кладёт ДЕФОЛТНЫЙ QDateTime
+  (мёртвый код); в порте поле заполняется — модель его всё равно не показывает.
+- `KQuickInputModel` (@0x5a9928, sizeof 0x40) : `QAbstractItemModel`. Плоский
+  ОДНОСТОЛБЦОВЫЙ READ-ONLY список: переопределены только index/parent/rowCount/columnCount/
+  data; `headerData`/`flags`/`setData` НЕ переопределены — запись идёт мимо модели.
+  `data()` отдаёт текст ТОЛЬКО для ролей DisplayRole(0)/EditRole(2) — UserRole и прочие
+  дают invalid. `rowCount = min(items.size(), m_limit)`, `columnCount = 1`.
+  Поля: +0x10 vector<KComboBoxItem>, +0x28/+0x30 shared_ptr<стратегия>, +0x38 int m_limit
+  (ctor = 10, LoadData перезаписывает безусловно).
+- `LoadData(a1, a2, limit)` @0x5a9ab8 — селекторы это СТРОКИ-КЛЮЧИ, а НЕ имена SQL-таблиц
+  (те без префикса `tb_`!): `tb_QuickInputPatient` @0x863598 + `PatientName` @0x83e490 →
+  PatientName-стратегия; тот же + `PatientID` @0x83eb60 → PatientID; `tb_QuickInputApplicant`
+  @0x863528 и `tb_QuickInputDoctor` @0x863560 — поле НЕ проверяется. Ни одно не совпало →
+  стратегия НЕ сбрасывается.
+- `SaveData(item)` @0x5a9e68 — это «ОТМЕТИТЬ ИСПОЛЬЗОВАНИЕ», а не add-or-update: стратегия
+  ищет запись по тексту (`IsExistEntity`), если НЕ найдена — возвращает -1 и НИЧЕГО не
+  добавляет (`AddEntity` из SetData не вызывается вовсе); если найдена — `count+1`,
+  `time = сейчас`, `UpdateEntity(mKey)`, затем перезагрузка списка.
+- Стратегии `KQuickInputData{PatientName,PatientID,Doctor,Applicant}` — общий чисто
+  виртуальный базовый класс, vtable 4 слота (D1, D0, GetData +0x10, SetData +0x18);
+  ИМЯ БАЗЫ НЕ ВОССТАНОВЛЕНО (символа нет), в порте назван `KQuickInputDataBase`.
+  ⚠️ Построчно сверены только `PatientName::GetData` @0x5ac520, `Doctor::SetData` @0x5aa4e8,
+  `PatientID::SetData` @0x5ab038 — остальные шесть тел восстановлены ПО АНАЛОГИИ (vtable-
+  слоты найдены: PatientName::SetData 0x5ab728, PatientID::GetData 0x5ac8a8,
+  Doctor::GetData 0x5ac110, Applicant::GetData 0x5acc30 / SetData 0x5aaad8).
+- `KQuickInputComboBox` ПЕРЕПОДКЛЮЧЁН к реальной модели (реф. Init @0x5a9278: new
+  KQuickInputModel(this) → LoadData транзитом → setModel → AllDataChanged; Save @0x5a9358 →
+  SaveData). Убран прежний QStringList-провайдер; третий аргумент `Init` — это ЛИМИТ строк,
+  а не флаг (прежний порт трактовал его как флаг — исправлено).
 
 **✅ ПОРТИРОВАНО СЕМЕЙСТВО QuickInput (2026-07-22).** `db/KQuickInputEntity.*` +
 `db/KQuickInputStore.*` + `db/KQuickInputDbTableHandler.*`, self-test `quickinputdb`.

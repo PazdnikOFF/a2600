@@ -1,34 +1,41 @@
 #pragma once
 
 #include <QComboBox>
-#include <QStringList>
-#include <functional>
+
+class KQuickInputModel;
 
 // Комбо быстрого ввода с MRU (реф. KQuickInputComboBox @ctor 0x5a91e0, base QComboBox).
-// СИБЛИНГ KMemComboBox, но ПРОЩЕ и самодостаточнее: нативный дропдаун поверх
-// KQuickInputModel (не кастомный find-попап). Используется в редактировании отчёта для
-// повторного ввода частых фраз. UI-порт РЕАЛЬНОГО кастом-виджета.
+// СИБЛИНГ KMemComboBox, но проще: нативный дропдаун поверх KQuickInputModel (не кастомный
+// find-попап). Используется для повторного ввода частых значений (врач, направивший,
+// имя/ID пациента).
 //
-// Отличия от KMemComboBox: модель показывается КАК нативный дропдаун (setModel); есть
-// явный Save() — MRU-вставка текущего текста с дедупом и таймстампом; сигнал показа попапа.
+// Реф. связка (сверена дизасмом):
+//   Init(a1, a2, count) @0x5a9278 — new KQuickInputModel(this) → LoadData(a1, a2, count)
+//                                    → setModel → AllDataChanged();
+//   Save()              @0x5a9358 — строит KComboBoxItem из текущего текста и зовёт
+//                                    KQuickInputModel::SaveData(item);
+//   AllDataChanged(bool)@0x5a9310 — форвард в модель;
+//   showPopup()         @0x5a9730 — эмит сигнала + ленивый connect currentIndexChanged.
+// Третий аргумент Init — это ЛИМИТ строк (транзитом в LoadData), а не флаг: прежний порт
+// трактовал его как флаг, исправлено.
 //
-// DEVICE-STUB: KQuickInputModel — DB-бэкенд (тот же зашифрованный SQLite). В порте
-// уплощён на нативную item-модель QComboBox + инъектируемая начальная загрузка
-// SetLoadProvider(fn). Save() ведёт MRU in-memory (дедуп + вставка в начало).
+// DEVICE-STUB не здесь: модель ходит в KQuickInput*DbTableHandler, а те — в инъектируемый
+// KQuickInputStore (см. db/KQuickInputStore.h). Без установленного store список пуст.
 class KQuickInputComboBox : public QComboBox
 {
     Q_OBJECT
 public:
     explicit KQuickInputComboBox(QWidget *parent = nullptr);
 
-    // Реф. Init @0x5a9278: new KQuickInputModel + LoadData(table,field) + setModel.
-    // В порте: загрузка элементов через провайдер (DEVICE-STUB), заполнение комбо.
-    void Init(const QString &tableName, const QString &field, int flag = 0);
-    void SetLoadProvider(std::function<QStringList(const QString &table, const QString &field)> fn);
+    // a1 — селектор словаря ("tb_QuickInputPatient"/"tb_QuickInputDoctor"/
+    // "tb_QuickInputApplicant"), a2 — поле ("PatientName"/"PatientID"; для врача и
+    // направившего игнорируется), count — лимит строк.
+    void Init(const QString &table, const QString &field, int count = 10);
+    void AllDataChanged();
+    KQuickInputModel *Model() const { return m_model; }
 
-    // Реф. Save @0x5a9358: закоммитить currentText в MRU. Дедуп: если такой элемент уже
-    // есть — вернуть -1 (ничего не делать); иначе вставить (с таймстампом) в начало и
-    // вернуть индекс.
+    // Реф. @0x5a9358: «отметить использование» текущего текста. 0 — успех, -1 — нет модели,
+    // пустой текст или записи с таким текстом в словаре нет (реф. НЕ добавляет новую).
     int Save();
 
 signals:
@@ -42,9 +49,6 @@ public:
     void hidePopup() override;
 
 private:
-    QString m_tableName;
-    QString m_field;
-    bool m_flag = false;   // +0x38
+    KQuickInputModel *m_model = nullptr;
     bool m_idxConnected = false;
-    std::function<QStringList(const QString &, const QString &)> m_loadProvider;
 };

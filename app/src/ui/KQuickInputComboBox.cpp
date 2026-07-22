@@ -1,43 +1,43 @@
 #include "KQuickInputComboBox.h"
+#include "KQuickInputModel.h"
 
 KQuickInputComboBox::KQuickInputComboBox(QWidget *parent)
     : QComboBox(parent)
 {
-    // Реф. ctor @0x5a91e0: голый QComboBox, флаг +0x38 = 0.
+    // Реф. ctor @0x5a91e0: голый QComboBox.
     setEditable(true);   // быстрый ввод — редактируемое поле
 }
 
-void KQuickInputComboBox::SetLoadProvider(
-    std::function<QStringList(const QString &, const QString &)> fn)
+void KQuickInputComboBox::Init(const QString &table, const QString &field, int count)
 {
-    m_loadProvider = std::move(fn);
-}
-
-void KQuickInputComboBox::Init(const QString &tableName, const QString &field, int flag)
-{
-    // Реф. @0x5a9278: new KQuickInputModel + LoadData + setModel + AllDataChanged.
-    // Порт: DEVICE-STUB — загрузка через провайдер, заполнение нативной модели комбо.
-    m_tableName = tableName;
-    m_field = field;
-    m_flag = (flag != 0);
-    clear();
-    if (m_loadProvider)
-        addItems(m_loadProvider(tableName, field));
+    // Реф. @0x5a9278: new KQuickInputModel(this) → LoadData(транзитом) → setModel →
+    // AllDataChanged().
+    if (!m_model)
+        m_model = new KQuickInputModel(this);
+    m_model->LoadData(table.toStdString(), field.toStdString(), count);
+    setModel(m_model);
     setCurrentIndex(-1);
     setCurrentText(QString());
+    AllDataChanged();
+}
+
+void KQuickInputComboBox::AllDataChanged()
+{
+    if (m_model)
+        m_model->AllDataChanged();   // реф. @0x5a9310 — прямой форвард
 }
 
 int KQuickInputComboBox::Save()
 {
-    // Реф. @0x5a9358: MRU-коммит currentText с дедупом (+ таймстамп в реф.-модели).
+    // Реф. @0x5a9358: KComboBoxItem из текущего текста → KQuickInputModel::SaveData.
+    if (!m_model)
+        return -1;
     const QString t = currentText().trimmed();
     if (t.isEmpty())
         return -1;
-    const int existing = findText(t);
-    if (existing >= 0)
-        return -1;   // дубликат — реф. возвращает -1, ничего не вставляя
-    insertItem(0, t);   // most-recent-first (таймстамп — device-часть, опущен)
-    return 0;
+    KComboBoxItem item;
+    item.text = t.toStdString();
+    return m_model->SaveData(item);
 }
 
 void KQuickInputComboBox::showPopup()

@@ -154,6 +154,7 @@
 #include "db/KEntityManage.h"
 #include "db/KEntityQuickInput.h"
 #include "db/KQuickInputDbTableHandler.h"
+#include "ui/KQuickInputModel.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
@@ -2094,6 +2095,86 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "quickinputmodel") {
+        // Self-test KQuickInputModel + четырёх стратегий KQuickInputData* (реф. MVC-слой
+        // над словарями быстрого ввода).
+        KQuickInputMemStore store;
+        KQuickInputDbTableHandlerBase::SetStore(&store);
+        {   // словарь врачей: три записи с разным временем/частотой
+            KQuickInputDoctorDbTableHandler h;
+            KQIDEntity a; a.name = "Dr House";  a.count = 5; a.time = "2026-07-20 08:00:00";
+            KQIDEntity b; b.name = "Dr Watson"; b.count = 9; b.time = "2026-07-22 11:00:00";
+            KQIDEntity c; c.name = "Dr Grey";   c.count = 1; c.time = "2026-07-21 09:00:00";
+            h.AddEntity(a); h.AddEntity(b); h.AddEntity(c);
+        }
+        {   // словарь пациентов — для проверки PatientName vs PatientID
+            KQuickInputPatientDbTableHandler h;
+            KQIPEntity p; p.id = "100234"; p.name = "John Smith"; p.count = 2;
+            p.time = "2026-07-22 12:00:00";
+            h.AddEntity(p);
+        }
+
+        KQuickInputModel model;
+        // До LoadData стратегии нет: список пуст, SaveData → -1.
+        const bool emptyOk = model.rowCount() == 0 && model.SaveData(KComboBoxItem()) == -1;
+
+        // Селектор врача: поле игнорируется. Порядок — time DESC, count DESC.
+        model.LoadData("tb_QuickInputDoctor", "что угодно", 10);
+        const bool loadOk = model.rowCount() == 3
+                            && model.data(model.index(0, 0)).toString() == "Dr Watson"
+                            && model.data(model.index(1, 0)).toString() == "Dr Grey"
+                            && model.data(model.index(2, 0)).toString() == "Dr House";
+        // Лимит режет rowCount (реф.: min(size, limit)).
+        model.LoadData("tb_QuickInputDoctor", std::string(), 2);
+        const bool limitOk = model.rowCount() == 2 && model.Limit() == 2;
+
+        // Плоская односколоночная модель.
+        const bool shapeOk = model.columnCount() == 1
+                             && !model.parent(model.index(0, 0)).isValid()
+                             && !model.index(0, 1).isValid();
+        // Роли: DisplayRole(0)/EditRole(2) — текст, всё прочее — invalid.
+        const bool roleOk = model.data(model.index(0, 0), Qt::DisplayRole).isValid()
+                            && model.data(model.index(0, 0), Qt::EditRole).isValid()
+                            && !model.data(model.index(0, 0), Qt::UserRole).isValid()
+                            && !model.data(model.index(0, 0), Qt::ToolTipRole).isValid();
+
+        // SaveData: существующая запись → count+1 и обновление времени, список перезагружается.
+        model.LoadData("tb_QuickInputDoctor", std::string(), 10);
+        KComboBoxItem hit; hit.text = "Dr House";
+        const bool saveOk = model.SaveData(hit) == 0
+                            && model.data(model.index(0, 0)).toString() == "Dr House";  // время стало свежайшим
+        KComboBoxItem miss; miss.text = "Dr Nobody";
+        const bool missOk = model.SaveData(miss) == -1;   // реф. НЕ добавляет новую запись
+        // count инкрементнулся (5 → 6).
+        int cnt = 0; KQIDEntity found;
+        KQuickInputDoctorDbTableHandler dh;
+        const bool incOk = dh.IsExistEntity("Dr House", cnt, found) && found.count == 6;
+
+        // Пациентские стратегии: одно и то же хранилище, разный текст элемента.
+        model.LoadData("tb_QuickInputPatient", "PatientName", 10);
+        const bool pnameOk = model.rowCount() == 1
+                             && model.data(model.index(0, 0)).toString() == "John Smith";
+        model.LoadData("tb_QuickInputPatient", "PatientID", 10);
+        const bool pidOk = model.rowCount() == 1
+                           && model.data(model.index(0, 0)).toString() == "100234";
+        // Неизвестный селектор — стратегия НЕ меняется (реф.), список остаётся прежним.
+        model.LoadData("tb_НетТакого", "x", 10);
+        const bool keepOk = model.rowCount() == 1
+                            && model.data(model.index(0, 0)).toString() == "100234";
+
+        KQuickInputDbTableHandlerBase::SetStore(nullptr);
+
+        const bool ok = emptyOk && loadOk && limitOk && shapeOk && roleOk && saveOk
+                        && missOk && incOk && pnameOk && pidOk && keepOk;
+        qInfo() << "пусто/без стратегии:" << emptyOk << "| LoadData+порядок:" << loadOk
+                << "| Limit:" << limitOk << "| форма:" << shapeOk << "| роли:" << roleOk;
+        qInfo() << "SaveData hit:" << saveOk << "miss→-1:" << missOk << "count+1:" << incOk
+                << "| PatientName:" << pnameOk << "PatientID:" << pidOk
+                << "| неизв. селектор:" << keepOk;
+        qInfo() << (ok ? "quickinputmodel: PASS" : "quickinputmodel: FAIL");
+        return ok ? 0 : 19;
     }
 
     if (screen == "quickinputdb") {
@@ -9824,28 +9905,42 @@ int main(int argc, char **argv)
         vb->addStretch();
         w = host;
     } else if (screen == "quickinputcombo") {
-        // Кастом-виджет KQuickInputComboBox: MRU-комбо с Init(провайдер) + Save() (дедуп).
+        // Кастом-виджет KQuickInputComboBox поверх РЕАЛЬНОЙ KQuickInputModel + стратегий
+        // (реф. Init → new KQuickInputModel → LoadData → setModel → AllDataChanged).
+        // Данные — из стаб-хранилища словаря врачей.
+        static KQuickInputMemStore store;
+        store.Clear();
+        KQuickInputDbTableHandlerBase::SetStore(&store);
+        {
+            KQuickInputDoctorDbTableHandler h;
+            const char *names[] = {"Dr House", "Dr Watson", "Dr Grey"};
+            const char *times[] = {"2026-07-22 11:00:00", "2026-07-21 09:00:00",
+                                   "2026-07-20 08:00:00"};
+            const int counts[] = {5, 9, 1};
+            for (int i = 0; i < 3; ++i) {
+                KQIDEntity d;
+                d.name = names[i]; d.account = names[i]; d.count = counts[i]; d.time = times[i];
+                h.AddEntity(d);
+            }
+        }
+
         QWidget *host = new QWidget;
-        host->resize(340, 160);
+        host->resize(360, 200);
         QVBoxLayout *vb = new QVBoxLayout(host);
-        vb->addWidget(new QLabel(QStringLiteral("Report title (quick input):"), host));
+        vb->addWidget(new QLabel(QStringLiteral("Doctor (quick input):"), host));
         KQuickInputComboBox *combo = new KQuickInputComboBox(host);
-        combo->SetLoadProvider([](const QString &, const QString &) -> QStringList {
-            return {QStringLiteral("Normal examination"), QStringLiteral("No abnormality found"),
-                    QStringLiteral("Follow-up recommended")};
-        });
-        combo->Init(QStringLiteral("tb_Report"), QStringLiteral("title"));
-        // Демонстрация Save(): дедуп существующего + вставка нового в начало.
-        combo->setCurrentText(QStringLiteral("No abnormality found"));
-        const int dupRc = combo->Save();   // дубликат → -1
-        combo->setCurrentText(QStringLiteral("Biopsy taken"));
-        combo->Save();                       // новый → вставка в начало (index 0)
+        combo->Init(QStringLiteral("tb_QuickInputDoctor"), QString(), 10);
+        // Save(): «отметить использование» существующей записи (реф. НЕ добавляет новую).
+        combo->setCurrentText(QStringLiteral("Dr Grey"));
+        const int hitRc = combo->Save();
+        combo->setCurrentText(QStringLiteral("Dr Nobody"));
+        const int missRc = combo->Save();   // записи нет → -1
         combo->setCurrentIndex(0);
         vb->addWidget(combo);
         QLabel *info = new QLabel(host);
-        info->setText(QStringLiteral("Save('No abnormality found')=%1 (dup); "
-                                     "then inserted 'Biopsy taken' at top; count=%2")
-                          .arg(dupRc).arg(combo->count()));
+        info->setText(QStringLiteral("порядок: time DESC, count DESC → верх «%1»; "
+                                     "Save('Dr Grey')=%2, Save('Dr Nobody')=%3, строк=%4")
+                          .arg(combo->itemText(0)).arg(hitRc).arg(missRc).arg(combo->count()));
         info->setWordWrap(true);
         vb->addWidget(info);
         vb->addStretch();

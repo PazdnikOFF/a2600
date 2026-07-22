@@ -136,6 +136,7 @@ set(SOURCES
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp
     src/ui/KQuickInputComboBox.cpp
+    src/ui/KQuickInputModel.cpp
     src/ui/KOptionListButton.cpp
     src/ui/KOsdMenuCell.cpp
     src/ui/KScopeStaus.cpp
@@ -520,6 +521,7 @@ add_executable(ui_preview
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp
     src/ui/KQuickInputComboBox.cpp
+    src/ui/KQuickInputModel.cpp
     src/ui/KOptionListButton.cpp
     src/ui/KOsdMenuCell.cpp
     src/ui/KScopeStaus.cpp
