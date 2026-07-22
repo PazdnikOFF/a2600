@@ -117,6 +117,9 @@
 #include "ui/KImageBrightEQSetting.h"
 #include "ui/KImageDenoiseSetting.h"
 #include "ui/KbuttonSetting.h"
+#include "ui/KContrastSetting.h"
+#include "ui/KZoomSetting.h"
+#include "ui/KOperationModeSetting.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9906,6 +9909,15 @@ int main(int argc, char **argv)
     } else if (screen == "buttonsetting") {
         // Назначение функции кнопке (реф. KbuttonSetting): 12 single-select-строк, checked=0.
         w = new KbuttonSetting(QPoint(0, 0), /*keyIndex=*/1);
+    } else if (screen == "contrast") {
+        // Контраст (реф. KContrastSetting): 3 single-select TR_Low/Mdle/Hgh, checked=0.
+        w = new KContrastSetting(QPoint(0, 0));
+    } else if (screen == "zoom") {
+        // Зум (реф. KZoomSetting): 3 single-select L1/L2/L3, checked=0.
+        w = new KZoomSetting(QPoint(0, 0));
+    } else if (screen == "opmode") {
+        // Режим работы (реф. KOperationModeSetting): 10 single-select-строк, checked=0.
+        w = new KOperationModeSetting(QPoint(0, 0), /*channel=*/0);
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

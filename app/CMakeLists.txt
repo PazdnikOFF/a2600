@@ -178,6 +178,9 @@ set(SOURCES
     src/ui/KImageDenoiseSetting.cpp
     src/ui/KbuttonSetting.cpp
     src/ui/KOsdRootMenuItems.cpp
+    src/ui/KContrastSetting.cpp
+    src/ui/KZoomSetting.cpp
+    src/ui/KOperationModeSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -536,6 +539,9 @@ add_executable(ui_preview
     src/ui/KImageDenoiseSetting.cpp
     src/ui/KbuttonSetting.cpp
     src/ui/KOsdRootMenuItems.cpp
+    src/ui/KContrastSetting.cpp
+    src/ui/KZoomSetting.cpp
+    src/ui/KOperationModeSetting.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
