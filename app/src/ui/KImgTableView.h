@@ -34,6 +34,8 @@ public:
     int GetOrderNum() const { return m_orderNum; }
     void SetEdited(bool e) { m_edited = e; }       // реф. GetEdited (есть аннотации)
     bool GetEdited() const { return m_edited; }
+    void SetFileName(const QString &n) { m_fileName = n; }   // реф. GetFileBaseName
+    QString GetFileName() const { return m_fileName; }
 
 private:
     QImage m_img;          // +0x10
@@ -42,6 +44,7 @@ private:
     bool m_edited = false;
     int m_orderNum = 0;
     QString m_thumbPath;   // +0x38
+    QString m_fileName;
 };
 
 // Модель грид-таблицы изображений (реф. KImgTableModel : QStandardItemModel, ctor @0x4b6de8).

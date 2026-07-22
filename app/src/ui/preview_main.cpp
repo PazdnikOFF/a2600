@@ -9230,6 +9230,41 @@ int main(int argc, char **argv)
         model->LoadImages(items);
         view->setMinimumWidth(8 * 159);
         w = view;
+    } else if (screen == "unusedimg" || screen == "examdetail") {
+        // Демо MVC-триплетов KUnusedImg (сетка 3×7, +filename) / KExamDetail (чекбокс+filename).
+        static const int cols[14] = {0x1cbcc4, 0xc45cbc, 0x5cc46e, 0xc4a05c, 0x5c6ec4, 0xc45c5c,
+                                     0x9c5cc4, 0x5cc4a8, 0xb0b040, 0x40b0b0, 0xb04080, 0x6080b0,
+                                     0xa0a0a0, 0x80c060};
+        auto mkItems = [&](QObject *par, int n) {
+            QVector<KImgTableItem *> items;
+            for (int i = 0; i < n; ++i) {
+                KImgTableItem *it = new KImgTableItem(par);
+                QImage img(130, 110, QImage::Format_RGB32); img.fill(QColor(cols[i % 14]));
+                it->SetImage(img); it->SetImgPathThumb(QStringLiteral("demo.png"));
+                it->SetOrderNum(i); it->SetEdited(i % 5 == 2);
+                it->SetFileName(QStringLiteral("IMG_%1").arg(i + 1, 3, 10, QChar('0')));
+                if (i % 3 == 0) it->SetIsSelected(true);
+                items << it;
+            }
+            return items;
+        };
+        if (screen == "unusedimg") {
+            KUnusedImgView *view = new KUnusedImgView;
+            KUnusedImgModel *model = new KUnusedImgModel(view);
+            view->setModel(model);
+            view->setItemDelegate(new KUnusedImgDelegate(130, 110, view));
+            model->LoadImages(mkItems(view, 14));
+            view->setMinimumSize(7 * 159, 3 * 148);
+            w = view;
+        } else {
+            KExamDetailView *view = new KExamDetailView(3, 5);
+            KExamDetailModel *model = new KExamDetailModel(3, 5, view);
+            view->setModel(model);
+            view->setItemDelegate(new KExamDetailDelegate(130, 110, view));
+            model->LoadImages(mkItems(view, 12));
+            view->setMinimumSize(5 * 159, 3 * 148);
+            w = view;
+        }
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {
