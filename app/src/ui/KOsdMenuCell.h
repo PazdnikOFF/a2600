@@ -40,8 +40,13 @@ public:
     virtual bool CheckGreyedCondition() { return false; }            // реф. @0x480f98 (база)
 
     void SetSubWindowPosition(const QPoint &p) { m_subPos = p; }
+    QPoint SubWindowPosition() const { return m_subPos; }
     void SetLocatedMenu(QObject *m) { m_menu = m; }
     QObject *LocatedMenu() const { return m_menu; }
+
+    // Реф. подтверждение ячейки (открытие подменю / close) — virtual, база no-op; подклассы
+    // корневого меню (KIrisItem/…) переопределяют. Зовётся из KOsdMenu::ConfirmKeyAct.
+    virtual void ConfirmAct() {}
 
 signals:
     void clicked();

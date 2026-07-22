@@ -9843,6 +9843,12 @@ int main(int argc, char **argv)
         }
         menu->DownKeyAct();   // перейти на вторую ячейку (Record) — highlight
         w = menu;
+    } else if (screen == "osdrootmenu") {
+        // КОРНЕВОЕ OSD-меню (реф. KOsdMenu::InitWidget): реальные ячейки Iris/ImageProc/Exit/
+        // Features/Button/Camera с иконками прошивки. KRecordItem — DEFERRED (device).
+        KOsdMenu *menu = new KOsdMenu;
+        menu->InitWidget();
+        w = menu;
     } else if (screen == "osdsingleselect") {
         // Single-select OSD-меню (реф. KOsdSingleSelectMenu) хостит KOsdSingleSelectLabel-строки
         // с чек-иконкой. Демо-конфиг из 4 пунктов; confirm-колбэк — no-op (DEVICE-seam).

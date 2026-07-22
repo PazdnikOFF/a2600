@@ -1,5 +1,6 @@
 #include "KOsdMenu.h"
 #include "KOsdMenuCell.h"
+#include "KOsdRootMenuItems.h"
 
 #include <QVBoxLayout>
 #include <QListWidget>
@@ -75,6 +76,21 @@ void KOsdMenu::AddItem(KOsdMenuCell *cell)
         RefreshMenu(-1);   // первая ячейка → выбрать
 }
 
+void KOsdMenu::InitWidget()
+{
+    // Реф. @0x479c70: фикс-порядок корневых ячеек, затем AddItem каждой + setCurrentRow(0).
+    // KRecordItem (#2) — DEFERRED (device-heavy: system-status/USB/record); реф. гейт
+    // KProjectSet::IsVideoRecordEnable() — в порте пропускаем (поведение при record off).
+    AddItem(new KIrisItem(this));            // #1 TR_Mode → KIrisMenu
+    AddItem(new KimageProcesItem(this));     // #3 TR_IParameters → KImageProcessingMenu (deferred)
+    AddItem(new KExitItem(this));            // #4 TR_Ext → close
+    AddItem(new KFeaturesItem(this));        // #5 TR_Fnctn → KFeatureMenu (deferred)
+    AddItem(new KButtonDefineItem(this));    // #6 TR_Button → KButtonDefinitionMenu
+    AddItem(new KCameraInfoItem(this));      // #7 TR_Camera → KSnMenu
+    m_currentIndex = 0;
+    RefreshMenu(-1);
+}
+
 void KOsdMenu::RefreshMenu(int oldIdx)
 {
     // Реф.: старая строка UnSelect, новая Select + setCurrentRow.
@@ -124,5 +140,5 @@ void KOsdMenu::ConfirmKeyAct()
     KOsdMenuCell *cell = m_cells[m_currentIndex];
     cell->Focus();
     cell->SetSubWindowPosition(pos() + m_subPos);
-    // Реф.: virtual cell-activate (открытие подменю/редактора) — device/подкласс, опущено.
+    cell->ConfirmAct();   // реф. virtual cell-activate: открытие подменю/close (подкласс)
 }

@@ -177,6 +177,7 @@ set(SOURCES
     src/ui/KImageBrightEQSetting.cpp
     src/ui/KImageDenoiseSetting.cpp
     src/ui/KbuttonSetting.cpp
+    src/ui/KOsdRootMenuItems.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -534,6 +535,7 @@ add_executable(ui_preview
     src/ui/KImageBrightEQSetting.cpp
     src/ui/KImageDenoiseSetting.cpp
     src/ui/KbuttonSetting.cpp
+    src/ui/KOsdRootMenuItems.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp

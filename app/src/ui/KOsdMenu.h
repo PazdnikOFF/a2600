@@ -54,6 +54,7 @@ public:
     explicit KOsdMenu(QWidget *parent = nullptr);
 
     void AddItem(KOsdMenuCell *cell);   // реф. @0x479740: хостинг ячейки
+    void InitWidget();                  // реф. @0x479c70: сборка корневых ячеек
 
 public slots:
     void UpKeyAct();        // idx-1 wrap
