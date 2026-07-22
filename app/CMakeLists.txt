@@ -183,6 +183,10 @@ set(SOURCES
     src/ui/KOperationModeSetting.cpp
     src/ui/KImageEnhSetting.cpp
     src/ui/KIrisSetting.cpp
+    src/ui/KImageColorSetting.cpp
+    src/ui/KLightLevelSetting.cpp
+    src/ui/KFeatureMenu.cpp
+    src/ui/KImageProcessingMenu.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp
@@ -546,6 +550,10 @@ add_executable(ui_preview
     src/ui/KOperationModeSetting.cpp
     src/ui/KImageEnhSetting.cpp
     src/ui/KIrisSetting.cpp
+    src/ui/KImageColorSetting.cpp
+    src/ui/KLightLevelSetting.cpp
+    src/ui/KFeatureMenu.cpp
+    src/ui/KImageProcessingMenu.cpp
     src/ui/KTextEdit.cpp
     src/ui/KFloatingMsg.cpp
     src/ui/KMsgPopup.cpp

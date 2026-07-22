@@ -122,6 +122,10 @@
 #include "ui/KOperationModeSetting.h"
 #include "ui/KImageEnhSetting.h"
 #include "ui/KIrisSetting.h"
+#include "ui/KImageColorSetting.h"
+#include "ui/KLightLevelSetting.h"
+#include "ui/KFeatureMenu.h"
+#include "ui/KImageProcessingMenu.h"
 #include "ui/KTextEdit.h"
 #include "ui/KFloatingMsg.h"
 #include "ui/KMsgPopup.h"
@@ -9926,6 +9930,18 @@ int main(int argc, char **argv)
     } else if (screen == "irisset") {
         // Iris режим-экрана (реф. KIrisSetting): 3 single-select TR_FScreen/WScreen/CScreen, checked=0.
         w = new KIrisSetting(QPoint(0, 0), /*channel=*/0);
+    } else if (screen == "colorset") {
+        // Цвет R/B/C (реф. KImageColorSetting): 3 KOsdSpin -15..15.
+        w = new KImageColorSetting(QPoint(0, 0));
+    } else if (screen == "lightlevel") {
+        // Уровень света (реф. KLightLevelSetting): 1 KOsdSpin L 1..19.
+        w = new KLightLevelSetting(QPoint(0, 0));
+    } else if (screen == "featuremenu") {
+        // Функции-статусы (реф. KFeatureMenu): 7 KOsdStatusLabel (значения device-пусто).
+        w = new KFeatureMenu(QPoint(0, 0));
+    } else if (screen == "imgprocmenu") {
+        // Параметры изображения-хаб (реф. KImageProcessingMenu): 8 KOsdLabel → под-подменю.
+        w = new KImageProcessingMenu(QPoint(0, 0));
     } else if (screen == "timewastebar") {
         // Модальный «пожалуйста подождите» с прогрессом (реф. KTimeWasteBar). Долгий duration,
         // таймер в grab не тикает — показываем структуру (label + progress bar).

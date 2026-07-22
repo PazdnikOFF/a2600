@@ -2,6 +2,8 @@
 #include "KIrisMenu.h"
 #include "KSnMenu.h"
 #include "KButtonDefinitionMenu.h"
+#include "KImageProcessingMenu.h"
+#include "KFeatureMenu.h"
 
 #include <QWidget>
 
@@ -29,7 +31,8 @@ KimageProcesItem::KimageProcesItem(QWidget *parent)
 }
 void KimageProcesItem::ConfirmAct()
 {
-    // Реф. OpenImageProcessingMenu → KImageProcessingMenu — DEFERRED (video-param-hook), не открываем.
+    // Реф. OpenImageProcessingMenu → KImageProcessingMenu (портирован).
+    (new KImageProcessingMenu(SubWindowPosition()))->show();
 }
 
 // ── KFeaturesItem ────────────────────────────────────────────────────────────
@@ -42,7 +45,8 @@ KFeaturesItem::KFeaturesItem(QWidget *parent)
 }
 void KFeaturesItem::ConfirmAct()
 {
-    // Реф. OpenFeatureMenu → KFeatureMenu — DEFERRED (video-param-hook), не открываем.
+    // Реф. OpenFeatureMenu → KFeatureMenu (портирован).
+    (new KFeatureMenu(SubWindowPosition()))->show();
 }
 
 // ── KCameraInfoItem ──────────────────────────────────────────────────────────
