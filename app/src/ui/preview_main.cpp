@@ -139,6 +139,7 @@
 #include "ui/KSpinAge.h"
 #include "ui/KDateEdit.h"
 #include "ui/KEmpDateEdit.h"
+#include "ui/KPatientView.h"
 #include "ui/KIpLineEdit.h"
 #include "ui/KReportPreviewCenterDlg.h"
 #include <QTreeWidget>
@@ -9305,6 +9306,21 @@ int main(int argc, char **argv)
         e2->setFixedWidth(200); v->addWidget(e2);
         v->addStretch(1);
         w = host;
+    } else if (screen == "patientview") {
+        // Форма инфо о пациенте (реф. KPatientView): 9 полей с иконками + демо-данные.
+        KPatientView *pv = new KPatientView;
+        KPatientInfo info;
+        info.name = QStringLiteral("John Smith");
+        info.genderCode = 1;   // Male
+        info.age = 47;
+        info.dob = QStringLiteral("1979-03-15");
+        info.applicant = QStringLiteral("Dr. House");
+        info.patientId = QStringLiteral("PID-004821");
+        info.examNo = QStringLiteral("EX-2026-0722");
+        info.custom1 = QStringLiteral("Ward 3B");
+        info.custom2 = QStringLiteral("Referral");
+        pv->setPatient(info);
+        w = pv;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

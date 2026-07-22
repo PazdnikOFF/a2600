@@ -201,6 +201,7 @@ set(SOURCES
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
     src/ui/KEmpDateEdit.cpp
+    src/ui/KPatientView.cpp
     src/ui/KIpLineEdit.cpp
     src/ui/KReportPreviewCenterDlg.cpp
     src/video/KVideoProxy.cpp
@@ -575,6 +576,7 @@ add_executable(ui_preview
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
     src/ui/KEmpDateEdit.cpp
+    src/ui/KPatientView.cpp
     src/ui/KIpLineEdit.cpp
     src/ui/KReportPreviewCenterDlg.cpp
     src/hal/KMemDevice.cpp
