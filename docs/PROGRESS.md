@@ -564,6 +564,18 @@ Qt5, boost 1.74, libcrypto.
   `PatientID::SetData` @0x5ab038 — остальные шесть тел восстановлены ПО АНАЛОГИИ (vtable-
   слоты найдены: PatientName::SetData 0x5ab728, PatientID::GetData 0x5ac8a8,
   Doctor::GetData 0x5ac110, Applicant::GetData 0x5acc30 / SetData 0x5aaad8).
+**➡️ СЛЕДУЮЩАЯ ЦЕЛЬ ЭТОЙ ВЕТКИ (разведано, НЕ портировано):** словари заголовков отчёта —
+`KQuickInputReportTitle1/2` + `KQuickInputReportTitle{1,2}DBTableHandler`. Это ОТДЕЛЬНАЯ
+ветка, не сиблинг трёх портированных: хендлеры построены на ШАБЛОНЕ
+`KDcmDBTableHandler<T>` (есть `QueryRecordByOtherKey` @0x55b890), таблицы — С префиксом
+`tb_`: `tb_QuickInputReportTitle1` @0x862da8, `tb_QuickInputReportTitle2` @0x862de0.
+Колонки `KQuickInputReportTitle2::ConvertToMap` @0x55b180: **Key** (@0x83e338), **Title**
+(@0x877ee8), **Count** (@0x877ef0) — регистр колонок ДРУГОЙ, чем у трёх словарей
+(там `count`/`time` в нижнем). `GetMatchDate` @0x693658 (Title1) / @0x694780 (Title2)
+дополнительно дёргает `QDate::currentDate().toString(...)` — есть date-компонента запроса,
+не декодирована. Заполняет слоты `_ListBuff` Name (+0x140), DoB (+0x2a8) и Gender (+0x280),
+как у врача. Требует отдельного захода с реверсом шаблона `KDcmDBTableHandler`.
+
 - `KQuickInputComboBox` ПЕРЕПОДКЛЮЧЁН к реальной модели (реф. Init @0x5a9278: new
   KQuickInputModel(this) → LoadData транзитом → setModel → AllDataChanged; Save @0x5a9358 →
   SaveData). Убран прежний QStringList-провайдер; третий аргумент `Init` — это ЛИМИТ строк,
