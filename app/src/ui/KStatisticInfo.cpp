@@ -1,4 +1,5 @@
 #include "KStatisticInfo.h"
+#include "KLineH.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -6,12 +7,9 @@
 #include <QPushButton>
 
 namespace {
-QFrame *mkLineH(QWidget *p)   // реф. KLineH → QFrame HLine
+KLineH *mkLineH(QWidget *p)   // АПГРЕЙД: реальный KLineH (line_1/line_2/line_3) — был QFrame
 {
-    QFrame *f = new QFrame(p);
-    f->setFrameShape(QFrame::HLine);
-    f->setFrameShadow(QFrame::Sunken);
-    return f;
+    return new KLineH(p);
 }
 } // namespace
 

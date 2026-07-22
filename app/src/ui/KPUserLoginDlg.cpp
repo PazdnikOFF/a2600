@@ -1,4 +1,5 @@
 #include "KPUserLoginDlg.h"
+#include "KPasswordLineEdit.h"
 
 #include <QGridLayout>
 #include <QGroupBox>
@@ -52,7 +53,9 @@ void KPUserLoginDlg::setupUi()
     lblPw->setObjectName(QStringLiteral("label_passwd"));
     lblPw->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     gForm->addWidget(lblPw, 1, 0);
-    QLineEdit *edPw = new QLineEdit(grp);   // реф. KPasswordLineEdit → QLineEdit
+    KPasswordLineEdit *edPw = new KPasswordLineEdit(grp);   // АПГРЕЙД: реальный KPasswordLineEdit
+    // (тип конкретный — setValidator у KPasswordLineEdit ПЕРЕОпределён/невиртуальный: берёт QRegExp
+    //  из QRegExpValidator для живой фильтрации; QLineEdit* вызвал бы базовый setValidator)
     edPw->setObjectName(QStringLiteral("lineEdit_passwd"));
     edPw->setEchoMode(QLineEdit::Password);
     edPw->setMinimumWidth(180);

@@ -1,4 +1,5 @@
 #include "KGeneralSetDlg.h"
+#include "KLineH.h"
 
 #include <QCheckBox>
 #include <QFrame>
@@ -13,13 +14,11 @@
 #include <QWidget>
 
 namespace {
-// Реф. KLineH — кастомный горизонтальный сепаратор (QFrame HLine/Sunken). У нас QFrame.
-QFrame *mkSep(QWidget *p)
+// АПГРЕЙД: реальный KLineH (frame/frame_2/frame_account_line) — был QFrame(HLine/Sunken).
+// Реверс подтвердил: эти 3 «frame*»-имени — на деле KLineH-сепараторы.
+KLineH *mkSep(QWidget *p)
 {
-    QFrame *f = new QFrame(p);
-    f->setFrameShape(QFrame::HLine);
-    f->setFrameShadow(QFrame::Sunken);
-    return f;
+    return new KLineH(p);
 }
 QLabel *mkHeader(QWidget *p, const QString &text)
 {

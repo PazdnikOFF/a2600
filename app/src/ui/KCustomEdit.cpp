@@ -1,4 +1,5 @@
 #include "KCustomEdit.h"
+#include "KLineH.h"
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -13,13 +14,11 @@
 #include <QWidget>
 
 namespace {
-// Реф. KLineH — горизонтальный сепаратор (QFrame HLine/Sunken).
-QFrame *mkLineH(QWidget *p)
+// АПГРЕЙД: реальный KLineH (line_endoscope*/line_zoom/line_color/line_enhance/line_foot) —
+// был QFrame(HLine/Sunken). Реверс подтвердил все 7 сепараторов = KLineH.
+KLineH *mkLineH(QWidget *p)
 {
-    QFrame *f = new QFrame(p);
-    f->setFrameShape(QFrame::HLine);
-    f->setFrameShadow(QFrame::Sunken);
-    return f;
+    return new KLineH(p);
 }
 // Заголовок секции: подпись (жирная) + разделитель (рев. label_* + line_* KLineH).
 QHBoxLayout *sectionHeader(QWidget *p, const QString &text)

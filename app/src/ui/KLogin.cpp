@@ -1,4 +1,5 @@
 #include "KLogin.h"
+#include "KPasswordLineEdit.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -62,7 +63,7 @@ void KLogin::setupUi()
     label_passwd->setText(tr("TR_Pswd:"));
     label_passwd->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     form->addWidget(label_passwd, 1, 0);
-    lineEdit_passwd = new QLineEdit(host);   // реф. KPasswordLineEdit
+    lineEdit_passwd = new KPasswordLineEdit(host);   // АПГРЕЙД: реальный KPasswordLineEdit (был QLineEdit)
     lineEdit_passwd->setObjectName(QStringLiteral("lineEdit_passwd"));
     lineEdit_passwd->setMaxLength(16);
     form->addWidget(lineEdit_passwd, 1, 1);

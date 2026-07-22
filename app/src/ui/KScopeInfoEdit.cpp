@@ -1,4 +1,5 @@
 #include "KScopeInfoEdit.h"
+#include "KLineH.h"
 
 #include <QComboBox>
 #include <QDate>
@@ -16,12 +17,9 @@
 #include <QWidget>
 
 namespace {
-QFrame *mkLineH(QWidget *p)   // реф. KLineH → QFrame HLine
+KLineH *mkLineH(QWidget *p)   // АПГРЕЙД: реальный KLineH (line_espec/einfo/uinfo) — был QFrame
 {
-    QFrame *f = new QFrame(p);
-    f->setFrameShape(QFrame::HLine);
-    f->setFrameShadow(QFrame::Sunken);
-    return f;
+    return new KLineH(p);
 }
 QHBoxLayout *sectionHeader(QWidget *p, const QString &text)
 {
