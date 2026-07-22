@@ -8,6 +8,7 @@
 #include <QFileInfo>
 
 #include <mutex>
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 const char *SECTION = "ShowOnMainUi";   // реф. — единственная секция

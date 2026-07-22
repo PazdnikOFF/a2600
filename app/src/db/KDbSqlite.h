@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>   // QueryRecords(std::vector<...>&) — на libstdc++ не подтягивается транзитивно
 
 // Низкоуровневая обёртка SQLite (реф. KDbSqlite : IDatabase, X-2600) — фундамент под KEntity*.
 // Реф. на RAW sqlite3 C API (+ SQLCipher). Off-device — на системном libsqlite3, БЕЗ шифрования:

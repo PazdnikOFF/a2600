@@ -1,6 +1,7 @@
 #include "kernel/KThreadPoolMsg.h"
 
 #include <mutex>
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 std::mutex g_mutex;

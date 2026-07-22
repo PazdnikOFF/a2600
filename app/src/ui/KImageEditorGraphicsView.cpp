@@ -6,6 +6,9 @@
 #include <QPainter>
 #include <QPen>
 
+#include <algorithm>   // std::max
+#include <cmath>       // std::hypot (libstdc++ не тянет транзитивно)
+
 namespace {
 // Реф. пер-тип hotspot-офсет (чтобы «остриё» попадало на клик): {1:(13,13),2:(0,13),
 // 3:(0,0),4:(13,0),5:(0,0)}.

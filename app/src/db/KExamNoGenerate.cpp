@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 const char *SECTION   = "ExamId";

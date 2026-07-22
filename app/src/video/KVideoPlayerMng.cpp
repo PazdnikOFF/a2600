@@ -9,6 +9,7 @@
 #include <mutex>
 
 #include "kernel/KSystemLog.h"
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 

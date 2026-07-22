@@ -16,6 +16,7 @@
 #include "sys/KEncStyle.h"
 #include "sys/KSystemStatus.h"
 #include "sys/KTimeInfo.h"
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 

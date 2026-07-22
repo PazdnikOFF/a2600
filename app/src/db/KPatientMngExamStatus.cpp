@@ -9,6 +9,7 @@
 #include "hal/KUsbDevice.h"
 #include "kernel/KSystemLog.h"
 #include "kernel/KThreadPoolMsg.h"
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 namespace {
 // Реф.: фильтры перечислены отдельными литералами.

@@ -5,7 +5,12 @@
 #include <QFileInfo>
 #include <QStringList>
 
-#include <sys/mount.h>   // statfs
+// statfs: на Linux (целевая платформа прибора) — <sys/vfs.h>, на macOS/BSD — <sys/mount.h>.
+#ifdef __linux__
+#include <sys/vfs.h>
+#else
+#include <sys/mount.h>
+#endif
 
 bool KDbFileOperation::IsFileExist(const std::string &path)
 {

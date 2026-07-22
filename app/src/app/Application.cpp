@@ -3,6 +3,7 @@
 #include "ui/Theme.h"
 #include "ctrl/KMainCtrlThread.h"
 #include "hal/Hal.h"
+#include <memory>   // std::shared_ptr/unique_ptr (libstdc++ не тянет транзитивно)
 
 Application::Application(int &argc, char **argv) : QApplication(argc, argv)
 {
