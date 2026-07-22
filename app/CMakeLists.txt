@@ -164,6 +164,7 @@ set(SOURCES
     src/ui/KTempletTreeWidget.cpp
     src/ui/KImgTableView.cpp
     src/ui/KExamImgTable.cpp
+    src/ui/KDICOMSrvListTable.cpp
     src/ui/KTimeWasteBar.cpp
     src/ui/KFrame.cpp
     src/ui/KOsdMenu.cpp
@@ -536,6 +537,7 @@ add_executable(ui_preview
     src/ui/KTempletTreeWidget.cpp
     src/ui/KImgTableView.cpp
     src/ui/KExamImgTable.cpp
+    src/ui/KDICOMSrvListTable.cpp
     src/ui/KTimeWasteBar.cpp
     src/ui/KFrame.cpp
     src/ui/KOsdMenu.cpp

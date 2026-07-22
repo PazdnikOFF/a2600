@@ -105,6 +105,7 @@
 #include "ui/KTempletTreeWidget.h"
 #include "ui/KImgTableView.h"
 #include "ui/KExamImgTable.h"
+#include "ui/KDICOMSrvListTable.h"
 #include "ui/KTimeWasteBar.h"
 #include "ui/KOsdMenu.h"
 #include "ui/KOsdMenuCell.h"
@@ -9265,6 +9266,22 @@ int main(int argc, char **argv)
             view->setMinimumSize(5 * 159, 3 * 148);
             w = view;
         }
+    } else if (screen == "dicomsrvlist") {
+        // Демо таблицы DICOM-сервисов (реф. KDICOMSrvList{Model,View,Delegate}): 6 колонок,
+        // чекбокс в колонке 0. Строки — стаб (демо-серверы).
+        KDICOMSrvListView *view = new KDICOMSrvListView;
+        KDICOMSrvListModel *model = new KDICOMSrvListModel(view);
+        view->setModel(model);
+        view->setItemDelegate(new KDICOMSrvListDelegate(view));
+        QList<DicomSrvRow> rows = {
+            {true,  0, QStringLiteral("PACS_MAIN"),  QStringLiteral("STORE_SCP"),  QStringLiteral("192.168.1.10"), 104},
+            {false, 2, QStringLiteral("WL_SERVER"),  QStringLiteral("WORKLIST"),   QStringLiteral("192.168.1.11"), 105},
+            {true,  3, QStringLiteral("MPPS_SRV"),   QStringLiteral("MPPS_SCP"),    QStringLiteral("192.168.1.12"), 106},
+            {false, 1, QStringLiteral("COMMIT_SRV"), QStringLiteral("COMMIT_SCP"),  QStringLiteral("192.168.1.13"), 107},
+        };
+        model->setRows(rows);
+        view->setMinimumSize(680, 200);
+        w = view;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {
