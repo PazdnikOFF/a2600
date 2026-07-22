@@ -138,6 +138,7 @@
 #include "ui/KMySlider.h"
 #include "ui/KSpinAge.h"
 #include "ui/KDateEdit.h"
+#include "ui/KEmpDateEdit.h"
 #include "ui/KIpLineEdit.h"
 #include "ui/KReportPreviewCenterDlg.h"
 #include <QTreeWidget>
@@ -9282,6 +9283,28 @@ int main(int argc, char **argv)
         model->setRows(rows);
         view->setMinimumSize(680, 200);
         w = view;
+    } else if (screen == "empdateedit") {
+        // Демо nullable дата-редактора (реф. KEmpDateEdit): пустое (placeholder) + заполненное.
+        QWidget *host = new QWidget;
+        host->setStyleSheet(QStringLiteral("background:#1a1a1a;"));
+        QVBoxLayout *v = new QVBoxLayout(host);
+        v->setContentsMargins(24, 24, 24, 24); v->setSpacing(16);
+        QLabel *l1 = new QLabel(QStringLiteral("Empty (placeholder):"), host);
+        l1->setStyleSheet(QStringLiteral("color:#aaa;")); v->addWidget(l1);
+        KEmpDateEdit *e1 = new KEmpDateEdit(host);
+        e1->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+        e1->SetEmptyAble(true);
+        e1->SetPlaceholderText(QStringLiteral("----/--/--"));
+        e1->setFocusPolicy(Qt::ClickFocus);   // превью: без авто-фокуса (иначе focusIn заполнит дату)
+        e1->setFixedWidth(200); v->addWidget(e1);
+        QLabel *l2 = new QLabel(QStringLiteral("Filled:"), host);
+        l2->setStyleSheet(QStringLiteral("color:#aaa;")); v->addWidget(l2);
+        KEmpDateEdit *e2 = new KEmpDateEdit(host);
+        e2->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+        e2->setDate(QDate(2026, 7, 22));
+        e2->setFixedWidth(200); v->addWidget(e2);
+        v->addStretch(1);
+        w = host;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

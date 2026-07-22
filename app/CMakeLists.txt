@@ -200,6 +200,7 @@ set(SOURCES
     src/ui/KMySlider.cpp
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
+    src/ui/KEmpDateEdit.cpp
     src/ui/KIpLineEdit.cpp
     src/ui/KReportPreviewCenterDlg.cpp
     src/video/KVideoProxy.cpp
@@ -573,6 +574,7 @@ add_executable(ui_preview
     src/ui/KMySlider.cpp
     src/ui/KSpinAge.cpp
     src/ui/KDateEdit.cpp
+    src/ui/KEmpDateEdit.cpp
     src/ui/KIpLineEdit.cpp
     src/ui/KReportPreviewCenterDlg.cpp
     src/hal/KMemDevice.cpp
