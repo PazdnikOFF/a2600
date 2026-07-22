@@ -153,6 +153,7 @@
 #include "endo/KSoftEndoParam.h"
 #include "db/KEntityManage.h"
 #include "db/KEntityQuickInput.h"
+#include "db/KQuickInputDbTableHandler.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
@@ -2093,6 +2094,97 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "quickinputdb") {
+        // Self-test словарей быстрого ввода (реф. KQIPEntity/KQIDEntity/KQIAEntity +
+        // KQuickInput{Patient,Doctor,Applicant}DbTableHandler) поверх стаб-хранилища.
+        KQuickInputMemStore store;
+        KQuickInputDbTableHandlerBase::SetStore(&store);
+
+        KQuickInputPatientDbTableHandler pat;
+        KQuickInputDoctorDbTableHandler  doc;
+        KQuickInputApplicantDbTableHandler app;
+
+        // Имена таблиц — реф. литералы, БЕЗ префикса `tb_`.
+        const bool tblOk = pat.TableName() == "QuickInputPatient"
+                           && doc.TableName() == "QuickInputDoctor"
+                           && app.TableName() == "QuickInputApplicant";
+
+        // ConvertToMap: набор колонок каждой сущности.
+        KQIPEntity p1; p1.id = "100234"; p1.name = "John Smith"; p1.sex = 1;
+        p1.birthday = "1971-04-02"; p1.age = 55; p1.count = 3; p1.time = "2026-07-20 10:00:00";
+        const auto pm = p1.ConvertToMap();
+        const bool pmapOk = pm.size() == 7 && !pm.count("mKey")   // mKey<0 не сериализуется
+                            && pm.at("id") == "100234" && pm.at("name") == "John Smith"
+                            && pm.at("sex") == "1" && pm.at("birthday") == "1971-04-02"
+                            && pm.at("age") == "55" && pm.at("count") == "3";
+        KQIDEntity d1; d1.name = "Dr House"; d1.account = "house"; d1.count = 1;
+        d1.time = "2026-07-21 09:00:00";
+        const auto dm = d1.ConvertToMap();
+        const bool dmapOk = dm.size() == 4 && dm.at("account") == "house" && !dm.count("sex");
+        KQIAEntity a1; a1.name = "Dept A"; a1.count = 2; a1.time = "2026-07-19 08:00:00";
+        const bool amapOk = a1.ConvertToMap().size() == 3;
+
+        // AddEntity возвращает назначенный mKey и проставляет его в сущность.
+        const int k1 = pat.AddEntity(p1);
+        const bool addOk = k1 > 0 && p1.mKey == k1;
+        KQIPEntity p2; p2.id = "100871"; p2.name = "Johann Bach"; p2.count = 9;
+        p2.time = "2026-07-22 11:00:00";
+        pat.AddEntity(p2);
+        doc.AddEntity(d1);
+        app.AddEntity(a1);
+
+        // GetSortedData: ORDER BY time DESC, count DESC + LIMIT.
+        std::vector<KQIPEntity> sorted;
+        const bool sortOk = pat.GetSortedData(sorted, 10) && sorted.size() == 2
+                            && sorted[0].id == "100871";   // время свежее
+        std::vector<KQIPEntity> limited;
+        const bool limOk = pat.GetSortedData(limited, 1) && limited.size() == 1;
+
+        // IsExistEntity: пациент — «(name = ..) or (id = ..)», врач — одно условие.
+        int cnt = 0; KQIPEntity found;
+        const bool existOk = pat.IsExistEntity("нет такого", "100234", cnt, found)
+                             && cnt == 1 && found.name == "John Smith";
+        int cnt2 = 0; KQIPEntity none;
+        const bool missOk = !pat.IsExistEntity("нет", "нет", cnt2, none) && cnt2 == 0;
+        int dcnt = 0; KQIDEntity dfound;
+        const bool dexistOk = doc.IsExistEntity("Dr House", dcnt, dfound)
+                              && dcnt == 1 && dfound.account == "house";
+
+        // GetMatchDate: пациент ищет по КОЛОНКЕ id, врач — по name.
+        _ListBuff pb;
+        const bool pmatchOk = pat.GetMatchDate("1008", pb) && pb.Id[0] == "100871"
+                              && pb.Name[0] == "Johann Bach" && pb.Id[1].isEmpty();
+        _ListBuff db;
+        // У врача слот Id не заполняется — попап покажет голое имя.
+        const bool dmatchOk = doc.GetMatchDate("Hous", db) && db.Name[0] == "Dr House"
+                              && db.Id[0].isEmpty();
+        _ListBuff ab;
+        const bool amatchOk = app.GetMatchDate("Dept", ab) && ab.Name[0] == "Dept A";
+
+        // UpdateEntity / DeleteEntity по mKey.
+        p1.count = 42;
+        const bool updOk = pat.UpdateEntity(std::to_string(k1), p1);
+        std::vector<KQIPEntity> after;
+        pat.GetEntity({{"id", "100234"}}, after);
+        const bool updReadOk = updOk && after.size() == 1 && after[0].count == 42;
+        const bool delOk = pat.DeleteEntity(std::to_string(k1))
+                           && pat.GetEntityNumber() == 1;
+
+        KQuickInputDbTableHandlerBase::SetStore(nullptr);
+
+        const bool ok = tblOk && pmapOk && dmapOk && amapOk && addOk && sortOk && limOk
+                        && existOk && missOk && dexistOk && pmatchOk && dmatchOk
+                        && amatchOk && updReadOk && delOk;
+        qInfo() << "таблицы:" << tblOk << "| ConvertToMap P/D/A:" << pmapOk << dmapOk << amapOk
+                << "| Add:" << addOk;
+        qInfo() << "Sorted:" << sortOk << "Limit:" << limOk << "| IsExist P/miss/D:"
+                << existOk << missOk << dexistOk;
+        qInfo() << "GetMatchDate P/D/A:" << pmatchOk << dmatchOk << amatchOk
+                << "| Update:" << updReadOk << "Delete:" << delOk;
+        qInfo() << (ok ? "quickinputdb: PASS" : "quickinputdb: FAIL");
+        return ok ? 0 : 18;
     }
 
     if (screen == "listbuff") {

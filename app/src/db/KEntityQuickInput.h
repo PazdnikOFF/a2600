@@ -3,14 +3,19 @@
 #include <QString>
 #include <QList>
 
-// Словари автозаполнения быстрого ввода (реф. KEntityQuickInput* + KQIDEntity +
-// KQuickInput*DbTableHandler, X-2600). 4 таблицы tb_QuickInput{Patient,Doctor,
-// Applicant,ReportTitle}: по мере ввода в форму пациента сохраняются значения и
-// предлагаются при следующем вводе (ранжирование по частоте).
-// Колонки (реф.): value (текст), Count (частота), date (последнее использование).
+// Словари автозаполнения быстрого ввода — УПРОЩЁННЫЙ off-device слой на Qt5::Sql
+// (одна колонка-значение + частота + дата), 4 таблицы tb_QuickInput{Patient,Doctor,
+// Applicant,ReportTitle}. Используется self-test-режимом `quickinput`.
+//
+// ⚠️ ЭТО НЕ РЕФЕРЕНСНАЯ СХЕМА. Точный порт живёт рядом, в `db/KQuickInputEntity.h` +
+// `db/KQuickInputDbTableHandler.h`: там три РАЗНЫЕ сущности (KQIPEntity/KQIDEntity/
+// KQIAEntity) со своими наборами колонок и таблицы БЕЗ префикса `tb_`
+// (QuickInputPatient/QuickInputDoctor/QuickInputApplicant). Прежний плейсхолдер
+// назывался `KQIDEntity` и занимал реф.-имя при несовпадающих полях — переименован
+// в `KQuickInputRow`, чтобы освободить имя точному порту.
 
-// Строка словаря (реф. KQIDEntity).
-struct KQIDEntity {
+// Строка упрощённого словаря (НЕ реф. структура).
+struct KQuickInputRow {
     QString value;
     int     count = 0;
     QString date;
@@ -30,9 +35,9 @@ public:
     // Сохранить значение (реф. SaveData): вставить или инкремент Count + обновить date.
     bool SaveData(const QString &value, const QString &date = QString());
     // Все записи по убыванию частоты (реф. GetAllEntity — предложения).
-    QList<KQIDEntity> GetAllEntity() const;
+    QList<KQuickInputRow> GetAllEntity() const;
     // Записи по префиксу (реф. GetEntity — фильтр автодополнения).
-    QList<KQIDEntity> GetEntity(const QString &prefix) const;
+    QList<KQuickInputRow> GetEntity(const QString &prefix) const;
     bool DeleteSelf(const QString &value);          // реф. DeleteSelf
     int  GetEntityNumber() const;
 

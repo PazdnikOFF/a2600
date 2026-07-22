@@ -52,9 +52,9 @@ bool KEntityQuickInput::SaveData(const QString &value, const QString &date)
     return q.exec();
 }
 
-QList<KQIDEntity> KEntityQuickInput::GetAllEntity() const
+QList<KQuickInputRow> KEntityQuickInput::GetAllEntity() const
 {
-    QList<KQIDEntity> out;
+    QList<KQuickInputRow> out;
     QSqlQuery q(QSqlDatabase::database(conn_));
     // По убыванию частоты, затем по свежести (ранжирование предложений).
     if (!q.exec(QString("SELECT value, Count, date FROM %1 ORDER BY Count DESC, date DESC").arg(table_)))
@@ -64,9 +64,9 @@ QList<KQIDEntity> KEntityQuickInput::GetAllEntity() const
     return out;
 }
 
-QList<KQIDEntity> KEntityQuickInput::GetEntity(const QString &prefix) const
+QList<KQuickInputRow> KEntityQuickInput::GetEntity(const QString &prefix) const
 {
-    QList<KQIDEntity> out;
+    QList<KQuickInputRow> out;
     QSqlQuery q(QSqlDatabase::database(conn_));
     q.prepare(QString("SELECT value, Count, date FROM %1 WHERE value LIKE ? "
                       "ORDER BY Count DESC, date DESC").arg(table_));

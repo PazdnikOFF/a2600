@@ -530,8 +530,37 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **108 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 108 / FAIL 0).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **109 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 109 / FAIL 0).
+
+**✅ ПОРТИРОВАНО СЕМЕЙСТВО QuickInput (2026-07-22).** `db/KQuickInputEntity.*` +
+`db/KQuickInputStore.*` + `db/KQuickInputDbTableHandler.*`, self-test `quickinputdb`.
+Реф.-факты (все сверены дизасмом):
+- Три РАЗНЫЕ сущности, а не одна с enum-видом. `KQIPEntity` (sizeof 0xd8): mKey +0x00,
+  id +0x08, name +0x28, sex int +0x48, birthday +0x50, age int +0x70, count int +0x74,
+  time +0x78 (+0x98/+0xb8 — ещё две строки, в SQL не участвуют, роль НЕ ВОССТАНОВЛЕНА).
+  `KQIDEntity`: mKey, name +0x08, account +0x28, count int +0x48, time +0x50.
+  `KQIAEntity`: mKey, name +0x08, count int +0x28, time +0x30.
+- Таблицы **БЕЗ префикса `tb_`**: `QuickInputPatient` @0x862af8, `QuickInputDoctor`
+  @0x862a90, `QuickInputApplicant` @0x862a70.
+- `GetSortedData` у всех трёх: `Order` = «time DESC, count DESC» (@0x862750) + `Limit`.
+- `GetMatchDate`: `Where` = «<кол> LIKE '%prefix%'», `Limit` = «10» (@0x85db70 — ровно
+  вместимость `_ListBuff`), `Order` = «time DESC» (@0x862ac8). Колонка поиска: у пациента
+  **id** (@0x841a18), у врача **name** (@0x898600). Пациент заполняет Id/Name/DoB
+  (Gender/Age остаются от Clear); врач слот Id НЕ пишет ⇒ попап показывает голое имя.
+- `IsExistEntity`: пациент — `BuildOrCondition(name='..', id='..')` (@0x4269f8), врач и
+  направивший — одно условие `name='..'` (@0x422f60/@0x420100).
+- Синглтонов у хендлеров НЕТ (ctor @0x424db0 — пустой `ret`); общий движок — из
+  `KEntityService::Instance().GetInnerEntityManage()`. В порте это DEVICE-STUB-сейм
+  `KQuickInputStore` (+ in-memory `KQuickInputMemStore`, понимающий `=`/`LIKE`/`and`/`or`,
+  `Where`/`Order`/`Limit`).
+- **Разведена коллизия имени:** плейсхолдер `KQIDEntity` в `db/KEntityQuickInput.h` (наш
+  упрощённый `value/count/date`, схема НЕ реф.) переименован в `KQuickInputRow` —
+  реф.-имя освобождено под точный порт. Старый слой и его self-test `quickinput` не тронуты.
+- НЕ ПОРТИРОВАНО (следующий заход): `KQuickInputModel` (@0x5a9928, QAbstractItemModel:
+  LoadData/SaveData/AllDataChanged + стратегии KQuickInputDataPatientID/PatientName/
+  Doctor/Applicant) и `KComboBoxItem` (@0x5aa4b0; layout восстановлен лишь частично —
+  +0x8 QDateTime, +0x10 std::string).
 
 **✅ СБОРКА НА LINUX (hermes, 2026-07-22).** Целевая платформа прибора — Linux/aarch64, а
 разработка шла на macOS/libc++, поэтому поднят контейнерный билд на hermes:
