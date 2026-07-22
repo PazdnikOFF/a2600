@@ -60,6 +60,9 @@ size_t FindTopLevel(const std::string &s, const std::string &op)
     return std::string::npos;
 }
 
+bool FindColumn(const std::map<std::string, std::string> &row, const std::string &field,
+                std::string &out);   // объявление: нужно Eval ниже
+
 // SQL-LIKE: '%' — любая последовательность, '_' — любой одиночный символ. Сравнение
 // регистрозависимое (как у SQLite для не-ASCII; для наших тестов достаточно).
 bool LikeMatch(const std::string &value, const std::string &pattern)
@@ -106,8 +109,8 @@ bool Eval(const std::string &cond, const std::map<std::string, std::string> &row
         std::string pat = Trim(s.substr(like + 6));
         if (pat.size() >= 2 && pat.front() == '\'' && pat.back() == '\'')
             pat = pat.substr(1, pat.size() - 2);
-        auto it = row.find(field);
-        return it != row.end() && LikeMatch(it->second, pat);
+        std::string v;
+        return FindColumn(row, field, v) && LikeMatch(v, pat);
     }
 
     const size_t eq = s.find('=');
@@ -117,14 +120,28 @@ bool Eval(const std::string &cond, const std::map<std::string, std::string> &row
     std::string value = Trim(s.substr(eq + 1));
     if (value.size() >= 2 && value.front() == '\'' && value.back() == '\'')
         value = value.substr(1, value.size() - 2);
-    auto it = row.find(field);
-    return it != row.end() && it->second == value;
+    std::string v;
+    return FindColumn(row, field, v) && v == value;
 }
 
 std::string Get(const std::map<std::string, std::string> &m, const std::string &k)
 {
     auto it = m.find(k);
     return it == m.end() ? std::string() : it->second;
+}
+
+// Поиск колонки БЕЗ учёта регистра: в SQLite идентификаторы регистронезависимы, и реф.
+// этим пользуется — KQuickInputReportTitle* пишет колонку "Title", а условие
+// GetMatchDate строит по `title` (литерал @0x88b9a0). Стаб обязан вести себя так же.
+bool FindColumn(const std::map<std::string, std::string> &row, const std::string &field,
+                std::string &out)
+{
+    auto it = row.find(field);
+    if (it != row.end()) { out = it->second; return true; }
+    const std::string lf = Lower(field);
+    for (const auto &kv : row)
+        if (Lower(kv.first) == lf) { out = kv.second; return true; }
+    return false;
 }
 
 }   // namespace

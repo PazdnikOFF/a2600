@@ -530,8 +530,8 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **110 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 110 / FAIL 0).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **111 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 111 / FAIL 0).
 
 **✅ ЗАКРЫТ MVC-СЛОЙ QuickInput (2026-07-22).** `db/KComboBoxItem.h` +
 `ui/KQuickInputModel.*`, self-test `quickinputmodel`, превью `quickinputcombo` переведено
@@ -564,17 +564,33 @@ Qt5, boost 1.74, libcrypto.
   `PatientID::SetData` @0x5ab038 — остальные шесть тел восстановлены ПО АНАЛОГИИ (vtable-
   слоты найдены: PatientName::SetData 0x5ab728, PatientID::GetData 0x5ac8a8,
   Doctor::GetData 0x5ac110, Applicant::GetData 0x5acc30 / SetData 0x5aaad8).
-**➡️ СЛЕДУЮЩАЯ ЦЕЛЬ ЭТОЙ ВЕТКИ (разведано, НЕ портировано):** словари заголовков отчёта —
-`KQuickInputReportTitle1/2` + `KQuickInputReportTitle{1,2}DBTableHandler`. Это ОТДЕЛЬНАЯ
-ветка, не сиблинг трёх портированных: хендлеры построены на ШАБЛОНЕ
-`KDcmDBTableHandler<T>` (есть `QueryRecordByOtherKey` @0x55b890), таблицы — С префиксом
-`tb_`: `tb_QuickInputReportTitle1` @0x862da8, `tb_QuickInputReportTitle2` @0x862de0.
-Колонки `KQuickInputReportTitle2::ConvertToMap` @0x55b180: **Key** (@0x83e338), **Title**
-(@0x877ee8), **Count** (@0x877ef0) — регистр колонок ДРУГОЙ, чем у трёх словарей
-(там `count`/`time` в нижнем). `GetMatchDate` @0x693658 (Title1) / @0x694780 (Title2)
-дополнительно дёргает `QDate::currentDate().toString(...)` — есть date-компонента запроса,
-не декодирована. Заполняет слоты `_ListBuff` Name (+0x140), DoB (+0x2a8) и Gender (+0x280),
-как у врача. Требует отдельного захода с реверсом шаблона `KDcmDBTableHandler`.
+**✅ ЗАКРЫТА ПОСЛЕДНЯЯ ВЕТКА QuickInput — ЗАГОЛОВКИ ОТЧЁТА (2026-07-22).**
+`db/KQuickInputReportTitle.*`, self-test `reporttitledb`. Это ОТДЕЛЬНАЯ ветка, не сиблинг
+трёх портированных словарей:
+- Сущности `KQuickInputReportTitle1` и `KQuickInputReportTitle2` — БАЙТ-ИДЕНТИЧНЫЙ layout,
+  sizeof 0x50: `Key` int +0x00, `Title` +0x08, `Count` int +0x28, `Time` +0x30. Символ
+  `ConvertToMap` есть только у Title2 (@0x55b180), а `GetMatchDate` обоих (@0x693658 /
+  @0x694780) имеют ПОБАЙТОВО совпадающую последовательность инструкций ⇒ похоже на
+  ICF-свёртку компоновщиком. В порте — общая база + два реф.-имени.
+- Таблицы — **С префиксом `tb_`** (@0x862da8 / @0x862de0). Колонки `Key` @0x83e338,
+  `Title` @0x877ee8, `Count` @0x877ef0, `Time` @0x862678 (последняя ТОЛЬКО читается —
+  `ConvertToMap` её не пишет). Первичный ключ здесь `Key`, а не `mKey`.
+- СЕНТИНЕЛЫ «нет значения»: `Key`/`Count` == -1, `Title` == `"INVALID_STRING"` @0x83df60 —
+  такие поля в map НЕ попадают (сверено: `cbnz` после `compare` уводит в обход записи).
+- `GetMatchDate`: сперва БЕЗУСЛОВНО предзаполняет все 10 слотов `_ListBuff` —
+  Id="", Name="", **Gender=1** (у обычных словарей `ClearListBuffData` ставит 2), Age=0,
+  **DoB = QDate::currentDate()** в «yyyy-MM-dd» @0x85dc10. Вот зачем там `currentDate`:
+  у заголовка нет даты, это безопасная заглушка. Затем спека {Where: «title like
+  '%prefix%'» @0x88b9a0 + @0x862a50, Limit: "10" @0x85db70} и **`Name[i] = Title`**
+  (цель — массив buff+0x140, источник — поле +0x8 сущности; шаг 0x50/0x20). Слот Id НЕ
+  пишется ⇒ попап показывает голый заголовок (см. `SearchMatchItem`).
+  Имя колонки в условии — в НИЖНЕМ регистре (`title`) при колонке `Title`: SQLite к
+  регистру идентификаторов нечувствителен. Стаб-хранилище научено тому же.
+- `KDcmDBTableHandler<T>::QueryRecordByOtherKey` @0x55b890: {Where: «field = 'value'»,
+  Limit: "1"} → первая строка → все 4 поля. ⚠️ Порядок операндов условия дизасмом до конца
+  НЕ ЗАКРЕПЛЁН — принята естественная трактовка (колонка слева).
+- НЕ ВОССТАНОВЛЕНО: кто вызывает эти два хендлера (UI-владелец) — нужен полный xref-скан
+  `.text`, который на hermes уже не «objdump по диапазону».
 
 - `KQuickInputComboBox` ПЕРЕПОДКЛЮЧЁН к реальной модели (реф. Init @0x5a9278: new
   KQuickInputModel(this) → LoadData транзитом → setModel → AllDataChanged; Save @0x5a9358 →

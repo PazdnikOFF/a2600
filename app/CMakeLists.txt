@@ -254,6 +254,7 @@ set(SOURCES
     src/db/KQuickInputEntity.cpp
     src/db/KQuickInputStore.cpp
     src/db/KQuickInputDbTableHandler.cpp
+    src/db/KQuickInputReportTitle.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp
     src/db/KWorklistConfigSetupHandler.cpp
@@ -403,6 +404,7 @@ add_executable(ui_preview
     src/db/KQuickInputEntity.cpp
     src/db/KQuickInputStore.cpp
     src/db/KQuickInputDbTableHandler.cpp
+    src/db/KQuickInputReportTitle.cpp
     src/db/KExamListConfigHandler.cpp
     src/db/KPatientListConfigSetupHandler.cpp
     src/db/KWorklistConfigSetupHandler.cpp

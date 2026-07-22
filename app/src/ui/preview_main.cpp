@@ -155,6 +155,7 @@
 #include "db/KEntityQuickInput.h"
 #include "db/KQuickInputDbTableHandler.h"
 #include "ui/KQuickInputModel.h"
+#include "db/KQuickInputReportTitle.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
@@ -2095,6 +2096,87 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "reporttitledb") {
+        // Self-test ветки заголовков отчёта (реф. KQuickInputReportTitle1/2 +
+        // KQuickInputReportTitle{1,2}DBTableHandler поверх KDcmDBTableHandler).
+        KQuickInputMemStore store;
+        KQuickInputReportTitleDBTableHandlerBase::SetStore(&store);
+
+        KQuickInputReportTitle1DBTableHandler h1;
+        KQuickInputReportTitle2DBTableHandler h2;
+        // Таблицы — С префиксом tb_ (в отличие от Patient/Doctor/Applicant).
+        const bool tblOk = h1.TableName() == "tb_QuickInputReportTitle1"
+                           && h2.TableName() == "tb_QuickInputReportTitle2";
+
+        // ConvertToMap: сентинелы Key=-1 / Count=-1 / Title=="INVALID_STRING" — колонка
+        // пропускается; "Time" не пишется никогда.
+        KQuickInputReportTitle1 t;
+        t.Title = "Gastroscopy report"; t.Count = 4; t.Time = "2026-07-22 10:00:00";
+        const auto m1 = t.ConvertToMap();
+        const bool mapOk = m1.size() == 2 && !m1.count("Key")   // Key == -1 → пропущен
+                           && m1.at("Title") == "Gastroscopy report" && m1.at("Count") == "4"
+                           && !m1.count("Time");                 // Time не сериализуется
+        KQuickInputReportTitle1 inv;
+        inv.Title = KQuickInputReportTitleData::kInvalidTitle;
+        const bool sentOk = inv.ConvertToMap().empty();   // все три поля — сентинелы
+
+        // Наполнение через store (реф. AddRecord у KDcmDBTableHandlerBase).
+        // Первичный ключ этих таблиц — колонка "Key" (у трёх обычных словарей — "mKey"),
+        // поэтому задаём её явно: синтетический ключ стаб-хранилища тут ни при чём.
+        auto add = [&](const char *table, int key, const char *title, int count) {
+            std::map<std::string, std::string> row;
+            row["Key"]   = std::to_string(key);
+            row["Title"] = title;
+            row["Count"] = std::to_string(count);
+            row["Time"]  = "2026-07-22 10:00:00";
+            store.CreateEntity(table, row);
+        };
+        add("tb_QuickInputReportTitle1", 1, "Gastroscopy report", 4);
+        add("tb_QuickInputReportTitle1", 2, "Gastritis, chronic", 2);
+        add("tb_QuickInputReportTitle1", 3, "Colonoscopy report", 7);
+        add("tb_QuickInputReportTitle2", 1, "Polyp removed", 1);
+
+        // QueryRecordByOtherKey: WHERE «field = 'value'», Limit 1, все 4 поля.
+        KQuickInputReportTitleData got;
+        const bool qOk = h1.QueryRecordByOtherKey("Title", "Colonoscopy report", got)
+                         && got.Title == "Colonoscopy report" && got.Count == 7
+                         && got.Time == "2026-07-22 10:00:00" && got.Key > 0;
+        KQuickInputReportTitleData none;
+        const bool qMissOk = !h1.QueryRecordByOtherKey("Title", "нет такого", none);
+
+        // GetMatchDate: подстрочный LIKE по title; Name[i] = Title, Id не пишется.
+        _ListBuff b;
+        const bool mOk = h1.GetMatchDate("scopy", b)
+                         && b.Count == 2
+                         && b.Name[0] == "Gastroscopy report"
+                         && b.Name[1] == "Colonoscopy report"
+                         && b.Id[0].isEmpty();          // ⇒ попап покажет голый заголовок
+        // Предзаполнение: Gender = 1 (а не 2), Age = 0, DoB = сегодня — во ВСЕХ 10 слотах.
+        const QString today = QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
+        const bool preOk = b.Gender[0] == 1 && b.Gender[9] == 1 && b.Age[0] == 0
+                           && b.DoB[0] == today && b.DoB[9] == today
+                           && b.Name[2].isEmpty();
+        // Вторая таблица — независимый словарь.
+        _ListBuff b2;
+        const bool t2Ok = h2.GetMatchDate("Polyp", b2) && b2.Count == 1
+                          && b2.Name[0] == "Polyp removed";
+        // Совпадений нет → слоты остаются предзаполненными, Count = 0.
+        _ListBuff b3;
+        const bool emptyOk = h1.GetMatchDate("zzz", b3) && b3.Count == 0
+                             && b3.Name[0].isEmpty() && b3.Gender[0] == 1;
+
+        KQuickInputReportTitleDBTableHandlerBase::SetStore(nullptr);
+
+        const bool ok = tblOk && mapOk && sentOk && qOk && qMissOk && mOk && preOk
+                        && t2Ok && emptyOk;
+        qInfo() << "таблицы tb_*:" << tblOk << "| ConvertToMap:" << mapOk
+                << "сентинелы:" << sentOk << "| QueryByOtherKey:" << qOk << "miss:" << qMissOk;
+        qInfo() << "GetMatchDate:" << mOk << "| предзаполнение (Gender=1, DoB=сегодня):" << preOk
+                << "| Title2:" << t2Ok << "| без совпадений:" << emptyOk;
+        qInfo() << (ok ? "reporttitledb: PASS" : "reporttitledb: FAIL");
+        return ok ? 0 : 20;
     }
 
     if (screen == "quickinputmodel") {
