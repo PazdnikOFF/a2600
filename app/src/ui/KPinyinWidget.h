@@ -28,6 +28,8 @@ public:
     void SetEditWidget(QWidget *w);       // реф.: installEventFilter + позиция + show
     void AppendPinyin(const QString &s);  // реф.: буфер + UpdateAllCand
     bool HandleKeyEvent(class QKeyEvent *e);   // реф.: маршрутизатор клавиш
+    bool CheckGoogle() const { return true; }  // реф.: движок готов (стаб — всегда да)
+    bool QueryPunctuation(QWidget *w, const QString &t);   // реф.: fullwidth-пунктуация (стаб)
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev) override;

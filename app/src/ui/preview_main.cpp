@@ -34,6 +34,7 @@
 #include "ui/KImageEditor.h"
 #include "ui/KImageEditorGraphicsView.h"
 #include "ui/KPinyinWidget.h"
+#include "ui/InputMethod.h"
 #include "ui/KReportEditAddMarkView.h"
 #include "ui/KPrintSettingsDlg.h"
 #include "ui/KDicomQueueViewUi.h"
@@ -9321,6 +9322,19 @@ int main(int argc, char **argv)
         info.custom2 = QStringLiteral("Referral");
         pv->setPatient(info);
         w = pv;
+    } else if (screen == "inputmethod") {
+        // Роутер ввода (реф. InputMethod): активный язык Chinese → InputChinese кормит
+        // KPinyinWidget (SetEditWidget+AppendPinyin). Роутер завязан на QApplication::focusWidget,
+        // которого НЕТ в offscreen-превью → интегрированный путь не рендерится; показываем цель
+        // роутера (KPinyinWidget), накормленную ТЕМ ЖЕ путём, что и InputChinese. Сам роутер сверен
+        // дизасмом + сборкой; язык-диспетч работает (SetActiveLanguage).
+        InputMethod::GetInstance().SetActiveLanguage(InputMethod::Lang_Chinese);
+        QLineEdit *ed = new QLineEdit();     // цель ввода
+        KPinyinWidget &pw = KPinyinWidget::GetInstance();
+        pw.SetEditWidget(ed);                // = InputChinese: SetEditWidget(w)
+        pw.AppendPinyin(QStringLiteral("n"));
+        pw.AppendPinyin(QStringLiteral("i"));// = InputChinese: AppendPinyin(letter)
+        w = &pw;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

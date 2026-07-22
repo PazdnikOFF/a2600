@@ -105,6 +105,13 @@ QStringList KPinyinWidget::StubSearch(const QString &pinyin) const
     return splitChars("•••");   // плейсхолдер
 }
 
+bool KPinyinWidget::QueryPunctuation(QWidget *w, const QString &t)
+{
+    // Реф.: маппинг ASCII-пунктуации → fullwidth CJK + коммит в edit. В порте — стаб (не обрабатываем).
+    Q_UNUSED(w); Q_UNUSED(t);
+    return false;
+}
+
 void KPinyinWidget::AppendPinyin(const QString &s)
 {
     // Реф.: буфер (лимит < 0xe) + спеллинг-строка + UpdateAllCand.
