@@ -32,6 +32,7 @@
 #include "ui/KReportPreviewDlg.h"
 #include "ui/KReportTempletEditDlg.h"
 #include "ui/KImageEditor.h"
+#include "ui/KImageEditorGraphicsView.h"
 #include "ui/KReportEditAddMarkView.h"
 #include "ui/KPrintSettingsDlg.h"
 #include "ui/KDicomQueueViewUi.h"
@@ -9182,6 +9183,18 @@ int main(int argc, char **argv)
         w = new KReportPreviewDlg;     // UI-порт: предпросмотр печати отчёта (реф. KReportPreviewDlg)
     } else if (screen == "templeteedit") {
         w = new KReportTempletEditDlg; // UI-порт: редактор шаблонов отчёта (реф. KReportTempletEditDlg)
+    } else if (screen == "imgcanvas") {
+        // Демо холста-аннотатора (реф. KImageEditorGraphicsView): фон + расставленные метки.
+        KImageEditorGraphicsView *cv = new KImageEditorGraphicsView;
+        cv->setFixedSize(360, 300);
+        QPixmap bg(340, 260);
+        bg.fill(QColor(40, 44, 52));   // демо-«снимок» (серо-синий)
+        cv->SetBackgroundPixmap(bg, 340, 260);
+        cv->AddCursorPixmapItem(90, 70, KImageEditorGraphicsView::ArrowRightDown);
+        cv->AddCursorPixmapItem(240, 90, KImageEditorGraphicsView::ArrowLeftDown);
+        cv->AddCursorPixmapItem(160, 180, KImageEditorGraphicsView::Point);
+        cv->AddCursorPixmapItem(280, 200, KImageEditorGraphicsView::ArrowLeftUp);
+        w = cv;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

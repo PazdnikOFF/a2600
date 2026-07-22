@@ -2,6 +2,7 @@
 
 #include <QBrush>
 #include <QColor>
+#include "KImageEditorGraphicsView.h"
 #include <QGraphicsView>
 #include <QGridLayout>
 #include <QLabel>
@@ -30,11 +31,10 @@ void KImageEditor::setupUi()
     g->setHorizontalSpacing(0);
     g->setContentsMargins(0, 46, 0, 6);   // реф. margins (0,46,0,6)
 
-    // Холст (KImageEditorGraphicsView → QGraphicsView, чёрный фон).
-    QGraphicsView *view = new QGraphicsView(host);
+    // Холст АПГРЕЙД: реальный KImageEditorGraphicsView (был QGraphicsView-заглушка).
+    KImageEditorGraphicsView *view = new KImageEditorGraphicsView(host);
     view->setObjectName(QStringLiteral("graphicsView"));
     view->setFocusPolicy(Qt::NoFocus);
-    view->setBackgroundBrush(QBrush(QColor(1, 1, 1), Qt::SolidPattern));   // реф. near-black
     g->addWidget(view, 0, 0);
 
     // Имя файла под холстом (device).
@@ -68,11 +68,22 @@ void KImageEditor::setupUi()
     };
     QRadioButton *rLock = mkRadio("radioButton_Lock", tr("TR_CType"));   // Lock (глиф-замена: подпись)
     rLock->setText(QStringLiteral("Lock"));
-    mkRadio("radioButton_RightDown", QString(QChar(0x2198)));   // ↘
-    mkRadio("radioButton_RightUp", QString(QChar(0x2197)));     // ↗
-    mkRadio("radioButton_LeftUp", QString(QChar(0x2196)));      // ↖
-    mkRadio("radioButton_LeftDown", QString(QChar(0x2199)));    // ↙
+    QRadioButton *rRD = mkRadio("radioButton_RightDown", QString(QChar(0x2198)));   // ↘
+    QRadioButton *rRU = mkRadio("radioButton_RightUp", QString(QChar(0x2197)));     // ↗
+    QRadioButton *rLU = mkRadio("radioButton_LeftUp", QString(QChar(0x2196)));      // ↖
+    QRadioButton *rLD = mkRadio("radioButton_LeftDown", QString(QChar(0x2199)));    // ↙
     rLock->setChecked(true);   // реф. InitRatioButton дефолт = Lock
+    // Реф. слоты SetArrow*: радио → view->SetCursorType (Lock=0/RD=1/RU=2/LU=3/LD=4).
+    auto wire = [&](QRadioButton *r, int type) {
+        connect(r, &QRadioButton::toggled, view, [view, type](bool on) {
+            if (on) view->SetCursorType(type);
+        });
+    };
+    wire(rLock, KImageEditorGraphicsView::Lock);
+    wire(rRD, KImageEditorGraphicsView::ArrowRightDown);
+    wire(rRU, KImageEditorGraphicsView::ArrowRightUp);
+    wire(rLU, KImageEditorGraphicsView::ArrowLeftUp);
+    wire(rLD, KImageEditorGraphicsView::ArrowLeftDown);
     vRadio->addStretch(1);     // реф. вертикальный спейсер
     vR->addLayout(vRadio);
 
