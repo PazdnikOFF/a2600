@@ -163,6 +163,7 @@ set(SOURCES
     src/ui/KThesaurusWidgetUi.cpp
     src/ui/KTempletTreeWidget.cpp
     src/ui/KImgTableView.cpp
+    src/ui/KExamImgTable.cpp
     src/ui/KTimeWasteBar.cpp
     src/ui/KFrame.cpp
     src/ui/KOsdMenu.cpp
@@ -534,6 +535,7 @@ add_executable(ui_preview
     src/ui/KThesaurusWidgetUi.cpp
     src/ui/KTempletTreeWidget.cpp
     src/ui/KImgTableView.cpp
+    src/ui/KExamImgTable.cpp
     src/ui/KTimeWasteBar.cpp
     src/ui/KFrame.cpp
     src/ui/KOsdMenu.cpp

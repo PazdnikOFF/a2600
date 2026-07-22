@@ -104,6 +104,7 @@
 #include "ui/KThesaurusWidgetUi.h"
 #include "ui/KTempletTreeWidget.h"
 #include "ui/KImgTableView.h"
+#include "ui/KExamImgTable.h"
 #include "ui/KTimeWasteBar.h"
 #include "ui/KOsdMenu.h"
 #include "ui/KOsdMenuCell.h"
@@ -9205,6 +9206,30 @@ int main(int argc, char **argv)
         pw.AppendPinyin(QStringLiteral("n"));
         pw.AppendPinyin(QStringLiteral("i"));   // → кандидаты 你/尼/泥/...
         w = &pw;
+    } else if (screen == "examimg") {
+        // Демо MVC-триплета снимков осмотра (реф. KExamImg{Model,View,Delegate}): полоса 1×10
+        // тумбнейлов с order-num-бейджами. Источник строк — стаб (цветные тумбнейлы).
+        KExamImgView *view = new KExamImgView;
+        KExamImgModel *model = new KExamImgModel(view);
+        KExamImgDelegate *delegate = new KExamImgDelegate(130, 110, view);
+        view->setModel(model);
+        view->setItemDelegate(delegate);
+        static const int cols[8] = {0x1cbcc4, 0xc45cbc, 0x5cc46e, 0xc4a05c,
+                                    0x5c6ec4, 0xc45c5c, 0x9c5cc4, 0x5cc4a8};
+        QVector<KImgTableItem *> items;
+        for (int i = 0; i < 8; ++i) {
+            KImgTableItem *it = new KImgTableItem(view);
+            QImage img(130, 110, QImage::Format_RGB32);
+            img.fill(QColor(cols[i]));
+            it->SetImage(img);
+            it->SetImgPathThumb(QStringLiteral("demo.png"));   // непустой путь → рендер
+            it->SetOrderNum(i);
+            it->SetEdited(i == 1 || i == 4);   // пара с меткой правки
+            items << it;
+        }
+        model->LoadImages(items);
+        view->setMinimumWidth(8 * 159);
+        w = view;
     } else if (screen == "imageeditor") {
         w = new KImageEditor;          // UI-порт: аннотирование снимка (реф. KImageEditor)
     } else if (screen == "addmarkview") {

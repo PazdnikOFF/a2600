@@ -28,11 +28,19 @@ public:
     bool isNullPath() const { return m_thumbPath.isEmpty(); }
     void LoadImgToQImage();            // реф.: ленивая загрузка m_thumbPath → m_img
     const QImage &Image() const { return m_img; }
+    void SetImage(const QImage &img) { m_img = img; }   // прямая установка (стаб-тумбнейл)
+
+    void SetOrderNum(int n) { m_orderNum = n; }   // реф. GetOrderNum (порядковый номер в отчёте)
+    int GetOrderNum() const { return m_orderNum; }
+    void SetEdited(bool e) { m_edited = e; }       // реф. GetEdited (есть аннотации)
+    bool GetEdited() const { return m_edited; }
 
 private:
     QImage m_img;          // +0x10
     int m_type = E_IMAGE;  // +0x30
     bool m_selected = false;
+    bool m_edited = false;
+    int m_orderNum = 0;
     QString m_thumbPath;   // +0x38
 };
 
