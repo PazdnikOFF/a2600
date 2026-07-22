@@ -12,14 +12,14 @@
 |---|---|
 | Пользовательских классов в референсе | **486** |
 | Методов в них (уникальные имена) | **7008** |
-| Классов затронуто у нас | **217** (45%) |
-| Методов реализовано (совпало по имени) | **1944** (27.7%) |
+| Классов затронуто у нас | **219** (45%) |
+| Методов реализовано (совпало по имени) | **1971** (28.1%) |
 
 ## 2. По доменам
 
 | Домен | Классов | Методов | Реализовано методов | % | Классов затронуто |
 |---|---:|---:|---:|---:|---:|
-| **UI** | 167 | 2665 | 540 | 20.3% | 94 |
+| **UI** | 167 | 2665 | 567 | 21.3% | 96 |
 | **CORE** | 60 | 1251 | 498 | 39.8% | 29 |
 | **REPORT** | 73 | 829 | 268 | 32.3% | 28 |
 | **MISC** | 27 | 669 | 165 | 24.7% | 14 |
@@ -121,7 +121,7 @@
 
 - **Свой API при наличии класса-референса (65):** `KAddPrinterDlg`, `KAddPrinterDriverDlg`, `KAlgParamAjustDlg`, `KAuthMachineDlg`, `KCameraInfoEdit`, `KColdlightAdjust`, `KContrastSetting`, `KControlInfo`, `KCustomEdit`, `KDICOMServiceEditDlg`, `KDeviceInfo`, `KEndoScopeControl`, `KEndoScopeSN`, `KEntityDicom`, `KEntityManage`, `KEntityReport`, `KEntityService`, `KErrorRate`, `KExamDetailInfoUi`, `KExamDetailModel`, `KExamEntry`, `KExamImgModel`, `KExamListSetupDlg`, `KGeneralSetDlg`, `KHospitalInfoEditDlg`, `KImageBrightEQSetting`, `KImageDenoiseSetting`, `KImageEditor`, `KLogView`, `KNetPrintList`, `KNewTempletEditor`, `KPUserLoginDlg`, `KPasswordEdit`, `KPatientListAddDlg`, `KPatientListSearch`, `KPrintSettingsDlg`, `KProcessorControl`, `KProcessorSN`, `KProgressDlg`, `KQRCode`, `KRTDataSourceDemo`, `KRTDataSourceReal`, `KRecordCase`, `KReportEditAddMarkView`, `KReportEditUi`, `KReportPreviewDlg`, `KReportTempletEditDlg`, `KRigidEndoBtnGuide`, `KScopeInfoEdit`, `KServerInfoDlg`, `KSysDicom`, `KSysPrinter`, `KSystemSetDlg`, `KSystemTemperature`, `KTempletTreeWidgetItem`, `KThesaurusSaveUi`, `KThsaurusManageMentUi`, `KUnusedImgModel`, `KUnusedImgPlayBar`, `KUserSrvSet`, `KVersion`, `KVideoPlayerOSD`, `KViewHardEndo`, `KZoomSetting`, `ReportConfigDlg`
 
-- **Наши абстракции без класса-референса (28):** `Application`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KOsdLabelConfig`, `KRemoteSwitchConfig`, `KReportDataSource`, `KReportHtmlGenerator`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `KbuttonSetting`, `KimageProcesItem`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `x2000monitor`, `x2000video`, `yxyDES2`
+- **Наши абстракции без класса-референса (29):** `Application`, `InputMethod`, `K3ADimming`, `KAutoTestScript`, `KDicomDatasetFormat`, `KDicomFieldMap`, `KEndoInfoServerConfig`, `KEntityQuickInput`, `KFactoryOptionsState`, `KOsdLabelConfig`, `KRemoteSwitchConfig`, `KReportDataSource`, `KReportHtmlGenerator`, `KScopeClass`, `KSoftEndoParam`, `KStatisticConfig`, `KStyleConfig`, `KSystemLog`, `KUpdateManifest`, `KbuttonSetting`, `KimageProcesItem`, `ReportItem`, `_LcdActItem`, `hal`, `keyname`, `theme`, `x2000monitor`, `x2000video`, `yxyDES2`
 
 Такие классы стоит либо привести к именам оригинала, либо исключить из метрики руками.
 
