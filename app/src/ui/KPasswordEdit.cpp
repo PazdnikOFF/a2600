@@ -1,12 +1,29 @@
 #include "KPasswordEdit.h"
+#include "KPasswordLineEdit.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QRegExp>
+#include <QRegExpValidator>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWidget>
+
+namespace {
+// Реф. KAccount::GetPasswordRegExp @0x3f5b48: QRegExp из QString::fromAscii(&DAT_00961ba0, 0x60)
+// — 96 UTF-8 байт / 50 симв. Чёрный список fullwidth/CJK-пунктуации (пароль не должен их
+// содержать), якорь $ (QRegExpValidator = exact-match). БАЙТ-ТОЧНО из бинарника, вкл. квирк:
+// 3-й '…' в подстроке "\…\……" НЕ экранирован (в char-class инертен). \uXXXX → UTF-8 → fromUtf8.
+QString passwordRegExp()
+{
+    return QString::fromUtf8(
+        "[^\\！\\『\\』\\（\\）\\；\\："
+        "\\“\\”\\‘\\’\\、\\…\\……"
+        "\\￥\\【\\】\\？\\《\\》\\，\\。]+$");
+}
+} // namespace
 
 KPasswordEdit::KPasswordEdit(QWidget *parent)
     : KDialog(parent, /*subscribeStatus=*/false)
@@ -32,21 +49,28 @@ void KPasswordEdit::setupUi()
     lPw->setObjectName(QStringLiteral("label_passwd"));
     lPw->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     g->addWidget(lPw, 0, 0);
-    QLineEdit *pw = new QLineEdit(host);   // реф. KPasswordLineEdit → QLineEdit
-    pw->setObjectName(QStringLiteral("password"));
-    pw->setEchoMode(QLineEdit::Password);
-    pw->setMaxLength(16);
-    pw->setToolTip(tr("TR_IAMCharacters"));
+    // АПГРЕЙД: реальный KPasswordLineEdit (был QLineEdit). Реверс: оба поля (password,
+    // passwdconfirm) = KPasswordLineEdit; echoMode/maxLen/validator ставит ВЫЗЫВАЮЩИЙ (ctor,
+    // после setupUi) — виджет echoMode сам НЕ ставит. setInputMethodHints(0x208) — из setupUi.
+    // Тип конкретный: setValidator у KPasswordLineEdit ПЕРЕОпределён/невиртуален (берёт QRegExp
+    // для живой фильтрации). validator = QRegExpValidator(KAccount::GetPasswordRegExp()) на оба.
+    auto mkPwField = [&](const char *name) {
+        KPasswordLineEdit *e = new KPasswordLineEdit(host);
+        e->setObjectName(QString::fromLatin1(name));
+        e->setEchoMode(QLineEdit::Password);
+        e->setMaxLength(16);
+        e->setInputMethodHints(Qt::InputMethodHints(0x208));   // реф. 0x208
+        e->setValidator(new QRegExpValidator(QRegExp(passwordRegExp()), e));
+        e->setToolTip(tr("TR_IAMCharacters"));
+        return e;
+    };
+    KPasswordLineEdit *pw = mkPwField("password");
     g->addWidget(pw, 0, 1);
     QLabel *lCf = new QLabel(tr("TR_Cfm:"), host);
     lCf->setObjectName(QStringLiteral("label_passwdcf"));
     lCf->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     g->addWidget(lCf, 1, 0);
-    QLineEdit *cf = new QLineEdit(host);
-    cf->setObjectName(QStringLiteral("passwdconfirm"));
-    cf->setEchoMode(QLineEdit::Password);
-    cf->setMaxLength(16);
-    cf->setToolTip(tr("TR_IAMCharacters"));
+    KPasswordLineEdit *cf = mkPwField("passwdconfirm");
     g->addWidget(cf, 1, 1);
     root->addLayout(g);
 
