@@ -297,6 +297,8 @@ set(SOURCES
     src/report/KTemplateLibCfg.cpp
     src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
+    src/report/KRTAbsDataSource.cpp
+    src/report/KRTDataSourceStub.cpp
     src/report/KTextBlock.cpp
     src/report/KImageBlock.cpp
     src/report/KTableBlock.cpp
@@ -596,6 +598,8 @@ add_executable(ui_preview
     src/report/KTemplateLibCfg.cpp
     src/report/KTemplateParamCfg.cpp
     src/report/KReportTemplateCommonDef.cpp
+    src/report/KRTAbsDataSource.cpp
+    src/report/KRTDataSourceStub.cpp
     src/report/KTextBlock.cpp
     src/report/KImageBlock.cpp
     src/report/KTableBlock.cpp

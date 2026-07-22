@@ -190,6 +190,7 @@
 #include "report/KTableBlock.h"
 #include "report/KTitleTableBlock.h"
 #include "report/KReportTemplateCommonDef.h"
+#include "report/KRTDataSourceStub.h"
 #include "db/KPatientExamData.h"
 #include "db/KDbSqlite.h"
 #include "report/XmlParser.h"
@@ -2096,6 +2097,42 @@ int main(int argc, char **argv)
 
     // Self-test свободных функций report_template (сериализация map ⇄ строка, source-id,
     // генерация ID, предикат bold, резолв заголовка).
+    if (screen == "rtdatasource") {
+        // Self-test инъект-сима данных report-template (реф. KRTAbsDataSource-интерфейс + стаб).
+        KRTDataSourceStub ds;
+        ds.SetText("RT_DATASOURCE_PATIENT,RT_PATIENT_NAME", "John Doe");
+        ds.SetImage("RT_DATASOURCE_IMG,IMG1", "img/001.png");
+        KReportTemplateDataNew sub;
+        sub.m_mapConfigs["Title"] = "SubReport";
+        KReportTemplateItem si; si.m_strDataSrc = "SUB,FIELD"; sub.m_lstItems.push_back(si);
+        ds.SetSub("RT_DATASOURCE_SUB,S1", sub);
+
+        std::string txt, img;
+        const bool tOk = ds.GetTextData("RT_DATASOURCE_PATIENT,RT_PATIENT_NAME", txt) && txt == "John Doe";
+        const bool iOk = ds.GetImageData("RT_DATASOURCE_IMG,IMG1", img) && img == "img/001.png";
+        std::string miss;
+        const bool missOk = !ds.GetTextData("UNKNOWN,ID", miss);   // неизвестный → false
+        KReportTemplateDataNew gotSub;
+        const bool sOk = ds.GetSubData("RT_DATASOURCE_SUB,S1", gotSub)
+                         && gotSub.m_mapConfigs["Title"] == "SubReport"
+                         && gotSub.m_lstItems.size() == 1;
+        // SplitDataSrcID: "src,key" → ("src","key").
+        std::string a, b;
+        const bool splitOk = ds.SplitDataSrcID("RT_DATASOURCE_PATIENT,RT_PATIENT_NAME", a, b)
+                             && a == "RT_DATASOURCE_PATIENT" && b == "RT_PATIENT_NAME";
+        const bool splitNo = !ds.SplitDataSrcID("nosep", a, b);   // без разделителя → false
+        // GetTextOptional/GetMix2Data — база возвращает false.
+        std::vector<std::string> optOut;
+        const bool optOk = !ds.GetTextOptional("f", "k", optOut);
+
+        const bool ok = tOk && iOk && missOk && sOk && splitOk && splitNo && optOk;
+        qInfo() << "GetText:" << tOk << "GetImage:" << iOk << "miss→false:" << missOk
+                << "GetSubData:" << sOk << "Split:" << splitOk << "SplitNo:" << splitNo
+                << "Optional→false:" << optOk;
+        qInfo() << (ok ? "rtdatasource: PASS" : "rtdatasource: FAIL");
+        return ok ? 0 : 16;
+    }
+
     if (screen == "reporttmpl") {
         using namespace report_template;
 
