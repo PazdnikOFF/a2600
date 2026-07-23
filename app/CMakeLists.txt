@@ -320,6 +320,8 @@ set(SOURCES
     src/monitor/X2000Monitor.cpp
     src/video/KMessageManager.cpp
     src/report/KRTCreatorContext.cpp
+    src/report/KRTSimpleCreatorContext.cpp
+    src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp
@@ -629,6 +631,8 @@ add_executable(ui_preview
     src/monitor/X2000Monitor.cpp
     src/video/KMessageManager.cpp
     src/report/KRTCreatorContext.cpp
+    src/report/KRTSimpleCreatorContext.cpp
+    src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
     src/report/KEntityReport.cpp

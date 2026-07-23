@@ -158,6 +158,8 @@
 #include "db/KQuickInputReportTitle.h"
 #include "ui/KViewBase.h"
 #include "ui/KVideoLabel.h"
+#include "report/KRTSimpleDisplay.h"
+#include "report/KRTSimpleCreatorContext.h"
 #include "video/KViewSoftEndo.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
@@ -2140,6 +2142,92 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "rtsimple") {
+        // Self-test «Simple»-движка отчёта (реф. KRTSimpleDisplay + KRTSimpleCreatorContext).
+        // Проверяется ровно то, что восстановлено дизасмом: реестр из 9 ключей, выбор
+        // творца по m_strType, и главное — ДЕКАРТОВО ПРОИЗВЕДЕНИЕ повторов в HandleRepeat.
+        KRTDataSourceStub ds;
+        KRTSimpleDisplay disp(&ds);
+        KRTSimpleRecordingCreator::ClearRecords();
+
+        // Реестр: 9 ключей, из них 4 ведут на KRTSimpleTableItemCreator.
+        auto typeOf = [&](const char *type) -> std::string {
+            KReportTemplateItem it; it.m_strID = "x"; it.m_strType = type;
+            KRTSimpleRecordingCreator::ClearRecords();
+            disp.Context()->HandleRepeat(it, {}, {});
+            const auto &r = KRTSimpleRecordingCreator::Records();
+            return r.empty() ? std::string("<нет>") : r.front().creator;
+        };
+        const bool regOk =
+            typeOf("RT_TEXT_BLOCK")        == "KRTSimpleTextItemCreator"    &&
+            typeOf("RT_TEXTGROUP_BLOCK")   == "KRTSimpleTextGroupCreator"   &&
+            typeOf("RT_IMAGE_BLOCK")       == "KRTSimpleImageItemCreator"   &&
+            typeOf("RT_IMAGEGROUP_BLOCK")  == "KRTSimpleImageGroupCreator"  &&
+            typeOf("RT_TABLE_BLOCK")       == "KRTSimpleTableItemCreator"   &&
+            typeOf("RT_TITLE_TABLE_BLOCK") == "KRTSimpleTableItemCreator"   &&
+            typeOf("RT_ROW_TABLE_BLOCK")   == "KRTSimpleTableItemCreator"   &&
+            typeOf("RT_OB_Z_SCORE_BLOCK")  == "KRTSimpleTableItemCreator"   &&
+            typeOf("RT_SUB_DATA_BLOCK")    == "KRTSimpleSubDataItemCreator";
+        // Неизвестный тип → реф. возвращает 0 и творца не зовёт.
+        KRTSimpleRecordingCreator::ClearRecords();
+        KReportTemplateItem unknown; unknown.m_strID = "u"; unknown.m_strType = "RT_НЕТ";
+        const bool unknownOk = disp.Context()->HandleRepeat(unknown, {}, {}) == 0
+                               && KRTSimpleRecordingCreator::Records().empty();
+
+        // HandleRepeat: два измерения 2×3 → творец вызывается РОВНО 6 раз, и в каждом
+        // вызове params содержит по одному значению каждого измерения.
+        KRTSimpleRecordingCreator::ClearRecords();
+        KReportTemplateItem ti; ti.m_strID = "t"; ti.m_strType = "RT_TEXT_BLOCK";
+        std::list<std::pair<std::string, std::vector<std::string>>> reps;
+        reps.emplace_back("A", std::vector<std::string>{"a1", "a2"});
+        reps.emplace_back("B", std::vector<std::string>{"b1", "b2", "b3"});
+        const int made = disp.Context()->HandleRepeat(ti, {}, reps);
+        const auto &recs = KRTSimpleRecordingCreator::Records();
+        std::set<std::string> combos;
+        for (const auto &r : recs) {
+            auto a = r.params.find("A"), b = r.params.find("B");
+            if (a != r.params.end() && b != r.params.end())
+                combos.insert(a->second + "|" + b->second);
+        }
+        const bool cartOk = made == 6 && recs.size() == 6 && combos.size() == 6;
+
+        // Внешний params сохраняется и дополняется (реф. копирует его в локальный).
+        KRTSimpleRecordingCreator::ClearRecords();
+        std::list<std::pair<std::string, std::vector<std::string>>> one;
+        one.emplace_back("A", std::vector<std::string>{"a1", "a2"});
+        disp.Context()->HandleRepeat(ti, {{"KEEP", "v"}}, one);
+        const auto &recs2 = KRTSimpleRecordingCreator::Records();
+        const bool keepOk = recs2.size() == 2
+                            && recs2[0].params.count("KEEP") == 1
+                            && recs2[0].params.at("KEEP") == "v";
+
+        // Display: обновляет параметр из данных шаблона и зовёт CreateItem на КАЖДЫЙ
+        // элемент верхнего уровня с ПУСТЫМ params.
+        KRTSimpleRecordingCreator::ClearRecords();
+        KReportTemplateDataNew data;
+        data.m_mapConfigs["Title"] = "T";
+        KReportTemplateItem i1; i1.m_strID = "/a"; i1.m_strType = "RT_TEXT_BLOCK";
+        KReportTemplateItem i2; i2.m_strID = "/b"; i2.m_strType = "RT_IMAGE_BLOCK";
+        data.m_lstItems.push_back(i1);
+        data.m_lstItems.push_back(i2);
+        const bool dispOk = disp.Display(data)
+                            && KRTSimpleRecordingCreator::Records().size() == 2
+                            && KRTSimpleRecordingCreator::Records()[0].params.empty()
+                            && disp.DisplayParam().TemplateConfigs().at("Title") == "T";
+        // Reset чистит встроенный параметр отображения.
+        const bool resetOk = disp.Reset() && disp.DisplayParam().TemplateConfigs().empty();
+
+        KRTSimpleRecordingCreator::ClearRecords();
+        const bool ok = regOk && unknownOk && cartOk && keepOk && dispOk && resetOk;
+        qInfo() << "реестр 9 ключей:" << regOk << "| неизв. тип→0:" << unknownOk
+                << "| декартово 2×3 =" << made << "вызовов, комбинаций" << int(combos.size())
+                << ":" << cartOk;
+        qInfo() << "внешний params сохранён:" << keepOk << "| Display:" << dispOk
+                << "| Reset:" << resetOk;
+        qInfo() << (ok ? "rtsimple: PASS" : "rtsimple: FAIL");
+        return ok ? 0 : 23;
     }
 
     if (screen == "videolabel") {
