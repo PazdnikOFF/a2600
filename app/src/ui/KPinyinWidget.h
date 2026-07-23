@@ -7,13 +7,13 @@
 
 class QVBoxLayout;
 class QHBoxLayout;
-class QLineEdit;
+class KPinyinLineEdit;
 class QLabel;
 class QPushButton;
 
 // Плавающий попап кандидатов пиньинь (реф. KPinyinWidget : QFrame, ctor @0x764828, size 0xd8,
 // singleton GetInstance). UI-порт. Безрамочный always-on-top translucent-попап со скруглением:
-// строка-спеллинг (KPinyinLineEdit→QLineEdit) над рядом [список-кандидатов IconMode | spacer |
+// строка-спеллинг (реальный KPinyinLineEdit) над рядом [список-кандидатов IconMode | spacer |
 // «<» | «>»]. Клавиши цели перехватываются eventFilter: a-z → AppendPinyin, 1-7 → выбор
 // кандидата, Space → выбор подсвеченного, -/=/стрелки → страницы/курсор, Enter → сырой спеллинг.
 // Выбор коммитится в целевой edit через QInputMethodEvent::setCommitString (НЕ insert/setText).
@@ -53,7 +53,7 @@ private:
 
     QVBoxLayout *m_vbox = nullptr;   // +0x30
     QHBoxLayout *m_hbox = nullptr;   // +0x38
-    QLineEdit *m_pinyinEdit = nullptr;  // +0x40
+    KPinyinLineEdit *m_pinyinEdit = nullptr;  // +0x40 (реальный класс, не QLineEdit)
     QHBoxLayout *m_candRow = nullptr;   // +0x48 (реф. QListWidget; в порте ряд QLabel)
     QList<QLabel *> m_candLabels;
     QPushButton *m_prev = nullptr;   // +0x50

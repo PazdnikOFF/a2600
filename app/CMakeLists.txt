@@ -90,6 +90,7 @@ set(SOURCES
     src/ui/KImageEditorGraphicsView.cpp
     src/ui/KImageEditorSerialization.cpp
     src/ui/KPinyinWidget.cpp
+    src/ui/KPinyinLineEdit.cpp
     src/ui/InputMethod.cpp
     src/ui/KReportEditAddMarkView.cpp
     src/ui/KPrintSettingsDlg.cpp
@@ -477,6 +478,7 @@ add_executable(ui_preview
     src/ui/KImageEditorGraphicsView.cpp
     src/ui/KImageEditorSerialization.cpp
     src/ui/KPinyinWidget.cpp
+    src/ui/KPinyinLineEdit.cpp
     src/ui/InputMethod.cpp
     src/ui/KReportEditAddMarkView.cpp
     src/ui/KPrintSettingsDlg.cpp

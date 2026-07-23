@@ -2,6 +2,8 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include "KPinyinLineEdit.h"
+
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
@@ -47,7 +49,7 @@ void KPinyinWidget::InitUI()
     m_vbox = new QVBoxLayout(this);
     m_vbox->setContentsMargins(3, 3, 3, 3);
 
-    m_pinyinEdit = new QLineEdit(this);
+    m_pinyinEdit = new KPinyinLineEdit(this);   // реф. InitUI @0x763db8 создаёт именно его
     m_pinyinEdit->setFocusPolicy(Qt::NoFocus);
     m_pinyinEdit->setReadOnly(true);
     m_vbox->addWidget(m_pinyinEdit);
