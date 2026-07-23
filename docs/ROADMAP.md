@@ -377,12 +377,13 @@ device), `KDICOMSrvListItem` (у нас его роль играет `DicomSrvRo
 «защищённым» слоем `KSystemSet` (лицензия + продуктовая идентичность).
 ✅ **KSelfTest — СДЕЛАН** (`ui/KSelfTest.*`, self-test `selftest`, рендер `selftestui`)
 вместе со свободной `OpenKSelfTestDlg` — 23-я из 25 `Open*`.
-🔶 **KAutoTestThread — ЧАСТИЧНО** (`autotest/KAutoTestThread.*`, self-test `autotestthread`):
-сделаны синглтон, старт/стоп, цикл `run` (100 мс), раскладка модификаторов
-`KeyboardSimulation`, сообщение 0x41A `PanelKeySimulation`, `GetLogPath`,
-`IsAutoTestStart`. НЕ декодированы: `GetSnapScreenPngFile`, `GetPngFileIndex`,
-`AutotestLogCheck`, `LogCheckRecord`, ветки 1/2 `RecvMsg` — следующая итерация.
-Из QObject-очереди после этого остаётся только device-пара `ColdLight`/`HmiMcu`.
+✅ **KAutoTestThread — ПОРТИРОВАН** (`autotest/KAutoTestThread.*`, self-test `autotestthread`):
+синглтон, старт/стоп, цикл `run` (100 мс), раскладка модификаторов `KeyboardSimulation`,
+сообщение 0x41A `PanelKeySimulation`, `GetLogPath`, `IsAutoTestStart`, проверка лога
+(`AutotestLogCheck` через QProcess python + `LogCheckRecord` с маркерами) и переключатель
+жизненного цикла `SetAutoTestOpen`. Остаток класса — чистый device-IO
+(`GetSnapScreenPngFile`/`GetPngFileIndex` — скриншоты автотеста, ветки 1/2 `RecvMsg` — IPC).
+**Из QObject-очереди остаётся только device-пара `ColdLight`/`HmiMcu` (обвязка МК-платы, фаза E).**
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
 ✅ **KUpdateMng — СДЕЛАН** (роутер цепочки обновления 13→14→15).
 ⛔ **`report_template::KLineEdit` — НЕ ПОРТИРОВАТЬ**: мёртвый код (ctor отсутствует в

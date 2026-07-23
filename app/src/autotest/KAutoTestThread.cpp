@@ -5,6 +5,7 @@
 
 #include <QDate>
 #include <QDir>
+#include <QProcess>
 
 namespace {
 KAutoTestThread::IKeySink *g_sink = nullptr;
@@ -12,9 +13,13 @@ KAutoTestThread::IKeySink *g_sink = nullptr;
 // Реф. модификаторы приходят в СТАРШИХ битах кода клавиши; дизасм сдвигает значение
 // на 4 вправо и работает с битами 25..27 (см. `lsr w19, w1, #4`).
 enum { MOD_SHIFT = 1 << 25, MOD_CTRL = 1 << 26, MOD_ALT = 1 << 27 };
+
+// Раннер проверки лога. По умолчанию — как в реф.: запуск python-скрипта прошивки.
+std::function<bool()> g_logCheckRunner;
 }
 
 void KAutoTestThread::SetKeySink(IKeySink *sink) { g_sink = sink; }
+void KAutoTestThread::SetLogCheckRunner(std::function<bool()> f) { g_logCheckRunner = f; }
 
 KAutoTestThread *GetKAutoTestThread()
 {
@@ -136,4 +141,61 @@ void KAutoTestThread::run()
         QThread::usleep(100000);   // реф. 0x186A0 мкс = 100 мс
         ProcessPendingKeys();
     }
+}
+
+bool KAutoTestThread::AutotestLogCheck()
+{
+    if (g_logCheckRunner)
+        return g_logCheckRunner();
+
+    // Реф.: QProcess.start("python", [logcheck.py, <лог>, rulesfile]),
+    // waitForStarted(30000) / waitForFinished(30000), возврат = (exitCode() == 0).
+    // ⚠️ Скрипт прошивки — Python 2 (синтаксис `print '...'`), поэтому на хосте с
+    // одним python3 он падает; это device-поведение, здесь оставлено как есть.
+    const QString base = QDir(KSystem::SystemPath()).absoluteFilePath("autotest/logcheck");
+    const QString script = QDir(base).absoluteFilePath("logcheck.py");
+    const QString rules  = QDir(base).absoluteFilePath("rulesfile");
+
+    QProcess proc;
+    proc.start("python", QStringList() << script << GetLogPath() << rules);
+    if (!proc.waitForStarted(30000))
+        return false;              // реф.: «Process start failed» → возврат 0
+    if (!proc.waitForFinished(30000))
+        return false;
+    proc.readAllStandardOutput();  // реф. читает вывод (для лога), решает по exitCode
+    return proc.exitCode() == 0;
+}
+
+void KAutoTestThread::LogCheckRecord(int stage)
+{
+    if (!m_bLogCheckOpen)          // реф.: поле +0x124 снято → выход сразу
+        return;
+
+    if (stage == 1) {
+        // Реф.: ShowMsg("") (пустая строка) + маркер «---autotest log start---» в лог.
+        emit ShowMsg(QString());
+        // (маркер уходит в APP-лог через LogPrintf — device-логгер, здесь опущен)
+    } else if (stage == 2) {
+        // Маркер «---autotest log stop---», затем — если автотест НЕ прерван (статус 2) —
+        // прогон проверки лога; при провале ShowMsg + аварийная остановка автотеста.
+        if (KSystemStatus::GetInstance().AutoTestStatus() == 2)
+            return;
+        if (!AutotestLogCheck()) {
+            emit ShowMsg(QStringLiteral("autotest log check failed"));
+            SetAutoTestOpen(TEST_ABORT, 0x800);
+        }
+    }
+    // Прочие stage реф. игнорирует.
+}
+
+void SetAutoTestOpen(int status, int /*type*/)
+{
+    // Реф. @0x6fc8a0: сначала фиксируем статус в центральном состоянии…
+    KSystemStatus::GetInstance().SetAutoTestStatus(status);
+    // …затем поднимаем/останавливаем поток по статусу (1 = старт, 2 = стоп).
+    if (status == TEST_START)
+        GetKAutoTestThread()->start();
+    else if (status == TEST_ABORT)
+        GetKAutoTestThread()->stop();
+    // Реф. далее шлёт IPC KProcMsgManager::SendMsg(0x85000000, …) — device, опущено.
 }

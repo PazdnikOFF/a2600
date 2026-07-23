@@ -1817,10 +1817,61 @@ int main(int argc, char **argv)
         ss.SetAutoTestStatus(3);  const bool g3 = KAutoTestThread::IsAutoTestStart();
         const bool gateOk = !g0 && g1 && !g2 && g3;
 
+        // --- Проверка лога: маркеры, гейт open-флага, ветка провала. ---
+        KSystemStatus &st = KSystemStatus::GetInstance();
+        QStringList shown;
+        QObject::connect(th, &KAutoTestThread::ShowMsg, [&](QString s){ shown << s; });
+
+        int runnerCalls = 0; bool runnerResult = true;
+        KAutoTestThread::SetLogCheckRunner([&]{ ++runnerCalls; return runnerResult; });
+
+        // 1) Флаг проверки выключен → LogCheckRecord молчит целиком.
+        th->SetLogCheckOpen(false);
+        st.SetAutoTestStatus(1);
+        th->LogCheckRecord(1);
+        th->LogCheckRecord(2);
+        const bool gatedOff = shown.isEmpty() && runnerCalls == 0;
+
+        // 2) Флаг включён, старт-маркер (stage 1) → пустой ShowMsg, раннер не зовётся.
+        th->SetLogCheckOpen(true);
+        th->LogCheckRecord(1);
+        const bool stageStart = (shown.size() == 1) && shown.last().isEmpty() && runnerCalls == 0;
+
+        // 3) stage 2 при статусе «прерван» (2) → ранний выход, раннер не зовётся.
+        st.SetAutoTestStatus(2);
+        th->LogCheckRecord(2);
+        const bool stageAbortSkips = (runnerCalls == 0);
+
+        // 4) stage 2, статус активный, проверка ПРОШЛА → раннер вызван, тревоги нет.
+        st.SetAutoTestStatus(1);
+        runnerResult = true;
+        th->LogCheckRecord(2);
+        const bool passNoAlarm = (runnerCalls == 1) &&
+                                 !shown.contains("autotest log check failed") &&
+                                 st.AutoTestStatus() == 1;
+
+        // 5) stage 2, проверка ПРОВАЛЕНА → ShowMsg + аварийный SetAutoTestOpen(2) → статус 2.
+        runnerResult = false;
+        th->LogCheckRecord(2);
+        const bool failAlarm = (runnerCalls == 2) &&
+                               shown.last() == "autotest log check failed" &&
+                               st.AutoTestStatus() == TEST_ABORT;
+        qInfo() << "ShowMsg:" << shown << "raннер:" << runnerCalls;
+
+        // 6) SetAutoTestOpen управляет статусом и явно: старт → 1.
+        SetAutoTestOpen(TEST_START, 0);
+        const bool openStart = st.AutoTestStatus() == TEST_START;
+
+        const bool logCheckOk = gatedOff && stageStart && stageAbortSkips &&
+                                passNoAlarm && failAlarm && openStart;
+
+        KAutoTestThread::SetLogCheckRunner(std::function<bool()>());
         KAutoTestThread::SetKeySink(nullptr);
-        const bool ok = singleton && ctorOk && logFlag && dispatchOk && logPathOk && gateOk;
+        const bool ok = singleton && ctorOk && logFlag && dispatchOk && logPathOk &&
+                        gateOk && logCheckOk;
         qInfo() << (ok ? "autotestthread: PASS" : "autotestthread: FAIL")
-                << "dispatch:" << dispatchOk << "logPath:" << logPathOk << "gate:" << gateOk;
+                << "dispatch:" << dispatchOk << "logPath:" << logPathOk << "gate:" << gateOk
+                << "logCheck:" << logCheckOk;
         return ok ? 0 : 24;
     }
 

@@ -546,7 +546,7 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **127 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 127 / FAIL 0).
 
-**🔶 KAutoTestThread — ПОРТИРОВАН ЧАСТИЧНО (2026-07-23).** Self-test `autotestthread`,
+**🔶→✅ KAutoTestThread — ПОРТИРОВАН (2026-07-23; логический off-device остаток закрыт записью ниже).** Self-test `autotestthread`,
 модуль `autotest/KAutoTestThread.{h,cpp}` (парная половина к уже готовому
 `KAutoTestScript`, который живёт в X2000Simulator).
 - Синглтон — свободная `GetKAutoTestThread()` @0x6fc830 (ленивое `new` 0x128, delete нет).
@@ -575,11 +575,28 @@ Qt5, boost 1.74, libcrypto.
 - `RecvMsg` @0x6fd1c0 — switch по типу: **3** → +0x14 = значение, **4** → {+0x18, +0x1c} =
   {0, значение}. Ветки **1 и 2** (разбор клавиши/панели и постановка в очередь) НЕ
   декодированы — поэтому очередь у нас наполняется методом `EnqueueKey` (не из реф.).
-- ⛔ **ОСТАТОК КЛАССА НА СЛЕДУЮЩУЮ ИТЕРАЦИЮ** (не декодировано): `GetSnapScreenPngFile`
-  @0x6fb558 (3.2 КБ), `GetPngFileIndex` @0x6fc748 (⚠️ на вид странная логика:
-  при совпадении НЕ с последним элементом списка удаляется ПОСЛЕДНИЙ — перепроверить),
-  `AutotestLogCheck` @0x6fcb00, `LogCheckRecord` @0x6fd028, ветки 1/2 `RecvMsg`.
 - Единственный device-шов у нас — интерфейс `IKeySink` (8 функций uinput + панель).
+
+**✅ KAutoTestThread ДОБИТ — проверка лога + жизненный цикл (2026-07-23, продолжение).**
+Тот же self-test `autotestthread` расширен.
+- `AutotestLogCheck` @0x6fcb00 — `QProcess.start("python", [logcheck.py, <лог>, rulesfile])`,
+  `waitForStarted/Finished(30000)`, возврат = **`exitCode() == 0`** (правила лога совпали).
+  Скрипты — `system/autotest/logcheck/{logcheck.py,rulesfile}` (есть в дампе прошивки;
+  ⚠️ скрипт — Python **2**: `print '...'` → на python3-хосте падает, это device-поведение).
+  У нас — инъектируемый раннер `SetLogCheckRunner` (по умолчанию всё же QProcess).
+- `LogCheckRecord(int)` @0x6fd028: молчит, если `!m_bLogCheckOpen`. **stage 1** →
+  `ShowMsg("")` (пустая строка!) + маркер `---autotest log start---` в APP-лог. **stage 2** →
+  маркер `---autotest log stop---`; если `AutoTestStatus() == 2` (прерван) — выход; иначе
+  `AutotestLogCheck()`, и при провале — `ShowMsg("autotest log check failed")` +
+  `SetAutoTestOpen(2, 0x800)` (аварийная остановка).
+- ⭐ `SetAutoTestOpen(status, type)` @0x6fc8a0 — единый переключатель жизненного цикла:
+  `SetAutoTestStatus(status)`, затем **status 1 → start(), status 2 → stop()** потока,
+  затем IPC `SendMsg(0x85000000, …)` (device, опущено). Портирован как свободная функция.
+- ⛔ **ОСТАЁТСЯ device (не тянем off-device):** `GetSnapScreenPngFile` @0x6fb558 (3.2 КБ,
+  строит пути `%s/%s_%d/%d.jpeg` под TmpPath, читает `playcasename.txt`/`casename.txt` —
+  сохранение скриншотов автотеста, чистое IO), `GetPngFileIndex` @0x6fc748 (счётчик кадров
+  на этом же пути), ветки 1/2 `RecvMsg` (IPC-приём). Логического off-device остатка у
+  класса больше нет.
 
 **✅ KSelfTest + OpenKSelfTestDlg — ЭКРАН САМОДИАГНОСТИКИ (2026-07-23).**
 Self-test `selftest`, рендер `selftestui` (скриншот сверен: 460×480, титул TR_STest).

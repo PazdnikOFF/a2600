@@ -4,6 +4,8 @@
 #include <QString>
 #include <QThread>
 
+#include <functional>
+
 // Приёмная половина автотеста в X2000 (реф. KAutoTestThread @0x6fb4d8, sizeof 0x128).
 // Скрипты разбирает ОТДЕЛЬНЫЙ процесс X2000Simulator (см. KAutoTestScript.h); сюда по IPC
 // приходят уже готовые коды, а поток раз в 100 мс достаёт их из очереди и «нажимает».
@@ -58,6 +60,18 @@ public:
     // отличном И от 0, И от 2 (`tst w0,#0xfffffffd`).
     static bool IsAutoTestStart();
 
+    // Реф. @0x6fcb00: запускает `python logcheck.py <лог> <rulesfile>` и возвращает
+    // ИСТИНУ при exitCode == 0 (лог прошёл проверку правил). Пути — под
+    // KSystem::SystemPath() + "autotest/logcheck/". Реально запускает Python — device;
+    // у нас через инъектируемый раннер (по умолчанию всё же QProcess, как в реф.).
+    bool AutotestLogCheck();
+    // Реф. @0x6fd028: маркеры «старт/стоп» в APP-лог + на «стоп» — проверка лога.
+    // ⚠️ Молчит, если SetLogCheckOpen(false). arg: 1 = старт-маркер, 2 = стоп+проверка.
+    void LogCheckRecord(int stage);
+
+    // Не из реф.: раннер проверки лога (шов вместо запуска python).
+    static void SetLogCheckRunner(std::function<bool()> f);
+
     // Реф. @0x6fc558: младшие 28 бит — код клавиши Qt, старшие — модификаторы
     // (бит 29 = Shift, 30 = Ctrl, 31 = Alt; та же раскладка, что в KEY_CONFIG скрипта).
     void KeyboardSimulation(int param);
@@ -88,3 +102,9 @@ private:
 
 // Реф. свободная функция-акцессор @0x6fc830.
 KAutoTestThread *GetKAutoTestThread();
+
+// Реф. свободная @0x6fc8a0: единый переключатель жизненного цикла автотеста —
+// KSystemStatus::SetAutoTestStatus(status), затем start()/stop() потока по статусу
+// (1 = старт, 2 = стоп) и IPC-уведомление (device, у нас опущено).
+enum TEST_STATUS { TEST_STOP = 0, TEST_START = 1, TEST_ABORT = 2 };
+void SetAutoTestOpen(int status, int type);
