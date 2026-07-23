@@ -152,6 +152,12 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include "ui/KDisplayOption.h"
+#include "ui/KBackGround.h"
+#include "ui/KEventFilter.h"
+#include "ui/KGlobalEventFilter.h"
+#include "ui/KLabelHoverEventFilter.h"
+#include "ui/KPosNameLineEditDelegate.h"
+#include "ui/KTableWidget.h"
 #include "ui/KImgList.h"
 #include "ui/KImgListCell.h"
 #include "endo/KSoftEndoParam.h"
@@ -6765,6 +6771,98 @@ int main(int argc, char **argv)
         const bool ok = geomOk && statesOk && fontOk && shortOk && longOk;
         qInfo() << (ok ? "patnavitem: PASS" : "patnavitem: FAIL");
         return ok ? 0 : 83;
+    }
+
+    // Self-test шести малых UI-классов: KEventFilter (горячая клавиша скриншота),
+    // KGlobalEventFilter (дедупликация клика), KLabelHoverEventFilter (формула точки),
+    // KTableWidget, KPosNameLineEditDelegate, KBackGround.
+    if (screen == "evtfilters") {
+        // --- KEventFilter: Ctrl+P и Ctrl+«З» просят скриншот и СЪЕДАЮТ событие.
+        KEventFilter ef;
+        int shots = 0, activity = 0;
+        QObject::connect(&ef, &KEventFilter::screenShotRequested, [&shots] { ++shots; });
+        QObject::connect(&ef, &KEventFilter::userActivity, [&activity] { ++activity; });
+        QWidget probe;
+        auto key = [&](int k, Qt::KeyboardModifiers m) {
+            QKeyEvent e(QEvent::KeyPress, k, m);
+            const bool eaten = ef.eventFilter(&probe, &e);
+            return eaten;
+        };
+        const bool ctrlP  = key(0x50, Qt::ControlModifier);            // Qt::Key_P
+        const bool ctrlZe = key(0x417, Qt::ControlModifier);           // «З» (рус. раскладка)
+        const bool plainP = key(0x50, Qt::NoModifier);                 // без Ctrl — не скриншот
+        // Реф. сравнивает модификаторы на ТОЧНОЕ равенство → Ctrl+Shift+P не срабатывает.
+        const bool ctrlShiftP = key(0x50, Qt::ControlModifier | Qt::ShiftModifier);
+        const bool hotkeyOk = ctrlP && ctrlZe && !plainP && !ctrlShiftP && shots == 2;
+        // Активность считается на всех четырёх нажатиях (тип в диапазоне 2..7).
+        const bool activityOk = activity == 4;
+        // Событие вне диапазона 2..7 активность НЕ обновляет.
+        QEvent paint(QEvent::Paint);
+        ef.eventFilter(&probe, &paint);
+        const bool rangeOk = activity == 4;
+
+        // --- KGlobalEventFilter: один клик = один сигнал, повторная доставка — молчит.
+        KGlobalEventFilter gf;
+        int clicks = 0;
+        QObject::connect(&gf, &KGlobalEventFilter::SignalGlobalMouseEvent, [&clicks] { ++clicks; });
+        QMouseEvent m1(QEvent::MouseButtonPress, QPointF(1, 1), Qt::LeftButton,
+                       Qt::LeftButton, Qt::NoModifier);
+        m1.setTimestamp(1000);
+        const bool pass1 = !gf.eventFilter(&probe, &m1);   // реф. событие НЕ съедает
+        gf.eventFilter(&probe, &m1);                       // тот же клик другому объекту
+        QMouseEvent m2(QEvent::MouseButtonPress, QPointF(2, 2), Qt::LeftButton,
+                       Qt::LeftButton, Qt::NoModifier);
+        m2.setTimestamp(2000);
+        gf.eventFilter(&probe, &m2);
+        QMouseEvent mv(QEvent::MouseMove, QPointF(3, 3), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        mv.setTimestamp(3000);
+        gf.eventFilter(&probe, &mv);                       // не press — игнор
+        const bool dedupOk = pass1 && clicks == 2;
+
+        // --- KLabelHoverEventFilter: формула точки и гейт по смещению (<= 39).
+        QWidget host;
+        host.resize(100, 30);
+        KLabelHoverEventFilter hov(&host, QStringLiteral("full"), 150);
+        const QPoint gp = host.mapToGlobal(QPoint(0, 0));
+        const bool ptOk = hov.TipPoint() == QPoint(gp.x() - 10, gp.y() - 2 * host.height() + 150);
+        QEvent enter(QEvent::Enter);
+        const bool gateOk = !hov.eventFilter(&host, &enter);   // offset 150 > 39 → не съедает
+        KLabelHoverEventFilter hov2(&host, QStringLiteral("full"), 20);
+        const bool enterOk = hov2.eventFilter(&host, &enter);  // offset 20 <= 39 → съедает
+
+        // --- KTableWidget: пустой ctor, таблица KImgList — именно этот класс.
+        KTableWidget tw;
+        const bool twOk = tw.columnCount() == 0 && tw.rowCount() == 0
+                       && tw.metaObject()->className() == QLatin1String("KTableWidget");
+        KImgList imgList;
+        auto *hosted = imgList.findChild<KTableWidget *>(QStringLiteral("KlList_box"));
+        const bool hostedOk = hosted && !hosted->tabKeyNavigation()
+                           && hosted->textElideMode() == Qt::ElideMiddle
+                           && hosted->verticalScrollBarPolicy() == Qt::ScrollBarAlwaysOff;
+
+        // --- KPosNameLineEditDelegate: редактор — QLineEdit, maxLength 50, свой стиль.
+        KPosNameLineEditDelegate dlg;
+        QWidget editorParent;
+        QStyleOptionViewItem opt;
+        QWidget *ed = dlg.createEditor(&editorParent, opt, QModelIndex());
+        auto *line = qobject_cast<QLineEdit *>(ed);
+        const bool delOk = line && line->maxLength() == 50
+            && line->styleSheet() == QStringLiteral("QLineEdit { background-color:#1a1a1a; outline: none;}");
+        delete ed;
+
+        // --- KBackGround: самозакрывающийся фуллскрин без контента.
+        KBackGround bg;
+        const bool bgOk = bg.Timer() && bg.Timer()->isActive() && bg.Timer()->interval() == 1000
+                       && bg.objectName() == QStringLiteral("KBackGround");
+
+        qInfo() << "горячая клавиша:" << hotkeyOk << "| активность:" << (activityOk && rangeOk)
+                << "| дедуп клика:" << dedupOk << "| точка подсказки:" << ptOk
+                << "| гейт hover:" << (gateOk && enterOk) << "| KTableWidget:" << (twOk && hostedOk)
+                << "| делегат:" << delOk << "| KBackGround:" << bgOk;
+        const bool ok = hotkeyOk && activityOk && rangeOk && dedupOk && ptOk && gateOk
+                     && enterOk && twOk && hostedOk && delOk && bgOk;
+        qInfo() << (ok ? "evtfilters: PASS" : "evtfilters: FAIL");
+        return ok ? 0 : 84;
     }
 
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).

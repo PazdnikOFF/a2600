@@ -60,6 +60,7 @@ set(SOURCES
     src/ui/KUiMsgProxy.cpp
     src/ui/KLcdProxy.cpp
     src/ui/KScreenMng.cpp
+    src/ui/KBackGround.cpp
     src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
     src/ui/KImportRules.cpp
@@ -176,7 +177,12 @@ set(SOURCES
     src/ui/KExamImgTable.cpp
     src/ui/KDICOMSrvListTable.cpp
     src/ui/KTimeWasteBar.cpp
+    src/ui/KEventFilter.cpp
     src/ui/KFrame.cpp
+    src/ui/KGlobalEventFilter.cpp
+    src/ui/KLabelHoverEventFilter.cpp
+    src/ui/KPosNameLineEditDelegate.cpp
+    src/ui/KTableWidget.cpp
     src/ui/KOsdMenu.cpp
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp
@@ -464,6 +470,7 @@ add_executable(ui_preview
     src/ui/KUiMsgProxy.cpp
     src/ui/KLcdProxy.cpp
     src/ui/KScreenMng.cpp
+    src/ui/KBackGround.cpp
     src/ui/KDialog.cpp
     src/ui/KUpdatePrepare.cpp
     src/ui/KImportRules.cpp
@@ -580,7 +587,12 @@ add_executable(ui_preview
     src/ui/KExamImgTable.cpp
     src/ui/KDICOMSrvListTable.cpp
     src/ui/KTimeWasteBar.cpp
+    src/ui/KEventFilter.cpp
     src/ui/KFrame.cpp
+    src/ui/KGlobalEventFilter.cpp
+    src/ui/KLabelHoverEventFilter.cpp
+    src/ui/KPosNameLineEditDelegate.cpp
+    src/ui/KTableWidget.cpp
     src/ui/KOsdMenu.cpp
     src/ui/KImageButton.cpp
     src/ui/KOsdSubMenu.cpp

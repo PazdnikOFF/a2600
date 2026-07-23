@@ -364,9 +364,12 @@ KBackGround, KCalendarTextNavigator, KCalendarView, KDICOMSrvListItem,
 KTableWidget, KPosNameLineEditDelegate, KPoweroff,
 KRecordItem (спец-ячейка КОРНЕВОГО OSD-меню,
 device-гейт по записи/USB), KToProgressDlgMsgDispatcher, report_template::KLineEdit,
-семейство event-фильтров (KEventFilter, KGlobalEventFilter,
-KLabelHoverEventFilter — поведенческий слой UI; KHoverEventFilter уже сделан).
+(семейство event-фильтров закрыто целиком.)
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
+✅ **Пачка малых классов — СДЕЛАНА** (self-test `evtfilters`): KEventFilter,
+KGlobalEventFilter, KLabelHoverEventFilter, KTableWidget, KPosNameLineEditDelegate,
+KBackGround. Установлено: KLabelHoverEventFilter и точка входа OpenBackGround —
+мёртвый код прошивки.
 ✅ **KPatientListWidgetItem + KHoverEventFilter + setElidedFrame — СДЕЛАНЫ**
 (self-test `patnavitem`): лево-навигация управления пациентами стала иконочной, с
 референсными ключами TR_PInfo(F3)/TR_PList(Alt+F3)/TR_DQueue(F10).

@@ -3,7 +3,7 @@
 #include <QWidget>
 #include <QString>
 
-class QTableWidget;
+class KTableWidget;
 class KImgListCell;
 
 // Список снимков осмотра (реф. класс KImgList, X-2600).
@@ -35,7 +35,7 @@ public slots:
 private:
     void initUiConfig();
 
-    QTableWidget *table_ = nullptr;
+    KTableWidget *table_ = nullptr;
     QString       examFolder_;
     QSize         cell_;
     QSize         icon_;

@@ -1,6 +1,7 @@
 #include "ui/KImgList.h"
 #include "ui/KDisplayOption.h"
 #include "ui/KImgListCell.h"
+#include "ui/KTableWidget.h"
 
 #include <QTableWidget>
 #include <QHeaderView>
@@ -28,7 +29,13 @@ void KImgList::initUiConfig()
     auto *lay = new QVBoxLayout(this);
     lay->setContentsMargins(0, 0, 0, 0);
 
-    table_ = new QTableWidget(this);
+    // Реф. Ui_KImgList::setupUi @0x681018: таблица — KTableWidget (KlList_box), и настройки
+    // ставит именно владелец (сам класс в ctor не настраивает ничего).
+    table_ = new KTableWidget(this);
+    table_->setObjectName(QStringLiteral("KlList_box"));
+    table_->setTabKeyNavigation(false);                 // реф.
+    table_->setTextElideMode(Qt::ElideMiddle);          // реф. 2
+    table_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);   // реф. 1
     table_->setColumnCount(1);
     table_->horizontalHeader()->setVisible(false);
     table_->verticalHeader()->setVisible(false);

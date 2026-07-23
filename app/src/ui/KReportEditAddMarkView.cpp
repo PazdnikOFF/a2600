@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include "KPosNameLineEditDelegate.h"
 #include <QPushButton>
 #include <QRadioButton>
 #include <QVBoxLayout>
@@ -110,6 +111,9 @@ void KReportEditAddMarkView::setupUi()
     vB->addWidget(lblSel);
     QListWidget *listOrgan = new QListWidget(this);   // реф. device-список, editable items
     listOrgan->setObjectName(QStringLiteral("listWidget_organ"));
+    // Реф. InitPosName @0x4bfa38: делегат ставится на ВЕСЬ вид (не на колонку) — редактор
+    // имени позиции это QLineEdit с maxLength 50 и своим стилем.
+    listOrgan->setItemDelegate(new KPosNameLineEditDelegate(listOrgan));
     vB->addWidget(listOrgan, 1);
     QHBoxLayout *hB = new QHBoxLayout();
     QPushButton *btnAdd = new QPushButton(tr("TR_Add"), this);
