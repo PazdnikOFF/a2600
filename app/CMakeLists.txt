@@ -291,6 +291,7 @@ set(SOURCES
     src/report/KReportEntity.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
+    src/db/KExamData.cpp
     src/db/KPatientMngExamStatus.cpp
     src/sys/KTimeInfo.cpp
     src/hal/KUsbDevice.cpp
@@ -453,6 +454,7 @@ add_executable(ui_preview
     src/report/KReportEntity.cpp
     src/db/KExamBussinessHandler.cpp
     src/db/KExamDataFileNameGenerator.cpp
+    src/db/KExamData.cpp
     src/db/KPatientMngExamStatus.cpp
     src/sys/KTimeInfo.cpp
     src/hal/KUsbDevice.cpp

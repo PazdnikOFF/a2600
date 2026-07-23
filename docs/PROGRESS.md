@@ -220,6 +220,7 @@ app/
     ├── sys/KTimeMng                    # часы (1 с), суточное обслуживание в 00:00, отложенный InitMC
     ├── ui/KSelfTest                    # экран самодиагностики (процессор/эндоскоп/лампа)
     ├── autotest/KAutoTestThread        # приём кодов автотеста по IPC → инъекция клавиш (частично)
+    ├── db/KExamData                    # утилиты имён/типов файлов осмотра (GetFileFormat/IsDoNotGenerate…)
     ├── sys/KProjectSet                 # продуктовая конфигурация (project.ini + per-модель product.ini)
     ├── sys/KStyleConfig                # бренды/стили (stylelist.ini: SonoScapeCN/PyCkeun/…)
     ├── endo/KSoftEndoParam             # video.ini (per эндоскоп)
@@ -545,6 +546,36 @@ Qt5, boost 1.74, libcrypto.
 
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **127 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 127 / FAIL 0).
+
+**✅ ПОЛНЫЙ nm-СРЕЗ X2000 (не только Q_OBJECT) — off-device логика ИСЧЕРПАНА (2026-07-23).**
+⭐ **ПРИЁМ:** `nm bin/X2000 | grep ' [Tt] _Z' | c++filt` → вырезать `Class::` → сравнить с
+`app/src`. Даёт 546 K-классов; непортированными оказались ~120, но после разбора все они —
+**device** (`KHal*`/`KDcm*`/`K*Scu`/`K*Scp`/`KCups*`/`K*Thread`/`KProc*`/`KSemaphore`/
+`KMutex`/`KGooglePinyin`/`KVideoPlay`(GStreamer)) ЛИБО **filesystem-IO** (`KExamData`
+enumerators, `KDataFileOpr`) ЛИБО уже покрыты под другим именем. Чистой off-device логики,
+которую можно взять без прибора/ФС, в X2000 БОЛЬШЕ НЕТ.
+- Три соседних бинарника (`X2000Monitor`/`X2000Simulator`/`X2000Video`) тоже проверены
+  этим срезом: 0 кастомных Q_OBJECT-классов в первых двух, базовые QObject/QThread в Video;
+  всё их off-device ядро уже портировано (`monitor/X2000Monitor`, `autotest/KAutoTestScript`
+  + `KAutoTestThread`, `video/KMessageManager`), остаток — GStreamer/uinput/fork-exec (device).
+
+**✅ KExamData (утилиты имён/типов файлов осмотра) + де-стаб генератора (2026-07-23).**
+Self-test `examdata` расширен; модуль `db/KExamData.{h,cpp}` (набор статических функций, реф.
+экземпляра нет — пара к `KExamDataFileNameGenerator`).
+- `GetFileFormat` @0x48b7d0 — чистое отображение: **0 → ".jpg", 1 → ".mp4", иначе ""**.
+- `GetExamIdFromFileName` @0x48bc08 — basename после последнего `/`, обрезанный до **13**
+  символов (реф. `mov x0,#0xd`); без `/` в пути examId не заполняется.
+- `IsDoNotGenerateFileName` @0x48db98 = `IsHaveMaxSerialNum(id) || GetTotalFileSerialNumber(id)
+  > 998` (порог **998** = `cmp #0x3e6`). Два листа (`IsHaveMaxSerialNum` @0x48d5e0,
+  `GetTotalFileSerialNumber` @0x48d738) в реф. перечисляют каталог осмотра (`GetAllFiles`, ФС)
+  → у нас за инъектируемым провайдером `SetSerialInfoProvider`; композиция и порог сохранены.
+- ⭐ **ДЕ-СТАБ:** `KExamDataFileNameGenerator::IsMaxNumFiles` @0x48dbd0 = `atom > 1997 ||
+  KExamData::IsDoNotGenerateFileName(m_strExamId)` (в реф. `this` == `&m_strExamId` — строка
+  первым членом). Раньше у нас была заглушка `m_strExamId.empty()` — заменена на реф.-композицию.
+- ⛔ НЕ портированы (ФС-перечисление, следующая итерация если понадобится): `GetAllFiles`,
+  `GetTotalFileSerialNumber`/`IsHaveMaxSerialNum` (парсинг серийников из листинга каталога),
+  `KHistioryExamDataFileNameGenerator::GetSerialNum` @0x48c8e8 (max+1 по существующим файлам).
+  `KExamData::FormatFlowNumber` @0x48b880 — дубликат нашего `KSaveFile::FormatFlowNumber`.
 
 **🔶→✅ KAutoTestThread — ПОРТИРОВАН (2026-07-23; логический off-device остаток закрыт записью ниже).** Self-test `autotestthread`,
 модуль `autotest/KAutoTestThread.{h,cpp}` (парная половина к уже готовому

@@ -1,5 +1,7 @@
 #include "db/KExamDataFileNameGenerator.h"
 
+#include "db/KExamData.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -37,9 +39,9 @@ bool KExamDataFileNameGenerator::IsMaxNumFiles() const
 {
     if (m_atomFileNum.load(std::memory_order_acquire) > 1997)
         return true;
-    // Реф.: KExamData::IsDoNotGenerateFileName(m_strExamId) — этого класса у нас
-    // ещё нет; при пустом examId имя генерировать нечего.
-    return m_strExamId.empty();
+    // Реф. @0x48dbec: tail-call KExamData::IsDoNotGenerateFileName(m_strExamId).
+    // (в реф. `this` == &m_strExamId — строка лежит первым членом.)
+    return KExamData::IsDoNotGenerateFileName(m_strExamId);
 }
 
 std::string KExamDataFileNameGenerator::GenerateFileName(const std::string &a,

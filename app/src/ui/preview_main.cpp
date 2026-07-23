@@ -316,6 +316,7 @@ public:
 #include "kernel/KSystemLog.h"
 #include "kernel/KThreadPoolMsg.h"
 #include "db/KExamDataFileNameGenerator.h"
+#include "db/KExamData.h"
 #include "db/KExportRecord.h"
 #include "alg/KImageProcess.h"
 #include "report/KReportEditDataSource.h"
@@ -3570,8 +3571,51 @@ int main(int argc, char **argv)
         qInfo() << "pdf:" << pdfOk << "path:" << pathOk << "all:" << allOk
                 << "append:" << appendOk << "vExist:" << vExistOk;
 
+        // --- KExamData (реф. набор статических утилит имён/типов файлов осмотра) ---
+        // GetFileFormat: 0 → .jpg, 1 → .mp4, всё прочее → "".
+        const bool fmtOk = KExamData::GetFileFormat(KExamData::FT_IMAGE) == ".jpg"
+            && KExamData::GetFileFormat(KExamData::FT_VIDEO) == ".mp4"
+            && KExamData::GetFileFormat(2).empty()
+            && KExamData::GetFileFormat(-1).empty();
+
+        // GetExamIdFromFileName: basename после последнего '/', ≤13 символов;
+        // без '/' → examId не заполняется.
+        std::string eid;
+        KExamData::GetExamIdFromFileName("/home/root/data/E120260720_003.jpg", eid);
+        std::string eidNoSlash = "UNSET";
+        KExamData::GetExamIdFromFileName("nofile", eidNoSlash);
+        const bool eidOk = eid == "E120260720_00"           // ровно 13 символов basename
+            && eidNoSlash == "UNSET";
+
+        // IsDoNotGenerateFileName = IsHaveMaxSerialNum || total > 998 (порог 998).
+        KExamData::SetSerialInfoProvider([](const std::string &id) {
+            KExamData::SerialInfo si;
+            if (id == "MAX")   si.haveMax = true;        // ветка «есть 999^…»
+            if (id == "OVER")  si.total = 999;           // 999 > 998 → стоп
+            if (id == "EDGE")  si.total = 998;           // 998 НЕ > 998 → продолжаем
+            return si;
+        });
+        const bool doNotGenOk = KExamData::IsDoNotGenerateFileName("MAX")
+            && KExamData::IsDoNotGenerateFileName("OVER")
+            && !KExamData::IsDoNotGenerateFileName("EDGE")
+            && !KExamData::IsDoNotGenerateFileName("FRESH");
+
+        // Де-стаб генератора: IsMaxNumFiles теперь идёт через KExamData.
+        Generator().ResetData();
+        Generator().GenerateFileName("OVER", "20260720", "jpg");   // запоминает examId="OVER"
+        const bool genMaxOk = Generator().IsMaxNumFiles();          // total 999 > 998
+        Generator().ResetData();
+        Generator().GenerateFileName("FRESH", "20260720", "jpg");
+        const bool genFreshOk = !Generator().IsMaxNumFiles();
+        KExamData::SetSerialInfoProvider(nullptr);
+        Generator().ResetData();
+
+        qInfo() << "KExamData fmt:" << fmtOk << "eid:" << eidOk
+                << "doNotGen:" << doNotGenOk << "genMax:" << genMaxOk << genFreshOk;
+
         const bool ok = tmpOk && existOk && imgOk && vidOk && pdfOk && pathOk && allOk
-            && appendOk && vExistOk;
+            && appendOk && vExistOk
+            && fmtOk && eidOk && doNotGenOk && genMaxOk && genFreshOk;
         qInfo() << (ok ? "examdata: PASS" : "examdata: FAIL");
         return ok ? 0 : 52;
     }
