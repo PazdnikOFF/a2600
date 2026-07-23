@@ -62,6 +62,7 @@ set(SOURCES
     src/ui/KScreenMng.cpp
     src/ui/KBackGround.cpp
     src/ui/KDialog.cpp
+    src/ui/KUpdateMng.cpp
     src/ui/KUpdatePrepare.cpp
     src/ui/KImportRules.cpp
     src/ui/KUpdateAction.cpp
@@ -476,6 +477,7 @@ add_executable(ui_preview
     src/ui/KScreenMng.cpp
     src/ui/KBackGround.cpp
     src/ui/KDialog.cpp
+    src/ui/KUpdateMng.cpp
     src/ui/KUpdatePrepare.cpp
     src/ui/KImportRules.cpp
     src/ui/KUpdateAction.cpp

@@ -35,6 +35,10 @@ private slots:
     // Реф. @0x6e15a0: инкремент прогресса распаковки по таймеру.
     void UpdateProgressDec();
 
+public:
+    // Реф. поле +0x58: код перехода цепочки обновления (15 = «идём прошивать»).
+    int State() const { return m_state; }
+
 private:
     void setupUi();      // реф. Ui_KUpdatePrepare::setupUi
     void initWidget();   // реф. KUpdatePrepare::initWidget @0x6e0d78

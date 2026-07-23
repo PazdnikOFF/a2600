@@ -46,6 +46,7 @@ void OpenPatientListEditDlg(const QString &patientKey, QWidget *ref); // реф.
 
 // --- Аргумент реально становится Qt-родителем (только эти две) ---------------------
 void OpenUpdateAction(QWidget *parent);        // реф. @0x6e6498 → KUpdateAction
+int  OpenUpdateMng();                          // реф. @0x716c20: роль > 1, иначе 0
 int  OpenUpdatePrepare(QWidget *parent);       // реф. @0x6e2338 → KUpdatePrepare, возврат поля +0x58
 
 // --- Гейты ------------------------------------------------------------------------

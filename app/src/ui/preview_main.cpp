@@ -54,6 +54,7 @@
 #include "ui/KNetPrintList.h"
 #include "ui/KHospitalInfoEditDlg.h"
 #include "ui/KUiNavigation.h"
+#include "ui/KUpdateMng.h"
 #include "ui/KUserSrvSet.h"
 #include "ui/KExamDetailInfoUi.h"
 #include "ui/KAlgParamAjustDlg.h"
@@ -7051,13 +7052,27 @@ int main(int argc, char **argv)
             b->click();
         const bool startTrue = rc.IsRecordStarted();
 
-        qInfo() << "роль:" << role << "| ролевые гейты:" << (roleOk && recOk)
+        // Роутер обновления (реф. KUpdateMng): невидимый диалог-цепочка.
+        KUpdateMng mng;
+        const bool mngOk = mng.ModuleId() == 14 && mng.Result() == 0
+            // Реф.: своего дерева виджетов у роутера НЕТ — детей ровно столько же,
+            // сколько создаёт голая база KDialog (у нас база рисует титул-бар).
+            && mng.findChildren<QWidget *>().size() == KDialog().findChildren<QWidget *>().size()
+            // Всё, что не 14 и не 15, OpenUpdateView возвращает как есть, не открывая диалогов.
+            && mng.OpenUpdateView(0) == 0 && mng.OpenUpdateView(13) == 13
+            && mng.OpenUpdateView(16) == 16 && mng.OpenUpdateView(-1) == -1;
+        // Роль <= 1 ⇒ OpenUpdateMng() обязан вернуть 0, не создав роутер.
+        const bool mngGateOk = OpenUpdateMng() == 0;
+
+        qInfo() << "роутер обновления:" << (mngOk && mngGateOk)
+                << "| роль:" << role << "| ролевые гейты:" << (roleOk && recOk)
                 << "| контроль машины:" << (ctlOffOk && ctlOnOk)
                 << "| QR-гейт:" << (qrHiddenOk && qrShownOk) << "| центрирование:" << centerOk
                 << "| карта переходов:" << (jumpInitOk && jumpOk)
                 << "| RecordCase:" << (startFalse && startTrue);
         const bool ok = roleOk && recOk && ctlOffOk && ctlOnOk && qrHiddenOk && qrShownOk
-                     && centerOk && jumpInitOk && jumpOk && startFalse && startTrue;
+                     && centerOk && jumpInitOk && jumpOk && startFalse && startTrue
+                     && mngOk && mngGateOk;
         qInfo() << (ok ? "opendlgs: PASS" : "opendlgs: FAIL");
         return ok ? 0 : 87;
     }

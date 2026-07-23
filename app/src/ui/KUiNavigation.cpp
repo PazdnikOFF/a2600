@@ -29,6 +29,7 @@
 #include "KSysPrinter.h"
 #include "KThesaurusSaveUi.h"
 #include "KUpdateAction.h"
+#include "KUpdateMng.h"
 #include "KUpdatePrepare.h"
 #include "KUserSrvSet.h"
 
@@ -95,9 +96,20 @@ void OpenUpdateAction(QWidget *parent)
 }
 int OpenUpdatePrepare(QWidget *parent)
 {
-    // Реф. @0x6e2338: возвращает поле +0x58 диалога (результат подготовки обновления);
-    // у нас — код exec() (диалог результат наружу пока не отдаёт).
+    // Реф. @0x6e2338: наружу идёт поле +0x58 (m_state), а НЕ код exec(). Значение 15 ставит
+    // KUpdatePrepare::UpdateProgressDec @0x6e1940 («распаковка закончена, идём прошивать»);
+    // закрытие без распаковки оставляет 0 и обрывает цепочку.
     KUpdatePrepare dlg(parent);
+    dlg.exec();
+    return dlg.State();
+}
+
+int OpenUpdateMng()
+{
+    // Реф. @0x716c20: гейт роли, затем невидимый роутер-диалог; наружу — его поле +0x58.
+    if (nav::CurrentRoleValue() <= 1)
+        return 0;
+    KUpdateMng dlg;
     return dlg.exec();
 }
 
@@ -168,7 +180,7 @@ void OpenUserSrvSetDlg()
     case KUserSrvSet::JumpLogView:         OpenLogViewDlg();          break;   // 9
     case KUserSrvSet::JumpProcessorCtrl:   OpenProcessorControlDlg(); break;   // 10
     case KUserSrvSet::JumpEndoControl:     OpenEndoControlDlg();      break;   // 11
-    case KUserSrvSet::JumpUpdateMng:       /* реф. 13 → OpenUpdateMng (класс не портирован) */ break;
+    case KUserSrvSet::JumpUpdateMng:       OpenUpdateMng();           break;   // 13
     case KUserSrvSet::JumpColdlightAdjust: OpenColdlightAdjustDlg();  break;   // 16
     case KUserSrvSet::JumpVideoCal:        /* реф. 17 → OpenVideoCal() */      break;
     default:                                                          break;

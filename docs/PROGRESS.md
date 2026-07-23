@@ -543,6 +543,28 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **124 self-test-режима** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 124 / FAIL 0).
 
+**✅ KUpdateMng — РОУТЕР ОБНОВЛЕНИЯ; `report_template::KLineEdit` — МЁРТВ (2026-07-23).**
+Дополнено в self-test `opendlgs`.
+- ⚠️ `KUpdateMng` @0x716938 (KDialog, sizeof 0x80) — **НЕ ЭКРАН, А РОУТЕР**: дерева виджетов
+  НЕТ вообще. Невидимый диалог 400×300, `SetKStyle(1)`, член-`QTimer` с интервалом **50 мс**
+  → слот `OpenModule` → цепочка под-диалогов → `close()`.
+  `exec()` @0x716bf8 переопределён: код `QDialog::exec()` ОТБРАСЫВАЕТСЯ, наружу идёт поле
+  **+0x58** (так же у `KUpdatePrepare::exec` @0x6e2310 — наш `OpenUpdatePrepare` исправлен,
+  теперь возвращает `State()`, а не код exec).
+  `OpenUpdateView(int)` @0x7168a0: всё, кроме 14 и 15, возвращается КАК ЕСТЬ (диалоги не
+  открываются); **14 = KUpdatePrepare** в цикле (подготовка может снова попросить 14),
+  **15 = KUpdateAction**, после прошивки ВСЕГДА 0. Значение 15 ставит
+  `KUpdatePrepare::UpdateProgressDec` @0x6e1940 («распаковка закончена»).
+  Стартовый модуль поля +0x5c = **14**. Вызывающие: `KUIDesktop::CtrlKeyAct` (Ctrl+U, коды
+  0x55 и 0x413) и ветка 13 диспетчера `OpenUserSrvSetDlg` — она теперь подключена.
+- ⚠️ `report_template::KLineEdit` — **ЧЕТВЁРТЫЙ СЛУЧАЙ МЁРТВОГО КОДА** (после `KOsdSpin`,
+  `OpenBackGround`, `OpenProgressBar`/`KLabelHoverEventFilter`): символа ctor в бинарнике
+  НЕТ ВООБЩЕ, vtable не адресуется ниоткуда, сигнал `signal_editFinished` не испускается и
+  не подписан. Вопреки имени класс наследует **QWidget, а не QLineEdit**, а все три
+  обработчика событий — отладочные `puts()` («KLineEdit::enterEvent» и т.п.) плюс снятие
+  фокуса с внутреннего редактора в `leaveEvent`. Порт НЕ требуется; поля ввода редактора
+  шаблона у нас и так сделаны иначе (KNewTempletEditor/KTempletTreeWidget).
+
 **✅ СЛОЙ НАВИГАЦИИ: 22 свободные функции `Open*` (2026-07-23).** Self-test `opendlgs`,
 модуль `ui/KUiNavigation.{h,cpp}` (в реф. каждая функция живёт рядом со своим диалогом;
 у нас собраны в один модуль — поведение 1:1).
@@ -577,7 +599,7 @@ Qt5, boost 1.74, libcrypto.
   `KWaitProgressBar`/`KProgressBar`/`KProgressTask`/`OperateWaitThread`). Первую портировали
   (тривиальна), вторую — НЕТ (тянет неportированную ветку; в `_KProgressType`: 0=экспорт,
   1=удаление, 2=импорт с USB, 3=бэкап, причём последние два аргумента функции мертвы).
-- НЕ портирован `OpenUpdateMng` — класса `KUpdateMng` в порте пока нет.
+- `OpenUpdateMng` портирован вместе с классом `KUpdateMng` (см. запись выше).
 
 **✅ KPoweroff + KToProgressDlgMsgDispatcher + сортировка DICOM-списка (2026-07-23).**
 Self-test `poweroff`.
