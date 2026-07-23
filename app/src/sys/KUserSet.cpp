@@ -1,6 +1,7 @@
 #include "sys/KUserSet.h"
 #include "sys/KSystem.h"
 
+#include <QObject>
 #include <QSettings>
 #include <QDir>
 
@@ -59,4 +60,26 @@ void KUserSet::ReadVideoParamConfig(_KUserConf *conf, const QString &path)
 
     conf->dehazeSwitch = ini.value("Dehaze/Switch", conf->dehazeSwitch).toInt();
     conf->hdrSwitch    = ini.value("HDR/Switch", conf->hdrSwitch).toInt();
+}
+
+QString KUserSet::GetFunctionName(int funcId)
+{
+    // Реф. @0x661b88: на стеке строится массив из 11 пар {id, QString} (шаг 0x10),
+    // затем ЛИНЕЙНЫЙ поиск по id (cmp w0,#0xb) и возврат копии; промах → пустая строка
+    // (QString::fromAscii_helper(@0x8402e8, len 0)). Значения — QMetaObject::tr(...),
+    // КРОМЕ id 6: там fromAscii_helper(@0x889b80, len 3) = литерал "CHb" без перевода.
+    switch (funcId) {
+    case 0:  return QObject::tr("TR_Frz");
+    case 1:  return QObject::tr("TR_Zm1");
+    case 2:  return QObject::tr("TR_LMode");
+    case 3:  return QObject::tr("TR_IRIS1");
+    case 4:  return QObject::tr("TR_IEnh");
+    case 5:  return QObject::tr("TR_CEnh");
+    case 6:  return QStringLiteral("CHb");   // реф.: литерал, НЕ tr-ключ
+    case 7:  return QObject::tr("TR_Ctrst");
+    case 8:  return QObject::tr("TR_AGC1");
+    case 9:  return QObject::tr("TR_Snp");
+    case 10: return QObject::tr("TR_Rcd");
+    default: return QString();               // реф.: промах по таблице → ""
+    }
 }

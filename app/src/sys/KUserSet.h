@@ -50,6 +50,16 @@ public:
     void ReadVideoParamConfig(_KUserConf *conf, const QString &path);
     const _KUserConf &GetVideoParamConfig() const { return conf_; }
 
+    // Имя функции по её ID (реф. KUserSet::GetFunctionName @0x661b88).
+    // ⚠️ ЭТО ДРУГАЯ ТАБЛИЦА, НЕ KUserOsdSet::GetFunctionNameList: здесь 11 записей
+    // с иным порядком ID (сверено дизасмом, строки прочитаны из .rodata):
+    //   0 TR_Frz, 1 TR_Zm1, 2 TR_LMode, 3 TR_IRIS1, 4 TR_IEnh, 5 TR_CEnh,
+    //   6 "CHb"  ← ЛИТЕРАЛ, а не tr-ключ (QString::fromAscii, len 3),
+    //   7 TR_Ctrst, 8 TR_AGC1, 9 TR_Snp, 10 TR_Rcd.
+    // Реф. — линейный поиск по паре {id, строка}; промах → ПУСТАЯ строка.
+    // Эту таблицу используют подписи кнопок пульта ДУ (KFlexEndoBtnGuide).
+    static QString GetFunctionName(int funcId);
+
 private:
     KUserSet() = default;
     _KUserConf conf_;

@@ -105,6 +105,7 @@ set(SOURCES
     src/ui/KErrorRate.cpp
     src/ui/KStatisticInfo.cpp
     src/ui/KSystemTemperature.cpp
+    src/ui/KFlexEndoBtnGuide.cpp
     src/ui/KRigidEndoBtnGuide.cpp
     src/ui/KRecordCase.cpp
     src/ui/KNetPrintList.cpp
@@ -502,6 +503,7 @@ add_executable(ui_preview
     src/ui/KErrorRate.cpp
     src/ui/KStatisticInfo.cpp
     src/ui/KSystemTemperature.cpp
+    src/ui/KFlexEndoBtnGuide.cpp
     src/ui/KRigidEndoBtnGuide.cpp
     src/ui/KRecordCase.cpp
     src/ui/KNetPrintList.cpp

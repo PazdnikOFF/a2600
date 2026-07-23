@@ -48,6 +48,7 @@
 #include "ui/KErrorRate.h"
 #include "ui/KStatisticInfo.h"
 #include "ui/KSystemTemperature.h"
+#include "ui/KFlexEndoBtnGuide.h"
 #include "ui/KRigidEndoBtnGuide.h"
 #include "ui/KRecordCase.h"
 #include "ui/KNetPrintList.h"
@@ -6520,6 +6521,59 @@ int main(int argc, char **argv)
         return ok ? 0 : 64;
     }
 
+    // Self-test гайда кнопок гибкого эндоскопа (реф. KFlexEndoBtnGuide) и таблицы
+    // имён функций KUserSet::GetFunctionName — она ОТЛИЧАЕТСЯ от KUserOsdSet.
+    if (screen == "flexbtn") {
+        KFlexEndoBtnGuide g;
+
+        // Реф. InitWidgets: ровно 4 строки; геометрия из InitItem (28×28 в (0,36i),
+        // 150×28 в (36,36i), подпись AlignLeft|AlignVCenter).
+        bool geomOk = true;
+        for (int i = 0; i < 4; ++i) {
+            const auto pair = g.Item(i);
+            if (!pair.first || !pair.second) { geomOk = false; break; }
+            geomOk = geomOk
+                && pair.first->geometry() == QRect(0, 36 * i, 28, 28)
+                && pair.second->geometry() == QRect(36, 36 * i, 150, 28)
+                && pair.second->alignment() == (Qt::AlignLeft | Qt::AlignVCenter)
+                && !pair.first->pixmap(Qt::ReturnByValue).isNull();   // btn0..3.png найдены
+        }
+        // Пятой строки нет (реф. цикл строго 0..3).
+        const bool countOk = g.Item(4).first == nullptr;
+
+        // Таблица имён функций 1:1 с реф. @0x661b88 (11 записей, id 6 — литерал "CHb",
+        // промах → пустая строка). Порядок ИНОЙ, чем в KUserOsdSet::GetFunctionNameList.
+        const QStringList expect = {"TR_Frz", "TR_Zm1", "TR_LMode", "TR_IRIS1", "TR_IEnh",
+                                    "TR_CEnh", "CHb", "TR_Ctrst", "TR_AGC1", "TR_Snp", "TR_Rcd"};
+        bool tblOk = true;
+        for (int i = 0; i < expect.size(); ++i)
+            tblOk = tblOk && KUserSet::GetFunctionName(i) == expect.at(i);
+        tblOk = tblOk && KUserSet::GetFunctionName(11).isEmpty()
+                      && KUserSet::GetFunctionName(-1).isEmpty();
+        // Таблицы двух классов действительно разные (иначе где-то подменили).
+        const bool distinctOk = KUserOsdSet::GetFunctionName(2) == "TR_IRIS1"
+                             && KUserSet::GetFunctionName(2) == "TR_LMode";
+
+        // Подписи взяты из user.ini [RemoteSwitch]Switch1..4 через тот же путь, что и
+        // KRemoteSwitchConfig (строка i ↔ Switch(i+1)).
+        const KRemoteSwitchConfig &rs = KRemoteSwitchConfig::GetInstance();
+        bool textOk = true;
+        for (int i = 0; i < 4; ++i) {
+            const QString want = KUserSet::GetFunctionName(rs.GetRemoteSwitchFunctionId(i + 1));
+            textOk = textOk && g.Item(i).second->text() == want;
+        }
+
+        qInfo() << "геометрия:" << geomOk << "| строк 4:" << countOk
+                << "| таблица:" << tblOk << "| таблицы различны:" << distinctOk
+                << "| подписи:" << textOk
+                << "| Switch1..4:" << rs.GetRemoteSwitchFunctionId(1)
+                << rs.GetRemoteSwitchFunctionId(2) << rs.GetRemoteSwitchFunctionId(3)
+                << rs.GetRemoteSwitchFunctionId(4);
+        const bool ok = geomOk && countOk && tblOk && distinctOk && textOk;
+        qInfo() << (ok ? "flexbtn: PASS" : "flexbtn: FAIL");
+        return ok ? 0 : 80;
+    }
+
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).
     // Ядро — GetTestConfPath: 8 комбинаций (check_scope × PanelType × ViewType).
     // Ground truth — реальные каталоги system/autotest/aging-* в поставке прошивки.
@@ -10201,6 +10255,10 @@ int main(int argc, char **argv)
         w = new KSystemTemperature;    // UI-порт: монитор температуры (реф. KSystemTemperature)
     } else if (screen == "rigidguide") {
         w = new KRigidEndoBtnGuide;    // UI-порт: гайд кнопок жёсткого эндоскопа (реф. KRigidEndoBtnGuide)
+    } else if (screen == "flexguide") {
+        auto *g = new KFlexEndoBtnGuide;   // UI-порт: гайд кнопок пульта ДУ гибкого эндоскопа
+        g->setFixedSize(186, 136);         // реф. канва контента (геометрию ставит KViewSoftEndo)
+        w = g;
     } else if (screen == "recordcase") {
         w = new KRecordCase;           // UI-порт: запись автотест-кейса (реф. KRecordCase)
     } else if (screen == "netprint") {
