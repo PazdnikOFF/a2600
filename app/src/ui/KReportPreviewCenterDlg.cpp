@@ -7,6 +7,11 @@
 #include <QScrollBar>
 #include <QTextDocument>
 
+#include "report/KRTSimpleDisplay.h"
+#include "report/KRTTeDisplay.h"
+#include "report/KRTAbsDataSource.h"
+#include "report/KRTTeCreatorContext.h"
+
 KReportPreviewCenterDlg::KReportPreviewCenterDlg(QWidget *parent)
     : QWidget(parent)
 {
@@ -70,10 +75,49 @@ void KReportPreviewCenterDlg::UpdatePreview()
         m_preview->updatePreview();
 }
 
+void KReportPreviewCenterDlg::SetReportSource(KRTAbsDataSource *ds,
+                                             const KReportTemplateDataNew *data)
+{
+    // Реф. диалог держит оба движка полями (+0x68 simpleDisp, +0x70 teDisp).
+    m_simpleDisp = ds ? std::make_unique<KRTSimpleDisplay>(ds) : nullptr;
+    m_teDisp     = ds ? std::make_unique<KRTTeDisplay>(ds) : nullptr;
+    m_pData = data;
+}
+
+KRTTeCreatorContext *KReportPreviewCenterDlg::Context() const
+{
+    return m_teDisp ? m_teDisp->Context() : nullptr;
+}
+
+bool KReportPreviewCenterDlg::IsPipelineReady() const
+{
+    return m_simpleDisp && m_teDisp && m_pData;
+}
+
 void KReportPreviewCenterDlg::OnReportPreview(QPrinter *printer)
 {
-    // Реф. @0x4fdce8: DEVICE — рендер report-doc из шаблон-модели + пагинация (SplitDocument).
-    // В порте: печать инъектированного QTextDocument (стаб контента).
+    // ⭐ Реф. @0x4fdce8 — ЧЕТЫРЕ ШАГА, сверены дизасмом:
+    //   1) simpleDisp.m_displayParam.Reset();
+    //   2) simpleDisp.Display(data)      — ВЫЧИСЛЯЕТ набор валидных элементов (+0x70);
+    //   3) teDisp.Reset();
+    //   4) SetRefValidItems(&teDisp.m_displayParam, simpleDisp.…m_setValidItems)
+    //      — набор кладётся в Te как РЕФЕРЕНСНОЕ множество (+0xa0), по которому
+    //        KRTTeAbsItemCreator::CheckCreate потом фильтрует элементы.
+    // Затем Te рендерит документ и он печатается в принтер превью.
+    if (IsPipelineReady()) {
+        m_simpleDisp->DisplayParam().Reset();
+        m_simpleDisp->Display(*m_pData);
+        m_teDisp->Reset();
+        m_teDisp->SetRefValidItems(m_simpleDisp->DisplayParam().ValidItemsStd());
+
+        m_teDisp->Display(*m_pData, printer);
+        if (QTextDocument *doc = m_teDisp->Document()) {
+            doc->setPageSize(printer->pageRect().size());
+            doc->print(printer);
+            return;
+        }
+    }
+    // Фолбэк: инъектированный html (прежний порт-стаб) — когда конвейер не подключён.
     if (m_doc) {
         m_doc->setPageSize(printer->pageRect().size());
         m_doc->print(printer);

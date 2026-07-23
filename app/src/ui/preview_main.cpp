@@ -10742,6 +10742,64 @@ int main(int argc, char **argv)
         };
         view->SetPageProvider(provider, 3, 15);   // 3 страницы, 15 записей
         w = view;
+    } else if (screen == "reportpipeline") {
+        // ⭐ Превью РЕАЛЬНОГО конвейера отчёта (реф. OnReportPreview @0x4fdce8):
+        // Simple вычисляет валидные элементы → набор уходит в Te как референсный →
+        // Te рендерит QTextDocument, который печатается в принтер превью.
+        // Специально даём элемент БЕЗ данных: Simple его забракует, и в отчёт он не попадёт.
+        static KRTDataSourceStub ds;
+        ds.SetText("RT_PATIENT,NAME", "John Smith");
+        ds.SetText("RT_PATIENT,ID", "P100234");
+        ds.SetText("RT_EXAM,FINDINGS",
+                   "Normal esophageal and gastric mucosa. No lesions identified.");
+        ds.SetText("RT_EXAM,DIAGNOSIS", "No abnormality detected.");
+        // Для «RT_EXAM,BIOPSY» данных НЕТ — элемент должен выпасть.
+
+        static KReportTemplateDataNew tpl;
+        tpl.m_mapConfigs["BgColor"] = "#ffffff";   // ключ фона — реф. литерал @0x874b58
+        tpl.m_lstItems.clear();
+        auto add = [&](const char *id, const char *title, const char *src) {
+            KReportTemplateItem i;
+            i.m_strID = id; i.m_strType = "RT_TEXT_BLOCK";
+            i.m_strTitle = title; i.m_strDataSrc = src;
+            tpl.m_lstItems.push_back(i);
+        };
+        add("/name",      "Patient",   "RT_PATIENT,NAME");
+        add("/id",        "ID",        "RT_PATIENT,ID");
+        add("/findings",  "Findings",  "RT_EXAM,FINDINGS");
+        add("/diagnosis", "Diagnosis", "RT_EXAM,DIAGNOSIS");
+        add("/biopsy",    "Biopsy",    "RT_EXAM,BIOPSY");   // данных нет → отфильтруется
+
+        // Регистрируем Te-творца текстового блока: пишет «Заголовок: значение» в ячейку.
+        // Тела реф. Te-творцов ещё не реверсированы — это НАША минимальная реализация,
+        // чтобы конвейер можно было увидеть целиком (помечено).
+        struct TeText : KRTTeAbsItemCreator {
+            using KRTTeAbsItemCreator::KRTTeAbsItemCreator;
+            int CreateItem(const KReportTemplateItem &item,
+                           const std::map<std::string, std::string> &cfgMap,
+                           QTextTableCell &cell) override
+            {
+                if (!CheckCreate(item, cfgMap))
+                    return 0;                       // фильтр по набору из Simple-движка
+                std::string value;
+                if (KRTAbsDataSource *ds2 = m_context.DataSource())
+                    ds2->GetTextData(item.m_strDataSrc, value);
+                QTextCursor c = cell.firstCursorPosition();
+                QTextCharFormat bold; bold.setFontWeight(QFont::Bold);
+                c.insertText(QString::fromStdString(GetItemTitle(item, cfgMap)) + ": ", bold);
+                c.insertText(QString::fromStdString(value), QTextCharFormat());
+                return 1;
+            }
+        };
+
+        KReportPreviewCenterDlg *rp = new KReportPreviewCenterDlg;
+        rp->resize(520, 420);
+        rp->SetReportSource(&ds, &tpl);
+        rp->Context()->RegisterCreator("RT_TEXT_BLOCK",
+                                       std::make_unique<TeText>(*rp->Context()));
+        rp->UpdatePreview();
+        rp->OnBtnFitWidth();
+        w = rp;
     } else if (screen == "reportpreviewcenter") {
         // Поверхность превью отчёта (реф. KReportPreviewCenterDlg): QPrintPreviewWidget.
         // Контент реф. — report-template модель (DEVICE); здесь стаб-html.
