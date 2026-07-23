@@ -9986,6 +9986,21 @@ int main(int argc, char **argv)
         vb->addWidget(fields);
         vb->addStretch();
         w = host;
+    } else if (screen == "factoryoptdlg") {
+        // Реф.-диалог KFactoryOptions (UI + логика в одном классе — ROADMAP C5 снят).
+        // 4 группы: стенд старения / восстановление / прочее / инструменты.
+        KFactoryOptions *dlg = new KFactoryOptions;
+        dlg->SetProductSeriesList({QStringLiteral("X-2600"), QStringLiteral("X-2000")});
+        dlg->SetProductModelList({QStringLiteral("PyCkeun"), QStringLiteral("Standard")});
+        dlg->SetVersionList({QStringLiteral("V1.0"), QStringLiteral("V2.0")});
+        dlg->SetStyleList({QStringLiteral("black"), QStringLiteral("blue")});
+        dlg->SetPrototypeModeList({QStringLiteral("TR_Off"), QStringLiteral("TR_On")});
+        // Реф. resize(460,751) — на реф. KDialog. Наш KDialog рисует титул-бар (35) и
+        // рамку ВНУТРИ тех же габаритов, поэтому контенту не хватает ~70px и нижние
+        // строки подрезаются. Класс не трогаем — растягиваем только превью, чтобы
+        // разметку можно было сверить целиком.
+        dlg->resize(460, 830);
+        w = dlg;
     } else if (screen == "videocaldlg") {
         // Реф.-диалог KVideoCal (UI + логика в одном классе — коллизия ROADMAP C6 снята
         // СОВМЕЩЕНИЕМ). 6 групп + нижний frame; динамические комбо наполняются через

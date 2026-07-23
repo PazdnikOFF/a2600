@@ -533,6 +533,36 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **111 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 111 / FAIL 0).
 
+**✅ UI: РАЗБЛОКИРОВАН И ПОРТИРОВАН ДИАЛОГ `KFactoryOptions` (2026-07-23, ROADMAP C5 снят).**
+Тот же приём совмещения. Наш sys-класс уже моделировал «состояние виджетов + логику»,
+поэтому диалог надстроен над ним, а `checkScope_` остался ЕДИНСТВЕННЫМ источником истины
+(реальный `check_scope` — его зеркало через `toggled`); self-test `factoryopt` не тронут.
+Превью-режим **`factoryoptdlg`**, скриншот сверен. Реф.-факты
+(`Ui_KFactoryOptions::setupUi` @0x62bfa8, `retranslateUi` @0x62b1c8, ctor @0x629de8,
+`InitWidget` @0x628f78):
+- KDialog, `SetKStyle(2)`, resize 460×751, `setMinimumSize(0,22)`. Заголовок: uic ставит
+  заглушку «TR_Dlg», а ctor СРАЗУ переопределяет на `TR_FOptions`.
+- 4 QGroupBox + вертикальный спейсер: `group_auto` (TR_AgTest), `group_recovery` (TR_Rcvry),
+  `group_other` (TR_Otr), `group_tools` (TR_Tls). objectName'ы 1:1, включая реф. опечатки:
+  `cmd_prototypemode` (не «cmb_») и `btn_debug`, который на самом деле QComboBox.
+- ХАРДКОД без TR_-ключа: «算法参数调节» (btn_algParamAjust) и «温度监测» (btn_temperature).
+- Коды возврата пишутся ПРЯМО в поле +0x58 и затем `close()` — НЕ через
+  setResult/done/accept: 0x11 VideoCal, 0x12 SelfTest, 0x13 FunTest, 0x14 AlgParam,
+  0x15 ErrorRate, 0x16 Temperature.
+- `InitWidget` реально нужен только для валидатора SN «[0-9]{0,10}»; остальное — device:
+  `btn_debug` создаётся лишь при `GetProductAuthFlag()!=1 && !GetManuEnable()` и
+  наполняется «debug off / debug on / debug all on»; по роли (≤3) ПРЯЧУТСЯ (через
+  `setVisible(false)`, не setEnabled) btn_debug/btn_loadstyle/btn_fun_test/
+  btn_algParamAjust/btn_temperature/btn_clearEndo. В порте не моделируется.
+- Списки cmb_product*/cmb_version/cmb_style/cmd_prototypemode — рантайм-загрузка из
+  конфигов и БД ⇒ DEVICE-STUB-сеттеры `Set*List`.
+- ⚠️ Реф. `gridLayout_3` (group_other) имеет margins(10,0,0,0) — верхний отступ 0, поэтому
+  заголовок группы налезает на первую строку, а `btn_loadstyle` подрезан справа. Это
+  ВОСПРОИЗВЕДЕНИЕ реф. значений, не ошибка порта (на приборе, вероятно, компенсируется qss).
+- ⚠️ Габарит: наш `KDialog` рисует титул-бар и рамку ВНУТРИ тех же 460×751, поэтому контенту
+  не хватает ~70px. Класс оставлен реф.-верным; растянуто только превью (830) — иначе
+  нижние строки не видны для сверки.
+
 **✅ UI: РАЗБЛОКИРОВАН И ПОРТИРОВАН ДИАЛОГ `KVideoCal` (2026-07-23, ROADMAP C6 снят).**
 Коллизия имени решена СОВМЕЩЕНИЕМ (как с KDocumentGenerator): реф. `KVideoCal` — один класс
 с UI И логикой, а наш был набором СТАТИЧЕСКИХ методов, поэтому диалог надстроен прямо над

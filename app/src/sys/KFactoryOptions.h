@@ -3,6 +3,14 @@
 #include <QString>
 #include <QStringList>
 
+#include "ui/KDialog.h"
+
+class QCheckBox;
+class QComboBox;
+class QLineEdit;
+class QPushButton;
+class QToolButton;
+
 // Заводские опции / стенд старения (реф. KFactoryOptions, X-2600).
 //
 // В референсе это KDialog (sizeof 0x88, +0x50 Ui_KFactoryOptions*), т.е. диалог
@@ -25,8 +33,79 @@
 //     (дефолт false): при true самотестирование добавляет в отчёт предупреждение
 //     TR_IPATestNE. Т.е. это межмодульный флаг «прибор побывал на стенде старения»,
 //     а не мёртвая запись.
-class KFactoryOptions
+// ⚠️ ОБНОВЛЕНО 2026-07-23 (ROADMAP C5 снят): коллизия имени разрешена СОВМЕЩЕНИЕМ —
+// класс стал реф.-ДИАЛОГОМ, сохранив всю прежнюю off-device-логику без изменений.
+// Разметка сверена дизасмом `Ui_KFactoryOptions::setupUi` @0x62bfa8 + `retranslateUi`
+// @0x62b1c8 + ctor @0x629de8 + `InitWidget` @0x628f78:
+//   KDialog, SetKStyle(2), resize 460×751, minimumSize (0,22), заголовок TR_FOptions
+//   (ctor переопределяет заглушку uic «TR_Dlg»); главный gridLayout_5 margins(20,40,-,30);
+//   4 QGroupBox: group_auto (TR_AgTest), group_recovery (TR_Rcvry), group_other (TR_Otr),
+//   group_tools (TR_Tls) + вертикальный спейсер.
+// Коды возврата ставятся НЕ через setResult/done, а прямой записью в поле +0x58 с
+// последующим close() — в порте так же (SetResult + close).
+// DEVICE-STUB: списки cmb_product*/cmb_version/cmb_style/cmd_prototypemode грузятся в реф.
+// из конфигов и БД (LoadProductSeriesList/LoadProductList/…); здесь — инъекция сеттерами.
+// Блок восстановления и всё, что дёргает GetEndoScope()/GetCamera()/GetKHalClass(), —
+// заглушки (как и было задокументировано выше).
+class KFactoryOptions : public KDialog
 {
+    Q_OBJECT
+public:
+    explicit KFactoryOptions(QWidget *parent = nullptr);
+
+    // DEVICE-STUB инъекция рантайм-списков комбобоксов (в реф. — из конфигов/БД).
+    void SetProductSeriesList(const QStringList &v);
+    void SetProductModelList(const QStringList &v);
+    void SetVersionList(const QStringList &v);
+    void SetStyleList(const QStringList &v);
+    void SetPrototypeModeList(const QStringList &v);
+
+private slots:
+    // Реф. слоты кнопок «инструментов»: записывают код в +0x58 и зовут close().
+    void ClickBtnVideoCal();        // 0x11
+    void ClickBtnSelfTest();        // 0x12
+    void ClickBtnFunTest();         // 0x13
+    void ClickBtnAlgParamAjust();   // 0x14
+    void ClickBtnErrorRateTest();   // 0x15
+    void ClickBtnTemperature();     // 0x16
+    // Прочие реф. слоты (device-части — заглушки).
+    void ClickBtnSaveOther();
+    void ClickBtnAuthMachine();
+    void ClickBtnClearEndoInfo();
+    void ClickManuLock();
+    void RecoverConfigure();
+    void AndStyle();                // btn_loadstyle (реф. имя как есть)
+
+private:
+    void setupUi();      // реф. Ui_KFactoryOptions::setupUi @0x62bfa8
+    void InitWidget();   // реф. @0x628f78 (device-условия — заглушки)
+
+    QCheckBox   *check_pro = nullptr;
+    QCheckBox   *check_scope = nullptr;       // ← зеркало поля checkScope_
+    QCheckBox   *check_rec_pro = nullptr;
+    QCheckBox   *check_rec_scope = nullptr;
+    QToolButton *btn_start = nullptr;
+    QToolButton *btn_stop = nullptr;
+    QToolButton *btn_recovery = nullptr;
+    QComboBox   *cmb_productseries = nullptr;
+    QComboBox   *cmb_productmodel = nullptr;
+    QComboBox   *cmd_prototypemode = nullptr;   // реф. опечатка («cmd_», не «cmb_»)
+    QComboBox   *cmb_version = nullptr;
+    QComboBox   *cmb_style = nullptr;
+    QComboBox   *btn_debug = nullptr;           // реф. имя «btn_», но это QComboBox
+    QLineEdit   *edt_sn = nullptr;
+    QPushButton *btn_loadstyle = nullptr;
+    QToolButton *btn_save_other = nullptr;
+    QToolButton *btn_calibration = nullptr;
+    QToolButton *btn_selftest = nullptr;
+    QToolButton *btn_manu = nullptr;
+    QToolButton *btn_errorRateTest = nullptr;
+    QToolButton *btn_fun_test = nullptr;
+    QToolButton *btn_algParamAjust = nullptr;
+    QPushButton *btn_temperature = nullptr;
+    QPushButton *btn_authmachine = nullptr;
+    QPushButton *btn_clearEndo = nullptr;
+
 public:
     // Коды возврата exec() (реф. поле +0x58). Реф. OpenFactoryOptions разбирает их
     // switch'ем и открывает соответствующий подчинённый диалог.
@@ -40,11 +119,11 @@ public:
         RESULT_TEMPERATURE    = 0x16,   // OpenSystemTempratureDlg
     };
 
-    KFactoryOptions() = default;
-
-    // --- Состояние UI (в реф. — виджеты Ui_KFactoryOptions) ---
-    void SetCheckScope(bool v) { checkScope_ = v; }   // ui->check_scope
-    bool CheckScope() const    { return checkScope_; }
+    // --- Состояние UI ---
+    // Теперь это НАСТОЯЩИЙ ui->check_scope; поле checkScope_ оставлено единственным
+    // источником истины (вся off-device-логика ниже не менялась), а чекбокс — его зеркало.
+    void SetCheckScope(bool v);
+    bool CheckScope() const { return checkScope_; }
 
     // --- Конфиг testenv.ini ---
     // Реф. ReadTestEnv: check_scope->setChecked(value("Env/Scope", true).toBool()).
