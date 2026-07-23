@@ -533,6 +533,38 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **111 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 111 / FAIL 0).
 
+**✅ UI: РАЗБЛОКИРОВАН И ПОРТИРОВАН ДИАЛОГ `KVideoCal` (2026-07-23, ROADMAP C6 снят).**
+Коллизия имени решена СОВМЕЩЕНИЕМ (как с KDocumentGenerator): реф. `KVideoCal` — один класс
+с UI И логикой, а наш был набором СТАТИЧЕСКИХ методов, поэтому диалог надстроен прямо над
+ними — self-test `videocal` не тронут. Превью-режим **`videocaldlg`**, скриншот сверен.
+Разметка сверена дизасмом `Ui_KVideoCal::setupUi` @0x63ca98 + `retranslateUi` @0x63bc50:
+- `KVideoCal : KDialog`, non-modal, `SetKStyle(2)`, resize 300×982, objectName «KVideoCal».
+- 6 QGroupBox + нижний QFrame: `group_corner` (TR_CShape), `group_center` (TR_COffset),
+  `group_center_2` (TR_CArea), `group_glasstype` (TR_EType), `group_display` (TR_DSize),
+  `group_iamge` (опечатка реф.!) с ХАРДКОД-китайским заголовком «图像参数», frame с
+  TR_Cntrd/TR_Ext. objectName'ы всех ~50 виджетов — 1:1.
+- ХАРДКОД (не проходит retranslateUi, т.е. НЕ переводится): «图像参数», «UI», «x/y/w/h»,
+  «AGC:», «AEC:», «0-0» ×2. Всё остальное — TR_-ключи; на всех ШЕСТИ кнопках сохранения
+  один и тот же ключ `TR_Sve`.
+- Спины: `dspin_flag_pos` [0.1..0.9] шаг 0.1, value 0.9 (double-литералы @0x868c98/@0x888100);
+  `spin_center_x` [0..640] / `_y` [0..120] — в InitWidget ПЕРЕОПРЕДЕЛЯЮТСЯ через
+  `GetCenterOffset{Horizontal,Vertical}Range` (наши уже портированные статики — вызываются
+  по-настоящему); `spin_cap_*` → фиксированный [-50..50]; display-спины [1..1920]/[1..1080];
+  `spin_agc` max 10000, `spin_aec` max 16960.
+- Комбо: `cmb_corner_type` — статические TR_Rnd/TR_Ocgle (из InitWidget);
+  `cmb_glasstype` — ASCII G/S/SR/LSR, НЕ переводятся (fromAscii, не tr);
+  `cmb_corner_mode` ← KUserSet::GetCornerModeList и `cmb_endoType` ← KEncStyle::
+  getSupportedScopeList — DEVICE, констант в бинарнике нет ⇒ инъектируются сеттерами
+  `SetCornerModeList`/`SetEndoTypeList`.
+- Слоты (имена 1:1) подключены все; тела, пишущие в железо, — заглушки. НАСТОЯЩИЙ —
+  `SaveDisplayArea`: собирает обе области из спинов и зовёт уже портированную статику.
+- ⚠️ Отличие порта: наш `KDialog::SetKStyle(2)` делает `setFixedWidth(460)`, поэтому
+  реф. `resize(300, 982)` не может сузить окно — ширина выходит 460. Что делает реф.
+  SetKStyle (fixed или обычный resize) НЕ ВОССТАНОВЛЕНО; трогать общий KDialog ради
+  одного диалога не стал.
+- ⚠️ В контейнере hermes нет CJK-шрифта, поэтому «图像参数» на скриншоте — квадраты.
+  Это среда сборки, не порт (литерал в коде корректный UTF-8).
+
 **✅ ЗАКРЫТ MVC-СЛОЙ QuickInput (2026-07-22).** `db/KComboBoxItem.h` +
 `ui/KQuickInputModel.*`, self-test `quickinputmodel`, превью `quickinputcombo` переведено
 на реальную модель. Реф.-факты:

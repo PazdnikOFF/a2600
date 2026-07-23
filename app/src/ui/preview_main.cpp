@@ -9986,6 +9986,16 @@ int main(int argc, char **argv)
         vb->addWidget(fields);
         vb->addStretch();
         w = host;
+    } else if (screen == "videocaldlg") {
+        // Реф.-диалог KVideoCal (UI + логика в одном классе — коллизия ROADMAP C6 снята
+        // СОВМЕЩЕНИЕМ). 6 групп + нижний frame; динамические комбо наполняются через
+        // DEVICE-STUB-сеттеры (реф. берёт их из KUserSet/KEncStyle).
+        KVideoCal *dlg = new KVideoCal;
+        dlg->SetCornerModeList({QStringLiteral("TR_OcgleRnd"), QStringLiteral("TR_OcgleOnly"),
+                                QStringLiteral("TR_RndOnly")});
+        dlg->SetEndoTypeList({QStringLiteral("EG-500"), QStringLiteral("EC-500"),
+                              QStringLiteral("EB-500")});
+        w = dlg;
     } else if (screen == "quickinputcombo") {
         // Кастом-виджет KQuickInputComboBox поверх РЕАЛЬНОЙ KQuickInputModel + стратегий
         // (реф. Init → new KQuickInputModel → LoadData → setModel → AllDataChanged).

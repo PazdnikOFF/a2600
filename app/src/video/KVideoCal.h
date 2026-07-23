@@ -2,20 +2,99 @@
 
 #include <QRect>
 #include <QPair>
+#include <QStringList>
 
-// Ядро калибровки видео (реф. класс KVideoCal, X-2600).
+#include "ui/KDialog.h"
+
+class QComboBox;
+class QDoubleSpinBox;
+class QLabel;
+class QPushButton;
+class QSpinBox;
+
+// Диалог калибровки видео (реф. класс KVideoCal, X-2600) — UI И логика в ОДНОМ классе,
+// как в оригинале. Коллизия ROADMAP C6 разрешена СОВМЕЩЕНИЕМ (как с KDocumentGenerator):
+// прежний off-device data-класс был набором статических методов, они сохранены без
+// изменений, а сверху надстроен реф.-диалог.
 //
-// В оригинале KVideoCal — Qt-диалог (QDialog: InitWidget/retranslateUi/спинбоксы),
-// но его прикладное ядро off-device — это:
-//   • диапазоны смещения центра по типу прошивки сенсора (GetCenterOffset*Range),
-//   • дефолты «обрезки углов» кадра (GetDefaultVideoCornerCutting — round/octangle),
-//   • сохранение области отображения в display-ini (SaveDisplayArea → KDisplayOption).
-// UI-часть (спинбоксы/кнопки) и запись в железо (KEndoScope/KCamera::SetVideoCentorPoint,
-// SetVideoCapArea) — Фаза E/F (нужен прибор), здесь не реализуются.
+// Реф. ctor @0x63b4e8: KDialog(parent, false) → SetKStyle(2) → Ui_KVideoCal::setupUi
+// @0x63ca98 → InitWidget → ~30 connect → InitVideoParam; плюс KSystemStatus::SetIsVideoCal(true).
+// resize 300×982, objectName "KVideoCal". Все виджеты — стоковые Qt.
 //
-// Значения — 1:1 с бинарником X2000 (GetCenterOffsetHorizontalRange/VerticalRange).
-class KVideoCal
+// Разметка (сверена дизасмом setupUi/retranslateUi): 6 QGroupBox + нижний QFrame:
+//   TR_CShape (форма угла), TR_COffset (смещение центра), TR_CArea (область захвата),
+//   TR_EType (тип эндоскопа/стекла), TR_DSize (области Video/UI), «图像参数» (AGC/AEC,
+//   заголовок — ХАРДКОД-китайский, не TR_-ключ), frame: TR_Cntrd / TR_Ext.
+// Подписи «x/y/w/h», «UI», «AGC:», «AEC:», «0-0» — тоже хардкод (не проходят retranslateUi).
+//
+// DEVICE-STUB: динамические комбобоксы (cmb_corner_mode ← KUserSet::GetCornerModeList,
+// cmb_endoType ← KEncStyle::getSupportedScopeList) и все записи в железо
+// (KEndoScope/KCamera::SetVideoCentorPoint/SetVideoCapArea) заменены инъектируемыми
+// списками и no-op-слотами. Статические расчётные методы ниже — настоящие, off-device.
+class KVideoCal : public KDialog
 {
+    Q_OBJECT
+public:
+    explicit KVideoCal(QWidget *parent = nullptr);
+
+    // DEVICE-STUB инъекция содержимого динамических комбобоксов (реф. берёт их из
+    // KUserSet/KEncStyle — device-состояние, констант в бинарнике нет).
+    void SetCornerModeList(const QStringList &modes);
+    void SetEndoTypeList(const QStringList &types);
+
+private slots:
+    // Реф. слоты (имена 1:1). Тела, пишущие в железо, — заглушки; расчётные части реальные.
+    void SwitchCornerShape(int index);          // cmb_corner_type
+    void SwitchCornerMode(int index);           // cmb_corner_mode
+    void CornerShapeValueXChanged(int v);       // spin_corner_para
+    void CornerShapeValueYChanged(int v);       // spin_corner_para_2
+    void FlagPosChanged(double v);              // dspin_flag_pos
+    void CenterPointValueChanged(int v);        // spin_center_x/_y (общий)
+    void CaptureAreaValueChanged(int v);        // spin_cap_x/_y (общий)
+    void DisplayAreaValueChanged(int v);        // все 8 spin_display*
+    void AGCValueChanged(int v);
+    void AECValueChanged(int v);
+    void EndoGlassTypeChanged(int index);
+    void SaveCornerShape();
+    void SaveCenterPoint();
+    void SaveCaptureAreaShift();
+    void SaveEndoType();
+    void SaveEndoglassType();
+    void SetDisplayPosition();                  // btn_position
+    void ExitAdjustMode();                      // btn_exit
+
+private:
+    void setupUi();            // реф. Ui_KVideoCal::setupUi @0x63ca98
+    void InitWidget();         // реф. @0x63ad68 (device-части — заглушки)
+    void InitEndoGlassType();  // реф. @0x63aad0: G/S/SR/LSR (ASCII, НЕ переводятся)
+    void SaveDisplayAreaSlot();   // реф. слот SaveDisplayArea() — тёзка статического метода
+
+    QComboBox      *cmb_corner_type = nullptr;
+    QComboBox      *cmb_corner_mode = nullptr;
+    QSpinBox       *spin_corner_para = nullptr;
+    QSpinBox       *spin_corner_para_2 = nullptr;
+    QDoubleSpinBox *dspin_flag_pos = nullptr;
+    QSpinBox       *spin_center_x = nullptr;
+    QSpinBox       *spin_center_y = nullptr;
+    QSpinBox       *spin_cap_x = nullptr;
+    QSpinBox       *spin_cap_y = nullptr;
+    QComboBox      *cmb_endoType = nullptr;
+    QComboBox      *cmb_glasstype = nullptr;
+    QSpinBox       *spin_displayv_x = nullptr;
+    QSpinBox       *spin_displayv_y = nullptr;
+    QSpinBox       *spin_displayv_w = nullptr;
+    QSpinBox       *spin_displayv_h = nullptr;
+    QSpinBox       *spin_displayu_x = nullptr;
+    QSpinBox       *spin_displayu_y = nullptr;
+    QSpinBox       *spin_displayu_w = nullptr;
+    QSpinBox       *spin_displayu_h = nullptr;
+    QSpinBox       *spin_agc = nullptr;
+    QSpinBox       *spin_aec = nullptr;
+    QLabel         *label_agc_range = nullptr;
+    QLabel         *label_aec_range = nullptr;
+    QPushButton    *btn_position = nullptr;
+    QPushButton    *btn_exit = nullptr;
+
 public:
     // Тип прошивки сенсора (реф. _EndoFirmwareType). Упрощённая карта
     // config2firmwareTypeMap (строка firmwareType из video.ini → это значение).
