@@ -14,6 +14,26 @@
 # <bin> ∈ X2000 | X2000Monitor | X2000Simulator | X2000Video
 set -euo pipefail
 HOST=hermes
+
+# Предохранитель: hermes делит ресурсы с продовыми контейнерами пользователя. Перед
+# ЛЮБОЙ тяжёлой операцией проверяем, что хосту есть чем дышать; иначе — отказ, а не
+# «попробуем и посмотрим». Пороги: >=1500 МиБ available и loadavg(1m) < 3.0.
+preflight() {
+    local info avail load
+    info=$(ssh -o ConnectTimeout=15 "$HOST" \
+        'free -m | awk "/^Mem:/{print \$7}"; cut -d" " -f1 /proc/loadavg' 2>/dev/null) || {
+        echo "rev.sh: $HOST недоступен — операция отменена" >&2; exit 1; }
+    avail=$(printf '%s\n' "$info" | sed -n 1p)
+    load=$(printf '%s\n' "$info" | sed -n 2p)
+    if [ "${avail:-0}" -lt 1500 ]; then
+        echo "rev.sh: на $HOST всего ${avail} МиБ available (<1500) — отказ, чтобы не уронить хост" >&2
+        exit 1
+    fi
+    if awk -v l="${load:-0}" 'BEGIN{exit !(l+0 >= 3.0)}'; then
+        echo "rev.sh: loadavg на $HOST = ${load} (>=3.0) — отказ, хост уже занят" >&2
+        exit 1
+    fi
+}
 REF='~/a2600ref'
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 cmd="${1:-}"; shift || true
@@ -30,11 +50,17 @@ case "$cmd" in
     # с базой 0x100000 — при передаче runtime-адреса прибавь 0x100000 сам, либо
     # (лучше) передавай имя из `sym`. Логи Ghidra префиксуют только первую строку
     # println, поэтому режем диапазон от маркера "// ====" и снимаем префикс.
+    # ⚠️ hermes — НЕ свободная машина: на нём крутятся продовые контейнеры пользователя
+    # (specinter-*, litellm, flaresolverr). Ghidra по умолчанию берёт MAXMEM=2G и все ядра —
+    # это самая тяжёлая вещь, которую мы туда отправляем. Поэтому: preflight-проверка
+    # свободной памяти, жёсткий -Xmx1g, одно ядро и nice 19.
     bin="${1:?bin}"; func="${2:?func|addr}"
+    preflight
     ssh "$HOST" "cd $REF && export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && \
+      export _JAVA_OPTIONS='-Xmx1g' && \
       G=\$(ls -d ghidra_*PUBLIC) && \
-      ./\$G/support/analyzeHeadless $REF proj -process $bin -noanalysis \
-        -scriptPath $REF/myscripts -postScript Decompile.java '$func' 2>/dev/null" \
+      nice -n 19 ./\$G/support/analyzeHeadless $REF proj -process $bin -noanalysis \
+        -max-cpu 1 -scriptPath $REF/myscripts -postScript Decompile.java '$func' 2>/dev/null" \
       | sed -n 's/^INFO  Decompile.java> //; /\/\/ ====/,$p' ;;
   run)
     bin="${1:?bin}"; shift || true
