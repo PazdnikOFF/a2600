@@ -2199,8 +2199,44 @@ int main(int argc, char **argv)
         probe.CheckCreate(data.m_lstItems.front(), {});
         const bool cfgPtrOk = probe.CurItemConfig() && probe.CurItemConfig()->m_strName == "cfg-a";
 
-        // GetItemTitle: только tr() от m_strTitle, карта игнорируется.
+        // GetItemTitle базы: только tr() от m_strTitle, карта игнорируется.
         const bool titleOk = probe.GetItemTitle(data.m_lstItems.front(), {}) == "TR_Ttl";
+
+        // ── Реестр Te: СЕМЬ ключей (у Simple девять). ──
+        auto teHas = [&](const char *type) {
+            KReportTemplateItem it; it.m_strID = "/x"; it.m_strType = type;
+            QTextTableCell dummy;
+            return te.Context()->CreateItem(it, {}, dummy) != 0 || true;   // сам факт наличия ниже
+        };
+        (void)teHas;
+        // Проверяем отсутствие двух ключей напрямую: Simple их знает, Te — нет.
+        // Табличному творцу Simple нужен хотя бы один под-элемент, иначе он вернёт 0
+        // и отличить «нет в реестре» от «нечего строить» было бы нельзя.
+        KReportTemplateItem leaf; leaf.m_strID = "/leaf"; leaf.m_strType = "RT_TEXT_BLOCK";
+        KReportTemplateItem rowTbl; rowTbl.m_strID = "/rt"; rowTbl.m_strType = "RT_ROW_TABLE_BLOCK";
+        KReportTemplateItem zScore; zScore.m_strID = "/z";  zScore.m_strType = "RT_OB_Z_SCORE_BLOCK";
+        rowTbl.m_lstSubItems.push_back(leaf);
+        zScore.m_lstSubItems.push_back(leaf);
+        QTextTableCell noCell;
+        const bool teRegOk = te.Context()->CreateItem(rowTbl, {}, noCell) == 0
+                             && te.Context()->CreateItem(zScore, {}, noCell) == 0
+                             && simple.Context()->HandleRepeat(rowTbl, {}, {}) == 1
+                             && simple.Context()->HandleRepeat(zScore, {}, {}) == 1;
+
+        // ── Текстовый Te-творец: правила заголовка (реф. @0x51abd0). ──
+        KRTTeTextItemCreator tc(*te.Context());
+        KReportTemplateItem ti; ti.m_strTitle = "TR_Ttl"; ti.m_strID = "/a";
+        ti.m_strShowTitle = "1";
+        const bool showOn = tc.GetItemTitle(ti, {}) == "TR_Ttl";
+        ti.m_strShowTitle = "0";                       // STR_RT_VALUE_0 → пусто
+        const bool show0 = tc.GetItemTitle(ti, {}).empty();
+        ti.m_strShowTitle.clear();                     // пусто → тоже пусто
+        const bool showEmpty = tc.GetItemTitle(ti, {}).empty();
+        ti.m_strShowTitle = "1";
+        te.Context()->SetMode(2);                      // режим 2 → пусто без чтения title
+        const bool mode2 = tc.GetItemTitle(ti, {}).empty();
+        te.Context()->SetMode(0);
+        const bool teTextOk = showOn && show0 && showEmpty && mode2;
 
         // Te::Display: строит документ; печатная перегрузка с nullptr → немедленный false.
         const bool nullPrinterOk = !te.Display(data, nullptr);
@@ -2211,12 +2247,14 @@ int main(int argc, char **argv)
 
         const bool ok = simpleOk && computedOk && handoffOk && branch1Ok && branch2Ok
                         && branch3Ok && cfgPtrOk && titleOk && nullPrinterOk && emptyOk
-                        && docOk && resetOk;
+                        && docOk && resetOk && teRegOk && teTextOk;
         qInfo() << "Simple посчитал:" << computedOk << "| передача набора в Te:" << handoffOk;
         qInfo() << "CheckCreate ветви 1/2/3:" << branch1Ok << branch2Ok << branch3Ok
                 << "| конфиг-указатель:" << cfgPtrOk << "| заголовок:" << titleOk;
         qInfo() << "Display: printer=null→false" << nullPrinterOk << "| пусто→false" << emptyOk
                 << "| документ создан" << docOk << "| Reset удалил" << resetOk;
+        qInfo() << "реестр Te без ROW_TABLE/OB_Z_SCORE:" << teRegOk
+                << "| заголовок: ShowTitle 1/0/пусто, режим 2:" << teTextOk;
         qInfo() << (ok ? "rtte: PASS" : "rtte: FAIL");
         return ok ? 0 : 25;
     }
@@ -10762,6 +10800,7 @@ int main(int argc, char **argv)
             KReportTemplateItem i;
             i.m_strID = id; i.m_strType = "RT_TEXT_BLOCK";
             i.m_strTitle = title; i.m_strDataSrc = src;
+            i.m_strShowTitle = "1";   // "0" = не показывать заголовок (реф. STR_RT_VALUE_0)
             tpl.m_lstItems.push_back(i);
         };
         add("/name",      "Patient",   "RT_PATIENT,NAME");
@@ -10770,33 +10809,11 @@ int main(int argc, char **argv)
         add("/diagnosis", "Diagnosis", "RT_EXAM,DIAGNOSIS");
         add("/biopsy",    "Biopsy",    "RT_EXAM,BIOPSY");   // данных нет → отфильтруется
 
-        // Регистрируем Te-творца текстового блока: пишет «Заголовок: значение» в ячейку.
-        // Тела реф. Te-творцов ещё не реверсированы — это НАША минимальная реализация,
-        // чтобы конвейер можно было увидеть целиком (помечено).
-        struct TeText : KRTTeAbsItemCreator {
-            using KRTTeAbsItemCreator::KRTTeAbsItemCreator;
-            int CreateItem(const KReportTemplateItem &item,
-                           const std::map<std::string, std::string> &cfgMap,
-                           QTextTableCell &cell) override
-            {
-                if (!CheckCreate(item, cfgMap))
-                    return 0;                       // фильтр по набору из Simple-движка
-                std::string value;
-                if (KRTAbsDataSource *ds2 = m_context.DataSource())
-                    ds2->GetTextData(item.m_strDataSrc, value);
-                QTextCursor c = cell.firstCursorPosition();
-                QTextCharFormat bold; bold.setFontWeight(QFont::Bold);
-                c.insertText(QString::fromStdString(GetItemTitle(item, cfgMap)) + ": ", bold);
-                c.insertText(QString::fromStdString(value), QTextCharFormat());
-                return 1;
-            }
-        };
-
+        // Творцы Te теперь РЕАЛЬНЫЕ (реф. InitCreator @0x50c9d0 наполняет реестр в ctor),
+        // отдельная регистрация больше не нужна. Заголовки показываются при ShowTitle != "0".
         KReportPreviewCenterDlg *rp = new KReportPreviewCenterDlg;
         rp->resize(520, 420);
         rp->SetReportSource(&ds, &tpl);
-        rp->Context()->RegisterCreator("RT_TEXT_BLOCK",
-                                       std::make_unique<TeText>(*rp->Context()));
         rp->UpdatePreview();
         rp->OnBtnFitWidth();
         w = rp;

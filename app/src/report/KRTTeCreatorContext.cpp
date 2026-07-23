@@ -2,13 +2,39 @@
 
 #include "report/KRTTeAbsItemCreator.h"
 
+#include <QColor>
+
 KRTTeCreatorContext::KRTTeCreatorContext(KRTAbsDataSource *pDataSource,
                                          KReportDisplayParam *pDisplayParam)
     : m_pDataSource(pDataSource), m_pDisplayParam(pDisplayParam)
 {
+    InitCreator();   // реф. ctor @0x50d3e8 наполняет реестр ОДИН РАЗ
 }
 
 KRTTeCreatorContext::~KRTTeCreatorContext() = default;
+
+void KRTTeCreatorContext::InitCreator()
+{
+    // Реф. @0x50c9d0 — ровно семь регистраций; ключи — литералы @0x865a70..0x865b08.
+    m_mapCreators["RT_TEXT_BLOCK"]        = std::make_unique<KRTTeTextItemCreator>(*this);
+    m_mapCreators["RT_TEXTGROUP_BLOCK"]   = std::make_unique<KRTTeTextGroupCreator>(*this);
+    m_mapCreators["RT_IMAGE_BLOCK"]       = std::make_unique<KRTTeImageItemCreator>(*this);
+    m_mapCreators["RT_IMAGEGROUP_BLOCK"]  = std::make_unique<KRTTeImageGroupCreator>(*this);
+    m_mapCreators["RT_TABLE_BLOCK"]       = std::make_unique<KRTTeTableItemCreator>(*this);
+    m_mapCreators["RT_TITLE_TABLE_BLOCK"] = std::make_unique<KRTTeTableItemCreator>(*this);
+    m_mapCreators["RT_SUB_DATA_BLOCK"]    = std::make_unique<KRTTeSubDataItemCreator>(*this);
+    // RT_ROW_TABLE_BLOCK и RT_OB_Z_SCORE_BLOCK у Te НЕ регистрируются (в отличие от Simple).
+}
+
+QColor KRTTeCreatorContext::GetFontColor(const KReportTemplateItem *) const
+{
+    return m_defaultFontColor;   // реф. @0x50b918 — тело не реверсировано
+}
+
+bool KRTTeCreatorContext::IsGetFontChineseShow(const KReportTemplateItem *) const
+{
+    return false;                // реф. @0x50bba0 — тело не реверсировано
+}
 
 void KRTTeCreatorContext::Reset()
 {

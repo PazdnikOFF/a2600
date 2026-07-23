@@ -533,6 +533,37 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **116 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 116 / FAIL 0).
 
+**✅ РЕЕСТР Te-ТВОРЦОВ + ТЕКСТОВЫЙ ТВОРЕЦ (2026-07-23).** `report/KRTTeItemCreators.cpp`;
+превью `reportpipeline` теперь рисует РЕАЛЬНЫМИ творцами, self-test `rtte` расширен.
+- `KRTTeCreatorContext::InitCreator` @0x50c9d0 — **СЕМЬ** пар (у Simple ДЕВЯТЬ). Совпадают
+  RT_TEXT_BLOCK / RT_TEXTGROUP_BLOCK / RT_IMAGE_BLOCK / RT_IMAGEGROUP_BLOCK /
+  RT_TABLE_BLOCK / RT_TITLE_TABLE_BLOCK / RT_SUB_DATA_BLOCK.
+  ⚠️ У Te ОТСУТСТВУЮТ **`RT_ROW_TABLE_BLOCK`** и **`RT_OB_Z_SCORE_BLOCK`**: Simple считает
+  их валидность, а Te их НЕ РЕНДЕРИТ вовсе. Ctor каждого творца принимает ТОЛЬКО контекст —
+  строкового подтипа нет, TABLE и TITLE_TABLE получают одинаковый вызов.
+- `KRTTeTextItemCreator::CreateItem` @0x51a160 (полный порт): `CheckCreate` → false → 0
+  (единственный путь к false); заголовок; содержимое через слот 3 `GetTextData` от
+  `m_strDataSrc` (при режиме контекста == 1 и непустом cfgMap — сперва `ConvertToSourceID`);
+  из атрибутов item-конфига читаются **`TemplateData`** (@0x865ca8; значение ищется в
+  конфигах шаблона внутри KReportDisplayParam и через `tr()` ЗАМЕЩАЕТ содержимое — боковой
+  механизм, бизнес-смысл НЕ ВОССТАНОВЛЕН) и **`AlignH`** (@0x865cb8);
+  ⚠️ `m_strShowTitle == "2"` (@0x83fdf0) ПРИНУДИТЕЛЬНО сбрасывает переопределение AlignH;
+  выравнивание: `Center` (@0x84d9b8) / `Right` (@0x89de00) / иначе Left, всегда с
+  `Qt::AlignAbsolute`; шрифт — `GetFontSize`, жирность по `IsPatientInfoTitleBold`,
+  цвет — `GetFontColor`; заголовок печатается с хвостом **`" :  "`** (@0x875108 — пробел,
+  двоеточие, ДВА пробела; в отчёте субагента адрес был указан неверно, сверен чтением).
+- `KRTTeTextItemCreator::GetItemTitle` @0x51abd0 ПЕРЕОПРЕДЕЛЯЕТ базовую: режим контекста
+  == 2 → пустая строка без чтения заголовка; `m_strShowTitle` пуст ИЛИ `"0"` (@0x874a58) →
+  пустая строка; иначе `tr(m_strTitle)`, и если `QueryTemplateItemRealTitle` дал true —
+  заголовок ЗАМЕЩАЕТСЯ на `tr(реального)`. Двоеточие добавляет CreateItem, не она.
+- ГРАНИЦА: остальные ЧЕТЫРЕ Te-творца объявлены и регистрируются, проходят фильтр
+  `CheckCreate`, но содержимое НЕ строят (их `CreateChild`/`CreateTable`/`InsertTableTitle`/
+  `CalcmageWidth` не реверсированы) — возвращают 0, и строка таблицы удаляется как
+  незаполненная. Это честнее, чем рисовать выдуманное.
+- НЕ ВОССТАНОВЛЕНО: назначение поля контекста +0x48 (режим; сравнивается с 1 и с 2) —
+  оставлено настраиваемым `SetMode`; ветка билингвального заголовка `IsGetFontChineseShow`;
+  тела `GetFontColor`/`GetFontSize`/`InsertSplitLine`.
+
 **✅ UI: `KReportPreviewCenterDlg` ПОДКЛЮЧЁН К РЕАЛЬНОМУ КОНВЕЙЕРУ (2026-07-23).**
 Превью-режим **`reportpipeline`** — отчёт виден на скриншоте целиком, от источника данных
 до страницы принтера. Слот `OnReportPreview` больше не печатает инъектированный html:
