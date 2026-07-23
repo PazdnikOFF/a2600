@@ -5,6 +5,8 @@
 #include <QDateEdit>
 #include <QFrame>
 #include <QGridLayout>
+
+#include "KGridWidget.h"
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -135,8 +137,11 @@ void KReportEditUi::setupUi()
     vR->setContentsMargins(18, 16, 18, 16);
 
     // B1. Сетка базовой инфо.
-    QWidget *baseInfo = new QWidget(rightMain);
+    // Реф. Ui_KReportEditUi::setupUi @0x4d83ec: это KGridWidget (переукладка сетки
+    // базовой информации), а НЕ голый QWidget — objectName "gridWidget_base_info".
+    KGridWidget *baseInfo = new KGridWidget(rightMain);
     baseInfo->setObjectName(QStringLiteral("gridWidget_base_info"));
+    baseInfo->setFocusPolicy(Qt::NoFocus);   // реф. @0x4d8424
     QGridLayout *gB = new QGridLayout(baseInfo);
     auto le = [&](const char *name) {
         QLineEdit *e = new QLineEdit(baseInfo);

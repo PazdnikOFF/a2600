@@ -3,7 +3,7 @@
 #include "ui/KDialog.h"
 
 class QLineEdit;
-class QDateEdit;
+class KPatientDateEdit;
 
 // Диалог ввода нового пациента (реф. KPatientListAddDlg : KDialog, ctor @0x7c2a60,
 // Ui_KPatientListAddDlg::setupUi @0x7c41b0). UI-порт. Немодальный, фикс. 1024×712,
@@ -29,5 +29,5 @@ private:
     void setupUi();
 
     QLineEdit *m_editAge = nullptr;
-    QDateEdit *m_dateDob = nullptr;
+    KPatientDateEdit *m_dateDob = nullptr;   // реф. кастом-виджет, не QDateEdit
 };

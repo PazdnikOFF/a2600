@@ -3,6 +3,8 @@
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
+
+#include "KPatientDateEdit.h"
 #include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
@@ -88,7 +90,9 @@ void KPatientListAddDlg::setupUi()
 
     // Ряд 2: ДР(+календарь) / возраст / телефон
     QWidget *wDob = fieldBox(grpPat, QRect(7, 110, 291, 71), tr("TR_DoB:"), "label_dob");
-    m_dateDob = new QDateEdit(wDob);
+    // Реф. Ui_KPatientListAddDlg::setupUi: поле даты рождения — KPatientDateEdit
+    // (плейсхолдер вместо пустой даты, сентинел QDate(2100,1,1)), а не голый QDateEdit.
+    m_dateDob = new KPatientDateEdit(wDob);
     m_dateDob->setObjectName(QStringLiteral("date_dob"));
     m_dateDob->setGeometry(10, 30, 240, 31);
     m_dateDob->setCalendarPopup(true);
