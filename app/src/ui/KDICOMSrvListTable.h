@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractTableModel>
+#include <QDateTime>
 #include <QTableView>
 #include <QStyledItemDelegate>
 #include <QList>
@@ -15,6 +16,10 @@ struct DicomSrvRow {
     int type = 0;   // 0=Storage/1=Commitment/2=Worklist/3=MPPS
     QString name, aeTitle, station;
     int port = 104;
+    // Реф. KDICOMSrvListItem +0x18: время добавления, ставится в ctor элемента
+    // (QDateTime::currentDateTime()); ключ ini — "AddTime", формат "yyyy-MM-dd hh:mm:ss".
+    // Единственное назначение — сортировка (реф. operator> @0x6dd128 сравнивает ТОЛЬКО его).
+    QDateTime addTime;
 };
 
 // Модель (реф. KDICOMSrvListModel : QAbstractTableModel, size 0x28). 6 колонок; data по колонкам;
@@ -31,6 +36,9 @@ public:
     QVariant headerData(int section, Qt::Orientation o, int role) const override;
 
     void setRows(const QList<DicomSrvRow> &rows);   // реф. LoadDICOMConf — seam
+    // Реф. SortDicomItem @0x5b8d60: два бакета — сначала (type != 1 && enabled), затем
+    // остальные; ВНУТРИ каждого — по addTime УБЫВАНИЮ (новее выше, реф. operator>).
+    void SortDicomItem();
     void toggleEnabled(int row);
 
 private:

@@ -1,6 +1,10 @@
 #pragma once
 
 #include "ui/KDialog.h"
+#include "kernel/KMessage.h"
+
+class QLabel;
+class QProgressBar;
 
 // Диалог прогресса операций с данными (реф. KProgressDlg : QDialog, ctor @0x451870,
 // Ui_KProgressDlg::setupUi @0x452528). UI-порт. Реф.-база — QDialog (не KDialog), но чистый
@@ -20,6 +24,30 @@ class KProgressDlg : public KDialog
 public:
     explicit KProgressDlg(QWidget *parent = nullptr);
 
+    // Реф. слоты @0x450830..0x451f20, подключаемые в InitConnect @0x451320 ко всем восьми
+    // сигналам ToDlgMsgDispatcher().
+    void OnSigUpdateTitleTotalProgress(const QString &title, int totalProgress);
+    void OnSigUpdateHide();
+    void OnSigShowResultMsgBox(const QString &msg);
+    void OnSigUpdateTotalProgress(int progress);
+    void OnSigUpdateSubProgress(int progress);
+    void OnSigUpdateTotalLabel(const QString &text);
+    void OnSigUpdateSubLabel(const QString &text);
+    void OnSigOneExamRecordUpdateFinish(const KMessage &msg);
+
+    // Для проверок (в реф. — поля Ui-структуры).
+    QProgressBar *TotalBar() const { return m_progTotal; }
+    QProgressBar *SubBar() const { return m_progCurrent; }
+    QLabel *TotalLabel() const { return m_lblTotal; }
+    QLabel *SubLabel() const { return m_lblCurrent; }
+
 private:
     void setupUi();
+    void InitConnect();   // реф. @0x451320
+
+    QLabel *m_lblText = nullptr;
+    QLabel *m_lblCurrent = nullptr;
+    QLabel *m_lblTotal = nullptr;
+    QProgressBar *m_progCurrent = nullptr;
+    QProgressBar *m_progTotal = nullptr;
 };

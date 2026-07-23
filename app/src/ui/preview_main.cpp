@@ -66,7 +66,10 @@
 #include "ui/KExamListViewUi.h"
 #include "ui/KQRCode.h"
 #include "ui/ReportConfigDlg.h"
+#include <QProgressBar>
+#include "ui/KPoweroff.h"
 #include "ui/KProgressDlg.h"
+#include "ui/KToProgressDlgMsgDispatcher.h"
 #include "ui/KVideoPlayerOSD.h"
 #include "ui/KUnusedImgPlayBar.h"
 #include "ui/KViewHardEndo.h"
@@ -6930,6 +6933,69 @@ int main(int argc, char **argv)
                      && greyOnOk && codesOk && gateOk && inMenuOk;
         qInfo() << (ok ? "recorditem: PASS" : "recorditem: FAIL");
         return ok ? 0 : 85;
+    }
+
+    // Self-test экрана выключения, моста прогресса и сортировки DICOM-списка
+    // (реф. KPoweroff / KToProgressDlgMsgDispatcher+KProgressDlg / KDICOMSrvListModel).
+    if (screen == "poweroff") {
+        // --- KPoweroff: 20 тиков по 50 мс, команда на 20-м, закрытие после.
+        KPoweroff po;
+        const bool uiOk = po.Bar() && po.Bar()->maximum() == 20 && !po.Bar()->isTextVisible()
+            && po.Timer() && po.Timer()->interval() == 50 && po.Timer()->isActive()
+            && po.findChild<QLabel *>(QStringLiteral("label_logo"))
+            && po.findChild<QLabel *>(QStringLiteral("label_progress"))->minimumSize() == QSize(580, 60);
+        int powerCmds = 0;
+        QObject::connect(&po, &KPoweroff::powerOffRequested, [&powerCmds] { ++powerCmds; });
+        for (int i = 0; i < 19; ++i) po.RepaintProgressBar();
+        const bool beforeOk = powerCmds == 0 && po.Bar()->value() == 19;
+        po.RepaintProgressBar();                       // 20-й тик — команда выключения
+        const bool cmdOk = powerCmds == 1 && po.Bar()->value() == 20;
+        po.RepaintProgressBar();                       // 21-й — процессы завершены → закрытие
+        const bool doneOk = !po.Timer()->isActive();
+
+        // --- Мост прогресса: восемь сигналов доходят до диалога.
+        KProgressDlg dlg;
+        auto *disp = ToDlgMsgDispatcher();
+        disp->EmitUpdateTotalProgress(42);
+        disp->EmitUpdateSubProgress(7);
+        disp->EmitUpdateTotalLabel(QStringLiteral("total"));
+        disp->EmitUpdateSubLabel(QStringLiteral("sub"));
+        const bool bridgeOk = dlg.TotalBar()->value() == 42 && dlg.SubBar()->value() == 7
+            && dlg.TotalLabel()->text() == QStringLiteral("total")
+            && dlg.SubLabel()->text() == QStringLiteral("sub");
+        int hides = 0;
+        QObject::connect(disp, &KToProgressDlgMsgDispatcher::SigUpdateHide, [&hides] { ++hides; });
+        disp->EmitUpdateHideSig();
+        const bool hideOk = hides == 1 && dlg.isHidden();
+        const bool singletonOk = ToDlgMsgDispatcher() == disp;   // реф. Meyers-статик
+
+        // --- Сортировка DICOM: (type != 1 && enabled) вперёд, внутри — новее выше.
+        KDICOMSrvListModel model;
+        const QDateTime t0 = QDateTime::fromString(QStringLiteral("2026-07-20 10:00:00"),
+                                                   QStringLiteral("yyyy-MM-dd hh:mm:ss"));
+        QList<DicomSrvRow> rows;
+        DicomSrvRow r1; r1.name = "old-on";   r1.type = 0; r1.enabled = true;  r1.addTime = t0;
+        DicomSrvRow r2; r2.name = "new-on";   r2.type = 2; r2.enabled = true;  r2.addTime = t0.addDays(1);
+        DicomSrvRow r3; r3.name = "commit";   r3.type = 1; r3.enabled = true;  r3.addTime = t0.addDays(2);
+        DicomSrvRow r4; r4.name = "off";      r4.type = 3; r4.enabled = false; r4.addTime = t0.addDays(3);
+        rows << r1 << r2 << r3 << r4;
+        model.setRows(rows);
+        model.SortDicomItem();
+        auto nameAt = [&model](int row) {
+            return model.data(model.index(row, 2), Qt::DisplayRole).toString();
+        };
+        // Ожидание: [new-on, old-on] (бакет A, новее выше), затем [off, commit] (бакет B).
+        const bool sortOk = nameAt(0) == QStringLiteral("new-on") && nameAt(1) == QStringLiteral("old-on")
+                         && nameAt(2) == QStringLiteral("off") && nameAt(3) == QStringLiteral("commit");
+
+        qInfo() << "KPoweroff UI:" << uiOk << "| до 20-го тика:" << beforeOk
+                << "| команда:" << cmdOk << "| закрытие:" << doneOk
+                << "| мост:" << bridgeOk << "| hide:" << hideOk << "| синглтон:" << singletonOk
+                << "| сортировка:" << sortOk;
+        const bool ok = uiOk && beforeOk && cmdOk && doneOk && bridgeOk && hideOk
+                     && singletonOk && sortOk;
+        qInfo() << (ok ? "poweroff: PASS" : "poweroff: FAIL");
+        return ok ? 0 : 86;
     }
 
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).

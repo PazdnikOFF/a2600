@@ -1,4 +1,6 @@
 #include "KDICOMSrvListTable.h"
+
+#include <algorithm>
 #include "Theme.h"
 
 #include <QHeaderView>
@@ -55,6 +57,27 @@ QVariant KDICOMSrvListModel::headerData(int section, Qt::Orientation o, int role
             return tr(keys[section]);
     }
     return QVariant();
+}
+
+void KDICOMSrvListModel::SortDicomItem()
+{
+    // Реф. @0x5b8d60: разложить по двум векторам, отсортировать каждый компаратором
+    // `*a > *b` (то есть по addTime убыв.), затем склеить A + B.
+    QList<DicomSrvRow> a, b;
+    for (const DicomSrvRow &r : qAsConst(m_rows)) {
+        if (r.type != 1 && r.enabled)
+            a.append(r);
+        else
+            b.append(r);
+    }
+    auto newerFirst = [](const DicomSrvRow &x, const DicomSrvRow &y) {
+        return y.addTime < x.addTime;   // реф. operator>: rhs.time < this->time
+    };
+    std::stable_sort(a.begin(), a.end(), newerFirst);
+    std::stable_sort(b.begin(), b.end(), newerFirst);
+    beginResetModel();
+    m_rows = a + b;
+    endResetModel();
 }
 
 void KDICOMSrvListModel::setRows(const QList<DicomSrvRow> &rows)

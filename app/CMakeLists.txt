@@ -124,7 +124,9 @@ set(SOURCES
     src/ui/KExamListViewUi.cpp
     src/ui/KQRCode.cpp
     src/ui/ReportConfigDlg.cpp
+    src/ui/KPoweroff.cpp
     src/ui/KProgressDlg.cpp
+    src/ui/KToProgressDlgMsgDispatcher.cpp
     src/ui/KVideoPlayerOSD.cpp
     src/ui/KUnusedImgPlayBar.cpp
     src/ui/KViewHardEndo.cpp
@@ -534,7 +536,9 @@ add_executable(ui_preview
     src/ui/KExamListViewUi.cpp
     src/ui/KQRCode.cpp
     src/ui/ReportConfigDlg.cpp
+    src/ui/KPoweroff.cpp
     src/ui/KProgressDlg.cpp
+    src/ui/KToProgressDlgMsgDispatcher.cpp
     src/ui/KVideoPlayerOSD.cpp
     src/ui/KUnusedImgPlayBar.cpp
     src/ui/KViewHardEndo.cpp
