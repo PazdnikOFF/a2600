@@ -1,6 +1,8 @@
 #pragma once
 
 #include <list>
+#include <utility>
+#include <vector>
 #include <map>
 #include <string>
 
@@ -88,6 +90,14 @@ public:
     int CreateItem(const KReportTemplateItem &item,
                    const std::map<std::string, std::string> &cfgMap,
                    QTextTableCell &cell) override;
+
+    // Реф. @0x519430 — все пары в ОДНУ ячейку строкой «label : value», БЕЗ char-формата.
+    virtual int CreateChild(const std::vector<std::pair<std::string, std::string>> &pairs,
+                            QTextTableCell &cell);
+    // Реф. @0x5196c0 — resize таблицы под число пар, раскладка по cellAt, И char-формат
+    // из GetFontSize/GetFontColor с item == nullptr (дефолтный шрифт, не item-специфичный).
+    virtual int CreateChild(const std::vector<std::pair<std::string, std::string>> &pairs,
+                            QTextTable *table);
 };
 
 class KRTTeImageItemCreator : public KRTTeAbsItemCreator      // реф. @0x514870
@@ -97,6 +107,15 @@ public:
     int CreateItem(const KReportTemplateItem &item,
                    const std::map<std::string, std::string> &cfgMap,
                    QTextTableCell &cell) override;
+
+    // Реф. @0x515270 — ДВА гейта: режим контекста == 2 → пусто; иначе только при
+    // m_strShowTitle == "1" отдаётся tr(m_strTitle), иначе пусто.
+    std::string GetItemTitle(const KReportTemplateItem &item,
+                             const std::map<std::string, std::string> &cfgMap) const;
+    // Ключи атрибутов ширины/высоты/выравнивания у реф. — статические std::string в .bss
+    // ДРУГОЙ таблицы (не @0xa86098), их текст НЕ ВОССТАНОВЛЕН ⇒ настраиваемые.
+    static void SetImageAttrKeys(const std::string &widthKey, const std::string &heightKey,
+                                 const std::string &alignKey);
 };
 
 class KRTTeImageGroupCreator : public KRTTeAbsItemCreator     // реф. @0x514410
@@ -106,6 +125,14 @@ public:
     int CreateItem(const KReportTemplateItem &item,
                    const std::map<std::string, std::string> &cfgMap,
                    QTextTableCell &cell) override;
+
+    // Реф. @0x514200: по умолчанию 600.0 / table->columns() (константа 600.0f подтверждена);
+    // если найден атрибут и парсится как float — значение/columns. Реф. имеет assert(columns>0).
+    virtual float CalcmageWidth(QTextTable *table) const;
+    virtual int CreateChild(const std::vector<std::pair<std::string, std::string>> &pairs,
+                            float width, QTextTableCell &cell);   // реф. @0x513b70
+    virtual int CreateChild(const std::vector<std::pair<std::string, std::string>> &pairs,
+                            float width, QTextTable *table);      // реф. @0x513ea0
 };
 
 // Реф. @0x515ec0 (CreateItem), @0x5176f8 (CreateTable), @0x5165c8 (InsertTableTitle),

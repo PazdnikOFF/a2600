@@ -10835,6 +10835,16 @@ int main(int argc, char **argv)
             tcfg.m_mapAttrs["BorderColor"] = "#7f7f7f";
             tpl.m_mapItemConfigs["/vitals"] = tcfg;
         }
+        // Группа текста: реф. TextGroup клеит «label : value» СВОИМ разделителем
+        // (три символа, в отличие от четырёх у текстового творца).
+        {
+            ds.SetTextGroup("RT_EXAM,MEDS", {{"Propofol", "120 mg"}, {"Fentanyl", "50 mcg"}});
+            KReportTemplateItem g;
+            g.m_strID = "/meds"; g.m_strType = "RT_TEXTGROUP_BLOCK";
+            g.m_strTitle = "Medication"; g.m_strShowTitle = "1";
+            g.m_strDataSrc = "RT_EXAM,MEDS"; g.m_strColumn = "2";
+            tpl.m_lstItems.push_back(g);
+        }
 
         // Творцы Te теперь РЕАЛЬНЫЕ (реф. InitCreator @0x50c9d0 наполняет реестр в ctor),
         // отдельная регистрация больше не нужна. Заголовки показываются при ShowTitle != "0".

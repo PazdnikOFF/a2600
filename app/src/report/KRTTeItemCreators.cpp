@@ -12,6 +12,9 @@
 #include "report/KMeaStringUtil.h"
 
 #include <QColor>
+#include <QTextImageFormat>
+
+#include "ui/KScreenMng.h"
 
 namespace {
 // Реф. литералы (адреса сверены чтением .rodata).
@@ -134,26 +137,8 @@ int KRTTeTextItemCreator::CreateItem(const KReportTemplateItem &item,
 // Их тела (CreateChild @0x519430/@0x513b70/@0x515d90, CreateTable @0x5176f8,
 // InsertTableTitle @0x5165c8, CalcmageWidth @0x514200) НЕ реверсированы.
 
-int KRTTeTextGroupCreator::CreateItem(const KReportTemplateItem &item,
-                                      const std::map<std::string, std::string> &cfgMap,
-                                      QTextTableCell &)
-{
-    return CheckCreate(item, cfgMap) ? 0 : 0;   // реф. @0x519a78 — не портирован
-}
 
-int KRTTeImageItemCreator::CreateItem(const KReportTemplateItem &item,
-                                      const std::map<std::string, std::string> &cfgMap,
-                                      QTextTableCell &)
-{
-    return CheckCreate(item, cfgMap) ? 0 : 0;   // реф. @0x514870 — не портирован
-}
 
-int KRTTeImageGroupCreator::CreateItem(const KReportTemplateItem &item,
-                                       const std::map<std::string, std::string> &cfgMap,
-                                       QTextTableCell &)
-{
-    return CheckCreate(item, cfgMap) ? 0 : 0;   // реф. @0x514410 — не портирован
-}
 
 // ─────────────────── Табличный творец (реф. @0x515e90 и далее) ───────────────────
 
@@ -377,9 +362,304 @@ int KRTTeTableItemCreator::CreateItem(const KReportTemplateItem &item,
     return n;
 }
 
+// ─────────── Оставшиеся четыре творца (реф. тела) ───────────
+
+namespace {
+// ⚠️ РАЗНЫЕ разделители у разных творцов — проверено чтением .rodata:
+const char *kSepTextGroup = " : ";    // @0x8750e8 — ТРИ символа (у текстового творца ЧЕТЫРЕ)
+const char *kNoPFData     = "NoPFData";   // @0x874e10
+std::string g_imgWidthKey, g_imgHeightKey, g_imgAlignKey;
+}   // namespace
+
+// ── RT_TEXTGROUP_BLOCK (реф. @0x519a78) ──
+
+int KRTTeTextGroupCreator::CreateChild(
+    const std::vector<std::pair<std::string, std::string>> &pairs, QTextTableCell &cell)
+{
+    // Реф. @0x519430: всё в одну ячейку, БЕЗ явного char-формата.
+    QTextCursor c = cell.lastCursorPosition();
+    for (const auto &kv : pairs)
+        c.insertText(QString::fromStdString(kv.first + kSepTextGroup + kv.second));
+    return static_cast<int>(pairs.size());
+}
+
+int KRTTeTextGroupCreator::CreateChild(
+    const std::vector<std::pair<std::string, std::string>> &pairs, QTextTable *table)
+{
+    // Реф. @0x5196c0: resize под число пар, раскладка по сетке и char-формат из
+    // GetFontSize/GetFontColor с item == nullptr (дефолтный шрифт, НЕ item-специфичный).
+    if (!table)
+        return 0;
+    const int cols = table->columns() > 0 ? table->columns() : 1;
+    const int rows = (static_cast<int>(pairs.size()) + cols - 1) / cols;
+    if (rows > 0 && table->rows() != rows)
+        table->resize(rows, cols);
+
+    QTextCharFormat fmt;
+    QFont f = fmt.font();
+    f.setPointSize(m_context.GetFontSize(nullptr));
+    fmt.setFont(f);
+    fmt.setForeground(QBrush(m_context.GetFontColor(nullptr)));
+
+    int i = 0;
+    for (const auto &kv : pairs) {
+        const int r = i / cols, cl = i % cols;
+        if (r >= table->rows())
+            break;
+        QTextTableCell cell = table->cellAt(r, cl);
+        QTextCursor c = cell.lastCursorPosition();
+        c.insertText(QString::fromStdString(kv.first + kSepTextGroup + kv.second), fmt);
+        ++i;
+    }
+    return static_cast<int>(pairs.size());
+}
+
+int KRTTeTextGroupCreator::CreateItem(const KReportTemplateItem &item,
+                                      const std::map<std::string, std::string> &cfgMap,
+                                      QTextTableCell &cell)
+{
+    if (!CheckCreate(item, cfgMap))
+        return 0;
+    KRTAbsDataSource *ds = m_context.DataSource();
+    std::vector<std::pair<std::string, std::string>> pairs;
+    std::string id = item.m_strDataSrc;
+    if (!cfgMap.empty()) {
+        std::string sid;
+        if (report_template::ConvertToSourceID(item.m_strDataSrc, cfgMap, sid))
+            id = sid;
+    }
+    if (!ds || !ds->GetTextGroupData(id, pairs))   // слот 5
+        return 0;
+
+    KRTTeTableItemCreator helper(m_context);       // реф. зовёт базовые табличные слоты
+    helper.InsertTableTitle(item, cfgMap, cell);
+    QTextTable *table = helper.CreateTable(item, cfgMap, cell);
+    if (!table)
+        return CreateChild(pairs, cell);
+    if (table->rows() == 1 && table->columns() == 1) {
+        QTextTableCell c0 = table->cellAt(0, 0);
+        return CreateChild(pairs, c0);
+    }
+    return CreateChild(pairs, table);
+}
+
+// ── RT_IMAGE_BLOCK (реф. @0x514870) ──
+
+void KRTTeImageItemCreator::SetImageAttrKeys(const std::string &w, const std::string &h,
+                                             const std::string &a)
+{
+    g_imgWidthKey = w; g_imgHeightKey = h; g_imgAlignKey = a;
+}
+
+std::string KRTTeImageItemCreator::GetItemTitle(const KReportTemplateItem &item,
+                                                const std::map<std::string, std::string> &) const
+{
+    // Реф. @0x515270 — два гейта, оба ведут к ПУСТОЙ строке.
+    if (m_context.Mode() == 2)
+        return std::string();
+    if (item.m_strShowTitle != kValue1)
+        return std::string();
+    return Tr(item.m_strTitle);
+}
+
+int KRTTeImageItemCreator::CreateItem(const KReportTemplateItem &item,
+                                      const std::map<std::string, std::string> &cfgMap,
+                                      QTextTableCell &cell)
+{
+    // Реф. @0x514870.
+    if (!CheckCreate(item, cfgMap))
+        return 0;
+
+    std::string path = item.m_strDataSrc;
+    if (!cfgMap.empty()) {
+        std::string sid;
+        if (report_template::ConvertToSourceID(item.m_strDataSrc, cfgMap, sid))
+            path = sid;
+    }
+
+    // Размеры: значение атрибута ДЕЛИТСЯ на KScreenMng::GetRatioTo1K() — масштабирование
+    // под текущее разрешение. Имена ключей ширины/высоты/выравнивания НЕ ВОССТАНОВЛЕНЫ
+    // (статические std::string в .bss ДРУГОЙ таблицы) ⇒ настраиваемые, по умолчанию пусты.
+    const double ratio = KScreenMng::GetInstance()->GetRatioTo1K();
+    QTextImageFormat img;
+    img.setName(QString::fromStdString(path));
+    std::string alignVal;
+    if (const KReportTemplateItemConfig *cfg = CurItemConfig()) {
+        auto get = [&](const std::string &k) -> std::string {
+            if (k.empty()) return std::string();
+            auto it = cfg->m_mapAttrs.find(k);
+            return it == cfg->m_mapAttrs.end() ? std::string() : it->second;
+        };
+        const std::string w = get(g_imgWidthKey), h = get(g_imgHeightKey);
+        alignVal = get(g_imgAlignKey);
+        if (!w.empty() && ratio != 0.0)
+            img.setWidth(QString::fromStdString(w).toDouble() / ratio);
+        if (!h.empty() && ratio != 0.0)
+            img.setHeight(QString::fromStdString(h).toDouble() / ratio);
+    }
+
+    QTextCursor c = cell.lastCursorPosition();
+    QTextBlockFormat bf = c.blockFormat();
+    if (alignVal == "Left")
+        bf.setAlignment(Qt::AlignLeft | Qt::AlignAbsolute);
+    else if (alignVal == "Right")
+        bf.setAlignment(Qt::AlignRight | Qt::AlignAbsolute);
+    else
+        bf.setAlignment(Qt::AlignHCenter);     // реф. значение 4 — центр по умолчанию
+    c.setBlockFormat(bf);
+
+    // Заголовок вставляется ПЕРЕД картинкой, но НЕ при значении "NoPFData".
+    const std::string title = GetItemTitle(item, cfgMap);
+    if (!title.empty() && alignVal != kNoPFData) {
+        QTextCharFormat tf;
+        QFont f = tf.font();
+        f.setPointSize(m_context.GetFontSize(&item));
+        tf.setFont(f);
+        tf.setForeground(QBrush(m_context.GetFontColor(&item)));
+        c.insertText(QString::fromStdString(title), tf);
+    }
+    c.insertImage(img);
+    return 1;
+}
+
+// ── RT_IMAGEGROUP_BLOCK (реф. @0x514410) ──
+
+float KRTTeImageGroupCreator::CalcmageWidth(QTextTable *table) const
+{
+    // Реф. @0x514200: 600.0 / columns() по умолчанию (реф. имеет assert(columns > 0)).
+    // Атрибут-переопределитель существует, но его КЛЮЧ НЕ ВОССТАНОВЛЕН.
+    const int cols = (table && table->columns() > 0) ? table->columns() : 1;
+    return 600.0f / cols;
+}
+
+int KRTTeImageGroupCreator::CreateChild(
+    const std::vector<std::pair<std::string, std::string>> &pairs, float width,
+    QTextTableCell &cell)
+{
+    // Реф. @0x513b70: все картинки подряд в ОДНУ ячейку.
+    QTextCursor c = cell.lastCursorPosition();
+    for (const auto &kv : pairs) {
+        QTextImageFormat img;
+        img.setName(QString::fromStdString(kv.second));
+        if (width > 0)
+            img.setWidth(width);
+        c.insertImage(img);
+    }
+    return static_cast<int>(pairs.size());
+}
+
+int KRTTeImageGroupCreator::CreateChild(
+    const std::vector<std::pair<std::string, std::string>> &pairs, float width,
+    QTextTable *table)
+{
+    // Реф. @0x513ea0: resize под ceil(count/cols), раскладка по сетке.
+    if (!table)
+        return 0;
+    const int cols = table->columns() > 0 ? table->columns() : 1;
+    const int rows = (static_cast<int>(pairs.size()) + cols - 1) / cols;
+    if (rows > 0 && table->rows() != rows)
+        table->resize(rows, cols);
+    int i = 0;
+    for (const auto &kv : pairs) {
+        const int r = i / cols, cl = i % cols;
+        if (r >= table->rows())
+            break;
+        QTextTableCell cell = table->cellAt(r, cl);
+        QTextCursor c = cell.lastCursorPosition();
+        QTextImageFormat img;
+        img.setName(QString::fromStdString(kv.second));
+        if (width > 0)
+            img.setWidth(width);
+        c.insertImage(img);
+        ++i;
+    }
+    return static_cast<int>(pairs.size());
+}
+
+int KRTTeImageGroupCreator::CreateItem(const KReportTemplateItem &item,
+                                       const std::map<std::string, std::string> &cfgMap,
+                                       QTextTableCell &cell)
+{
+    if (!CheckCreate(item, cfgMap))
+        return 0;
+    KRTAbsDataSource *ds = m_context.DataSource();
+    std::vector<std::pair<std::string, std::string>> pairs;
+    std::string id = item.m_strDataSrc;
+    if (!cfgMap.empty()) {
+        std::string sid;
+        if (report_template::ConvertToSourceID(item.m_strDataSrc, cfgMap, sid))
+            id = sid;
+    }
+    if (ds)
+        ds->GetImageGroupData(id, pairs);          // слот 7
+
+    KRTTeTableItemCreator helper(m_context);
+    helper.InsertTableTitle(item, cfgMap, cell);
+    QTextTable *table = helper.CreateTable(item, cfgMap, cell);
+    const float w = CalcmageWidth(table);
+    if (!table) {
+        CreateChild(pairs, w, cell);
+        return 1;
+    }
+    if (table->rows() == 1 && table->columns() == 1) {
+        QTextTableCell c0 = table->cellAt(0, 0);
+        CreateChild(pairs, w, c0);
+    } else {
+        CreateChild(pairs, w, table);
+    }
+    return 1;
+}
+
+// ── RT_SUB_DATA_BLOCK (реф. @0x515510) ──
+
 int KRTTeSubDataItemCreator::CreateItem(const KReportTemplateItem &item,
                                         const std::map<std::string, std::string> &cfgMap,
-                                        QTextTableCell &)
+                                        QTextTableCell &cell)
 {
-    return CheckCreate(item, cfgMap) ? 0 : 0;   // реф. @0x515510 — не портирован
+    // Реф. @0x515510.
+    if (!CheckCreate(item, cfgMap))
+        return 0;
+    KRTAbsDataSource *ds = m_context.DataSource();
+    std::string id = item.m_strDataSrc;
+    if (!cfgMap.empty()) {
+        std::string sid;
+        if (report_template::ConvertToSourceID(item.m_strDataSrc, cfgMap, sid))
+            id = sid;
+    }
+    KReportTemplateDataNew sub;
+    if (!ds || !ds->GetSubData(id, sub))           // слот 8
+        return 0;
+
+    KRTTeTableItemCreator helper(m_context);
+    helper.InsertTableTitle(item, cfgMap, cell);
+
+    if (sub.m_lstItems.empty() && m_context.Mode() != 2) {
+        // Пусто и не режим 2: при ShowTitle == "1" — просто успех без контента,
+        // иначе вставляется ОДИН блок с m_strTitle как обычный текст.
+        if (item.m_strShowTitle == kValue1)
+            return 1;
+        QTextCursor c = cell.lastCursorPosition();
+        QTextCharFormat tf;
+        QFont f = tf.font();
+        f.setPointSize(m_context.GetFontSize(&item));
+        tf.setFont(f);
+        tf.setForeground(QBrush(m_context.GetFontColor(&item)));
+        c.insertText(QString::fromStdString(item.m_strTitle), tf);
+        return 1;
+    }
+
+    // Конфиги вложенного шаблона регистрируются в KReportDisplayParam (merge).
+    if (KReportDisplayParam *dp = m_context.DisplayParam())
+        dp->AppendItemParam(sub.m_mapItemConfigs);
+
+    QTextTable *table = helper.CreateTable(item, cfgMap, cell);
+    if (!table) {
+        helper.CreateChild(sub.m_lstItems, cfgMap, cell);
+    } else if (table->rows() == 1 && table->columns() == 1) {
+        QTextTableCell c0 = table->cellAt(0, 0);
+        helper.CreateChild(sub.m_lstItems, cfgMap, c0);
+    } else {
+        helper.CreateChild(sub.m_lstItems, cfgMap, table);
+    }
+    return 1;
 }
