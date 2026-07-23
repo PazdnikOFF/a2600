@@ -440,7 +440,7 @@ KIrisItem/KRecordItem/KOsdMenuCellGreyedWhenCameraDisconnected) — отдель
 
 ### C. ЛОВУШКИ — разгрести до того, как наступишь
 
-**C8 (2026-07-22) — KReportDisplayParam: коллизия API, блокирует «Simple»-движок отчёта.**
+**C8 — KReportDisplayParam: РАЗРЕШЕНА 2026-07-23 СОВМЕЩЕНИЕМ (перегрузками).** Реф. методы имеют ТЕ ЖЕ ИМЕНА, отличаясь только типами аргументов (std::string/set/map), поэтому добавлены перегрузками в тот же класс; прежний упрощённый слой сохранён. Дизасм показал, что реф. класс — ПАРАМЕТР-КОНТЕЙНЕР: `UpdateTemplateDisplayParam` @0x507110 это ровно два `operator=` (ни разбора ключей, ни разделителей), `AppendValidItem` @0x506ca0 без гейта и void, `IsItemValid` @0x506a38 читает ДРУГОЙ набор (+0xa0) с асимметричным краем: флаг не взведён → всегда true, явно пустой набор → всегда false. Блокировка «Simple»-движка (`KRTSimpleCreatorContext`/`KRTSimpleDisplay`) СНЯТА. Историческая формулировка ниже:
 Наш `app/src/report/KReportDisplayParam.h` = упрощённый свой API (QSet валидных имён;
 `UpdateTemplateDisplayParam(QVector<ReportItem>, const KReportDataSource&)`). Референсный —
 другой класс: встроен по значению в `KRTSimpleDisplay` (+0x10, ~0xd0 байт), его

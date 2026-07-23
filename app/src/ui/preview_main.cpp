@@ -1284,26 +1284,67 @@ int main(int argc, char **argv)
         ds.SetPatient("RT_SUGGESTION", "Recheck 6mo");
         ds.SetImage(0, "/data/exam/A1/0.jpeg", "M0");
 
+        // ⚠️ Тип аргумента выбирает ПЕРЕГРУЗКУ: QString → наш упрощённый слой,
+        // std::string → референсный. Голый литерал был бы неоднозначен, поэтому явно.
+        auto Q = [](const char *s) { return QString::fromLatin1(s); };
+
         KReportDisplayParam dp;
         const int n = dp.UpdateTemplateDisplayParam(items, ds);
         // diag, sugg, img0 валидны; empty — нет; block валиден (есть валидные потомки).
-        const bool markOk = dp.IsItemValid("diag") && dp.IsItemValid("sugg") &&
-                            dp.IsItemValid("img0") && dp.IsItemValid("block") &&
-                            !dp.IsItemValid("empty");
+        const bool markOk = dp.IsItemValid(Q("diag")) && dp.IsItemValid(Q("sugg")) &&
+                            dp.IsItemValid(Q("img0")) && dp.IsItemValid(Q("block")) &&
+                            !dp.IsItemValid(Q("empty"));
         qInfo() << "валидных:" << n << "| diag/sugg/img0/block/empty:"
-                << dp.IsItemValid("diag") << dp.IsItemValid("sugg") << dp.IsItemValid("img0")
-                << dp.IsItemValid("block") << dp.IsItemValid("empty");
+                << dp.IsItemValid(Q("diag")) << dp.IsItemValid(Q("sugg"))
+                << dp.IsItemValid(Q("img0")) << dp.IsItemValid(Q("block"))
+                << dp.IsItemValid(Q("empty"));
 
-        // Эталонное множество (реф. SetRefValidItems) ограничивает добавляемые имена.
+        // Эталонное множество (наш слой) ограничивает добавляемые имена.
         KReportDisplayParam dp2;
-        dp2.SetRefValidItems({"diag", "sugg"});
-        const bool refOk = dp2.AppendValidItem("diag") &&      // в ref → ок
-                           !dp2.AppendValidItem("img0") &&     // вне ref → отклонён
-                           dp2.IsItemValid("diag") && !dp2.IsItemValid("img0");
+        dp2.SetRefValidItems(QSet<QString>{Q("diag"), Q("sugg")});
+        const bool refOk = dp2.AppendValidItem(Q("diag")) &&      // в ref → ок
+                           !dp2.AppendValidItem(Q("img0")) &&     // вне ref → отклонён
+                           dp2.IsItemValid(Q("diag")) && !dp2.IsItemValid(Q("img0"));
         dp2.Reset();
         const bool resetOk = dp2.ValidCount() == 0;
 
-        const bool ok = n == 4 && markOk && refOk && resetOk;
+        // ── РЕФЕРЕНСНЫЙ слой (ROADMAP C8): семантика отличается от нашей ──
+        KReportDisplayParam rp;
+        // Флаг ref не взведён → IsItemValid ВСЕГДА true (даже для неизвестного имени).
+        const bool noRefOk = rp.IsItemValid(std::string("что угодно"));
+        // Явно ПУСТОЕ ref-множество → всегда false. Это асимметрия, которую легко потерять.
+        rp.SetRefValidItems(std::set<std::string>{});
+        const bool emptyRefOk = !rp.IsItemValid(std::string("diag")) && rp.HasRefValidItems();
+        rp.SetRefValidItems(std::set<std::string>{"diag"});
+        const bool refSetOk = rp.IsItemValid(std::string("diag"))
+                              && !rp.IsItemValid(std::string("sugg"));
+        // AppendValidItem реф. НЕ гейтится и пишет в ДРУГОЙ набор, чем читает IsItemValid.
+        rp.AppendValidItem(std::string("sugg"));
+        const bool appendOk = rp.ValidItemsStd().count("sugg") == 1
+                              && !rp.IsItemValid(std::string("sugg"));
+        // AppendItemParam — MERGE: существующий ключ НЕ перезаписывается.
+        KReportTemplateItemConfig c1; c1.m_strName = "первый";
+        KReportTemplateItemConfig c2; c2.m_strName = "второй";
+        rp.AppendItemParam({{"k", c1}});
+        rp.AppendItemParam({{"k", c2}});
+        const bool mergeOk = rp.ItemConfigs().at("k").m_strName == "первый";
+        // UpdateTemplateDisplayParam — ЗАМЕЩЕНИЕ обоих map, набор валидных не трогает.
+        rp.UpdateTemplateDisplayParam({{"Title", "T"}}, {{"z", c2}});
+        const bool updOk = rp.TemplateConfigs().at("Title") == "T"
+                           && rp.ItemConfigs().size() == 1 && rp.ItemConfigs().count("z") == 1
+                           && rp.ValidItemsStd().count("sugg") == 1;
+        // Reset чистит ВСЁ состояние, включая флаг и оба map.
+        rp.Reset();
+        const bool refResetOk = !rp.HasRefValidItems() && rp.TemplateConfigs().empty()
+                                && rp.ItemConfigs().empty() && rp.ValidItemsStd().empty()
+                                && rp.IsItemValid(std::string("x"));   // флаг снят → true
+        const bool refLayerOk = noRefOk && emptyRefOk && refSetOk && appendOk && mergeOk
+                                && updOk && refResetOk;
+        qInfo() << "реф.слой: без ref→true" << noRefOk << "| пустой ref→false" << emptyRefOk
+                << "| ref-набор" << refSetOk << "| Append без гейта" << appendOk
+                << "| merge" << mergeOk << "| замещение" << updOk << "| Reset" << refResetOk;
+
+        const bool ok = n == 4 && markOk && refOk && resetOk && refLayerOk;
         qInfo() << (ok ? "dispparam: PASS" : "dispparam: FAIL");
         return ok ? 0 : 36;
     }
