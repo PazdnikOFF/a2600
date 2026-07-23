@@ -322,6 +322,9 @@ set(SOURCES
     src/report/KRTCreatorContext.cpp
     src/report/KRTSimpleCreatorContext.cpp
     src/report/KRTSimpleItemCreators.cpp
+    src/report/KRTTeAbsItemCreator.cpp
+    src/report/KRTTeCreatorContext.cpp
+    src/report/KRTTeDisplay.cpp
     src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
@@ -634,6 +637,9 @@ add_executable(ui_preview
     src/report/KRTCreatorContext.cpp
     src/report/KRTSimpleCreatorContext.cpp
     src/report/KRTSimpleItemCreators.cpp
+    src/report/KRTTeAbsItemCreator.cpp
+    src/report/KRTTeCreatorContext.cpp
+    src/report/KRTTeDisplay.cpp
     src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp

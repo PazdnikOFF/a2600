@@ -160,6 +160,9 @@
 #include "ui/KVideoLabel.h"
 #include "report/KRTSimpleDisplay.h"
 #include "report/KRTSimpleCreatorContext.h"
+#include "report/KRTTeDisplay.h"
+#include "report/KRTTeCreatorContext.h"
+#include "report/KRTTeAbsItemCreator.h"
 #include "video/KViewSoftEndo.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
@@ -2142,6 +2145,80 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "rtte") {
+        // Self-test Te-движка и ЗАМЫКАНИЯ СВЯЗКИ с Simple-движком — воспроизводит
+        // последовательность из реф. KReportPreviewCenterDlg::OnReportPreview @0x4fdce8.
+        KRTDataSourceStub ds;
+        ds.SetText("SRC_A", "A");
+        // Шаблон: два элемента, у одного данных НЕТ → Simple признает валидным только один.
+        KReportTemplateDataNew data;
+        auto mk = [](const char *id, const char *type, const char *src) {
+            KReportTemplateItem i; i.m_strID = id; i.m_strType = type; i.m_strDataSrc = src;
+            i.m_strTitle = "TR_Ttl"; return i;
+        };
+        data.m_lstItems.push_back(mk("/a", "RT_TEXT_BLOCK", "SRC_A"));   // данные есть
+        data.m_lstItems.push_back(mk("/b", "RT_TEXT_BLOCK", "НЕТ"));     // данных нет
+
+        // 1-2) Simple считает набор валидных.
+        KRTSimpleDisplay simple(&ds);
+        simple.DisplayParam().Reset();
+        const bool simpleOk = simple.Display(data);
+        const auto &validSet = simple.DisplayParam().ValidItemsStd();
+        const bool computedOk = validSet.count("/a") == 1 && validSet.count("/b") == 0;
+
+        // 3-4) Te сбрасывается и ПОЛУЧАЕТ этот набор как РЕФЕРЕНСНЫЙ.
+        KRTTeDisplay te(&ds);
+        te.Reset();
+        te.SetRefValidItems(validSet);
+        const bool handoffOk = te.DisplayParam().HasRefValidItems()
+                               && te.DisplayParam().IsItemValid(std::string("/a"))
+                               && !te.DisplayParam().IsItemValid(std::string("/b"));
+
+        // Творцы Te фильтруются через CheckCreate. Проверяем все три его ветви.
+        struct Probe : KRTTeAbsItemCreator {
+            using KRTTeAbsItemCreator::KRTTeAbsItemCreator;
+            int CreateItem(const KReportTemplateItem &, const std::map<std::string, std::string> &,
+                           QTextTableCell &) override { return 1; }
+        };
+        Probe probe(*te.Context());
+        // Ветвь 1: cfgMap пуста → фильтр по имени элемента.
+        const bool branch1Ok = probe.CheckCreate(data.m_lstItems.front(), {})
+                               && !probe.CheckCreate(data.m_lstItems.back(), {});
+        // Ветвь 2: cfgMap непуста, ключа PageBreak_Before НЕТ → валидность НЕ проверяется,
+        // поэтому даже невалидный «/b» проходит.
+        const std::map<std::string, std::string> cfgNoPb{{"Section", "1"}};
+        const bool branch2Ok = probe.CheckCreate(data.m_lstItems.back(), cfgNoPb);
+        // Ветвь 3: ключ PageBreak_Before ЕСТЬ → проверка идёт по source-id из его значения.
+        const std::map<std::string, std::string> cfgPbBad{{"PageBreak_Before", "/нет"}};
+        const bool branch3Ok = !probe.CheckCreate(data.m_lstItems.front(), cfgPbBad);
+        // UpdateItemConfigPointer вызывается только в true-ветвях.
+        KReportTemplateItemConfig ic; ic.m_strName = "cfg-a";
+        te.DisplayParam().AppendItemParam({{"/a", ic}});
+        probe.CheckCreate(data.m_lstItems.front(), {});
+        const bool cfgPtrOk = probe.CurItemConfig() && probe.CurItemConfig()->m_strName == "cfg-a";
+
+        // GetItemTitle: только tr() от m_strTitle, карта игнорируется.
+        const bool titleOk = probe.GetItemTitle(data.m_lstItems.front(), {}) == "TR_Ttl";
+
+        // Te::Display: строит документ; печатная перегрузка с nullptr → немедленный false.
+        const bool nullPrinterOk = !te.Display(data, nullptr);
+        const bool emptyOk = !te.Display(KReportTemplateDataNew());   // нет элементов → false
+        const bool docOk = te.Display(data) && te.Document() != nullptr;
+        // Reset удаляет документ.
+        const bool resetOk = te.Reset() && te.Document() == nullptr;
+
+        const bool ok = simpleOk && computedOk && handoffOk && branch1Ok && branch2Ok
+                        && branch3Ok && cfgPtrOk && titleOk && nullPrinterOk && emptyOk
+                        && docOk && resetOk;
+        qInfo() << "Simple посчитал:" << computedOk << "| передача набора в Te:" << handoffOk;
+        qInfo() << "CheckCreate ветви 1/2/3:" << branch1Ok << branch2Ok << branch3Ok
+                << "| конфиг-указатель:" << cfgPtrOk << "| заголовок:" << titleOk;
+        qInfo() << "Display: printer=null→false" << nullPrinterOk << "| пусто→false" << emptyOk
+                << "| документ создан" << docOk << "| Reset удалил" << resetOk;
+        qInfo() << (ok ? "rtte: PASS" : "rtte: FAIL");
+        return ok ? 0 : 25;
     }
 
     if (screen == "rtcreators") {

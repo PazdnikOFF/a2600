@@ -530,8 +530,57 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **115 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 115 / FAIL 0).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **116 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 116 / FAIL 0).
+
+**✅ ПОРТИРОВАН КАРКАС «Te»-ДВИЖКА + ЗАМКНУТА СВЯЗКА ДВУХ ДВИЖКОВ (2026-07-23).**
+`report/KRTTeDisplay.*`, `report/KRTTeAbsItemCreator.*`, `report/KRTTeCreatorContext.*`,
+self-test `rtte`.
+⭐ **НАЙДЕН CALL SITE, ОБЪЯСНЯЮЩИЙ ВСЮ АРХИТЕКТУРУ** — `KReportPreviewCenterDlg::
+OnReportPreview(QPrinter*)` @0x4fdce8 делает ровно четыре шага:
+  1) `simpleDisp.m_displayParam.Reset()`;
+  2) `simpleDisp.Display(dataNew)` — Simple-движок ВЫЧИСЛЯЕТ набор валидных (+0x70);
+  3) `teDisp.Reset()`;
+  4) `SetRefValidItems(&teDisp.m_displayParam, simpleDisp.m_displayParam.m_setValidItems)`
+     — набор кладётся в Te как РЕФЕРЕНСНОЕ множество (+0xa0).
+Далее `KRTTeAbsItemCreator::CheckCreate` фильтрует элементы через `IsItemValid`, который
+читает именно ref-множество. **Это окончательно объясняет «асимметрию» из C8**: два
+множества в `KReportDisplayParam` разные НАМЕРЕННО — одно наполняет Simple, другое читает
+Te. Ни одной догадки здесь не осталось.
+(Именованная обёртка `KRTTeDisplay::SetRefValidItems` @0x512238 в бинарнике НИКЕМ не
+вызывается — OnReportPreview зовёт базовый метод напрямую.)
+Реф.-факты:
+- `KRTTeDisplay : KRTAbsDisplay`, sizeof 0xF0: база +0x08, `KReportDisplayParam` ВСТРОЕН
+  ПО ЗНАЧЕНИЮ +0x10, `QTextDocument*` +0xE0, `KRTTeCreatorContext*` +0xE8.
+- `Reset` @0x512150: параметр → контекст → удалить документ; возврат безусловно true.
+- Обе `Display` (@0x512240 и @0x512ae8) идут по общему каркасу: новый QTextDocument,
+  `setUndoRedoEnabled(false)`, фон корневого фрейма по ключу **`"BgColor"`** (@0x874b58)
+  и margin 30, `setDefaultFont(GetFontSize)`, `UpdateTemplateDisplayParam`,
+  далее `itemCount = m_lstItems.size()` (реф. читает +0x40 — это size списка с +0x30);
+  **`itemCount <= 0` → false**; таблица itemCount×1 на 100% ширины; цикл по элементам с
+  `cellAt(row,0)` и `KRTTeCreatorContext::CreateItem(item, cfgMap, cell)`; в конце
+  `removeRows(filled, itemCount - filled)`.
+  Отличия печатной перегрузки: **`printer == nullptr` → НЕМЕДЛЕННЫЙ false** (проверка
+  стоит до пролога функции), `documentLayout()->setPaintDevice(printer)`,
+  `setPageSize(printer->pageRect())`, и после каждого элемента — `GetSplitLineInfo` +
+  `InsertSplitLine` (разрывные строки).
+- `KRTTeAbsItemCreator` (ctor @0x513260 — три инструкции): поля `KRTTeCreatorContext&`
+  +0x08 и `const KReportTemplateItemConfig*` +0x10. `CreateItem` @0x513238 — `assert(false)`
+  ⇒ чисто виртуальный. `GetItemTitle` @0x5133a0 — ТОЛЬКО `tr()` от `m_strTitle`, карта-
+  аргумент не используется вовсе. `UpdateItemConfigPointer` @0x513278 — кэш конфига.
+- ⭐ `CheckCreate` @0x513530 — ТРИ ветви, и только одна из них очевидна:
+  • `cfgMap` ПУСТА → `IsItemValid(item.m_strID)`; false → отмена создания;
+  • `cfgMap` не пуста и ключа **`PageBreak_Before`** (@0x866000) НЕТ → валидность
+    **ВООБЩЕ НЕ ПРОВЕРЯЕТСЯ**, сразу true;
+  • ключ есть → `IsItemValid` зовётся с source-id, собранным из ЕГО значения.
+  `UpdateItemConfigPointer` вызывается ТОЛЬКО в true-ветвях.
+- ГРАНИЦА ПОРТА (честно): `KRTTeCreatorContext` портирован КАРКАСОМ (владение, Reset,
+  диспетчер CreateItem через инъектируемый реестр, GetFontSize/InsertSplitLine —
+  объявлены, тела не реверсированы). У реф. класса ~20 методов (FillSplitCell,
+  GetFontColor, CheckTitleMerge, IsMutiDeptTemplate, InitCreator @0x50c9d0,
+  HandleRepeat @0x50fb08, HandleLrRepeat @0x50e208 и др.) и есть отдельное семейство
+  конкретных Te-творцов (KRTTe{Text,Image,ImageGroup,Table,SubData}ItemCreator
+  с CreateChild/CalcmageWidth/GetItemTitle) — следующий заход.
 
 **✅ ПОРТИРОВАН «SIMPLE»-ДВИЖОК ОТЧЁТА (2026-07-23)** — `report/KRTSimpleDisplay.*`,
 `report/KRTSimpleCreatorContext.*`, `report/KRTSimpleAbsItemCreator.h`, self-test `rtsimple`.
