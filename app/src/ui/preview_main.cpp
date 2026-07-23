@@ -157,6 +157,7 @@
 #include "ui/KQuickInputModel.h"
 #include "db/KQuickInputReportTitle.h"
 #include "ui/KViewBase.h"
+#include "ui/KVideoLabel.h"
 #include "video/KViewSoftEndo.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
@@ -2098,6 +2099,75 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "videolabel") {
+        // Self-test оверлея видео (реф. KVideoLabel). Проверяем ровно то, что восстановлено
+        // дизасмом: дефолты ctor, семантику DrawLine (t = d*0.5+0.5), image-view и
+        // ГЕОМЕТРИЮ дуг/линий во всех трёх случаях (квадрат / широкий / высокий).
+        KVideoLabel lbl;
+
+        // Реф. ctor: видеопрямоугольник НЕВАЛИДЕН, режим 0, t 0, image-view выключен.
+        const bool ctorOk = lbl.Mode() == 0 && lbl.T() == 0.0 && !lbl.isImageView()
+                            && lbl.testAttribute(Qt::WA_TranslucentBackground)
+                            && lbl.autoFillBackground();
+
+        // DrawLine: «сырой» D ∈ [-1,1] хранится как t = D*0.5+0.5.
+        lbl.DrawLine(2, 0.0);
+        const bool t0Ok = lbl.Mode() == 2 && qFuzzyCompare(lbl.T() + 1.0, 0.5 + 1.0);
+        lbl.DrawLine(1, 1.0);
+        const bool t1Ok = lbl.Mode() == 1 && qFuzzyCompare(lbl.T(), 1.0);
+        lbl.DrawLine(1, -1.0);
+        const bool tm1Ok = qFuzzyCompare(lbl.T() + 1.0, 0.0 + 1.0);
+
+        // image-view: isImageView == !путь.isEmpty().
+        lbl.setImageView(QStringLiteral("/tmp/x.png"));
+        const bool ivOn = lbl.isImageView();
+        lbl.stopImageView();
+        const bool ivOff = !lbl.isImageView();
+
+        // Дуги. Квадрат → ОДНА дуга на полный круг (5760 = 360°×16).
+        const auto sq = KVideoLabel::ArcSpans(QRect(0, 0, 200, 200), 120);
+        const bool arcSqOk = sq.size() == 1 && sq[0].first == 0 && sq[0].second == 5760;
+        // Широкий (w>h): две дуги, start=(a+90)*16 и (a-90)*16, span=(180-2a)*16.
+        const auto wide = KVideoLabel::ArcSpans(QRect(0, 0, 400, 200), 120);
+        const double aW = std::acos((200 / 2.0) / 120.0) * 180.0 / M_PI;
+        const bool arcWideOk = wide.size() == 2
+            && wide[0].first == int((aW + 90.0) * 16) && wide[1].first == int((aW - 90.0) * 16)
+            && wide[0].second == int((180.0 - 2.0 * aW) * 16) && wide[1].second == wide[0].second;
+        // Высокий (w<h): start=a*16 и (a+180)*16.
+        const auto tall = KVideoLabel::ArcSpans(QRect(0, 0, 200, 400), 120);
+        const double aT = std::acos((200 / 2.0) / 120.0) * 180.0 / M_PI;
+        const bool arcTallOk = tall.size() == 2
+            && tall[0].first == int(aT * 16) && tall[1].first == int((aT + 180.0) * 16);
+
+        // Двойные линии. Квадрат → реф. выходит сразу, линий нет.
+        const bool dlSqOk = KVideoLabel::DoubleLines(QRect(0, 0, 200, 200), 120).isEmpty();
+        // Под корнем d² − (сторона/2)² (реф. fnmsub @0x688188), поэтому линии есть
+        // ТОЛЬКО когда круг достаёт до граней, т.е. d > сторона/2.
+        const double h8 = std::sqrt(120.0 * 120.0 - 100.0 * 100.0);   // ≈ 66.33
+        // Высокий: две ВЕРТИКАЛЬНЫЕ линии на x=0 и x=w-1, полудлина h8.
+        const auto dlTall = KVideoLabel::DoubleLines(QRect(0, 0, 200, 400), 120);
+        const bool dlTallOk = dlTall.size() == 2
+            && qFuzzyCompare(dlTall[0].x1(), 0.0) && qFuzzyCompare(dlTall[1].x1(), 199.0)
+            && qFuzzyCompare(dlTall[0].y1(), 200.0 - h8)
+            && qFuzzyCompare(dlTall[0].y2(), 200.0 + h8);
+        // Широкий: зеркально — две ГОРИЗОНТАЛЬНЫЕ на y=0 и y=h-1.
+        const auto dlWide = KVideoLabel::DoubleLines(QRect(0, 0, 400, 200), 120);
+        const bool dlWideOk = dlWide.size() == 2
+            && qFuzzyCompare(dlWide[0].y1(), 0.0) && qFuzzyCompare(dlWide[1].y1(), 199.0)
+            && qFuzzyCompare(dlWide[0].x1(), 200.0 - h8);
+        // Круг не достаёт до граней (d < сторона/2) → линий нет.
+        const bool dlNoneOk = KVideoLabel::DoubleLines(QRect(0, 0, 200, 400), 60).isEmpty();
+
+        const bool ok = ctorOk && t0Ok && t1Ok && tm1Ok && ivOn && ivOff && arcSqOk
+                        && arcWideOk && arcTallOk && dlSqOk && dlTallOk && dlWideOk && dlNoneOk;
+        qInfo() << "ctor-дефолты:" << ctorOk << "| DrawLine t: 0→0.5" << t0Ok
+                << "1→1" << t1Ok << "-1→0" << tm1Ok << "| image-view:" << (ivOn && ivOff);
+        qInfo() << "дуги квадрат/широкий/высокий:" << arcSqOk << arcWideOk << arcTallOk
+                << "| линии квадрат/высокий/широкий/мал.радиус:" << dlSqOk << dlTallOk << dlWideOk << dlNoneOk;
+        qInfo() << (ok ? "videolabel: PASS" : "videolabel: FAIL");
+        return ok ? 0 : 22;
     }
 
     if (screen == "viewbase") {
@@ -10070,6 +10140,41 @@ int main(int argc, char **argv)
         fields->setWordWrap(true);
         vb->addWidget(fields);
         vb->addStretch();
+        w = host;
+    } else if (screen == "videolabeldraw") {
+        // Визуальная сверка рисующих функций KVideoLabel. Рисуем прямо на пиксмап —
+        // так геометрия не зависит от device-конфигов (KDisplayOption/KVideoSet).
+        QWidget *host = new QWidget;
+        host->resize(660, 300);
+        host->setStyleSheet(QStringLiteral("background:#101010;"));
+        QHBoxLayout *hb = new QHBoxLayout(host);
+
+        KVideoLabel gen;               // только для вызова рисующих методов
+        gen.DrawLine(2, 0.4);          // t = 0.7 → флаги смещены
+
+        auto make = [&](int w, int h, int d, const QString &cap) {
+            QPixmap pm(w, h);
+            pm.fill(QColor(24, 24, 24));
+            QPainter p(&pm);
+            const QRect r(0, 0, w, h);
+            gen.PaintDoubleArc(p, r, d);
+            gen.PaintDoubleLine(p, r, d);
+            p.end();
+            QWidget *col = new QWidget(host);
+            QVBoxLayout *v = new QVBoxLayout(col);
+            QLabel *img = new QLabel(col);
+            img->setPixmap(pm);
+            img->setFixedSize(w, h);
+            QLabel *t = new QLabel(cap, col);
+            t->setStyleSheet(QStringLiteral("color:#c8c8c8;"));
+            t->setAlignment(Qt::AlignHCenter);
+            v->addWidget(img);
+            v->addWidget(t);
+            return col;
+        };
+        hb->addWidget(make(200, 200, 120, QStringLiteral("w==h → круг 5760")));
+        hb->addWidget(make(200, 260, 120, QStringLiteral("w<h → 2 дуги + вертикали")));
+        hb->addWidget(make(260, 200, 120, QStringLiteral("w>h → 2 дуги + горизонтали")));
         w = host;
     } else if (screen == "factoryoptdlg") {
         // Реф.-диалог KFactoryOptions (UI + логика в одном классе — ROADMAP C5 снят).
