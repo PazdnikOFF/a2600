@@ -22,29 +22,6 @@ const char *kRepeatCommand = "RepeatCommand";   // @0x865c98
 const char *kRefColumnID   = "RefColumnID";     // @0x865c88 — разделитель для RevertPathByID
 }   // namespace
 
-std::vector<CreatedRecord> &RecordsStorage()
-{
-    static std::vector<CreatedRecord> s_records;
-    return s_records;
-}
-
-int KRTSimpleRecordingCreator::CreateItem(const KReportTemplateItem &item,
-                                          const std::map<std::string, std::string> &params)
-{
-    RecordsStorage().push_back({m_name, item.m_strID, params});
-    return 1;
-}
-
-const std::vector<CreatedRecord> &KRTSimpleRecordingCreator::Records()
-{
-    return RecordsStorage();
-}
-
-void KRTSimpleRecordingCreator::ClearRecords()
-{
-    RecordsStorage().clear();
-}
-
 KRTSimpleCreatorContext::KRTSimpleCreatorContext(KRTAbsDataSource *pDataSource,
                                                  KReportDisplayParam *pDisplayParam)
     : m_pDataSource(pDataSource), m_pDisplayParam(pDisplayParam)

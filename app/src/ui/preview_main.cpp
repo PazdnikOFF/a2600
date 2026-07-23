@@ -2144,20 +2144,98 @@ int main(int argc, char **argv)
         return ok ? 0 : 50;
     }
 
+    if (screen == "rtcreators") {
+        // Self-test ШЕСТИ творцов Simple-движка. Проверяются именно АСИММЕТРИИ,
+        // восстановленные дизасмом — их легко потерять при «упрощении».
+        KRTDataSourceStub ds;
+        ds.SetText("SRC_TEXT", "текст");
+        ds.SetImage("SRC_IMG", "img/1.png");
+        ds.SetTextGroup("SRC_TG", {{"k", "v"}});
+        ds.SetImageGroup("SRC_IG", {{"k", "img/2.png"}});
+
+        KRTSimpleDisplay disp(&ds);
+        auto *ctx = disp.Context();
+        auto &dp = disp.DisplayParam();
+        auto valid = [&](const char *id) { return dp.ValidItemsStd().count(id) == 1; };
+
+        auto mk = [](const char *id, const char *type, const char *src) {
+            KReportTemplateItem i; i.m_strID = id; i.m_strType = type; i.m_strDataSrc = src;
+            return i;
+        };
+
+        // 1) ТЕКСТ с ПУСТЫМ DataSrc → 1 и валиден, БЕЗ обращения к источнику.
+        const bool textEmptyOk = ctx->CreateItem(mk("/t0", "RT_TEXT_BLOCK", ""), {}) == 1
+                                 && valid("/t0");
+        // 2) ГРУППА ТЕКСТА с пустым DataSrc → 0 (обратная асимметрия!).
+        const bool tgEmptyOk = ctx->CreateItem(mk("/tg0", "RT_TEXTGROUP_BLOCK", ""), {}) == 0
+                               && !valid("/tg0");
+        // 3) Текст: источник знает ключ → 1; не знает → 0.
+        const bool textHitOk = ctx->CreateItem(mk("/t1", "RT_TEXT_BLOCK", "SRC_TEXT"), {}) == 1
+                               && valid("/t1");
+        const bool textMissOk = ctx->CreateItem(mk("/t2", "RT_TEXT_BLOCK", "НЕТ"), {}) == 0
+                                && !valid("/t2");
+        // 4) Группы текста/картинок.
+        const bool tgOk = ctx->CreateItem(mk("/tg1", "RT_TEXTGROUP_BLOCK", "SRC_TG"), {}) == 1;
+        const bool igOk = ctx->CreateItem(mk("/ig1", "RT_IMAGEGROUP_BLOCK", "SRC_IG"), {}) == 1;
+        // 5) КАРТИНКА: последний токен ID в карте локальных → 1 БЕЗ источника данных
+        //    (DataSrc намеренно неизвестен источнику — если бы его спросили, вышло бы 0).
+        KRTSimpleImageItemCreator::SetLocalPicNames({"logo"});
+        const bool localPicOk =
+            ctx->CreateItem(mk("/hdr/logo", "RT_IMAGE_BLOCK", "НЕТ"), {}) == 1
+            && valid("/hdr/logo");
+        // 6) Картинка не локальная → идёт в источник.
+        const bool imgOk = ctx->CreateItem(mk("/i1", "RT_IMAGE_BLOCK", "SRC_IMG"), {}) == 1;
+        const bool imgMissOk = ctx->CreateItem(mk("/i2", "RT_IMAGE_BLOCK", "НЕТ"), {}) == 0;
+
+        // 7) ТАБЛИЦА: без под-элементов → 0; с двумя валидными → возвращает СУММУ 2.
+        KReportTemplateItem tbl = mk("/tbl", "RT_TABLE_BLOCK", "");
+        const bool tblEmptyOk = ctx->CreateItem(tbl, {}) == 0 && !valid("/tbl");
+        tbl.m_lstSubItems.push_back(mk("/tbl/a", "RT_TEXT_BLOCK", "SRC_TEXT"));
+        tbl.m_lstSubItems.push_back(mk("/tbl/b", "RT_TEXT_BLOCK", ""));
+        const bool tblSumOk = ctx->CreateItem(tbl, {}) == 2 && valid("/tbl")
+                              && valid("/tbl/a") && valid("/tbl/b");
+
+        // 8) SUB_DATA: id берётся из DataSrc; конфиги вложенного шаблона переносятся
+        //    в KReportDisplayParam; результат = 1 + сумма по вложенным.
+        KReportTemplateDataNew subTpl;
+        KReportTemplateItemConfig sc; sc.m_strName = "вложенный";
+        subTpl.m_mapItemConfigs["sub_cfg"] = sc;
+        subTpl.m_lstItems.push_back(mk("/s/a", "RT_TEXT_BLOCK", "SRC_TEXT"));
+        subTpl.m_lstItems.push_back(mk("/s/b", "RT_TEXT_BLOCK", ""));
+        ds.SetSub("SRC_SUB", subTpl);
+        const int subRc = ctx->CreateItem(mk("/s", "RT_SUB_DATA_BLOCK", "SRC_SUB"), {});
+        const bool subOk = subRc == 3 && valid("/s")           // 1 + 1 + 1
+                           && dp.ItemConfigs().count("sub_cfg") == 1;
+        const bool subEmptyOk = ctx->CreateItem(mk("/s2", "RT_SUB_DATA_BLOCK", ""), {}) == 0;
+
+        const bool ok = textEmptyOk && tgEmptyOk && textHitOk && textMissOk && tgOk && igOk
+                        && localPicOk && imgOk && imgMissOk && tblEmptyOk && tblSumOk
+                        && subOk && subEmptyOk;
+        qInfo() << "текст пустой DataSrc→1:" << textEmptyOk << "| группа пустой→0:" << tgEmptyOk
+                << "| текст hit/miss:" << textHitOk << textMissOk
+                << "| группы txt/img:" << tgOk << igOk;
+        qInfo() << "локальная картинка без источника:" << localPicOk << "| картинка hit/miss:"
+                << imgOk << imgMissOk << "| таблица пустая→0:" << tblEmptyOk
+                << "сумма=2:" << tblSumOk;
+        qInfo() << "sub-data: rc=" << subRc << "(1+2)" << subOk << "| пустой DataSrc→0:" << subEmptyOk;
+        qInfo() << (ok ? "rtcreators: PASS" : "rtcreators: FAIL");
+        return ok ? 0 : 24;
+    }
+
     if (screen == "rtsimple") {
         // Self-test «Simple»-движка отчёта (реф. KRTSimpleDisplay + KRTSimpleCreatorContext).
         // Проверяется ровно то, что восстановлено дизасмом: реестр из 9 ключей, выбор
         // творца по m_strType, и главное — ДЕКАРТОВО ПРОИЗВЕДЕНИЕ повторов в HandleRepeat.
         KRTDataSourceStub ds;
         KRTSimpleDisplay disp(&ds);
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
 
         // Реестр: 9 ключей, из них 4 ведут на KRTSimpleTableItemCreator.
         auto typeOf = [&](const char *type) -> std::string {
             KReportTemplateItem it; it.m_strID = "x"; it.m_strType = type;
-            KRTSimpleRecordingCreator::ClearRecords();
+            rt_simple_log::Clear();
             disp.Context()->HandleRepeat(it, {}, {});
-            const auto &r = KRTSimpleRecordingCreator::Records();
+            const auto &r = rt_simple_log::Records();
             return r.empty() ? std::string("<нет>") : r.front().creator;
         };
         const bool regOk =
@@ -2171,20 +2249,20 @@ int main(int argc, char **argv)
             typeOf("RT_OB_Z_SCORE_BLOCK")  == "KRTSimpleTableItemCreator"   &&
             typeOf("RT_SUB_DATA_BLOCK")    == "KRTSimpleSubDataItemCreator";
         // Неизвестный тип → реф. возвращает 0 и творца не зовёт.
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
         KReportTemplateItem unknown; unknown.m_strID = "u"; unknown.m_strType = "RT_НЕТ";
         const bool unknownOk = disp.Context()->HandleRepeat(unknown, {}, {}) == 0
-                               && KRTSimpleRecordingCreator::Records().empty();
+                               && rt_simple_log::Records().empty();
 
         // HandleRepeat: два измерения 2×3 → творец вызывается РОВНО 6 раз, и в каждом
         // вызове params содержит по одному значению каждого измерения.
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
         KReportTemplateItem ti; ti.m_strID = "t"; ti.m_strType = "RT_TEXT_BLOCK";
         std::list<std::pair<std::string, std::vector<std::string>>> reps;
         reps.emplace_back("A", std::vector<std::string>{"a1", "a2"});
         reps.emplace_back("B", std::vector<std::string>{"b1", "b2", "b3"});
         const int made = disp.Context()->HandleRepeat(ti, {}, reps);
-        const auto &recs = KRTSimpleRecordingCreator::Records();
+        const auto &recs = rt_simple_log::Records();
         std::set<std::string> combos;
         for (const auto &r : recs) {
             auto a = r.params.find("A"), b = r.params.find("B");
@@ -2194,18 +2272,18 @@ int main(int argc, char **argv)
         const bool cartOk = made == 6 && recs.size() == 6 && combos.size() == 6;
 
         // Внешний params сохраняется и дополняется (реф. копирует его в локальный).
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
         std::list<std::pair<std::string, std::vector<std::string>>> one;
         one.emplace_back("A", std::vector<std::string>{"a1", "a2"});
         disp.Context()->HandleRepeat(ti, {{"KEEP", "v"}}, one);
-        const auto &recs2 = KRTSimpleRecordingCreator::Records();
+        const auto &recs2 = rt_simple_log::Records();
         const bool keepOk = recs2.size() == 2
                             && recs2[0].params.count("KEEP") == 1
                             && recs2[0].params.at("KEEP") == "v";
 
         // Display: обновляет параметр из данных шаблона и зовёт CreateItem на КАЖДЫЙ
         // элемент верхнего уровня с ПУСТЫМ params.
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
         KReportTemplateDataNew data;
         data.m_mapConfigs["Title"] = "T";
         KReportTemplateItem i1; i1.m_strID = "/a"; i1.m_strType = "RT_TEXT_BLOCK";
@@ -2213,13 +2291,13 @@ int main(int argc, char **argv)
         data.m_lstItems.push_back(i1);
         data.m_lstItems.push_back(i2);
         const bool dispOk = disp.Display(data)
-                            && KRTSimpleRecordingCreator::Records().size() == 2
-                            && KRTSimpleRecordingCreator::Records()[0].params.empty()
+                            && rt_simple_log::Records().size() == 2
+                            && rt_simple_log::Records()[0].params.empty()
                             && disp.DisplayParam().TemplateConfigs().at("Title") == "T";
         // Reset чистит встроенный параметр отображения.
         const bool resetOk = disp.Reset() && disp.DisplayParam().TemplateConfigs().empty();
 
-        KRTSimpleRecordingCreator::ClearRecords();
+        rt_simple_log::Clear();
         const bool ok = regOk && unknownOk && cartOk && keepOk && dispOk && resetOk;
         qInfo() << "реестр 9 ключей:" << regOk << "| неизв. тип→0:" << unknownOk
                 << "| декартово 2×3 =" << made << "вызовов, комбинаций" << int(combos.size())

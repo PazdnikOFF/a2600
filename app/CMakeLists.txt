@@ -321,6 +321,7 @@ set(SOURCES
     src/video/KMessageManager.cpp
     src/report/KRTCreatorContext.cpp
     src/report/KRTSimpleCreatorContext.cpp
+    src/report/KRTSimpleItemCreators.cpp
     src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
@@ -632,6 +633,7 @@ add_executable(ui_preview
     src/video/KMessageManager.cpp
     src/report/KRTCreatorContext.cpp
     src/report/KRTSimpleCreatorContext.cpp
+    src/report/KRTSimpleItemCreators.cpp
     src/report/KRTSimpleDisplay.cpp
     src/report/KDocumentGenerator.cpp
     src/report/KReportHtmlGenerator.cpp
