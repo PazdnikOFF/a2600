@@ -2,6 +2,8 @@
 
 #include "ui/KDialog.h"
 
+#include <QString>
+
 // Диалог сохранения фразы в глоссарий (реф. KThesaurusSaveUi : KDialog, ctor @0x4e3e30,
 // Ui_KThesaurusSaveUi::setupUi @0x4e4160). UI-порт. Немодальный, фикс. 1024×768,
 // SetKStyle НЕ вызывается; титул SetTitle(TR_AGlossary). Открывается из KReportEditUi
@@ -21,6 +23,16 @@ class KThesaurusSaveUi : public KDialog
 public:
     explicit KThesaurusSaveUi(QWidget *parent = nullptr);
 
+    // Реф. ctor принимает (QString, QString, KScopeClass::E_CLASS, QWidget*) — тексты
+    // сохраняемой статьи и класс скопа. У нас ctor исторически без них, поэтому контекст
+    // задаётся сеттером (зовёт OpenThesaurusSaveDlg @0x4e3f40 перед DoModal).
+    void SetSaveContext(const QString &text, const QString &title, int scopeClass);
+    QString SaveText() const { return m_text; }
+    QString SaveTitle() const { return m_title; }
+    int ScopeClass() const { return m_scopeClass; }
+
 private:
+    QString m_text, m_title;
+    int m_scopeClass = 0;
     void setupUi();
 };

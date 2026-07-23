@@ -82,3 +82,10 @@ void KThesaurusSaveUi::setupUi()
     btnCancel->setGeometry(546, 703, 133, 40);
     connect(btnCancel, &QPushButton::clicked, this, &QWidget::close);   // реф. SlotBtnCancel→close
 }
+
+void KThesaurusSaveUi::SetSaveContext(const QString &text, const QString &title, int scopeClass)
+{
+    m_text = text;
+    m_title = title;
+    m_scopeClass = scopeClass;
+}

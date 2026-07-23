@@ -55,5 +55,7 @@ void KRecordCase::setupUi()
     QPushButton *btn = new QPushButton(tr("Start Record"), host);
     btn->setObjectName(QStringLiteral("bt_startrecord"));
     btn->setGeometry(106, 180, 110, 22);
-    // btn → RecordCaseName (запись кейса в ФС) — DEVICE, не подключаем.
+    // Реф. btn → RecordCaseName (запись кейса в ФС) — DEVICE; фиксируем только факт
+    // нажатия: его читает OpenRecordCase (поле +0x58).
+    connect(btn, &QPushButton::clicked, this, [this] { m_started = true; });
 }

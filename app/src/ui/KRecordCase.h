@@ -17,6 +17,12 @@ class KRecordCase : public KDialog
 public:
     explicit KRecordCase(QWidget *parent = nullptr);
 
+    // Реф. поле +0x58: нажимали ли «Start Record» (его читает OpenRecordCase @0x734348
+    // и отдаёт наружу как bool).
+    bool IsRecordStarted() const { return m_started; }
+
 private:
     void setupUi();
+
+    bool m_started = false;
 };

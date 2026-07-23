@@ -19,8 +19,21 @@ class KUserSrvSet : public KDialog
 {
     Q_OBJECT
 public:
+    // Реф. _KModuleId: куда перейти ПОСЛЕ закрытия сервисного меню. Значения выверены
+    // по слотам-источникам (ClickViewLog→9, ClickUpgrade→13, ClickBtnLightConfig→16,
+    // ClickBtnVideoCal→17, ClickEndoCtl→11, OpenScopeInfo→6); диспетчер — OpenUserSrvSetDlg.
+    enum JumpModuleId {
+        JumpNone = 0, JumpScopeInfo = 6, JumpLogView = 9, JumpProcessorCtrl = 10,
+        JumpEndoControl = 11, JumpUpdateMng = 13, JumpColdlightAdjust = 16, JumpVideoCal = 17
+    };
+
     explicit KUserSrvSet(QWidget *parent = nullptr);
 
+    // Реф. InterfaceJump(_KModuleId): `str w1,[this,#0x68]` + KDialog::close().
+    void InterfaceJump(int moduleId);
+    int JumpModule() const { return m_jumpModule; }
+
 private:
+    int m_jumpModule = JumpNone;   // +0x68
     void setupUi();
 };

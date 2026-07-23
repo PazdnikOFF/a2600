@@ -103,3 +103,11 @@ void KUserSrvSet::setupUi()
     connect(btnExit, &QPushButton::clicked, this, &QWidget::close);   // реф. ClickExit→close
     // Прочие кнопки → под-диалоги/device-операции — DEVICE, не подключаем.
 }
+
+void KUserSrvSet::InterfaceJump(int moduleId)
+{
+    // Реф.: запомнить модуль перехода и закрыть диалог — открывает следующий экран
+    // уже вызывающий (OpenUserSrvSetDlg), а не сам диалог.
+    m_jumpModule = moduleId;
+    close();
+}

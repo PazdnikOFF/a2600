@@ -72,3 +72,11 @@ void KProcessorSN::setupUi()
     });
     connect(btnCancel, &QPushButton::clicked, this, &QWidget::close);   // реф. Cancel→close
 }
+
+QString KProcessorSN::GetSetSN() const
+{
+    // Реф.: геттер введённого SN (поле lineEdit с валидатором [A-Za-z0-9]{0,12}).
+    if (const QLineEdit *edit = findChild<QLineEdit *>(QStringLiteral("lineEdit")))
+        return edit->text();
+    return QString();
+}

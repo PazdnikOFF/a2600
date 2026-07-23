@@ -365,6 +365,9 @@ KTableWidget, KPosNameLineEditDelegate, KPoweroff,
 report_template::KLineEdit,
 (семейство event-фильтров закрыто целиком.)
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
+✅ **СЛОЙ НАВИГАЦИИ `Open*` — 22 из 25 СДЕЛАНЫ** (`ui/KUiNavigation.*`, self-test `opendlgs`).
+Не портированы: `OpenProgressBar` (мёртвая ветка целиком) и `OpenUpdateMng` (нет класса
+KUpdateMng). Следующий срез UI после QObject-очереди — именно свободные функции.
 ✅ **KPoweroff, KToProgressDlgMsgDispatcher, сортировка KDICOMSrvListModel — СДЕЛАНЫ**
 (self-test `poweroff`).
 ✅ **KRecordItem — СДЕЛАН** (self-test `recorditem`, рендер `osdroot`); попутно исправлены

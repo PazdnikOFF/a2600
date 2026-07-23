@@ -53,6 +53,7 @@
 #include "ui/KRecordCase.h"
 #include "ui/KNetPrintList.h"
 #include "ui/KHospitalInfoEditDlg.h"
+#include "ui/KUiNavigation.h"
 #include "ui/KUserSrvSet.h"
 #include "ui/KExamDetailInfoUi.h"
 #include "ui/KAlgParamAjustDlg.h"
@@ -6996,6 +6997,69 @@ int main(int argc, char **argv)
                      && singletonOk && sortOk;
         qInfo() << (ok ? "poweroff: PASS" : "poweroff: FAIL");
         return ok ? 0 : 86;
+    }
+
+    // Self-test слоя навигации (реф. свободные функции Open*). Модальные ветки здесь
+    // недоступны (exec() заблокировал бы тест), поэтому проверяются ГЕЙТЫ — то есть ровно
+    // те пути, где реф. НЕ открывает диалог, — плюс центрирование и карта переходов.
+    if (screen == "opendlgs") {
+        // Роль по умолчанию — RoleNone(0), значит все ролевые гейты закрыты и функции
+        // обязаны вернуться немедленно, ничего не создав.
+        const int role = (int)KAccount::GetInstance().CurrentRole();
+        const bool roleOk = role <= 1;
+        OpenLogViewDlg();            // реф. роль > 1
+        OpenProcessorControlDlg();   // реф. роль > 1
+        const bool recOk = OpenRecordCase() == false;   // реф. роль > 3 → false
+
+        // Гейт контроля машины: провайдер по умолчанию выключен ⇒ диалог не открывается.
+        const bool ctlOffOk = !nav::MachineControlEnabled();
+        nav::SetMachineControlProvider([] { return true; });
+        const bool ctlOnOk = nav::MachineControlEnabled();
+        nav::SetMachineControlProvider(nullptr);   // вернуть, иначе следующий вызов повиснет
+
+        // Гейт QR-кода: IsHideQRCode == (текущий бренд == "PyCkeun").
+        KStyleConfig &sc = KStyleConfig::GetInstance();
+        const QString saved = sc.GetCurrentStyle();
+        sc.SetCurrentStyle(QStringLiteral("PyCkeun"));
+        const bool qrHiddenOk = KProjectSet::GetInstance().IsHideQRCode();
+        OpenDeviceInfoDlg();   // гейт закрыт → должен вернуться сразу
+        sc.SetCurrentStyle(QStringLiteral("SonoScape"));
+        const bool qrShownOk = !KProjectSet::GetInstance().IsHideQRCode();
+        sc.SetCurrentStyle(saved);
+
+        // Центрирование: диалог ставится по центру ссылочного виджета (деление целочисленное).
+        QWidget host; host.resize(1000, 600);
+        QWidget dlg;  dlg.resize(300, 200);
+        nav::CenterOn(&dlg, &host);
+        const bool centerOk = dlg.pos() == QPoint((1000 - 300) / 2, (600 - 200) / 2);
+        nav::CenterOn(nullptr, &host);   // не должно падать
+        nav::CenterOn(&dlg, nullptr);
+
+        // Карта переходов сервисного меню (реф. _KModuleId).
+        KUserSrvSet srv;
+        const bool jumpInitOk = srv.JumpModule() == KUserSrvSet::JumpNone;
+        srv.InterfaceJump(KUserSrvSet::JumpColdlightAdjust);
+        const bool jumpOk = srv.JumpModule() == 16 && KUserSrvSet::JumpLogView == 9
+            && KUserSrvSet::JumpProcessorCtrl == 10 && KUserSrvSet::JumpEndoControl == 11
+            && KUserSrvSet::JumpUpdateMng == 13 && KUserSrvSet::JumpVideoCal == 17
+            && KUserSrvSet::JumpScopeInfo == 6;
+
+        // Диалог записи кейса отдаёт наружу факт нажатия «Start Record» (реф. поле +0x58).
+        KRecordCase rc;
+        const bool startFalse = !rc.IsRecordStarted();
+        if (QPushButton *b = rc.findChild<QPushButton *>(QStringLiteral("bt_startrecord")))
+            b->click();
+        const bool startTrue = rc.IsRecordStarted();
+
+        qInfo() << "роль:" << role << "| ролевые гейты:" << (roleOk && recOk)
+                << "| контроль машины:" << (ctlOffOk && ctlOnOk)
+                << "| QR-гейт:" << (qrHiddenOk && qrShownOk) << "| центрирование:" << centerOk
+                << "| карта переходов:" << (jumpInitOk && jumpOk)
+                << "| RecordCase:" << (startFalse && startTrue);
+        const bool ok = roleOk && recOk && ctlOffOk && ctlOnOk && qrHiddenOk && qrShownOk
+                     && centerOk && jumpInitOk && jumpOk && startFalse && startTrue;
+        qInfo() << (ok ? "opendlgs: PASS" : "opendlgs: FAIL");
+        return ok ? 0 : 87;
     }
 
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).

@@ -229,6 +229,7 @@ set(SOURCES
     src/video/KVideoCal.cpp
     src/video/KSaveVideoFile.cpp
     src/ui/KUIDesktop.cpp
+    src/ui/KUiNavigation.cpp
     src/ui/KDisplayOption.cpp
     src/ui/KImgList.cpp
     src/ui/KImgListCell.cpp
@@ -388,6 +389,7 @@ add_executable(ui_preview
     src/ui/preview_main.cpp
     src/ui/Theme.cpp
     src/ui/KUIDesktop.cpp
+    src/ui/KUiNavigation.cpp
     src/ui/KDisplayOption.cpp
     src/ui/KImgList.cpp
     src/ui/KImgListCell.cpp

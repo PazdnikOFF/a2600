@@ -35,6 +35,9 @@ public:
 
     void SetTitle(const QString &title);   // реф. @0x68b408: windowTitle + label_title
     void SetKStyle(_KDLG_STYLE style);     // реф. @0x68b910: пресеты ширины окна
+    // Реф. @0x68b768 — ровно `b QDialog::exec` (виртуальный слот vptr+0x1c8). Отдельное имя
+    // существует только ради единообразия вызовов из слоя навигации (OpenThesaurusSaveDlg).
+    virtual int DoModal() { return exec(); }
     void SetBtnCloseAbort(bool abort) { m_btnCloseAbort = abort; }   // реф. @0x68bac8
     void SetBtnCloseVisible(bool v);
 

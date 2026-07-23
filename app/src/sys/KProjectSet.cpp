@@ -1,4 +1,5 @@
 #include "sys/KProjectSet.h"
+#include "sys/KStyleConfig.h"
 
 #include <QSettings>
 
@@ -62,4 +63,10 @@ bool KProjectSet::LoadProductConfig(const QString &productIniPath)
 bool KProjectSet::IsShowPAPP(int idx) const
 {
     return papp_.contains(QString("PAPP%1").arg(idx, 2, 10, QChar('0')));
+}
+
+bool KProjectSet::IsHideQRCode() const
+{
+    // Реф. @0x655600: `KEncStyle::getCurrentStyle().compare("PyCkeun") == 0`.
+    return KStyleConfig::GetInstance().GetCurrentStyle() == QStringLiteral("PyCkeun");
 }

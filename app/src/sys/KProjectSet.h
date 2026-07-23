@@ -31,6 +31,10 @@ public:
     bool IsZoomEnable() const        { return zoomEnable_; }
     bool IsChbEnable() const         { return chbEnable_; }
     bool IsVideoRecordEnable() const { return recordEnable_; }
+    // Реф. @0x655600: НЕ конфиг-флаг, а сравнение текущего стиля бренда с литералом
+    // "PyCkeun" (@0x83f540) — у российского бренда QR-код на экране «об устройстве»
+    // скрывается. Гейт OpenDeviceInfoDlg.
+    bool IsHideQRCode() const;
     // [Firmware] PAPP<idx> присутствует (idx: 0,1,2,3,4,6,80).
     bool IsShowPAPP(int idx) const;
 
