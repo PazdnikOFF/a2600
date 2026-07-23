@@ -364,6 +364,17 @@ KBackGround, KCalendarTextNavigator, KCalendarView, KDICOMSrvListItem,
 KTableWidget, KPosNameLineEditDelegate, KPoweroff,
 
 (семейство event-фильтров закрыто целиком.)
+
+⭐ **ПЕРЕСЧЁТ ОЧЕРЕДИ QObject (2026-07-23, вечер).** Прогон инвентаризации заново
+(`nm -D bin/X2000 | grep -o '_ZN[A-Za-z_0-9]*16staticMetaObjectE'` — ⚠️ нужен именно
+**`nm -D`**, символ живёт в динамической таблице; наш `tools/symmaps/*.symmap` его НЕ
+содержит) даёт 259 классов, из них непортированных осталось **пять**:
+`KSelfTest` (QWidget, checkEndo/checkLight/checkProcessor/displayInfo/startCheck/
+timerToUpdate), `KAutoTestThread` (парсер скриптов уже сделан отдельно — остался сам
+поток), `ColdLight` и `HmiMcu` (оба — обвязка МК-платы, ~40 `NT_*_CB`-колбэков, фаза E,
+device), `KDICOMSrvListItem` (у нас его роль играет `DicomSrvRow`).
+✅ **KTimeMng — СДЕЛАН** (`sys/KTimeMng.*`, self-test `timemng`) вместе со всем
+«защищённым» слоем `KSystemSet` (лицензия + продуктовая идентичность).
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
 ✅ **KUpdateMng — СДЕЛАН** (роутер цепочки обновления 13→14→15).
 ⛔ **`report_template::KLineEdit` — НЕ ПОРТИРОВАТЬ**: мёртвый код (ctor отсутствует в

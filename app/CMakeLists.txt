@@ -265,6 +265,7 @@ set(SOURCES
     src/db/KExamNoGenerate.cpp
     src/db/KDbFileOperation.cpp
     src/sys/KSystemStatus.cpp
+    src/sys/KTimeMng.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp
@@ -424,6 +425,7 @@ add_executable(ui_preview
     src/db/KExamNoGenerate.cpp
     src/db/KDbFileOperation.cpp
     src/sys/KSystemStatus.cpp
+    src/sys/KTimeMng.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp

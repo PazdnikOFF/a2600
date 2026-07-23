@@ -26,6 +26,13 @@ public:
     int     LanguageMode() const   { return langMode_; }
     QStringList GetProductSeriesList() const { return seriesList_; }
     QStringList GetProductModelList(const QString &series) const;
+    // Реф. @0x656128: [Option]ReleaseVersion того же project.ini, но прочитанный
+    // как СПИСОК (toStringList — QSettings сам делит по запятой), дефолт "V2.0".
+    // Валидатор для KSystemSet::GetProductRelaseVersion.
+    QStringList GetReleaseVersionList() const;
+    // ⚠️ Реф. @0x655380 — заглушка: тело ровно `mov w0,#0; ret`, всегда false.
+    // Оставлена ради читаемости KSystemSet::GetProductRelaseVersion.
+    bool IsFirstRegisterVersion() const { return false; }
 
     // --- product.ini: [Function] флаги ---
     bool IsZoomEnable() const        { return zoomEnable_; }

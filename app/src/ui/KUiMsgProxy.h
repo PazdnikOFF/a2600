@@ -33,6 +33,14 @@ public:
     void UpdateFlexEndoBtnGuide();
     void DisplayMsg(const QString &msg);
     void SigLightAdjustDisabel();
+
+signals:
+    // Настоящие Qt-сигналы (реф. @0x82d840 / @0x82d868 / @0x82da90) — их испускает
+    // KTimeMng и подключает по СТРОКОВОМУ SIGNAL/SLOT, поэтому заглушкой-методом,
+    // как выше, обойтись нельзя.
+    void UpdateSystemtime(QString text);   // ⚠️ реф. передаёт QString ПО ЗНАЧЕНИЮ
+    void UpdateRecTime();                  // тик секундомера записи (только пока идёт запись)
+    void CheckMachineControl();            // «пересчитать контроль наработки/лицензии»
 };
 
 // Реф. свободная функция-акцессор.

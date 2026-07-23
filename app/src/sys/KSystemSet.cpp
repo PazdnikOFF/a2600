@@ -112,3 +112,108 @@ void KSystemSet::SetSystemLanguage(int v)
 {
     write("Common/Language", v);
 }
+
+// ============================================================================
+// «Защищённый» system.ini: продуктовая идентичность + лицензия.
+// Реф. KSystemSet::GetProtectedSysIniPath @0x6582d0, Read/WriteProtectedValue
+// @0x658e80 / @0x658da8. Отдельный файл от обычных настроек — переживает сброс.
+// ============================================================================
+
+QString KSystemSet::GetProtectedSysIniPath() const
+{
+    if (!protectedFile_.isEmpty())
+        return protectedFile_;
+    // Реф.: QDir dir(ProtectedPath()); if (!dir.exists()) dir.mkpath(ProtectedPath());
+    const QString dir = KSystem::ProtectedPath();
+    QDir d(dir);
+    if (!d.exists())
+        d.mkpath(dir);
+    return d.absoluteFilePath("system.ini");
+}
+
+QVariant KSystemSet::ReadProtectedValue(const QString &key, const QVariant &def) const
+{
+    QSettings ini(GetProtectedSysIniPath(), QSettings::IniFormat);
+    return ini.value(key, def);
+}
+
+void KSystemSet::WriteProtectedValue(const QString &key, const QVariant &value)
+{
+    QSettings ini(GetProtectedSysIniPath(), QSettings::IniFormat);
+    ini.setValue(key, value);
+}
+
+// --- Лицензия. Дефолт у всех — пустая строка (реф. QVariant("")). ---
+
+QString KSystemSet::GetProductCN() const
+{ return ReadProtectedValue("System/ProductCN", "").toString(); }
+void KSystemSet::SetProductCN(const QString &v)
+{ WriteProtectedValue("System/ProductCN", v); }
+
+// ⚠️ Ключ с опечаткой вендора: «Vaild» вместо «Valid» — оставлен как в прошивке.
+QString KSystemSet::GetLastValidDate() const
+{ return ReadProtectedValue("System/ProductLastVaildDate", "").toString(); }
+void KSystemSet::SetLastValidDate(const QString &v)
+{ WriteProtectedValue("System/ProductLastVaildDate", v); }
+
+QString KSystemSet::GetRemainDays() const
+{ return ReadProtectedValue("System/ProductRemainDays", "").toString(); }
+void KSystemSet::SetRemainDays(const QString &v)
+{ WriteProtectedValue("System/ProductRemainDays", v); }
+
+// ⚠️ Асимметрия из реф.: пишется int, читается строкой.
+QString KSystemSet::GetProductAuthFlag() const
+{ return ReadProtectedValue("System/ProductAuthFlag", "").toString(); }
+void KSystemSet::SetProductAuthFlag(int v)
+{ WriteProtectedValue("System/ProductAuthFlag", v); }
+
+// ⚠️ И здесь опечатка вендора: «Authbin» строчной b.
+QString KSystemSet::GetAuthBinMD5() const
+{ return ReadProtectedValue("System/ProductAuthbinMD5", "").toString(); }
+void KSystemSet::SetAuthBinMD5(const QString &v)
+{ WriteProtectedValue("System/ProductAuthbinMD5", v); }
+
+// --- Продуктовая идентичность (с валидацией по спискам project.ini). ---
+
+QString KSystemSet::GetProductSeries() const
+{
+    // ⚠️ Ключ «ProductSerise» — опечатка вендора.
+    QString v = ReadProtectedValue("Product/ProductSerise", "").toString();
+    const QStringList list = KProjectSet::GetInstance().GetProductSeriesList();
+    // Реф.: если значения нет в списке — берётся ПЕРВЫЙ элемент (`array + begin*8`),
+    // а не последний. При пустом списке реф. читает мусор — у нас пустая строка.
+    if (!list.contains(v, Qt::CaseSensitive))
+        v = list.value(0);
+    return v;
+}
+
+QString KSystemSet::GetProductModel() const
+{
+    QString v = ReadProtectedValue("Product/ProductModel", "").toString();
+    // Реф. вызывает GetProductSeries() БЕЗУСЛОВНО — список моделей всегда берётся
+    // для текущей серии, даже если сохранённая модель валидна.
+    const QStringList list = KProjectSet::GetInstance().GetProductModelList(GetProductSeries());
+    if (!list.contains(v, Qt::CaseSensitive))
+        v = list.value(0);
+    return v;
+}
+
+QString KSystemSet::GetProductRelaseVersion() const
+{
+    QString v = ReadProtectedValue("Product/ReleaseVersion", "V2.0").toString();
+    const QStringList list = KProjectSet::GetInstance().GetReleaseVersionList();
+    if (!list.contains(v, Qt::CaseSensitive))
+        v = list.value(0);
+    // ⚠️ Реф. затирает результат на "V1.0", если IsFirstRegisterVersion() — но та
+    // в прошивке жёстко возвращает false (тело: `mov w0,#0; ret`), т.е. ветка мёртвая.
+    if (KProjectSet::GetInstance().IsFirstRegisterVersion())
+        v = QStringLiteral("V1.0");
+    return v;
+}
+
+void KSystemSet::SetProductSeries(const QString &v)
+{ WriteProtectedValue("Product/ProductSerise", v); }
+void KSystemSet::SetProductModel(const QString &v)
+{ WriteProtectedValue("Product/ProductModel", v); }
+void KSystemSet::SetProductReleaseVersion(const QString &v)
+{ WriteProtectedValue("Product/ReleaseVersion", v); }

@@ -13,7 +13,7 @@ export QT_QPA_PLATFORM=offscreen
 # Режимы, которым нужен ENDO_ROOT прошивки.
 ER_MODES="alg plreg scopecut filt dicom report thesaurus userset coldlight version
 statistic sysstatus project style videoset dsdemo videocal templetcfg osdset endoinfo
-remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib encset imageblock reporttmplmgr legalnotice flexbtn osdspin02 imglistcell patnavitem evtfilters recorditem poweroff opendlgs factoryopt docsync initdocreal"
+remoteswitch dcmfmt fxpt language unicodetext encstyle dsreal meaxml templatecfg templatelib encset imageblock reporttmplmgr legalnotice flexbtn osdspin02 imglistcell patnavitem evtfilters recorditem poweroff opendlgs factoryopt docsync initdocreal timemng"
 # Режимы без ENDO_ROOT (чистая логика / своя БД).
 PLAIN_MODES="cornercut quickinput examcfg exam filebackup update reportdb
 camera endoscope dimming smalllang videoplayer reportedit imgproc exportrec savefile dbservice dispparam pattime recfiles kconfig strutil templateparam dbfileop patstr stopwatch patient doctor dbstr session textblock tableblock titletableblock reporttmpl examdata kobject xmlparser dbsqlite des templetmodel docgen monitor rtcreator videoipc screenmng rtdatasource listbuff quickinputdb quickinputmodel reporttitledb viewbase videolabel rtsimple rtcreators rtte rttext rtimage rttable findcell selectitem docedit movefb changecolor initdoc"

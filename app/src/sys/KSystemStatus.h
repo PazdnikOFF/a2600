@@ -112,6 +112,10 @@ signals:
     void SystemStatusChange(int type, int value);
     void UserSetChange(int type, int value);     // реф. @0x828570
     void SystemSetChange(int type, int value);   // реф. @0x8285a8
+    // Реф. @0x8285f8 — «изменилась авторизация прибора» (без аргументов). Испускает
+    // KTimeMng::EachDayMC в полночь, когда истёк последний день лицензии; подписчик —
+    // KViewSoftEndo::AuthMachineChangeAct.
+    void AuthMachineChange();
 
 private:
     explicit KSystemStatus(QObject *parent = nullptr) : QObject(parent) {}

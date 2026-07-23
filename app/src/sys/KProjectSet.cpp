@@ -30,6 +30,13 @@ QStringList KProjectSet::GetProductModelList(const QString &series) const
     return ini.value("Product/" + series).toStringList();
 }
 
+QStringList KProjectSet::GetReleaseVersionList() const
+{
+    // Реф. открывает project.ini заново (getProjectPath()), а не берёт кэш LoadProject.
+    QSettings ini(projectIni_, QSettings::IniFormat);
+    return ini.value("Option/ReleaseVersion", "V2.0").toStringList();
+}
+
 bool KProjectSet::LoadProductConfig(const QString &productIniPath)
 {
     productIni_ = productIniPath;

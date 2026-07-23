@@ -46,10 +46,44 @@ public:
     // Серийник процессора (реф. GetProcessorSN — на устройстве из EEPROM; здесь из ini).
     QString GetProcessorSN() const;
 
+    // --- «Защищённый» system.ini (реф. GetProtectedSysIniPath @0x6582d0) ---
+    // ⚠️ ЭТО ДРУГОЙ ФАЙЛ, не тот, что читают геттеры выше: KSystem::ProtectedPath() +
+    // "system.ini" (в реф. — конкатенация, ProtectedPath оканчивается на "/"), т.е.
+    // /home/root/data/protected/system.ini. Каталог создаётся при первом обращении
+    // (QDir::mkpath, если не существует). Здесь живут продуктовая идентичность и
+    // лицензия — то, что переживает сброс настроек.
+    QString GetProtectedSysIniPath() const;
+    void SetProtectedSysIniFile(const QString &path) { protectedFile_ = path; }  // не из реф.: для self-test
+    QVariant ReadProtectedValue(const QString &key, const QVariant &def) const;   // реф. @0x658e80
+    void     WriteProtectedValue(const QString &key, const QVariant &value);      // реф. @0x658da8
+
+    // Лицензия/авторизация прибора. ⚠️ Все три ключа — с опечатками вендора, оставлены
+    // как есть: System/ProductLastVaildDate (sic), System/ProductAuthbinMD5 (sic).
+    // ⚠️ RemainDays в реф. — СТРОКА (Get/SetRemainDays(QString)), а не число; вызывающие
+    // сами делают toInt(). Дефолт всех — пустая строка.
+    QString GetProductCN() const;            void SetProductCN(const QString &v);
+    QString GetLastValidDate() const;        void SetLastValidDate(const QString &v);
+    QString GetRemainDays() const;           void SetRemainDays(const QString &v);
+    QString GetAuthBinMD5() const;           void SetAuthBinMD5(const QString &v);
+    // ⚠️ Флаг авторизации ПИШЕТСЯ как int, а ЧИТАЕТСЯ как строка (реф. GetProductAuthFlag
+    // @0x65f0b8 отдаёт QString с тем же дефолтом ""), поэтому подписи асимметричны.
+    QString GetProductAuthFlag() const;      void SetProductAuthFlag(int v);
+
+    // Продуктовая идентичность. Все три читаются из защищённого system.ini и
+    // ВАЛИДИРУЮТСЯ по спискам из project.ini: если сохранённого значения нет в списке,
+    // возвращается ПЕРВЫЙ элемент списка (реф. `list.begin()`, не last).
+    QString GetProductSeries() const;        // ключ Product/ProductSerise (sic!)
+    QString GetProductModel() const;         // ключ Product/ProductModel, список — по серии
+    QString GetProductRelaseVersion() const; // sic; ключ Product/ReleaseVersion, дефолт "V2.0"
+    void SetProductSeries(const QString &v);
+    void SetProductModel(const QString &v);
+    void SetProductReleaseVersion(const QString &v);
+
 private:
     KSystemSet() = default;
     QString cfgFile() const;
     QVariant read(const QString &key, const QVariant &def) const;
     void     write(const QString &key, const QVariant &value);
     QString cfgFile_;
+    QString protectedFile_;   // не из реф.: подмена защищённого system.ini в self-test
 };

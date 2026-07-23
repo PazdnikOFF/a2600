@@ -335,6 +335,7 @@ public:
 #include "sys/KTimeInfo.h"
 #include "db/KExamListRecordFileUpdate.h"
 #include "sys/KSystemStatus.h"
+#include "sys/KTimeMng.h"
 #include "sys/KFactoryOptions.h"
 
 #include <QDir>
@@ -1744,6 +1745,121 @@ int main(int argc, char **argv)
             (int)KSystemStatus::ST_ViewType == 0 && (int)KSystemStatus::ST_AirPump == 17;
         qInfo() << (ok ? "sysstatus: PASS" : "sysstatus: FAIL");
         return ok ? 0 : 18;
+    }
+
+    // Self-test часов/суточного обслуживания (KTimeMng) и «защищённого» system.ini
+    // (KSystemSet: лицензия + продуктовая идентичность).
+    if (screen == "timemng") {
+        QTemporaryDir tmp;
+        KSystemSet &ss = KSystemSet::GetInstance();
+        const QString protIni = QDir(tmp.path()).absoluteFilePath("system.ini");
+        ss.SetProtectedSysIniFile(protIni);
+        ss.SetConfigFile(QDir(tmp.path()).absoluteFilePath("common.ini"));
+
+        // --- 1. Лицензионная группа: пишем/читаем, ключи — с опечатками вендора. ---
+        ss.SetProductCN("CN-777");
+        ss.SetLastValidDate("2026-12-31");
+        ss.SetRemainDays("5");
+        ss.SetAuthBinMD5("deadbeef");
+        ss.SetProductAuthFlag(1);
+        QSettings raw(protIni, QSettings::IniFormat);
+        const QStringList keys = raw.allKeys();
+        qInfo() << "ключи защищённого system.ini:" << keys;
+        const bool licOk =
+            ss.GetProductCN() == "CN-777" && ss.GetLastValidDate() == "2026-12-31" &&
+            ss.GetRemainDays() == "5" && ss.GetAuthBinMD5() == "deadbeef" &&
+            ss.GetProductAuthFlag() == "1" &&
+            // ⚠️ Именно опечатки прошивки, иначе прибор не увидит своей лицензии.
+            keys.contains("System/ProductLastVaildDate") &&
+            keys.contains("System/ProductAuthbinMD5") &&
+            keys.contains("System/ProductRemainDays");
+
+        // --- 2. Продуктовая идентичность: валидация по спискам project.ini. ---
+        KProjectSet &ps = KProjectSet::GetInstance();
+        const QString sysd = QDir(KSystem::SystemPath()).absoluteFilePath("");
+        ps.LoadProject(QDir(sysd).absoluteFilePath("display/project.ini"));
+        ss.SetProductSeries("X-2600");
+        ss.SetProductModel("X-2600B");
+        const QString seriesGood = ss.GetProductSeries();
+        const QString modelGood  = ss.GetProductModel();
+        // Мусор в файле → откат на ПЕРВЫЙ элемент списка (реф. list.begin(), не last).
+        ss.SetProductSeries("НЕТ-ТАКОЙ");
+        ss.SetProductModel("НЕТ-ТАКОЙ");
+        const QString seriesFallback = ss.GetProductSeries();
+        const QString modelFallback  = ss.GetProductModel();
+        qInfo() << "серия:" << seriesGood << "→ откат:" << seriesFallback
+                << "модель:" << modelGood << "→ откат:" << modelFallback
+                << "версия:" << ss.GetProductRelaseVersion();
+        const bool idOk =
+            seriesGood == "X-2600" && modelGood == "X-2600B" &&
+            seriesFallback == ps.GetProductSeriesList().value(0) &&
+            modelFallback == ps.GetProductModelList(seriesFallback).value(0) &&
+            !ps.IsFirstRegisterVersion() &&               // в реф. жёстко false
+            !ss.GetProductRelaseVersion().isEmpty();
+
+        // --- 3. KTimeMng: часы, суточный тик, отложенный InitMC, секундомер записи. ---
+        KUiMsgProxy *proxy = GetKUiMsgProxy();
+        QStringList times;
+        int checkMC = 0, recTicks = 0, authChanged = 0;
+        QObject::connect(proxy, &KUiMsgProxy::UpdateSystemtime,
+                         [&](QString s){ times << s; });
+        QObject::connect(proxy, &KUiMsgProxy::CheckMachineControl, [&]{ ++checkMC; });
+        QObject::connect(proxy, &KUiMsgProxy::UpdateRecTime, [&]{ ++recTicks; });
+        QObject::connect(&KSystemStatus::GetInstance(), &KSystemStatus::AuthMachineChange,
+                         [&]{ ++authChanged; });
+
+        ss.SetDateFormat("dd.MM.yyyy");
+        KTimeMng *tm = GetKTimeMng();          // ctor сразу заводит все три таймера
+        const bool singleton = (tm == GetKTimeMng());
+
+        // Суточный тик вне полуночи не делает НИЧЕГО.
+        KTimeMng::SetTimeProvider([]{ return QTime(12, 30, 0); });
+        tm->EachDayMC();
+        const bool quietNoon = (checkMC == 0 && authChanged == 0);
+
+        // Полночь, но лицензия не на исходе (5 дней) — только пересчёт контроля.
+        KTimeMng::SetTimeProvider([]{ return QTime(0, 0, 15); });
+        tm->EachDayMC();
+        const bool midnightPlain = (checkMC == 1 && authChanged == 0 &&
+                                    ss.GetProductAuthFlag() == "1");
+
+        // Полночь и остался ОДИН день — флаг авторизации сбрасывается в 0 + оповещение.
+        ss.SetRemainDays("1");
+        tm->EachDayMC();
+        const bool midnightExpire = (checkMC == 2 && authChanged == 1 &&
+                                     ss.GetProductAuthFlag() == "0");
+
+        // Секундомер записи: тики идут ТОЛЬКО между Start и Stop.
+        tm->StartRecTimer();
+        // Ждём ~1.2 с — за это время 1-секундный таймер должен дать и часы, и рек-тик.
+        QEventLoop wait;
+        QTimer::singleShot(1200, &wait, SLOT(quit()));
+        wait.exec();
+        tm->StopRecTimer();
+        const int ticksAfterStop = recTicks;
+        QEventLoop wait2;
+        QTimer::singleShot(1200, &wait2, SLOT(quit()));
+        wait2.exec();
+
+        qInfo() << "часы:" << (times.isEmpty() ? QString("<нет>") : times.last())
+                << "тиков часов:" << times.size()
+                << "рек-тиков:" << ticksAfterStop << "→ после Stop:" << recTicks
+                << "CheckMachineControl:" << checkMC;
+        const bool timerOk =
+            singleton && quietNoon && midnightPlain && midnightExpire &&
+            times.size() >= 2 &&                         // 1-секундный таймер живой
+            // Формат — «<формат даты>\nhh:mm:ss»: дата и время в ДВЕ строки.
+            times.last().startsWith(QDate::currentDate().toString("dd.MM.yyyy")) &&
+            times.last().contains('\n') && times.last().split('\n').size() == 2 &&
+            times.last().split('\n').at(1).size() == 8 &&
+            recTicks >= 1 && recTicks == ticksAfterStop &&  // после Stop — молчок
+            // InitMC отработал ОДИН раз (1.5 с) и сам себя остановил: +1 к счётчику.
+            checkMC == 3;
+
+        const bool ok = licOk && idOk && timerOk;
+        qInfo() << (ok ? "timemng: PASS" : "timemng: FAIL")
+                << "lic:" << licOk << "id:" << idOk << "timer:" << timerOk;
+        return ok ? 0 : 22;
     }
 
     // Self-test спеки событий статистики (statistic.ini).
