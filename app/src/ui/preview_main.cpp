@@ -96,6 +96,7 @@
 #include "ui/KPageLineEdit.h"
 #include "ui/KLayOut.h"
 #include "ui/KPatientListViewUi.h"
+#include "ui/KPatientListWidgetItem.h"
 #include "ui/KPatientManagmentUi.h"
 #include "ui/KDicomQueueOptUi.h"
 #include "ui/KPatientListEditDlg.h"
@@ -6714,6 +6715,56 @@ int main(int argc, char **argv)
         const bool ok = ctorOk && noReserveOk && textOk && reserveOk && clearOk && cellsOk && rectOk;
         qInfo() << (ok ? "imglistcell: PASS" : "imglistcell: FAIL");
         return ok ? 0 : 82;
+    }
+
+    // Self-test строки лево-навигации управления пациентами (реф. KPatientListWidgetItem +
+    // свободная setElidedFrame + KHoverEventFilter).
+    if (screen == "patnavitem") {
+        const QString dir = QDir(KSystem::ProjectPresetPath()).absoluteFilePath("patient/mainicon");
+        QMap<QString, QString> icons;
+        icons.insert("selectIcon",  dir + "/patientlist_select.png");
+        icons.insert("normalIcon",  dir + "/patientlist_normal.png");
+        icons.insert("hoverIcon",   dir + "/patientlist_hover.png");
+        icons.insert("disableIcon", dir + "/patientlist_disable.png");
+
+        KPatientListWidgetItem item(icons, QStringLiteral("TR_PInfo(F3)"));
+        // Реф.: фикс-размер берётся из ПИКСМАПА normalIcon (в поставке 211×80).
+        const bool geomOk = item.size() == QSize(211, 80)
+            && item.getLabel()->geometry() == QRect(23, 50, 165, 28)
+            && item.getLabel()->text() == QStringLiteral("TR_PInfo(F3)")
+            && item.getLabel()->alignment() == Qt::AlignCenter;
+
+        // Состояния меняют ТОЛЬКО пиксмап; проверяем, что он реально другой.
+        item.UnSelect();
+        const QImage normal = item.findChild<QLabel *>("label_img")->pixmap(Qt::ReturnByValue).toImage();
+        item.Select();
+        const QImage select = item.findChild<QLabel *>("label_img")->pixmap(Qt::ReturnByValue).toImage();
+        item.Hover();
+        const QImage hover = item.findChild<QLabel *>("label_img")->pixmap(Qt::ReturnByValue).toImage();
+        item.Disable();
+        const QImage disable = item.findChild<QLabel *>("label_img")->pixmap(Qt::ReturnByValue).toImage();
+        const bool statesOk = !normal.isNull() && !select.isNull() && !hover.isNull()
+            && !disable.isNull() && normal != select && normal != hover && normal != disable;
+
+        item.SetFontSize(15);
+        const bool fontOk = item.getLabel()->styleSheet() == QStringLiteral("QLabel{font-size: 15px;}");
+
+        // setElidedFrame: короткий текст остаётся как есть, длинный обрезается с суффиксом.
+        setElidedFrame(&item, 6, QStringLiteral("TR_PInfo(F3)"), QStringLiteral("(F3)"));
+        const bool shortOk = item.getLabel()->text() == QStringLiteral("TR_PInfo(F3)");
+        const QString longText = QStringLiteral("Очень длинная подпись режима, которая точно не влезет(F3)");
+        item.getLabel()->setText(longText);
+        setElidedFrame(&item, 6, longText, QStringLiteral("(F3)"));
+        const QString elided = item.getLabel()->text();
+        const bool longOk = elided != longText && elided.endsWith(QStringLiteral("(F3)"))
+                         && elided.contains(QChar(0x2026));   // Qt::ElideRight ставит «…»
+
+        qInfo() << "геометрия:" << geomOk << "| состояния:" << statesOk << "| шрифт:" << fontOk
+                << "| короткий текст:" << shortOk << "| обрезка:" << longOk
+                << "| результат обрезки:" << elided;
+        const bool ok = geomOk && statesOk && fontOk && shortOk && longOk;
+        qInfo() << (ok ? "patnavitem: PASS" : "patnavitem: FAIL");
+        return ok ? 0 : 83;
     }
 
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).

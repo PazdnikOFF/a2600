@@ -1,5 +1,7 @@
 #include "KPatientManagmentUi.h"
 #include "KPatientListWidget.h"
+#include "KPatientListWidgetItem.h"
+#include "sys/KSystem.h"
 #include "KPatientListViewUi.h"
 #include "KPatientListOptUi.h"
 #include "KExamListViewUi.h"
@@ -15,6 +17,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFrame>
+#include <QDir>
 
 KPatientManagmentUi::KPatientManagmentUi(QWidget *parent)
     : KFullScreenDialog(parent, 2000)   // реф. KFullScreenDialog(parent, 2000) — KObject-ID шины
@@ -93,17 +96,67 @@ void KPatientManagmentUi::buildUi()
 
 void KPatientManagmentUi::InitListWidgetItem()
 {
-    // Реф. InitListWidgetItem: чёрный стиль + gridSize + строки-режимы (в реф. кастом-item'ы).
+    // Реф. @0x7a5e58: стиль (строка @0x8a1dc0, 250 символов — у выделения и hover фон
+    // ПРОЗРАЧНЫЙ, подсветку даёт сам item-виджет сменой пиксмапа), gridSize 215×103,
+    // обе полосы прокрутки off, затем три строки-виджета KPatientListWidgetItem.
     m_listWidget->setStyleSheet(QStringLiteral(
-        "QListWidget{background:rgb(26,26,26);border:0px;}"
-        "QListWidget::item{margin-bottom:23px;color:#ddd;}"
-        "QListWidget::item:selected{background:rgb(0,153,153);}"));
+        "QListWidget{ outline:0px; border: none;}"
+        "QListWidget{ background-color:rgb(26, 26, 26);}"
+        "QListWidget::item{ margin-bottom:23px; margin: 0px 0px 0px 0px;}"
+        "QListWidget::Item:hover{background:transparent;}"
+        "QListWidget::item:selected{background:transparent;}"));
     m_listWidget->setGridSize(QSize(215, 103));
     m_listWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_listWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_listWidget->addItem(new QListWidgetItem(tr("TR_Ptnt")));   // Patient
-    m_listWidget->addItem(new QListWidgetItem(tr("TR_Case")));   // Case/Exam
-    m_listWidget->addItem(new QListWidgetItem(tr("TR_DQueue")));  // DICOM queue
+
+    // Реф.: иконки лежат в ProjectPresetPath() + "patient/mainicon/" (@0x8a1ec0).
+    const QString iconDir = QDir(KSystem::ProjectPresetPath()).absoluteFilePath("patient/mainicon");
+    auto icons = [&iconDir](const QString &stem) {
+        QMap<QString, QString> m;
+        m.insert(QStringLiteral("selectIcon"),  iconDir + "/" + stem + "_select.png");
+        m.insert(QStringLiteral("normalIcon"),  iconDir + "/" + stem + "_normal.png");
+        m.insert(QStringLiteral("hoverIcon"),   iconDir + "/" + stem + "_hover.png");
+        m.insert(QStringLiteral("disableIcon"), iconDir + "/" + stem + "_disable.png");
+        return m;
+    };
+    // Реф. тройка: (patientlist, TR_PInfo, "(F3)"), (examlist, TR_PList, "(Alt+F3)"),
+    // (report, TR_DQueue, "(F10)"). Раньше в порте стояли TR_Ptnt/TR_Case и не было суффиксов.
+    struct Row { const char *stem; const char *key; const char *suffix; };
+    static const Row rows[] = {
+        {"patientlist", "TR_PInfo",  "(F3)"},
+        {"examlist",    "TR_PList",  "(Alt+F3)"},
+        {"report",      "TR_DQueue", "(F10)"},
+    };
+    for (const Row &r : rows) {
+        const QString label = tr(r.key) + QString::fromLatin1(r.suffix);
+        auto *w = new KPatientListWidgetItem(icons(QString::fromLatin1(r.stem)), label);
+        w->SetFontSize(15);                                   // реф. SetFontSize(15)
+        auto *li = new QListWidgetItem;
+        li->setData(Qt::SizeHintRole, QSize(211, 80));        // реф. QSize(0xd3, 0x50)
+        setElidedFrame(w, 6, label, QString::fromLatin1(r.suffix));
+        m_listWidget->insertItem(m_listWidget->count(), li);
+        m_listWidget->setItemWidget(li, w);
+        m_navItems.append(w);
+    }
+    // Порт: список без прокрутки должен вмещать все строки целиком — иначе подпись
+    // последней строки обрезается вьюпортом (поймано скриншотом). Высота = число строк ×
+    // шаг сетки 103. В реф. высоту задаёт Designer-раскладка grp_opt.
+    m_listWidget->setFixedHeight(m_listWidget->count() * 103);
+
+    // Реф. хвост @0x7a6a6c: первая строка — выбранная.
+    if (!m_navItems.isEmpty())
+        m_navItems.first()->Select();
+}
+
+void KPatientManagmentUi::RefreshNavSelection(int row)
+{
+    // Реф.: подсветка навигации = смена пиксмапа у строк (Select/UnSelect), а НЕ стиль списка.
+    for (int i = 0; i < m_navItems.size(); ++i) {
+        if (i == row)
+            m_navItems[i]->Select();
+        else
+            m_navItems[i]->UnSelect();
+    }
 }
 
 void KPatientManagmentUi::InitPatientlistView()
@@ -162,8 +215,9 @@ void KPatientManagmentUi::SwitchPage()
     }
 }
 
-void KPatientManagmentUi::ItemClicked(const QModelIndex &)
+void KPatientManagmentUi::ItemClicked(const QModelIndex &idx)
 {
+    RefreshNavSelection(idx.row());   // реф.: подсветка = пиксмап строки, не стиль списка
     SwitchPage();
 }
 

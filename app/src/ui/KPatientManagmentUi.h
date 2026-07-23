@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QList>
 #include "KFullScreenDialog.h"
 
 class QGroupBox;
@@ -8,6 +9,7 @@ class QLabel;
 class QPushButton;
 class QModelIndex;
 class KPatientListWidget;
+class KPatientListWidgetItem;
 class KPatientListViewUi;
 class KPatientListOptUi;
 class KExamListViewUi;
@@ -43,12 +45,14 @@ private slots:
 private:
     void buildUi();
     void InitListWidgetItem();
+    void RefreshNavSelection(int row);   // реф.: Select/UnSelect на строках-виджетах
     void InitPatientlistView();   // реф. @0x7a20d8
     void InitExamlistView();
     void InitDicomQueueView();
 
     QGroupBox *m_grpOpt = nullptr;
     KPatientListWidget *m_listWidget = nullptr;
+    QList<KPatientListWidgetItem *> m_navItems;   // три строки-режима (реф. кастом-виджеты)
     QStackedWidget *m_stackOpt = nullptr;
     QStackedWidget *m_stackView = nullptr;
     QLabel *m_labelDisk = nullptr;

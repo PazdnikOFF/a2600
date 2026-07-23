@@ -160,6 +160,7 @@ set(SOURCES
     src/ui/KLayOut.cpp
     src/ui/KPatientListViewUi.cpp
     src/ui/KPatientListWidget.cpp
+    src/ui/KPatientListWidgetItem.cpp
     src/ui/KPatientManagmentUi.cpp
     src/ui/KDicomQueueOptUi.cpp
     src/ui/KPatientListEditDlg.cpp
@@ -563,6 +564,7 @@ add_executable(ui_preview
     src/ui/KLayOut.cpp
     src/ui/KPatientListViewUi.cpp
     src/ui/KPatientListWidget.cpp
+    src/ui/KPatientListWidgetItem.cpp
     src/ui/KPatientManagmentUi.cpp
     src/ui/KDicomQueueOptUi.cpp
     src/ui/KPatientListEditDlg.cpp
