@@ -12,6 +12,7 @@ namespace KSystem {
 // Цепочка путей сверена с дизасмом (реф. строит их конкатенацией от RootPath).
 QString RootPath();              // /home/root                (реф. литерал; у нас ENDO_ROOT)
 QString AppPath();               // /home/root/data/app       (реф. = DataPath + "app/")
+QString LogPath();               // /home/root/data/app/logfile (реф. @0x672340 = AppPath + "logfile/")
 QString SystemPath();            // /home/root/system
 QString DataPath();              // /home/root/data
 QString DisplayConfigPath();     // /home/root/system/display

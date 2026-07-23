@@ -267,6 +267,7 @@ set(SOURCES
     src/sys/KSystemStatus.cpp
     src/sys/KTimeMng.cpp
     src/ui/KSelfTest.cpp
+    src/autotest/KAutoTestThread.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp
@@ -428,6 +429,7 @@ add_executable(ui_preview
     src/sys/KSystemStatus.cpp
     src/sys/KTimeMng.cpp
     src/ui/KSelfTest.cpp
+    src/autotest/KAutoTestThread.cpp
     src/endo/KSoftEndoParam.cpp
     src/db/KEntityManage.cpp
     src/db/KDbStrHandler.cpp

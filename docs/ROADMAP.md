@@ -376,9 +376,13 @@ device), `KDICOMSrvListItem` (у нас его роль играет `DicomSrvRo
 ✅ **KTimeMng — СДЕЛАН** (`sys/KTimeMng.*`, self-test `timemng`) вместе со всем
 «защищённым» слоем `KSystemSet` (лицензия + продуктовая идентичность).
 ✅ **KSelfTest — СДЕЛАН** (`ui/KSelfTest.*`, self-test `selftest`, рендер `selftestui`)
-вместе со свободной `OpenKSelfTestDlg` — 23-я из 25 `Open*`. Из QObject-очереди остались
-`KAutoTestThread` (поток автотеста; парсер скриптов уже есть) и device-пара
-`ColdLight`/`HmiMcu`.
+вместе со свободной `OpenKSelfTestDlg` — 23-я из 25 `Open*`.
+🔶 **KAutoTestThread — ЧАСТИЧНО** (`autotest/KAutoTestThread.*`, self-test `autotestthread`):
+сделаны синглтон, старт/стоп, цикл `run` (100 мс), раскладка модификаторов
+`KeyboardSimulation`, сообщение 0x41A `PanelKeySimulation`, `GetLogPath`,
+`IsAutoTestStart`. НЕ декодированы: `GetSnapScreenPngFile`, `GetPngFileIndex`,
+`AutotestLogCheck`, `LogCheckRecord`, ветки 1/2 `RecvMsg` — следующая итерация.
+Из QObject-очереди после этого остаётся только device-пара `ColdLight`/`HmiMcu`.
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
 ✅ **KUpdateMng — СДЕЛАН** (роутер цепочки обновления 13→14→15).
 ⛔ **`report_template::KLineEdit` — НЕ ПОРТИРОВАТЬ**: мёртвый код (ctor отсутствует в

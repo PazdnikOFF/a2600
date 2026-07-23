@@ -93,6 +93,7 @@ public:
     int VlsMode() const        { return vlsMode_; }   // спектральный режим
     int ViewType() const       { return viewType_; }
     int PanelType() const      { return panelType_; }
+    int AutoTestStatus() const { return autoTest_; }   // гейт KAutoTestThread::IsAutoTestStart
     int NetworkStatus() const  { return network_; }
     bool IsEUDEndoType() const { return isEUDEndo_; }
     bool IsVideoCal() const    { return isVideoCal_; }

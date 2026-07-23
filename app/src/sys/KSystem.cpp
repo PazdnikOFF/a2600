@@ -17,6 +17,8 @@ QString RootPath()           { return theme::root(); }
 QString SystemPath()         { return QDir(RootPath()).absoluteFilePath("system"); }
 QString DataPath()           { return QDir(RootPath()).absoluteFilePath("data"); }
 QString AppPath()            { return QDir(DataPath()).absoluteFilePath("app"); }
+// Реф. KSystem::LogPath @0x672340 = AppPath() + "logfile/" (там же лежат APPlog<год>-<мес>.txt).
+QString LogPath()            { return QDir(AppPath()).absoluteFilePath("logfile"); }
 QString DisplayConfigPath()  { return QDir(SystemPath()).absoluteFilePath("display"); }
 QString SystemPresetPath()   { return QDir(SystemPath()).absoluteFilePath("presetdata"); }
 QString ProjectPresetPath()  { return QDir(SystemPresetPath()).absoluteFilePath("syspreset"); }

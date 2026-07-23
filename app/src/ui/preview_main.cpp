@@ -52,6 +52,7 @@
 #include "ui/KRigidEndoBtnGuide.h"
 #include "ui/KRecordCase.h"
 #include "ui/KSelfTest.h"
+#include "autotest/KAutoTestThread.h"
 #include "ui/KNetPrintList.h"
 #include "ui/KHospitalInfoEditDlg.h"
 #include "ui/KUiNavigation.h"
@@ -1746,6 +1747,81 @@ int main(int argc, char **argv)
             (int)KSystemStatus::ST_ViewType == 0 && (int)KSystemStatus::ST_AirPump == 17;
         qInfo() << (ok ? "sysstatus: PASS" : "sysstatus: FAIL");
         return ok ? 0 : 18;
+    }
+
+    // Self-test приёмной половины автотеста (KAutoTestThread): раскладка модификаторов,
+    // развилка «клавиатура/панель», имя файла лога, гейт IsAutoTestStart.
+    if (screen == "autotestthread") {
+        // Сток вместо uinput/IPC: пишем, какая именно функция была вызвана.
+        struct Sink : KAutoTestThread::IKeySink {
+            QStringList log;
+            void Key(int k) override            { log << QString("Key:%1").arg(k); }
+            void ShiftKey(int k) override       { log << QString("Shift:%1").arg(k); }
+            void CtrlKey(int k) override        { log << QString("Ctrl:%1").arg(k); }
+            void AltKey(int k) override         { log << QString("Alt:%1").arg(k); }
+            void CtrlAltKey(int k) override     { log << QString("CtrlAlt:%1").arg(k); }
+            void CtrlShiftKey(int k) override   { log << QString("CtrlShift:%1").arg(k); }
+            void AltShiftKey(int k) override    { log << QString("AltShift:%1").arg(k); }
+            void CtrlAltShiftKey(int k) override{ log << QString("CtrlAltShift:%1").arg(k); }
+            void PanelKey(int k, int e, int v) override
+            { log << QString("Panel:%1/%2/%3").arg(k).arg(e).arg(v); }
+        } sink;
+        KAutoTestThread::SetKeySink(&sink);
+
+        KAutoTestThread *th = GetKAutoTestThread();
+        const bool singleton = (th == GetKAutoTestThread());
+        // ResetFileExecCount в ctor: {+0x14, +0x18} = {1, 0}.
+        const bool ctorOk = th->FileExecCount() == 1 && !th->IsLogCheckOpen();
+        th->SetLogCheckOpen(true);
+        const bool logFlag = th->IsLogCheckOpen();
+
+        // Модификаторы: биты 29(Shift)/30(Ctrl)/31(Alt) кода, младшие 28 бит — клавиша.
+        const int KEY = 0x41;                       // произвольный код
+        const int SHIFT = 0x20000000, CTRL = 0x40000000, ALT = static_cast<int>(0x80000000);
+        th->EnqueueKey(KEY, 0);                     // event == 0 → клавиатура
+        th->EnqueueKey(KEY | SHIFT, 0);
+        th->EnqueueKey(KEY | CTRL, 0);
+        th->EnqueueKey(KEY | ALT, 0);
+        th->EnqueueKey(KEY | CTRL | ALT, 0);
+        th->EnqueueKey(KEY | CTRL | SHIFT, 0);
+        th->EnqueueKey(KEY | ALT | SHIFT, 0);
+        th->EnqueueKey(KEY | CTRL | ALT | SHIFT, 0);
+        th->EnqueueKey(0, 0);                       // пара {0,0} — пропускается
+        th->EnqueueKey(7, 0x00030002);              // event != 0 → панель
+        const int queued = th->PendingKeys();
+        th->ProcessPendingKeys();
+        qInfo() << "инъекции:" << sink.log;
+
+        const QStringList want = {
+            "Key:65", "Shift:65", "Ctrl:65", "Alt:65",
+            "CtrlAlt:65", "CtrlShift:65", "AltShift:65", "CtrlAltShift:65",
+            // PanelKeySimulation(7, 0x00030002): key=7, event=(v>>16)&0xff=3, value=v&0xff=2.
+            "Panel:7/3/2",
+        };
+        const bool dispatchOk = (queued == 10) && (sink.log == want);
+
+        // Имя файла лога: <LogPath>/APPlog<YYYY>-<MM>.txt по текущей дате.
+        const QString lp = th->GetLogPath();
+        const QString wantName = QString::asprintf("APPlog%04d-%02d.txt",
+                                                   QDate::currentDate().year(),
+                                                   QDate::currentDate().month());
+        qInfo() << "лог:" << lp;
+        const bool logPathOk = lp.endsWith("/logfile/" + wantName) &&
+                               KSystem::LogPath().endsWith("data/app/logfile");
+
+        // Гейт: ложь ровно при 0 и 2 (реф. `tst w0,#0xfffffffd`).
+        KSystemStatus &ss = KSystemStatus::GetInstance();
+        ss.SetAutoTestStatus(0);  const bool g0 = KAutoTestThread::IsAutoTestStart();
+        ss.SetAutoTestStatus(1);  const bool g1 = KAutoTestThread::IsAutoTestStart();
+        ss.SetAutoTestStatus(2);  const bool g2 = KAutoTestThread::IsAutoTestStart();
+        ss.SetAutoTestStatus(3);  const bool g3 = KAutoTestThread::IsAutoTestStart();
+        const bool gateOk = !g0 && g1 && !g2 && g3;
+
+        KAutoTestThread::SetKeySink(nullptr);
+        const bool ok = singleton && ctorOk && logFlag && dispatchOk && logPathOk && gateOk;
+        qInfo() << (ok ? "autotestthread: PASS" : "autotestthread: FAIL")
+                << "dispatch:" << dispatchOk << "logPath:" << logPathOk << "gate:" << gateOk;
+        return ok ? 0 : 24;
     }
 
     // Self-test самодиагностики (KSelfTest): состав отчёта по трём проверкам.
