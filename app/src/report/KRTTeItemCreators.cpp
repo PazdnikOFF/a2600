@@ -11,6 +11,8 @@
 
 #include "report/KMeaStringUtil.h"
 
+#include <QColor>
+
 namespace {
 // Реф. литералы (адреса сверены чтением .rodata).
 const char *kTemplateData = "TemplateData";   // @0x865ca8 — ключ атрибута item-конфига
@@ -164,7 +166,21 @@ const char *kNameAddition      = "RT_ADDITION";        // @0x875090
 const char *kNameImageTextMap  = "RT_IMAGE_TEXT_MAP";  // @0x8750a0
 const char *kValue1            = "1";                  // @0x885600 (хвост " ... 2>&1")
 
-std::string g_columnWidthAttrKey;   // см. SetColumnWidthAttrKey
+// ⭐ Ключи атрибутов item-конфига. Это НЕ литералы .rodata, а глобальные std::string,
+// конструируемые динамическим инициализатором `_GLOBAL__sub_I_KRTAbsItemCreator.cpp`
+// @0x2691a0 из общего строкового пула; таблица объектов — @0xa86098, шаг 0x20.
+// Тексты восстановлены и сверены чтением .rodata (адреса ниже).
+const char *kColumnRatio  = "ColumnRatio";   // @0x865c60 — «25,50,25»: доли столбцов
+const char *kBorderWidth  = "BorderWidth";   // @0x865f10
+const char *kBorderColor  = "BorderColor";   // @0x865f20
+const char *kMarginWidth  = "MarginWidth";   // @0x865f30
+// Остальные из той же таблицы (пока не используются здесь, зафиксированы в PROGRESS §10):
+// CellAt @0x865d18, GroupingNum @0x865d38, MultiTitle @0x865d78, RefColumn @0x865c78,
+// RefColumnID @0x865c88, BreakPolicy @0x865f40,
+// LineHeight1/2/3/5 @0x865ec0/0x865ed0/0x865ee0/0x865f00 и LineTopMargin @0x865ef0
+// (последний в реф. назван LINEHEGIHT4 — расхождение имени и значения у вендора).
+
+std::string g_columnWidthAttrKey = kColumnRatio;
 }   // namespace
 
 void KRTTeTableItemCreator::SetColumnWidthAttrKey(const std::string &key)
@@ -234,6 +250,22 @@ QTextTable *KRTTeTableItemCreator::CreateTable(const KReportTemplateItem &item,
 
     QTextTableFormat fmt;
     fmt.setCellPadding(0.0);            // реф. property 0x4103 = 0.0
+    // Рамка и поля — из атрибутов конфига (ключи восстановлены, см. выше).
+    if (const KReportTemplateItemConfig *cfg = CurItemConfig()) {
+        auto bw = cfg->m_mapAttrs.find(kBorderWidth);
+        if (bw != cfg->m_mapAttrs.end())
+            fmt.setBorder(QString::fromStdString(bw->second).toDouble());
+        auto bc = cfg->m_mapAttrs.find(kBorderColor);
+        if (bc != cfg->m_mapAttrs.end()) {
+            QColor col;
+            col.setNamedColor(QString::fromStdString(bc->second));
+            if (col.isValid())
+                fmt.setBorderBrush(QBrush(col));
+        }
+        auto mw = cfg->m_mapAttrs.find(kMarginWidth);
+        if (mw != cfg->m_mapAttrs.end())
+            fmt.setMargin(QString::fromStdString(mw->second).toDouble());
+    }
     QVector<QTextLength> widths;
     // Список ширин — строка «25,50,25», режется по "," (@0x863930) и переводится
     // в проценты; ключ атрибута НЕ ВОССТАНОВЛЕН ⇒ по умолчанию равные доли.

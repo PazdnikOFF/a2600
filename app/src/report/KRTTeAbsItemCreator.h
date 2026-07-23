@@ -158,8 +158,9 @@ public:
     std::string GetItemTitle(const KReportTemplateItem &item,
                              const std::map<std::string, std::string> &cfgMap) const;
 
-    // DEVICE-STUB: ключ атрибута со списком ширин столбцов («25,50,25») в реф. — глобальная
-    // динамически инициализируемая std::string, её ТЕКСТ НЕ ВОССТАНОВЛЕН. Пусто → равные доли.
+    // Ключ атрибута со списком ширин столбцов — **`ColumnRatio`** (@0x865c60).
+    // Восстановлен из динамического инициализатора @0x2691a0 (таблица глобальных
+    // std::string @0xa86098, шаг 0x20) и сверен чтением .rodata. Оставлен настраиваемым.
     static void SetColumnWidthAttrKey(const std::string &key);
 };
 

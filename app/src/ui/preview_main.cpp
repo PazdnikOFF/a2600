@@ -10827,6 +10827,13 @@ int main(int argc, char **argv)
                 tb.m_lstSubItems.push_back(ch);
             }
             tpl.m_lstItems.push_back(tb);
+            // Атрибуты таблицы: доли столбцов и рамка — реальные реф.-ключи.
+            KReportTemplateItemConfig tcfg;
+            tcfg.m_strName = "/vitals";
+            tcfg.m_mapAttrs["ColumnRatio"] = "35,65";
+            tcfg.m_mapAttrs["BorderWidth"] = "1";
+            tcfg.m_mapAttrs["BorderColor"] = "#7f7f7f";
+            tpl.m_mapItemConfigs["/vitals"] = tcfg;
         }
 
         // Творцы Te теперь РЕАЛЬНЫЕ (реф. InitCreator @0x50c9d0 наполняет реестр в ctor),

@@ -533,6 +533,35 @@ Qt5, boost 1.74, libcrypto.
 **ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **116 self-test-режимов** (все PASS, регрессия —
 `tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 116 / FAIL 0).
 
+**✅ ВОССТАНОВЛЕНА ТАБЛИЦА КЛЮЧЕЙ-АТРИБУТОВ ШАБЛОНА (2026-07-23).** Закрыт пробел,
+помеченный при порте табличного творца: ~14 ключей — это НЕ литералы `.rodata`, а
+глобальные `std::string`, конструируемые динамическим инициализатором. Таблица объектов —
+**@0xa86098, шаг 0x20**; реальный конструктор — `_GLOBAL__sub_I_KRTAbsItemCreator.cpp`
+**@0x2691a0** (инициализатор `KReportTemplateComonDef.cpp` @0x268078 строит ДРУГУЮ из ~55
+анонимных копий того же блока — важная деталь, иначе цепочка обрывается).
+Все тексты сверены чтением `.rodata`:
+| ключ | .rodata | | ключ | .rodata |
+|---|---|---|---|---|
+| `CellAt` | 0x865d18 | | `BorderWidth` | 0x865f10 |
+| `GroupingNum` | 0x865d38 | | `BorderColor` | 0x865f20 |
+| `LineHeight1` | 0x865ec0 | | `MarginWidth` | 0x865f30 |
+| `MultiTitle` | 0x865d78 | | `BreakPolicy` | 0x865f40 |
+| **`ColumnRatio`** | 0x865c60 | | `LineHeight2` | 0x865ed0 |
+| `RefColumn` | 0x865c78 | | `LineHeight3` | 0x865ee0 |
+| `RefColumnID` | 0x865c88 | | `LineHeight5` | 0x865f00 |
+⚠️ Расхождение вендора: глобал с именем **LINEHEGIHT4** содержит текст **`LineTopMargin`**
+(@0x865ef0), а не «LineHeight4» — имя объекта и значение не совпадают.
+Соседи из того же пула (тоже сверены): `CalcApp` 0x865c58, `Append` 0x865c70,
+`RepeatCommand` 0x865c98, `TemplateData` 0x865ca8, `AlignH` 0x865cb8, `FontSize` 0x865cc0,
+`FontWeight` 0x865cd0, `FontType` 0x865ce0, `FontColor` 0x865cf0, `UserDefine` 0x865d00,
+`LibLeaf` 0x865d10, `RowTitle` 0x865d20, `LRINFO` 0x865d30, `RefMutiApp` 0x865d48
+(у глобала SHOWTITLE значение именно `RefMutiApp`), `ShowTitle` 0x865d58,
+`MultiFetusTitle` 0x865d68, `Section` 0x865d88, `SynColumnID` 0x865d90 (орфография
+вендора: SYN, не SYNC).
+Применено в табличном творце: ширины столбцов теперь читаются по реальному ключу
+**`ColumnRatio`**, добавлены `BorderWidth`/`BorderColor`/`MarginWidth`. Скриншот
+`reportpipeline` подтверждает: доли 35/65 дают заметно более узкий первый столбец.
+
 **✅ ТАБЛИЧНЫЙ Te-ТВОРЕЦ (2026-07-23).** `KRTTeTableItemCreator` в
 `report/KRTTeItemCreators.cpp`; превью `reportpipeline` рисует настоящую таблицу отчёта.
 Своих полей у класса НЕТ (ctor @0x515e90 только зовёт базовый и ставит vtable).
