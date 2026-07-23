@@ -111,6 +111,7 @@
 #include "ui/KDICOMSrvListTable.h"
 #include "ui/KTimeWasteBar.h"
 #include "ui/KOsdMenu.h"
+#include "ui/KOsdRootMenuItems.h"
 #include "ui/KOsdMenuCell.h"
 #include "ui/KImageButton.h"
 #include <QListWidget>
@@ -1725,9 +1726,17 @@ int main(int argc, char **argv)
         const bool ok =
             ss.FreezeStatus() == 1 && ss.VlsMode() == 3 && ss.RecordStatus() == 1 &&
             ss.IrisValue() == 42 && ss.ImageBrightness() == 80 &&
-            events.size() == 5 &&                        // 6 сеттеров, 1 без изменения
+            // ⚠️ 6 сеттеров: один без изменения значения (молчит) и SetIrisValue, который
+            // в реф. ВООБЩЕ не оповещает (тело — только запись поля) ⇒ ровно 4 события.
+            events.size() == 4 &&
+            events[0] == qMakePair((int)KSystemStatus::ST_Freeze, 1) &&
             events[1] == qMakePair((int)KSystemStatus::ST_VlsMode, 3) &&
-            events[0] == qMakePair((int)KSystemStatus::ST_Freeze, 1);
+            events[2] == qMakePair((int)KSystemStatus::ST_Record, 1) &&
+            events[3] == qMakePair((int)KSystemStatus::ST_Brightness, 80) &&
+            // Коды типов — РЕФЕРЕНСНЫЕ (сверены дизасмом Set*): 4/9/7/13, а не 1/15/2/10.
+            (int)KSystemStatus::ST_Freeze == 4 && (int)KSystemStatus::ST_VlsMode == 9 &&
+            (int)KSystemStatus::ST_Record == 7 && (int)KSystemStatus::ST_Brightness == 13 &&
+            (int)KSystemStatus::ST_ViewType == 0 && (int)KSystemStatus::ST_AirPump == 17;
         qInfo() << (ok ? "sysstatus: PASS" : "sysstatus: FAIL");
         return ok ? 0 : 18;
     }
@@ -6865,6 +6874,64 @@ int main(int argc, char **argv)
         return ok ? 0 : 84;
     }
 
+    // Self-test ячейки записи корневого OSD-меню (реф. KRecordItem) и — заодно —
+    // РЕФЕРЕНСНЫХ кодов типов KSystemStatus, на которых она построена.
+    if (screen == "recorditem") {
+        KSystemStatus &ss = KSystemStatus::GetInstance();
+        KUsbDevice::GetInstance()->SetUsbPath(QStringLiteral("/media/usb"));   // USB подключён
+
+        ss.SetRecordStatus(0);
+        KRecordItem item;
+        auto title = [&item] {
+            const auto labels = item.findChildren<QLabel *>();
+            QString t;
+            for (QLabel *l : labels)
+                if (!l->text().isEmpty()) t = l->text();
+            return t;
+        };
+        const bool idleOk = title() == QObject::tr("TR_Rcd") && !item.HasSubMenu();
+
+        // Смена статуса записи приходит ТОЛЬКО с типом 7 (реф. фильтр `type != 7`).
+        ss.SetRecordStatus(2);
+        const bool recOk = title() == QObject::tr("TR_RStop");
+        // Чужой тип не должен переключать ячейку: шлём Freeze со значением 0.
+        ss.SetFreezeStatus(0);
+        ss.SetFreezeStatus(1);
+        const bool filterOk = title() == QObject::tr("TR_RStop");
+        ss.SetRecordStatus(0);
+        const bool backOk = title() == QObject::tr("TR_Rcd");
+        // Прочие значения статуса реф. ИГНОРИРУЕТ (ни иконок, ни заголовка).
+        ss.SetRecordStatus(5);
+        const bool ignoreOk = title() == QObject::tr("TR_Rcd");
+        ss.SetRecordStatus(0);
+
+        // Серость: USB отключён → ячейка серая.
+        const bool greyOffOk = !item.CheckGreyedCondition();
+        KUsbDevice::GetInstance()->SetUsbPath(QString());
+        const bool greyOnOk = item.CheckGreyedCondition();
+        KUsbDevice::GetInstance()->SetUsbPath(QStringLiteral("/media/usb"));
+
+        // Коды типов статуса — референсные (сверены дизасмом Set*).
+        const bool codesOk = (int)KSystemStatus::ST_Record == 7
+            && (int)KSystemStatus::ST_ViewType == 0 && (int)KSystemStatus::ST_Freeze == 4
+            && (int)KSystemStatus::ST_Video == 1 && (int)KSystemStatus::ST_AirPump == 17;
+
+        // Гейт корневого меню: дефолт RECORD в реф. — TRUE (было false).
+        const bool gateOk = KProjectSet::GetInstance().IsVideoRecordEnable();
+        KOsdMenu menu;
+        menu.InitWidget();
+        const bool inMenuOk = menu.findChild<KRecordItem *>() != nullptr;
+
+        qInfo() << "покой:" << idleOk << "| запись:" << recOk << "| фильтр типа:" << filterOk
+                << "| возврат:" << backOk << "| чужой статус:" << ignoreOk
+                << "| серость USB:" << (greyOffOk && greyOnOk) << "| коды:" << codesOk
+                << "| гейт RECORD:" << gateOk << "| в меню:" << inMenuOk;
+        const bool ok = idleOk && recOk && filterOk && backOk && ignoreOk && greyOffOk
+                     && greyOnOk && codesOk && gateOk && inMenuOk;
+        qInfo() << (ok ? "recorditem: PASS" : "recorditem: FAIL");
+        return ok ? 0 : 85;
+    }
+
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).
     // Ядро — GetTestConfPath: 8 комбинаций (check_scope × PanelType × ViewType).
     // Ground truth — реальные каталоги system/autotest/aging-* в поставке прошивки.
@@ -11327,6 +11394,12 @@ int main(int argc, char **argv)
         vb->addWidget(b2);
         vb->addStretch();
         w = host;
+    } else if (screen == "osdroot") {
+        // РЕАЛЬНОЕ корневое OSD-меню (реф. KOsdMenu::InitWidget @0x479c70): семь ячеек,
+        // среди них KRecordItem за гейтом KProjectSet::IsVideoRecordEnable().
+        KOsdMenu *root = new KOsdMenu;
+        root->InitWidget();
+        w = root;
     } else if (screen == "osdmenu") {
         // OSD-меню-контейнер (реф. KOsdMenu) хостит портированные KOsdMenuCell. DEVICE-cells
         // заменены демо-ячейками; nav Down выбирает вторую (highlight).

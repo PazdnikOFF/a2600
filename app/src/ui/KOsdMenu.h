@@ -45,7 +45,7 @@ private:
 // QListWidget (NoFocus, прозрачный), безрамочное translucent-окно. ХОСТИТ портированный
 // KOsdMenuCell через AddItem @0x479740 (insertItem + setItemWidget). Навигация Up/Down/Confirm/
 // клик → RefreshMenu (Select/UnSelect/Focus ячеек + SizeHintRole из геометрии ячейки).
-// DEVICE-STUB: InitWidget-список конкретных ячеек (KIrisItem/KRecordItem/…) — не портируется,
+// InitWidget собирает реальные корневые ячейки (KIrisItem/KRecordItem/…; KRecordItem — за
 // ячейки добавляет вызывающий через AddItem.
 class KOsdMenu : public KOsdMenuBase
 {

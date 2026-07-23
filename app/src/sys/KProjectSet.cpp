@@ -34,9 +34,13 @@ bool KProjectSet::LoadProductConfig(const QString &productIniPath)
     productIni_ = productIniPath;
     QSettings ini(productIniPath, QSettings::IniFormat);
     // [Function] флаги.
-    zoomEnable_   = ini.value("Function/ZOOM", false).toBool();
-    chbEnable_    = ini.value("Function/CHB", false).toBool();
-    recordEnable_ = ini.value("Function/RECORD", false).toBool();
+    // ⚠️ ДЕФОЛТЫ ИСПРАВЛЕНЫ 2026-07-23: в реф. (IsZoomEnable @0x656970, IsChbEnable
+    // @0x656b10, IsVideoRecordEnable @0x656cb0) все три читаются с QVariant(TRUE) —
+    // `mov w1,#1` перед QVariant(bool). У нас стояло false, из-за чего запись видео
+    // считалась выключенной и KRecordItem не попадал в корневое OSD-меню.
+    zoomEnable_   = ini.value("Function/ZOOM", true).toBool();
+    chbEnable_    = ini.value("Function/CHB", true).toBool();
+    recordEnable_ = ini.value("Function/RECORD", true).toBool();
     // [Limit] дефолт-уровни/пределы.
     imgEnhLevel_ = ini.value("Limit/ImgEnhLevel", 0).toInt();
     colEnhLevel_ = ini.value("Limit/ColEnhLevel", 0).toInt();

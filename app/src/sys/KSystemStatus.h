@@ -14,15 +14,36 @@ class KSystemStatus : public QObject
 {
     Q_OBJECT
 public:
-    // Тип изменившегося статуса (аргумент SystemStatusChange). Значения —
-    // стабильные ID для подписчиков (SystemStatusChangeActImpl).
+    // Тип изменившегося статуса (первый аргумент SystemStatusChange).
+    // ⚠️ КОДЫ ВЫВЕРЕНЫ ДИЗАСМОМ 2026-07-23 (раньше были выдуманы последовательно и НЕ
+    // совпадали с прибором: запись шла как 2 вместо 7). Источник — константа `mov w1,#N`
+    // перед хвостовым переходом на KSystemStatus::SystemStatusChange @0x8284a8 в каждом
+    // сеттере (KSystemStatus::Set* @0x621fb0..0x622430).
     enum StatusType {
-        ST_None = 0, ST_Freeze, ST_Record, ST_Video, ST_VideoPlay, ST_StopWatch,
-        ST_LightLevel, ST_Lamp, ST_Light, ST_Iris, ST_Brightness, ST_CHb, ST_Agc,
-        ST_DimmingType, ST_LowLight, ST_VlsMode, ST_ViewType, ST_PanelType,
-        ST_Network, ST_WindowID, ST_AirPump, ST_AutoTest, ST_FullScreen,
-        ST_EndoDisconnectImage, ST_ForceLogout
+        ST_ViewType            = 0,    // SetViewType
+        ST_Video               = 1,    // SetVideoStatus
+        ST_FullScreen          = 1,    // SetFullScreenUIStatus — ⚠️ ТОТ ЖЕ код 1, что и Video
+        ST_EndoDisconnectImage = 2,    // SetEndoDisconnectImageStatus
+        ST_Network             = 3,    // SetNetworkStatus
+        ST_Freeze              = 4,    // SetFreezeStatus
+        ST_Agc                 = 5,    // SetAgcStatus
+        ST_CHb                 = 6,    // SetCHbStatus
+        ST_Record              = 7,    // SetRecordStatus  (KRecordItem фильтрует ИМЕННО 7)
+        ST_Lamp                = 8,    // SetLampStatus
+        ST_VlsMode             = 9,    // SetVlsMode
+        ST_LowLight            = 10,   // SetLowLightMode
+        ST_DimmingType         = 11,   // SetDimmingType
+        ST_LightLevel          = 12,   // SetLightLevel
+        ST_Brightness          = 13,   // SetImageBrightness
+        ST_IsVideoCal          = 14,   // SetIsVideoCal
+        ST_MainScreenState     = 15,   // SetMainScreenState
+        ST_StopWatch           = 16,   // SetStopWatchStatus
+        ST_AirPump             = 17,   // SetAirPumpStatus
     };
+    // ⚠️ У этих сеттеров в реф. ВООБЩЕ НЕТ оповещения (тело — только запись поля, 8 байт
+    // кода): SetIrisValue @0x622260, SetVideoPlayStatus @0x622420, SetPanelType @0x621fb0,
+    // SetWindowID @0x621fb8, SetAutoTestStatus @0x6223a0, SetRatioValue, SetIsEUDEndoType.
+    // Поэтому у нас они тоже молчат (раньше слали выдуманные типы).
 
     static KSystemStatus &GetInstance();   // реф. GetSystemStatus()
 
@@ -30,12 +51,12 @@ public:
     void SetFreezeStatus(int v)          { setField(freeze_, v, ST_Freeze); }
     void SetRecordStatus(int v)          { setField(record_, v, ST_Record); }
     void SetVideoStatus(int v)           { setField(video_, v, ST_Video); }
-    void SetVideoPlayStatus(bool v)      { setField(videoPlay_, v ? 1 : 0, ST_VideoPlay); }
+    void SetVideoPlayStatus(bool v) { videoPlay_ = v ? 1 : 0; }   // реф.: БЕЗ оповещения
     void SetStopWatchStatus(int v)       { setField(stopWatch_, v, ST_StopWatch); }
     void SetLightLevel(int v)            { setField(lightLevel_, v, ST_LightLevel); }
     void SetLampStatus(int v)            { setField(lamp_, v, ST_Lamp); }
-    void InitLightStatus()               { setField(light_, 1, ST_Light); }
-    void SetIrisValue(unsigned char v)   { setField(iris_, v, ST_Iris); }
+    void InitLightStatus()               { light_ = 1; }   // реф.: ST_Light в бинарнике не существует
+    void SetIrisValue(unsigned char v) { iris_ = v; }   // реф.: БЕЗ оповещения
     void SetImageBrightness(int v)       { setField(brightness_, v, ST_Brightness); }
     void SetCHbStatus(int v)             { setField(chb_, v, ST_CHb); }
     void SetAgcStatus(int v, bool)       { setField(agc_, v, ST_Agc); }
@@ -43,11 +64,11 @@ public:
     void SetLowLightMode(int v)          { setField(lowLight_, v, ST_LowLight); }
     void SetVlsMode(int v)               { setField(vlsMode_, v, ST_VlsMode); }   // [0x3c]
     void SetViewType(int v)              { setField(viewType_, v, ST_ViewType); }
-    void SetPanelType(int v)             { setField(panelType_, v, ST_PanelType); }
+    void SetPanelType(int v) { panelType_ = v; }   // реф.: БЕЗ оповещения
     void SetNetworkStatus(int v)         { setField(network_, v, ST_Network); }
-    void SetWindowID(int v)              { setField(windowID_, v, ST_WindowID); }
+    void SetWindowID(int v) { windowID_ = v; }   // реф.: БЕЗ оповещения
     void SetAirPumpStatus(int v)         { setField(airPump_, v, ST_AirPump); }
-    void SetAutoTestStatus(int v)        { setField(autoTest_, v, ST_AutoTest); }
+    void SetAutoTestStatus(int v) { autoTest_ = v; }   // реф.: БЕЗ оповещения
     void SetFullScreenUIStatus(int v)    { setField(fullScreen_, v, ST_FullScreen); }
     void SetEndoDisconnectImageStatus(int v) { setField(endoDiscImage_, v, ST_EndoDisconnectImage); }
     void SetIsEUDEndoType(bool v)        { isEUDEndo_ = v; }

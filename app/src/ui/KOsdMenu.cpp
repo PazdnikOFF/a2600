@@ -1,4 +1,5 @@
 #include "KOsdMenu.h"
+#include "sys/KProjectSet.h"
 #include "KOsdMenuCell.h"
 #include "KOsdRootMenuItems.h"
 
@@ -78,10 +79,12 @@ void KOsdMenu::AddItem(KOsdMenuCell *cell)
 
 void KOsdMenu::InitWidget()
 {
-    // Реф. @0x479c70: фикс-порядок корневых ячеек, затем AddItem каждой + setCurrentRow(0).
-    // KRecordItem (#2) — DEFERRED (device-heavy: system-status/USB/record); реф. гейт
-    // KProjectSet::IsVideoRecordEnable() — в порте пропускаем (поведение при record off).
+    // Реф. @0x479c70: фикс-порядок корневых ячеек, затем AddItem каждой + setCurrentRow.
     AddItem(new KIrisItem(this));            // #1 TR_Mode → KIrisMenu
+    // #2 KRecordItem — за гейтом KProjectSet::IsVideoRecordEnable() @0x656cb0
+    // ([Function]RECORD в product.ini, дефолт true).
+    if (KProjectSet::GetInstance().IsVideoRecordEnable())
+        AddItem(new KRecordItem(this));
     AddItem(new KimageProcesItem(this));     // #3 TR_IParameters → KImageProcessingMenu (deferred)
     AddItem(new KExitItem(this));            // #4 TR_Ext → close
     AddItem(new KFeaturesItem(this));        // #5 TR_Fnctn → KFeatureMenu (deferred)

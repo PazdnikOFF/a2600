@@ -54,7 +54,7 @@ private:
     QStringList seriesList_;
 
     // product.ini
-    bool zoomEnable_ = false, chbEnable_ = false, recordEnable_ = false;
+    bool zoomEnable_ = true, chbEnable_ = true, recordEnable_ = true;   // реф. дефолты = true
     QStringList papp_;
     int imgEnhLevel_ = 0, colEnhLevel_ = 0, colRBCMax_ = 0, colRBCMin_ = 0;
     double zoomMin_ = 1.0, zoomMax_ = 1.0, zoomStep_ = 0.1;
