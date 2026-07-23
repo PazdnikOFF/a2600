@@ -51,6 +51,7 @@
 #include "ui/KFlexEndoBtnGuide.h"
 #include "ui/KRigidEndoBtnGuide.h"
 #include "ui/KRecordCase.h"
+#include "ui/KSelfTest.h"
 #include "ui/KNetPrintList.h"
 #include "ui/KHospitalInfoEditDlg.h"
 #include "ui/KUiNavigation.h"
@@ -1745,6 +1746,82 @@ int main(int argc, char **argv)
             (int)KSystemStatus::ST_ViewType == 0 && (int)KSystemStatus::ST_AirPump == 17;
         qInfo() << (ok ? "sysstatus: PASS" : "sysstatus: FAIL");
         return ok ? 0 : 18;
+    }
+
+    // Self-test самодиагностики (KSelfTest): состав отчёта по трём проверкам.
+    if (screen == "selftest") {
+        QTemporaryDir tmp;
+        // Свой корень прошивки: checkProcessor читает <data>/protected/syspreset/testenv.ini.
+        qputenv("ENDO_ROOT", tmp.path().toUtf8());
+        const QString envIni = QDir(tmp.path())
+                                   .absoluteFilePath("data/protected/syspreset/testenv.ini");
+        QDir().mkpath(QFileInfo(envIni).absolutePath());
+        KSystemSet &ss = KSystemSet::GetInstance();
+        ss.SetConfigFile(QDir(tmp.path()).absoluteFilePath("system.ini"));
+
+        // --- Худший случай: всё «не в порядке» → максимум строк. ---
+        KSelfTest::SetLampTimeProvider([]{ return qMakePair(0, 0); });
+        KEndoScope *endo = GetEndoScope();
+        *endo->EndoInfo() = _EndoInfoStruct();      // пустой эндоскоп
+        *endo->EepromData() = _EepromInfo();        // fixFlags=0, usedCount=0
+        KSelfTest bad;
+        const QStringList worst = bad.InfoList();
+        qInfo() << "отчёт (худший случай):" << worst;
+
+        const bool worstOk =
+            worst.first() == "TR_INPTSTest:" && worst.last() == "TR_ICompleted" &&
+            worst.contains("TR_IPSNNI") &&        // серийник процессора пуст
+            worst.contains("TR_IPATestNE") &&     // testenv.ini отсутствует → IsAgeTest=false
+            worst.contains("TR_EModelNC") &&      // модель эндоскопа пуста
+            worst.contains("TR_EInfomationNI") && // ID/дата гарантии пусты
+            worst.contains("TR_WBMemoryNE") &&    // бит 1 fixFlags снят
+            worst.contains("TR_CLATestNE") &&     // наработка лампы 0 <= 29
+            // Полярность обратная: б/у-признаков нет → строки быть НЕ должно.
+            !worst.contains("TR_IROEndoscopeNE") &&
+            // (fixFlags & 3) == 2 не выполняется при fixFlags == 0.
+            !worst.contains("TR_VACalibrationNE") &&
+            worst.size() == 8;
+
+        // --- Лучший случай: всё заполнено, лампа наработала. ---
+        // Сеттера GetProcessorSN в реф. нет (на приборе значение из EEPROM) — пишем ключ.
+        { QSettings s(QDir(tmp.path()).absoluteFilePath("system.ini"), QSettings::IniFormat);
+          s.setValue("Common/ProcessorSN", "SN-0001"); }
+        { QSettings s(envIni, QSettings::IniFormat); s.setValue("AgeTest/IsAgeTest", true); }
+        KSelfTest::SetLampTimeProvider([]{ return qMakePair(30, 30); });
+        _EndoInfoStruct *ei = endo->EndoInfo();
+        ei->sModel = "EG-500N";
+        ei->sEndoID = "ID-42";
+        ei->sWarrantyDate = "2027-01-01";
+        endo->EepromData()->fixFlags = 0x03;        // бит 1 есть, бит 0 есть → обе строки молчат
+        KSelfTest good;
+        const QStringList best = good.InfoList();
+        qInfo() << "отчёт (лучший случай):" << best;
+        const bool bestOk = (best.size() == 2) &&
+                            best.first() == "TR_INPTSTest:" && best.last() == "TR_ICompleted";
+
+        // --- Пороги и полярности по отдельности. ---
+        KSelfTest::SetLampTimeProvider([]{ return qMakePair(29, 100); });
+        KSelfTest edge;                              // 29 <= 29 → строка есть
+        const bool lampEdge = edge.InfoList().contains("TR_CLATestNE");
+        KSelfTest::SetLampTimeProvider([]{ return qMakePair(30, 30); });
+        endo->EepromData()->fixFlags = 0x02;         // (2 & 3) == 2 → калибровки нет
+        endo->EepromData()->usedCount = 7;           // б/у-признак
+        KSelfTest used;
+        const bool usedOk = used.InfoList().contains("TR_IROEndoscopeNE") &&
+                            used.InfoList().contains("TR_VACalibrationNE") &&
+                            !used.InfoList().contains("TR_WBMemoryNE");
+
+        // Дубликаты схлопываются (реф. removeDuplicates в конце startCheck).
+        QStringList uniqList = used.InfoList();
+        const int beforeDedup = uniqList.size();
+        uniqList.removeDuplicates();
+        const bool uniq = uniqList.size() == beforeDedup;
+
+        const bool ok = worstOk && bestOk && lampEdge && usedOk && uniq;
+        qInfo() << (ok ? "selftest: PASS" : "selftest: FAIL")
+                << "worst:" << worstOk << "best:" << bestOk
+                << "lampEdge:" << lampEdge << "used:" << usedOk;
+        return ok ? 0 : 23;
     }
 
     // Self-test часов/суточного обслуживания (KTimeMng) и «защищённого» system.ini
@@ -10878,6 +10955,8 @@ int main(int argc, char **argv)
         auto *g = new KFlexEndoBtnGuide;   // UI-порт: гайд кнопок пульта ДУ гибкого эндоскопа
         g->setFixedSize(186, 136);         // реф. канва контента (геометрию ставит KViewSoftEndo)
         w = g;
+    } else if (screen == "selftestui") {
+        w = new KSelfTest;             // UI-порт: экран самодиагностики (реф. KSelfTest)
     } else if (screen == "recordcase") {
         w = new KRecordCase;           // UI-порт: запись автотест-кейса (реф. KRecordCase)
     } else if (screen == "netprint") {

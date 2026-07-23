@@ -375,6 +375,10 @@ timerToUpdate), `KAutoTestThread` (парсер скриптов уже сдел
 device), `KDICOMSrvListItem` (у нас его роль играет `DicomSrvRow`).
 ✅ **KTimeMng — СДЕЛАН** (`sys/KTimeMng.*`, self-test `timemng`) вместе со всем
 «защищённым» слоем `KSystemSet` (лицензия + продуктовая идентичность).
+✅ **KSelfTest — СДЕЛАН** (`ui/KSelfTest.*`, self-test `selftest`, рендер `selftestui`)
+вместе со свободной `OpenKSelfTestDlg` — 23-я из 25 `Open*`. Из QObject-очереди остались
+`KAutoTestThread` (поток автотеста; парсер скриптов уже есть) и device-пара
+`ColdLight`/`HmiMcu`.
 ✅ **KFlexEndoBtnGuide — СДЕЛАН** (превью `flexguide`, self-test `flexbtn`).
 ✅ **KUpdateMng — СДЕЛАН** (роутер цепочки обновления 13→14→15).
 ⛔ **`report_template::KLineEdit` — НЕ ПОРТИРОВАТЬ**: мёртвый код (ctor отсутствует в
