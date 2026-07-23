@@ -10809,6 +10809,26 @@ int main(int argc, char **argv)
         add("/diagnosis", "Diagnosis", "RT_EXAM,DIAGNOSIS");
         add("/biopsy",    "Biopsy",    "RT_EXAM,BIOPSY");   // данных нет → отфильтруется
 
+        // Табличный блок: два столбца, четыре текст-ребёнка → сетка 2×2 (реф. CreateChild
+        // по сетке). Заголовок таблицы показывается только при ShowTitle == "1".
+        {
+            KReportTemplateItem tb;
+            tb.m_strID = "/vitals"; tb.m_strType = "RT_TABLE_BLOCK";
+            tb.m_strTitle = "Vitals"; tb.m_strShowTitle = "1"; tb.m_strColumn = "2";
+            const char *ids[]   = {"/v/hr", "/v/bp", "/v/spo2", "/v/temp"};
+            const char *ttls[]  = {"HR", "BP", "SpO2", "Temp"};
+            const char *srcs[]  = {"RT_V,HR", "RT_V,BP", "RT_V,SPO2", "RT_V,TEMP"};
+            const char *vals[]  = {"72 bpm", "120/80", "98%", "36.6 C"};
+            for (int k = 0; k < 4; ++k) {
+                ds.SetText(srcs[k], vals[k]);
+                KReportTemplateItem ch;
+                ch.m_strID = ids[k]; ch.m_strType = "RT_TEXT_BLOCK";
+                ch.m_strTitle = ttls[k]; ch.m_strShowTitle = "1"; ch.m_strDataSrc = srcs[k];
+                tb.m_lstSubItems.push_back(ch);
+            }
+            tpl.m_lstItems.push_back(tb);
+        }
+
         // Творцы Te теперь РЕАЛЬНЫЕ (реф. InitCreator @0x50c9d0 наполняет реестр в ctor),
         // отдельная регистрация больше не нужна. Заголовки показываются при ShowTitle != "0".
         KReportPreviewCenterDlg *rp = new KReportPreviewCenterDlg;

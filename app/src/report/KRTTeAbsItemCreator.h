@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <map>
 #include <string>
 
@@ -7,6 +8,7 @@
 
 class KRTTeCreatorContext;
 class QTextTableCell;
+class QTextTable;
 
 // Базовый «творец» блока в Te-движке (реф. KRTTeAbsItemCreator, ctor @0x513260).
 // Te-движок рендерит отчёт в QTextDocument (и на печать), в отличие от Simple-движка,
@@ -106,13 +108,59 @@ public:
                    QTextTableCell &cell) override;
 };
 
-class KRTTeTableItemCreator : public KRTTeAbsItemCreator      // реф. @0x515ec0
+// Реф. @0x515ec0 (CreateItem), @0x5176f8 (CreateTable), @0x5165c8 (InsertTableTitle),
+// @0x515d90/@0x5160c8 (две перегрузки CreateChild), @0x5185a0 (GetItemTitle).
+// Своих полей НЕТ — ctor @0x515e90 только зовёт базовый и ставит свой vtable.
+class KRTTeTableItemCreator : public KRTTeAbsItemCreator
 {
 public:
     using KRTTeAbsItemCreator::KRTTeAbsItemCreator;
+
+    // Реф. @0x515ec0: CheckCreate → InsertTableTitle → CreateTable →
+    //   таблица == nullptr → CreateChild(в ту же ячейку) и ВЫХОД (без разделителя);
+    //   таблица 1×1        → CreateChild(в cellAt(0,0));
+    //   иначе              → CreateChild(по сетке таблицы);
+    // затем GetSplitLineInfo(item.m_strID, конфиги) и, если ширина > 0, InsertSplitLine.
     int CreateItem(const KReportTemplateItem &item,
                    const std::map<std::string, std::string> &cfgMap,
                    QTextTableCell &cell) override;
+
+    // Реф. @0x5165c8: спрашивает СВОЙ GetItemTitle; пустой заголовок → только настройка
+    // межстрочного интервала пустого блока и выход; иначе шрифт/цвет из контекста и
+    // insertText. Точные ключи атрибутов межстрочного интервала НЕ ВОССТАНОВЛЕНЫ.
+    virtual void InsertTableTitle(const KReportTemplateItem &item,
+                                  const std::map<std::string, std::string> &cfgMap,
+                                  QTextTableCell &cell);
+
+    // Реф. @0x5176f8. Столбцы — `m_strColumn.toInt()`. Для имён HOSPITAL_OTHER /
+    // RT_SIGNATURE / RT_ADDITION / RT_IMAGE_TEXT_MAP таблица строится ВСЕГДА; для прочих
+    // при одном столбце возвращается nullptr (тогда дети идут в исходную ячейку).
+    virtual QTextTable *CreateTable(const KReportTemplateItem &item,
+                                    const std::map<std::string, std::string> &cfgMap,
+                                    QTextTableCell &cell);
+
+    // Реф. @0x515d90: линейно, параграфами в ОДНУ ячейку; между удачными детьми —
+    // insertBlock, в конце — deletePreviousChar (убирает хвостовой перевод).
+    virtual int CreateChild(const std::list<KReportTemplateItem> &items,
+                            const std::map<std::string, std::string> &cfgMap,
+                            QTextTableCell &cell);
+    // Реф. @0x5160c8: раскладывает детей по сетке (row = i / cols, col = i % cols),
+    // в конце убирает лишние строки через removeRows.
+    virtual int CreateChild(const std::list<KReportTemplateItem> &items,
+                            const std::map<std::string, std::string> &cfgMap,
+                            QTextTable *table);
+
+    // Реф. @0x5185a0 — ГЕЙТ ЖЁСТЧЕ, чем у текстового творца: заголовок отдаётся ТОЛЬКО
+    // при `m_strShowTitle == "1"` (литерал получен разделением суффикса строки
+    // " > /dev/null 2>&1" @0x885600 — проверено чтением .rodata). Плюс отдельная ветка
+    // при режиме контекста == 2 (НЕ ВОССТАНОВЛЕНА). Далее tr(m_strTitle), а при пустом
+    // результате — фолбэк на QueryTemplateItemRealTitle.
+    std::string GetItemTitle(const KReportTemplateItem &item,
+                             const std::map<std::string, std::string> &cfgMap) const;
+
+    // DEVICE-STUB: ключ атрибута со списком ширин столбцов («25,50,25») в реф. — глобальная
+    // динамически инициализируемая std::string, её ТЕКСТ НЕ ВОССТАНОВЛЕН. Пусто → равные доли.
+    static void SetColumnWidthAttrKey(const std::string &key);
 };
 
 class KRTTeSubDataItemCreator : public KRTTeAbsItemCreator    // реф. @0x515510
