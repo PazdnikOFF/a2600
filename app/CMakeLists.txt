@@ -126,6 +126,7 @@ set(SOURCES
     src/ui/KVideoPlayerOSD.cpp
     src/ui/KUnusedImgPlayBar.cpp
     src/ui/KViewHardEndo.cpp
+    src/ui/KViewBase.cpp
     src/ui/KParamSetBtn.cpp
     src/ui/KLineH.cpp
     src/ui/KPagePushButton.cpp
@@ -514,6 +515,7 @@ add_executable(ui_preview
     src/ui/KVideoPlayerOSD.cpp
     src/ui/KUnusedImgPlayBar.cpp
     src/ui/KViewHardEndo.cpp
+    src/ui/KViewBase.cpp
     src/ui/KParamSetBtn.cpp
     src/ui/KLineH.cpp
     src/ui/KPagePushButton.cpp

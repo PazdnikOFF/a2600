@@ -34,3 +34,8 @@ void KViewSoftEndo::paintEvent(QPaintEvent *)
                               (height() - scaled.height()) / 2), scaled);
     p.drawImage(target, frame_);
 }
+
+void KViewSoftEndo::DisplayMsg(const QString &msg)
+{
+    m_lastMsg = msg;   // реф. пишет поверх кадра (device-OSD)
+}

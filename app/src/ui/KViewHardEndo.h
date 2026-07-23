@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QFrame>
+#include <QString>
 
 // OSD-оверлей живого видео жёсткого эндоскопа (реф. KViewHardEndo : QFrame, ctor @0x464a70,
 // Ui_KViewHardEndo::setupUi @0x4650b8). UI-порт (reference-Ui оверлей; ОТЛИЧАЕТСЯ от нашего
@@ -20,6 +21,14 @@ class KViewHardEndo : public QFrame
 public:
     explicit KViewHardEndo(QWidget *parent = nullptr);
 
+    // Реф. KViewHardEndo::DisplayMsg(QString) — вывод сообщения поверх видео
+    // (зовётся из KViewBase::ShowExportErrorMsg @0x45bdd0). Текст сохраняется
+    // и доступен наружу: реальная OSD-метка — device-часть.
+    void DisplayMsg(const QString &msg);
+    QString LastMsg() const { return m_lastMsg; }
+
 private:
     void setupUi();
+
+    QString m_lastMsg;
 };

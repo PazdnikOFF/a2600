@@ -530,8 +530,45 @@ Qt5, boost 1.74, libcrypto.
 
 ## 10. Как продолжать (для новой сессии после /clear)
 
-**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **111 self-test-режимов** (все PASS, регрессия —
-`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 111 / FAIL 0).
+**ТЕКУЩАЯ ПОЗИЦИЯ (обновлять!):** **112 self-test-режимов** (все PASS, регрессия —
+`tools/selftest.sh`; последний прогон — в контейнере на hermes, PASS 112 / FAIL 0).
+
+**✅ UI: ПОРТИРОВАН `KViewBase` (2026-07-23)** — `app/src/ui/KViewBase.*`, self-test `viewbase`.
+Общая база двух экранов просмотра. Реф.-факты (сверены дизасмом):
+- Наследник **QDialog** (ctor @0x45d460 зовёт QDialog(parent, flags=0)); **СИГНАЛОВ НЕТ** —
+  в `qt_static_metacall` @0x81bdf0 ровно 8 слотов (0..7) и ни одного `QMetaObject::activate`.
+- **Layout'а НЕТ**: три ребёнка создаются в ctor и позиционируются абсолютно —
+  `KViewSoftEndo` «frameSoftEndo», `KViewHardEndo` «frameHardEndo», `KStopWatch`
+  «stopwatchframe» (указатели в отдельной 24-байтной структуре по this+48).
+- Две лямбды ctor'а: #1 @0x45bb60 — QTimer 500 мс, «мигающий курсор»: пока окно активно,
+  счётчик растёт и по порогу **5** курсор трёх виджетов переключается
+  `Qt::ArrowCursor` ⇄ `Qt::BlankCursor`; неактивно → всем Arrow и счётчик в 0.
+  #2 @0x45bd70 — `QTimer::singleShot(3000)` → `SendToMainCtrl(47)`.
+- `IsSoftEndoView()` @0x45c4b0 = (KSystemStatus поле **+20**) == 0 → у нас `ViewType()`.
+- `InitStopWatch()` @0x45d220: X из `KDisplayOption::Get{Soft,Hard}EndoViewConf()`,
+  **Y фиксированно 66**.
+- `PanelKeyRstAct(int)` @0x45c140 — это НЕ таблица кодов клавиш, а press/release ОДНОЙ
+  кнопки Rst: release со снятием диалога; press на НЕактивном окне → `SendToMainCtrl(0x25)`;
+  press на активном → warning `TR_Wng` / `TR_ESDIUAEAbnormal` + один из
+  `TR_LPRTCSPRTCancel`/`TR_LPRTCSPRTCancel1`. ⚠️ Результат Yes/No в реф. НИ НА ЧТО не влияет
+  (обе ветки только освобождают строки) — какое действие подразумевалось, НЕ ВОССТАНОВЛЕНО.
+  Также НЕ ВОССТАНОВЛЕНО, какое поле KSystemStatus стоит на **+16** (выбирает ключ текста).
+- `ShowEndoControlInfo(int)` @0x45c4d0 — ОДНОРАЗОВАЯ защёлка (байт @a4c000+957): коды 1/3 →
+  `TR_ENCPUTEOCTAOASales`, 4 → `TR_TEEPCTAOAIYWTCUIt`, 5 → EEPROM (дата «yyyyMMdd», пороги
+  14 и 30 → `TR_Rmnng:`/`TR_NORUses:`), иначе `TR_TEWBEPCTAOAIYWTCUIt`.
+- `CheckMachineControl()` @0x45cb90 — три ветки по остатку дней: 0 → предупреждение,
+  1..14 → предупреждение с числом дней, >14 → молчит.
+- `ForceLogoutSystem()` @0x45dce8 → `BackMainView()` @0x45db60; если что-то закрывали —
+  логин с `TR_YHNOFALTAHBALOut`.
+- DEVICE-STUB: 8 из 10 связей `InitConnect` @0x45bf00 идут от device-синглтонов
+  (KUiMsgProxy/GetSystemStatus/GetEndoScope), а наш `KUiMsgProxy` смоделирован методами-
+  регистраторами, а не сигналами ⇒ эти связи не создаются, слоты сделаны публичными.
+  Реально подключается только `KStopWatch::StopWatchStateChanged`. Открытие подчинённых
+  диалогов и EEPROM — за инъектируемыми хуками.
+- Попутно добавлен реф. метод `DisplayMsg(QString)` обоим вьюверам (его звал
+  `ShowExportErrorMsg` @0x45bdd0) — у нас его не было.
+- ⚠️ Расхождение с реф.: там ОБА вьювера — потомки QFrame; у нас `KViewSoftEndo` — QWidget.
+  Не трогал, чтобы не ломать существующий paintEvent-вьювер.
 
 **✅ UI: `KPinyinLineEdit` — последняя подстановка в пиньинь-клавиатуре снята (2026-07-23).**
 `app/src/ui/KPinyinLineEdit.*`; `KPinyinWidget::m_pinyinEdit` теперь реальный класс, а не
@@ -550,10 +587,9 @@ Qt5, boost 1.74, libcrypto.
 Скриншот режима `pinyin` сверен — регресса нет.
 
 **➡️ ОСТАТОК UI (по инвентаризации 2026-07-23):** все **76** классов с `Ui_*::setupUi`
-портированы; из виджет-классов (по `paintEvent`/`resizeEvent`) не портированы ровно два:
-**`KVideoLabel`** (метка живого видео) и **`KViewBase`** (база `KViewSoftEndo`/`KViewHardEndo`:
-InitConnect/PanelKey*Act/ShowEndoControlInfo/InitStopWatch/SystemStatusChangeAct @0x45bb10…).
-Оба device-bound — портируются только с DEVICE-STUB-сеймами (кадр-источник и панель — заглушки).
+портированы; из виджет-классов (по `paintEvent`/`resizeEvent`) остался НЕ портирован ровно ОДИН:
+**`KVideoLabel`** (метка живого видео) — device-bound, портируется только с DEVICE-STUB-сеймом
+кадр-источника. `KViewBase` закрыт 2026-07-23 (см. выше).
 
 **✅ UI: РАЗБЛОКИРОВАН И ПОРТИРОВАН ДИАЛОГ `KFactoryOptions` (2026-07-23, ROADMAP C5 снят).**
 Тот же приём совмещения. Наш sys-класс уже моделировал «состояние виджетов + логику»,

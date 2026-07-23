@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QImage>
+#include <QString>
 
 // Вьювер живого видео гибкого эндоскопа. Имя и методы — из оригинального
 // KViewSoftEndo (реф. X-2600): InitVideoParam, InitStatus, FreezeAck,
@@ -20,6 +21,11 @@ public:
     void FreezeAck();        // подтверждение стоп-кадра
     void ImageSaveAck();     // подтверждение сохранения снимка
 
+    // Реф. KViewSoftEndo::DisplayMsg(QString) — сообщение поверх кадра
+    // (зовётся из KViewBase::ShowExportErrorMsg @0x45bdd0).
+    void DisplayMsg(const QString &msg);
+    QString LastMsg() const { return m_lastMsg; }
+
 public slots:
     void OnVideoFrameReady(const QImage &frame); // приём кадра от KVideoProxy
 
@@ -27,5 +33,6 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    QImage frame_;
+    QImage  frame_;
+    QString m_lastMsg;
 };

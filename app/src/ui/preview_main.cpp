@@ -156,6 +156,8 @@
 #include "db/KQuickInputDbTableHandler.h"
 #include "ui/KQuickInputModel.h"
 #include "db/KQuickInputReportTitle.h"
+#include "ui/KViewBase.h"
+#include "video/KViewSoftEndo.h"
 #include "db/KExamListConfigHandler.h"
 #include "db/KEntityExam.h"
 #include "db/KFileBackup.h"
@@ -2096,6 +2098,89 @@ int main(int argc, char **argv)
         const bool ok = sizeOk && showOk && idOk && cellOk && titleReadOk && titleSetOk;
         qInfo() << (ok ? "titletableblock: PASS" : "titletableblock: FAIL");
         return ok ? 0 : 50;
+    }
+
+    if (screen == "viewbase") {
+        // Self-test базового экрана просмотра (реф. KViewBase). Проверяем то, что реально
+        // восстановлено дизасмом: состав детей и их objectName, выбор мягкий/жёсткий,
+        // одноразовую защёлку ShowEndoControlInfo, ветки CheckMachineControl по дням,
+        // press/release логику PanelKeyRstAct и ForceLogoutSystem.
+        KSystemStatus &st = KSystemStatus::GetInstance();
+        KViewBase vb;
+
+        // Дети создаются в ctor с реф. objectName; layout'а нет.
+        const bool kidsOk = vb.SoftEndo() && vb.HardEndo() && vb.StopWatch()
+            && vb.SoftEndo()->objectName() == "frameSoftEndo"
+            && vb.HardEndo()->objectName() == "frameHardEndo"
+            && vb.StopWatch()->objectName() == "stopwatchframe"
+            && vb.layout() == nullptr;
+
+        // IsSoftEndoView == (ViewType()==0); InitUiType показывает ровно один фрейм.
+        st.SetViewType(0); vb.InitUiType();
+        const bool softOk = vb.IsSoftEndoView() && vb.SoftEndo()->isVisibleTo(&vb)
+                            && !vb.HardEndo()->isVisibleTo(&vb);
+        st.SetViewType(1); vb.InitUiType();
+        const bool hardOk = !vb.IsSoftEndoView() && vb.HardEndo()->isVisibleTo(&vb)
+                            && !vb.SoftEndo()->isVisibleTo(&vb);
+        // Секундомер: Y фиксированно 66 (реф. InitStopWatch).
+        const bool swPosOk = vb.StopWatch()->y() == 66;
+
+        // ShowExportErrorMsg — один ключ ОБОИМ фреймам.
+        vb.ShowExportErrorMsg();
+        const bool exportOk = vb.SoftEndo()->LastMsg() == "TR_ESDIUAEAbnormal"
+                              && vb.HardEndo()->LastMsg() == "TR_ESDIUAEAbnormal";
+
+        // ShowEndoControlInfo: коды 1/3 и 4 дают разные тексты, защёлка одноразовая.
+        vb.ShowEndoControlInfo(1);
+        const bool code1Ok = vb.LastMessage() == "TR_TYFUOProductTR_ENCPUTEOCTAOASales"
+                             && vb.LastMessageTitle() == "TR_Wng";
+        vb.ShowEndoControlInfo(4);                     // второй раз — защёлка не пустит
+        const bool latchOk = vb.LastMessage() == "TR_TYFUOProductTR_ENCPUTEOCTAOASales";
+
+        // CheckMachineControl: 0 дней / 1..14 / >14 — три разные ветки.
+        KViewBase vb2;
+        int mcDays = 0;
+        vb2.SetMachineControlHook([&mcDays](int &d) { d = mcDays; return true; });
+        vb2.show();                                   // нужна активность окна (реф. гейт)
+        vb2.activateWindow();
+        QApplication::processEvents();
+        mcDays = 0;  vb2.CheckMachineControl();
+        const QString mc0 = vb2.LastMessage();
+        mcDays = 7;  vb2.CheckMachineControl();
+        const QString mc7 = vb2.LastMessage();
+        mcDays = 30; vb2.CheckMachineControl();
+        const QString mc30 = vb2.LastMessage();       // >14 — реф. молчит, текст прежний
+        const bool mcOk = mc0 == "TR_TYFUOProductTR_TIPHEPCTAOAIYWTCUIt"
+                          && mc7.contains("TR_EDate:") && mc7.contains("7")
+                          && mc7.contains("TR_DALeft") && mc30 == mc7;
+
+        // PanelKeyRstAct: отпускание без показанного диалога — no-op; нажатие на
+        // НЕактивном окне шлёт SendToMainCtrl(0x25).
+        KUiMsgProxy::ClearSent();
+        KViewBase vb3;                                 // не показан ⇒ окно неактивно
+        vb3.PanelKeyRstAct(0);
+        const bool relOk = vb3.LastMessage().isEmpty();
+        vb3.PanelKeyRstAct(1);
+        const auto sent = KUiMsgProxy::TakeSent();
+        bool rstSendOk = false;
+        for (const auto &s : sent)
+            if (s.a == 0x25) rstSendOk = true;
+
+        // ForceLogoutSystem: если активного чужого окна нет — логин не открывается.
+        bool loginOpened = false;
+        vb3.SetOpenLoginDlgHook([&loginOpened](const QString &) { loginOpened = true; });
+        vb3.ForceLogoutSystem();
+
+        const bool ok = kidsOk && softOk && hardOk && swPosOk && exportOk && code1Ok
+                        && latchOk && mcOk && relOk && rstSendOk;
+        qInfo() << "дети+objectName+без layout:" << kidsOk << "| soft:" << softOk
+                << "hard:" << hardOk << "| stopwatch Y=66:" << swPosOk;
+        qInfo() << "ShowExportErrorMsg:" << exportOk << "| код 1:" << code1Ok
+                << "защёлка:" << latchOk << "| MachineControl 0/7/>14:" << mcOk;
+        qInfo() << "Rst release no-op:" << relOk << "Rst press→SendToMainCtrl(0x25):"
+                << rstSendOk << "| login открыт:" << loginOpened;
+        qInfo() << (ok ? "viewbase: PASS" : "viewbase: FAIL");
+        return ok ? 0 : 21;
     }
 
     if (screen == "reporttitledb") {

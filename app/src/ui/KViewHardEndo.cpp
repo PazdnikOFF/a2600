@@ -75,3 +75,8 @@ void KViewHardEndo::setupUi()
     guide->setObjectName(QStringLiteral("widget_endobtnguide"));
     guide->setGeometry(175, 113, 540, 370);
 }
+
+void KViewHardEndo::DisplayMsg(const QString &msg)
+{
+    m_lastMsg = msg;   // реф. пишет в OSD-метку поверх видео (device)
+}
