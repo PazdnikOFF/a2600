@@ -136,6 +136,9 @@ set(SOURCES
     src/ui/KImgPushButton.cpp
     src/ui/KIpAddrEdit.cpp
     src/ui/KOsdSpin.cpp
+    src/ui/KOsdSpin02.cpp
+    src/ui/KOsdSpinBase.cpp
+    src/ui/KOsdReturnLabel.cpp
     src/ui/KOsdDoubleSpin.cpp
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp
@@ -534,6 +537,9 @@ add_executable(ui_preview
     src/ui/KImgPushButton.cpp
     src/ui/KIpAddrEdit.cpp
     src/ui/KOsdSpin.cpp
+    src/ui/KOsdSpin02.cpp
+    src/ui/KOsdSpinBase.cpp
+    src/ui/KOsdReturnLabel.cpp
     src/ui/KOsdDoubleSpin.cpp
     src/ui/KQuickInputWidget.cpp
     src/ui/KMemComboBox.cpp

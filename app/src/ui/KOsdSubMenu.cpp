@@ -3,6 +3,8 @@
 
 #include <QVBoxLayout>
 #include <QListWidget>
+#include <QListWidgetItem>
+#include <QKeyEvent>
 
 KOsdSubMenu::KOsdSubMenu(QWidget *parent, bool bAddReturnBtn)
     : KOsdMenuBase(parent)
@@ -48,8 +50,18 @@ void KOsdSubMenu::AddItem(QWidget *w)
 
 void KOsdSubMenu::AddItem(const KOsdSpinConfig &cfg)
 {
-    // Реф. @0x47bd20: строит спин-виджет (KOsdSpin02) → host. В порте — KOsdSpin.
-    AddItem(new KOsdSpin(cfg, m_listWidget));
+    // Реф. @0x47bd20: `new(nothrow) KOsdSpin02(cfg, this)` — именно KOsdSpin02, а НЕ KOsdSpin
+    // (последний в прошивке нигде не создаётся, см. комментарий в KOsdSpin02.h).
+    AddItem(new KOsdSpin02(cfg, m_listWidget));
+}
+
+void KOsdSubMenu::AddAReturnBtnInTheEndIfNeeded()
+{
+    // Реф. @0x47bf60: гейт по флагу ctor-а + защёлка «уже добавлена».
+    if (!m_bAddReturnBtn || m_returnBtnAdded)
+        return;
+    AddItem(new KOsdReturnLabel());
+    m_returnBtnAdded = true;
 }
 
 void KOsdSubMenu::AddItem(const KOsdDoubleSpinConfig &cfg)
@@ -78,71 +90,156 @@ void KOsdSubMenu::AddItem(const KOsdSingleSelectLabelConfig &cfg)
 
 void KOsdSubMenu::InitWidget(const QPoint &pos)
 {
-    // Реф. @0x47bfe0: width 270, height=count*44, клип к экрану 1080, move.
+    // Реф. @0x47bfe0: ПЕРВЫМ делом дописывается строка «назад» (если её просили), и только
+    // потом считается высота — иначе она не попала бы в размер меню.
+    AddAReturnBtnInTheEndIfNeeded();
     m_pos = pos;
-    const int height = qMax(1, m_items.size()) * 44;
+    const int height = qMax(1, m_listWidget->count()) * 44;   // реф. count()*44 (0x2c), width 270 (0x10e)
     resize(270, height);
+    // Реф.: пока низ меню за экраном (0x438 = 1080), поднимаем на 32. Ограничения «не
+    // выше нуля» в реф. НЕТ — y может уйти отрицательным (цикл всё равно конечен).
     int y = pos.y();
-    while (y + height > 1080 && y > 0)
+    while (y + height > 1080)
         y -= 32;
     move(pos.x(), y);
-    // Реф.: строки-метки получают стартовую точку меню для позиционирования под-подменю.
+    // Реф. InitItemPosition @0x47acc8: строки получают стартовую точку меню (для под-подменю).
     for (QWidget *w : m_items)
         if (KFrame *f = qobject_cast<KFrame *>(w))
             f->SetStartPoint(pos);
+    // Реф. хвост InitWidget @0x47c088: сразу же подсветить строки по текущему курсору —
+    // именно здесь строка «назад» получает свой пиксмап вместо текста-плейсхолдера.
+    RefreshSelectedItem();
 }
 
-void KOsdSubMenu::RefreshSelectedItem(int oldIdx)
+KFrame *KOsdSubMenu::GetSelectedMenuItem() const
 {
-    if (oldIdx >= 0 && oldIdx < m_items.size()) {
-        if (KOsdSpin *s = qobject_cast<KOsdSpin *>(m_items[oldIdx])) Q_UNUSED(s);   // спин сам без Select
-    }
+    // Реф. @0x47ac88 → GetMenuItem(m_selectedIndex).
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+        return nullptr;
+    return qobject_cast<KFrame *>(m_items[m_selectedIndex]);
+}
+
+void KOsdSubMenu::RefreshSelectedItem()
+{
+    // Реф. @0x47ae30 — ЗАВОРАЧИВАНИЕ КУРСОРА ЖИВЁТ ЗДЕСЬ, а не в Up/DownKeyAct:
+    //   if (m_selectedIndex >= count) m_selectedIndex = 0;
+    //   else if (m_selectedIndex < 0) m_selectedIndex = count - 1;
+    // затем setCurrentRow и проход по ВСЕМ строкам: текущая → Selected(), прочие →
+    // UnSelected(); каждой строке обновляется sizeHint по фактической геометрии виджета.
+    const int count = m_listWidget->count();
+    if (m_selectedIndex >= count)
+        m_selectedIndex = 0;
+    else if (m_selectedIndex < 0)
+        m_selectedIndex = count - 1;
     m_listWidget->setCurrentRow(m_selectedIndex);
-    update();
+
+    for (int i = 0; i < count; ++i) {
+        QListWidgetItem *item = m_listWidget->item(i);
+        QWidget *w = m_listWidget->itemWidget(item);
+        if (!w)
+            continue;
+        if (KFrame *f = qobject_cast<KFrame *>(w)) {
+            if (i == m_selectedIndex)
+                f->Selected();     // реф. vt+0x1a8
+            else
+                f->UnSelected();   // реф. vt+0x1b0
+        }
+        // Реф.: sizeHint = QSize(right-left+1, bottom-top+1) фактической геометрии.
+        item->setSizeHint(QSize(w->geometry().width(), w->geometry().height()));
+    }
+    m_listWidget->update();
 }
 
 void KOsdSubMenu::UpKeyAct()
 {
-    if (m_items.isEmpty())
+    // Реф. @0x47b198: если текущая строка ЗАХВАТИЛА фокус (спин) — клавиша уходит ей,
+    // курсор меню не двигается. Иначе --index и Refresh (он же и заворачивает).
+    if (!isActiveWindow())
         return;
-    const int old = m_selectedIndex;
-    m_selectedIndex = (m_selectedIndex - 1 < 0) ? m_items.size() - 1 : m_selectedIndex - 1;
-    RefreshSelectedItem(old);
+    KFrame *item = GetSelectedMenuItem();
+    if (item && item->GotFocusIn()) {
+        item->UpKeyAct();
+        return;
+    }
+    --m_selectedIndex;
+    RefreshSelectedItem();
 }
 
 void KOsdSubMenu::DownKeyAct()
 {
-    if (m_items.isEmpty())
+    // Реф. @0x47b118 — зеркально UpKeyAct.
+    if (!isActiveWindow())
         return;
-    const int old = m_selectedIndex;
-    m_selectedIndex = (m_selectedIndex + 1 >= m_items.size()) ? 0 : m_selectedIndex + 1;
-    RefreshSelectedItem(old);
+    KFrame *item = GetSelectedMenuItem();
+    if (item && item->GotFocusIn()) {
+        item->DownKeyAct();
+        return;
+    }
+    ++m_selectedIndex;
+    RefreshSelectedItem();
 }
 
 void KOsdSubMenu::ItemClicked(const QModelIndex &idx)
 {
+    // Реф. @0x47b108 (ConfirmKeyAct(QModelIndex)): курсор = row, дальше обычный Confirm.
     if (!idx.isValid())
         return;
-    const int old = m_selectedIndex;
     m_selectedIndex = idx.row();
-    RefreshSelectedItem(old);
+    RefreshSelectedItem();
 }
 
 void KOsdSubMenu::ConfirmKeyAct()
 {
-    // Реф. @0x47b080: активация текущего элемента. Для single-select-меток (KFrame-подкласс):
-    // Selected → ConfirmKeyAct(seam) → если IsSingleSelectLabel, коммит checked-индекса + refresh.
-    // Спины (KOsdSpin/KOsdDoubleSpin — НЕ KFrame) сюда не попадают (cast промахивается).
-    const int row = m_selectedIndex;
-    if (row < 0 || row >= m_items.size())
+    // Реф. @0x47b080: гейт isActiveWindow(); item->Focused() (vt+0x1a0 — именно Focused,
+    // НЕ Selected); item->ConfirmKeyAct(m_selectedIndex) (vt+0x1e8, аргумент — ИНДЕКС);
+    // если item->IsSingleSelectLabel() (vt+0x1f0) → коммит checked + RefreshCheckedItem.
+    if (!isActiveWindow())
         return;
-    if (KFrame *f = qobject_cast<KFrame *>(m_items[row])) {
-        f->Selected();                 // реф. item.Selected() (vt+0x1a0)
-        f->ConfirmKeyAct(row);         // реф. item.ConfirmKeyAct(cursor) (vt+0x1e8) → DEVICE-seam
-        if (f->IsSingleSelectLabel()) {   // реф. vt+0x1f0
-            m_checkedIndex = m_selectedIndex;
-            RefreshCheckedItem();
+    KFrame *f = GetSelectedMenuItem();
+    if (!f)
+        return;
+    f->Focused();
+    f->ConfirmKeyAct(m_selectedIndex);
+    if (f->IsSingleSelectLabel()) {
+        m_checkedIndex = m_selectedIndex;
+        RefreshCheckedItem();
+    }
+}
+
+void KOsdSubMenu::keyPressEvent(QKeyEvent *e)
+{
+    // Реф. @0x47b218: сначала «модификаторы нажаты → игнор», затем разбор кодов.
+    if (e->modifiers() != Qt::NoModifier) {
+        e->ignore();
+        return;
+    }
+    switch (e->key()) {
+    case Qt::Key_Up:                     // 0x1000013
+        UpKeyAct();
+        return;
+    case Qt::Key_Down:                   // 0x1000015
+        DownKeyAct();
+        return;
+    case Qt::Key_Right:                  // 0x1000014
+    case Qt::Key_Return:                 // 0x1000004
+    case Qt::Key_Enter:                  // 0x1000005
+        ConfirmKeyAct();
+        return;
+    case Qt::Key_Left:                   // 0x1000012
+    case Qt::Key_Escape: {               // 0x1000000
+        // Реф.: «назад» = отпустить захваченный спин, а если фокус не захвачен — закрыть меню.
+        KFrame *item = GetSelectedMenuItem();
+        if (item && item->GotFocusIn()) {
+            item->ReleaseFocus();
+            item->Selected();
+        } else {
+            close();
         }
+        return;
+    }
+    default:
+        KOsdMenuBase::keyPressEvent(e);
+        return;
     }
 }
 
@@ -176,11 +273,12 @@ void KOsdSubMenu::RefreshCheckedItem()
 
 void KOsdSubMenu::SetValue(int row, int value)
 {
-    // Реф. SetValue: фан-аут в hosted-спин (device→UI). Тихий сеттер.
+    // Реф. @0x47b340: фан-аут в строку через ВИРТУАЛЬНЫЙ слот SetIntValue (vt+0x1f8) —
+    // работает для любой KFrame-строки, а не только для спина.
     if (row < 0 || row >= m_items.size())
         return;
-    if (KOsdSpin *s = qobject_cast<KOsdSpin *>(m_items[row]))
-        s->SetIntValue(value);
+    if (KFrame *f = qobject_cast<KFrame *>(m_items[row]))
+        f->SetIntValue(value);
 }
 
 void KOsdSubMenu::SetValue(int row, double value)

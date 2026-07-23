@@ -112,6 +112,7 @@
 #include "ui/KOsdMenu.h"
 #include "ui/KOsdMenuCell.h"
 #include "ui/KImageButton.h"
+#include <QListWidget>
 #include "ui/KOsdSubMenu.h"
 #include "ui/KOsdSingleSelectMenu.h"
 #include "ui/KIrisMenu.h"
@@ -6574,6 +6575,101 @@ int main(int argc, char **argv)
         return ok ? 0 : 80;
     }
 
+    // Self-test живого OSD-спина и строки «назад» (реф. KOsdSpinBase/KOsdSpin02/
+    // KOsdReturnLabel + база KFrame). Проверяет ровно то, что было потеряно при
+    // «сплющивании» KOsdSpinBase: тумблер захвата фокуса и клип значения.
+    if (screen == "osdspin02") {
+        KOsdSpinConfig cfg;
+        cfg.title = QStringLiteral("Gain"); cfg.min = 0; cfg.max = 10; cfg.step = 3; cfg.def = 4;
+        KOsdSpin02 sp(cfg);
+
+        // Раскладка (реф. ctor @0x484e18).
+        const bool geomOk = sp.minimumSize() == QSize(250, 32) && sp.maximumSize() == QSize(250, 32)
+            && sp.SpinBox()->minimumWidth() == 180
+            && sp.SpinBox()->buttonSymbols() == QAbstractSpinBox::UpDownArrows
+            && sp.SpinBox()->alignment() == (Qt::AlignHCenter | Qt::AlignVCenter)
+            && sp.SpinBox()->focusPolicy() == Qt::NoFocus
+            && sp.TitleLabel()->text() == QStringLiteral("Gain")
+            && sp.SpinBox()->minimum() == 0 && sp.SpinBox()->maximum() == 10
+            && sp.SpinBox()->singleStep() == 3 && sp.SpinBox()->value() == 4;
+
+        // Тумблер фокуса (реф. KOsdSpinBase::ConfirmKeyAct @0x4855b0) — БЕЗ него Up/Down
+        // ушли бы в меню, а не в спин.
+        int emitted = 0;
+        QObject::connect(&sp, &KOsdSpin02::valueChanged, [&emitted](int) { ++emitted; });
+        const bool idleOk = !sp.GotFocusIn();
+        sp.UpKeyAct();                                    // фокус не захвачен → значение не меняется
+        const bool ignoreOk = sp.Value() == 4;
+        sp.ConfirmKeyAct(0);
+        const bool grabOk = sp.GotFocusIn();
+        sp.UpKeyAct();                                    // 4+3 = 7
+        sp.UpKeyAct();                                    // 7+3 = 10 (клип по max, не 11)
+        const bool clipHiOk = sp.Value() == 10 && sp.SpinBox()->value() == 10;
+        for (int i = 0; i < 5; ++i) sp.DownKeyAct();      // клип по min
+        const bool clipLoOk = sp.Value() == 0;
+        sp.ConfirmKeyAct(0);                              // второй Confirm — отпустить
+        const bool releaseOk = !sp.GotFocusIn();
+        sp.UpKeyAct();
+        const bool afterReleaseOk = sp.Value() == 0;
+        sp.ReleaseFocus();
+
+        // Тихий сеттер: SetIntValue НЕ шлёт сигнал (реф. гейт m_notify), но обновляет cur.
+        const int before = emitted;
+        sp.SetIntValue(6);
+        const bool silentOk = emitted == before && sp.Value() == 6 && sp.SpinBox()->value() == 6;
+
+        // Стили базы KFrame (строки из .rodata, включая квирк «rgb(0,  205,209)»).
+        sp.Focused();
+        const bool styleFocusOk = sp.styleSheet().contains(QStringLiteral("rgb(0,  205,209)"))
+                               && sp.SpinBox()->styleSheet().contains(QStringLiteral("rgb(0,205,209)"));
+        sp.UnSelected();
+        const bool styleUnselOk = !sp.styleSheet().contains(QStringLiteral("QFrame{border"))
+                               && sp.styleSheet().contains(QStringLiteral("rgb(221,221,221)"));
+        sp.SetGreyed(true); sp.Selected();
+        const bool styleGreyOk = sp.styleSheet().contains(QStringLiteral("rgb(100,100,100)"))
+                              && sp.IsSelected();
+        sp.SetGreyed(false);
+
+        // Строка «назад»: геометрия, имена картинок, смена пиксмапа.
+        KOsdReturnLabel rl;
+        const bool rlGeomOk = rl.minimumSize() == QSize(250, 32)
+            && KOsdReturnLabel::GetNormalImgPath() == QStringLiteral("return_normal.png")
+            && KOsdReturnLabel::GetSelectImgPath() == QStringLiteral("return_select.png");
+        rl.Selected();
+        const bool rlSelPix = !rl.IconLabel()->pixmap(Qt::ReturnByValue).isNull();
+        rl.UnSelected();
+        const bool rlNormPix = !rl.IconLabel()->pixmap(Qt::ReturnByValue).isNull();
+
+        // Меню: строка «назад» дописывается в InitWidget и ровно один раз (защёлка).
+        KOsdSubMenu menu(nullptr, /*bAddReturnBtn=*/true);
+        menu.AddItem(cfg);
+        menu.InitWidget(QPoint(0, 0));
+        QListWidget *lw = menu.findChild<QListWidget *>();
+        const int afterFirst = lw ? lw->count() : -1;
+        menu.InitWidget(QPoint(0, 0));
+        const bool menuOk = lw && afterFirst == 2 && lw->count() == 2
+            && qobject_cast<KOsdSpin02 *>(lw->itemWidget(lw->item(0))) != nullptr
+            && qobject_cast<KOsdReturnLabel *>(lw->itemWidget(lw->item(1))) != nullptr;
+        // Фан-аут значения идёт через виртуальный SetIntValue строки (а не через cast к спину).
+        menu.SetValue(0, 9);
+        auto *hosted = qobject_cast<KOsdSpin02 *>(lw->itemWidget(lw->item(0)));
+        const bool fanOutOk = hosted && hosted->Value() == 9;
+
+        qInfo() << "раскладка:" << geomOk << "| холостой Up:" << (idleOk && ignoreOk)
+                << "| захват:" << grabOk << "| клип max/min:" << (clipHiOk && clipLoOk)
+                << "| отпускание:" << (releaseOk && afterReleaseOk)
+                << "| тихий сеттер:" << silentOk
+                << "| стили:" << (styleFocusOk && styleUnselOk && styleGreyOk)
+                << "| return-строка:" << (rlGeomOk && rlSelPix && rlNormPix)
+                << "| меню:" << (menuOk && fanOutOk);
+        const bool ok = geomOk && idleOk && ignoreOk && grabOk && clipHiOk && clipLoOk
+                     && releaseOk && afterReleaseOk && silentOk
+                     && styleFocusOk && styleUnselOk && styleGreyOk
+                     && rlGeomOk && rlSelPix && rlNormPix && menuOk && fanOutOk;
+        qInfo() << (ok ? "osdspin02: PASS" : "osdspin02: FAIL");
+        return ok ? 0 : 81;
+    }
+
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).
     // Ядро — GetTestConfPath: 8 комбинаций (check_scope × PanelType × ViewType).
     // Ground truth — реальные каталоги system/autotest/aging-* в поставке прошивки.
@@ -11008,9 +11104,11 @@ int main(int argc, char **argv)
         KOsdDoubleSpinConfig c3; c3.title = QStringLiteral("MI"); c3.min = 0.0; c3.max = 1.9; c3.step = 0.1;
         c3.def = 0.7; c3.decimals = 1;
         sub->AddItem(c3);
-        sub->InitWidget(QPoint(0, 0));
+        sub->InitWidget(QPoint(0, 0));   // реф.: тут же дописывается строка «назад» (KOsdReturnLabel)
         sub->SetValue(0, 65);     // фан-аут значения в первый спин (Gain=65)
         sub->SetValue(2, 1.2);    // MI=1.2
+        // Курсор на первой строке + подсветка (в реф. это делает RefreshSelectedItem при навигации).
+        sub->ItemClicked(sub->findChild<QListWidget *>()->model()->index(0, 0));
         w = sub;
     } else if (screen == "imagebutton") {
         // Кастом-виджет KImageButton: QSS-кнопка с 4 состояниями + текст (реальные ассеты).
