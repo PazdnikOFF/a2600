@@ -152,6 +152,7 @@
 #include <QLabel>
 #include "ui/KDisplayOption.h"
 #include "ui/KImgList.h"
+#include "ui/KImgListCell.h"
 #include "endo/KSoftEndoParam.h"
 #include "db/KEntityManage.h"
 #include "db/KEntityQuickInput.h"
@@ -6668,6 +6669,51 @@ int main(int argc, char **argv)
                      && rlGeomOk && rlSelPix && rlNormPix && menuOk && fanOutOk;
         qInfo() << (ok ? "osdspin02: PASS" : "osdspin02: FAIL");
         return ok ? 0 : 81;
+    }
+
+    // Self-test ячейки превью снимка (реф. KImgListCell) и её встраивания в KImgList.
+    if (screen == "imglistcell") {
+        KImgListCell cell;
+        // Реф. ctor: 400×300, StyledPanel/Raised, подпись СКРЫТА.
+        const bool ctorOk = cell.size() == QSize(400, 300)
+            && cell.frameShape() == QFrame::StyledPanel && cell.frameShadow() == QFrame::Raised
+            && cell.ImgLabel()->alignment() == Qt::AlignCenter
+            && !cell.TextLabel()->isVisible()
+            && cell.layout() && cell.layout()->spacing() == 0
+            && cell.layout()->contentsMargins() == QMargins(0, 0, 0, 0);
+
+        // ⚠️ Реф. проверяет бит WA_WState_Visible, который выставляется только у ПОКАЗАННОГО
+        // виджета — поэтому ячейку надо показать, иначе ветка «резерв под подпись» недостижима.
+        cell.show();
+        // Пока подпись скрыта — резерв 20 px НЕ применяется (реф. ветка по WA_WState_Visible).
+        cell.setMinimumSize(200, 150);
+        const bool noReserveOk = cell.minimumSize() == QSize(200, 150)
+                              && cell.ImgLabel()->minimumHeight() == 0;
+        // setText показывает подпись → следующий setMinimumSize уже режет 20 px картинке.
+        cell.setText(QStringLiteral("IMG_0001"));
+        const bool textOk = cell.TextLabel()->isVisible()
+                         && cell.TextLabel()->text() == QStringLiteral("IMG_0001");
+        cell.setMinimumSize(200, 150);
+        const bool reserveOk = cell.ImgLabel()->minimumHeight() == 130   // 150 - 20
+                            && cell.ImgLabel()->minimumWidth() == 200;
+        // clear() чистит текст, но НЕ прячет подпись обратно (реф. видимость не трогает).
+        cell.clear();
+        const bool clearOk = cell.TextLabel()->text().isEmpty() && cell.TextLabel()->isVisible();
+
+        // Дефолты прямоугольников — референсные (QRect(0,0,269,209)/(0,0,269,201)).
+        KImgList list;
+        const bool cellsOk = list.Cell(0) && list.Cell(3) && !list.Cell(4)
+            && list.Cell(0)->objectName() == QStringLiteral("KlList_img0")
+            && list.Cell(0)->maximumSize() == list.Cell(0)->minimumSize();
+        const QSize iconSz = list.Cell(0) ? list.Cell(0)->minimumSize() : QSize();
+        const bool rectOk = iconSz.isValid() && iconSz.width() > 0;
+
+        qInfo() << "ctor:" << ctorOk << "| без резерва:" << noReserveOk << "| setText:" << textOk
+                << "| резерв 20px:" << reserveOk << "| clear:" << clearOk
+                << "| 4 ячейки в KImgList:" << cellsOk << "| размер иконки:" << iconSz;
+        const bool ok = ctorOk && noReserveOk && textOk && reserveOk && clearOk && cellsOk && rectOk;
+        qInfo() << (ok ? "imglistcell: PASS" : "imglistcell: FAIL");
+        return ok ? 0 : 82;
     }
 
     // Self-test заводских опций / стенда старения (реф. KFactoryOptions).

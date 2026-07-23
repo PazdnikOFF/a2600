@@ -4,6 +4,7 @@
 #include <QString>
 
 class QTableWidget;
+class KImgListCell;
 
 // Список снимков осмотра (реф. класс KImgList, X-2600).
 // Обёртка над QTableWidget (как в оригинале initUiConfig: setShowGrid,
@@ -20,6 +21,10 @@ public:
     QString GetExamFolder() const { return examFolder_; }
 
     void AppendImg();                 // перечитать миниатюры из папки
+    // Реф. Ui_KImgList: под таблицей четыре ячейки-превью KImgListCell (KlList_img0..3).
+    void SetImgInfo(int index, const QString &imgPath);   // реф. @0x67fe38
+    void ClearImgInfo();                                  // реф. @0x67fef8
+    KImgListCell *Cell(int index) const { return (index >= 0 && index < 4) ? m_cells[index] : nullptr; }
     int  GetImgTotal() const;
     QString GetCurrentImgPath() const;
 
@@ -34,4 +39,5 @@ private:
     QString       examFolder_;
     QSize         cell_;
     QSize         icon_;
+    KImgListCell *m_cells[4] = {nullptr, nullptr, nullptr, nullptr};
 };

@@ -222,6 +222,7 @@ set(SOURCES
     src/ui/KUIDesktop.cpp
     src/ui/KDisplayOption.cpp
     src/ui/KImgList.cpp
+    src/ui/KImgListCell.cpp
     src/ui/KStopWatch.cpp
     src/ui/Theme.cpp
     src/sys/KSystem.cpp
@@ -380,6 +381,7 @@ add_executable(ui_preview
     src/ui/KUIDesktop.cpp
     src/ui/KDisplayOption.cpp
     src/ui/KImgList.cpp
+    src/ui/KImgListCell.cpp
     src/ui/KStopWatch.cpp
     src/sys/KSystem.cpp
     src/sys/KEnvConfig.cpp

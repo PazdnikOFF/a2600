@@ -1,5 +1,6 @@
 #include "ui/KImgList.h"
 #include "ui/KDisplayOption.h"
+#include "ui/KImgListCell.h"
 
 #include <QTableWidget>
 #include <QHeaderView>
@@ -14,8 +15,11 @@ KImgList::KImgList(QWidget *parent) : QWidget(parent)
     const KDisplayOption &disp = KDisplayOption::Instance();
     QRect c = disp.GetKImgListCellRect();
     QRect i = disp.GetKImgListIconRect();
-    cell_ = c.isValid() ? c.size() : QSize(190, 191);
-    icon_ = i.isValid() ? i.size() : QSize(188, 135);
+    // Дефолты — РЕФЕРЕНСНЫЕ (@0x6508a8/@0x650ac8): значение по умолчанию у QSettings::value
+    // задано как QRect(0,0,269,209) и QRect(0,0,269,201) в координатной форме (x1,y1,x2,y2),
+    // то есть размеры 270×210 и 270×202. Раньше тут стояли выдуманные 190×191 / 188×135.
+    cell_ = c.isValid() ? c.size() : QSize(270, 210);
+    icon_ = i.isValid() ? i.size() : QSize(270, 202);
     initUiConfig();
 }
 
@@ -39,6 +43,41 @@ void KImgList::initUiConfig()
     table_->setStyleSheet("QTableWidget{background:transparent; border:none;}"
                           "QTableWidget::item{border:1px solid rgb(45,52,68);}");
     lay->addWidget(table_);
+
+    // Реф. Ui_KImgList::setupUi @0x681018: под таблицей — ЧЕТЫРЕ ячейки-превью
+    // KlList_img0..3 (реальный класс KImgListCell, не подстановка).
+    for (int n = 0; n < 4; ++n) {
+        auto *cell = new KImgListCell(this);
+        cell->setObjectName(QStringLiteral("KlList_img%1").arg(n));
+        // Реф. KImgList::initImgInfo @0x67d448: размеры из icon-rect + снятие рамок.
+        cell->setMinimumSize(icon_.width(), icon_.height());
+        cell->setMaximumSize(icon_.width(), icon_.height());
+        cell->setStyleSheet(QStringLiteral(
+            "QFrame{border: 0px solid transparent;} QLabel{border: 0px solid transparent;}"));
+        m_cells[n] = cell;
+        lay->addWidget(cell);
+    }
+}
+
+void KImgList::SetImgInfo(int index, const QString &imgPath)
+{
+    // Реф. @0x67fe38: пустой/битый пиксмап — предупреждение и выход (реф. пишет в лог
+    // «Thumbnail Image is invalid.»); иначе масштаб с сохранением пропорций → в ячейку.
+    if (index < 0 || index >= 4 || !m_cells[index])
+        return;
+    const QPixmap pm(imgPath);
+    if (pm.isNull())
+        return;
+    m_cells[index]->setPixmap(pm.scaled(icon_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_cells[index]->setAlignment(Qt::AlignCenter);
+}
+
+void KImgList::ClearImgInfo()
+{
+    // Реф. @0x67fef8: сброс всех четырёх превью.
+    for (KImgListCell *c : m_cells)
+        if (c)
+            c->clear();
 }
 
 void KImgList::SetExamFolder(const QString &dir)
