@@ -3760,10 +3760,24 @@ int main(int argc, char **argv)
             mcu::kParity == 0 && mcu::kStopBits == 1 &&
             mcu::kFrameHeader == 0xAA;
 
+        // Кадровый CRC (комплемент) + XOR-трейлер (реверс lcdupdate).
+        const bool frameOk =
+            mcu::Crc8Check(v1, sizeof v1) == 0x9B &&   // ~0x64
+            mcu::Crc8Check(v2, sizeof v2) == 0x12 &&   // ~0xED
+            mcu::Crc8Check(v3, sizeof v3) == 0x51 &&   // ~0xAE
+            mcu::Crc8Check(nullptr, 0) == 0xFF &&      // пусто → 0xFF
+            mcu::XorChecksum(v3, sizeof v3) == 0xFF && // AA^55^01^02^03
+            // Коды команд обновления МК/LCD.
+            mcu::kCmdUpdateStart == 0x0444 && mcu::kCmdUpdateAck == 0x8444 &&
+            mcu::kCmdUpdateBusy == 0x0445 && mcu::kCmdUpdateData == 0x8445 &&
+            mcu::kCmdUpdateEnd == 0x0446;
+
         qInfo() << "crc_8(01)=" << Qt::hex << mcu::Crc8(v1, 1)
-                << "crc_8(AA)=" << mcu::Crc8(v2, 1);
-        const bool ok = crcOk && cfgOk;
-        qInfo() << (ok ? "mcuuart: PASS" : "mcuuart: FAIL") << "crc:" << crcOk << "cfg:" << cfgOk;
+                << "crc_8(AA)=" << mcu::Crc8(v2, 1)
+                << "check(01)=" << mcu::Crc8Check(v1, 1);
+        const bool ok = crcOk && cfgOk && frameOk;
+        qInfo() << (ok ? "mcuuart: PASS" : "mcuuart: FAIL")
+                << "crc:" << crcOk << "cfg:" << cfgOk << "frame:" << frameOk;
         return ok ? 0 : 66;
     }
 

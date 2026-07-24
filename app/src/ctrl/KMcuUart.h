@@ -32,4 +32,29 @@ uint8_t Crc8Update(uint8_t acc, uint8_t byte);
 // Свёртка по буферу (init 0, как в реф. CrcCheck).
 uint8_t Crc8(const uint8_t *data, std::size_t len, uint8_t init = 0);
 
+// Кадровый CRC (реф. CrcCheck lcdupdate @0x21e0): комплемент свёртки — ~Crc8 & 0xFF;
+// для пустого буфера возвращает 0xFF. Именно это значение кладётся в кадр.
+uint8_t Crc8Check(const uint8_t *data, std::size_t len);
+
+// Бегущий XOR по байтам (хвостовой чек-байт кадра lcdupdate).
+uint8_t XorChecksum(const uint8_t *data, std::size_t len, uint8_t init = 0);
+
+// --- Кадр управляющего канала МК/LCD (реверс lcdupdate SendOneMsgToUart @0x25b0) ---
+// Раскладка (подтверждена дизасмом):
+//   [0]      0xAA                 маркер;
+//   [1..2]   cmd, BIG-ENDIAN      (rev16: старший байт первым);
+//   [3]      len                  длина payload;
+//   [4..]    payload[len];
+//   [4+len]  Crc8Check(payload)   комплементированный CRC-8 poly 0xB8;
+//   [5+len]  XOR{len, cmdHi, cmdLo, payload…, crc}.
+// Коды команд обновления (реф. main/NotifyMcuToUpdate lcdupdate):
+enum FrameCmd : uint16_t {
+    kCmdUpdateStart  = 0x0444,   // «войти в режим обновления» (UART)
+    kCmdUpdateAck    = 0x8444,   // ответ: готов
+    kCmdUpdateBusy   = 0x0445,   // ответ: идёт стирание флеша, опрашивать дальше
+    kCmdUpdateData   = 0x8445,   // блок данных (по SPI, 256-байт пакеты)
+    kCmdUpdateEnd    = 0x0446,   // завершение (UART)
+    kCmdUpdateEndAck = 0x8446,   // ответ на завершение
+};
+
 } // namespace mcu

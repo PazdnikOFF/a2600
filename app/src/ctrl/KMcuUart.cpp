@@ -23,4 +23,20 @@ uint8_t Crc8(const uint8_t *data, std::size_t len, uint8_t init)
     return acc;
 }
 
+uint8_t Crc8Check(const uint8_t *data, std::size_t len)
+{
+    // Реф. CrcCheck lcdupdate @0x21e0: len==0 → 0xFF; иначе ~Crc8 & 0xFF.
+    if (len == 0)
+        return 0xFF;
+    return static_cast<uint8_t>(~Crc8(data, len, 0));
+}
+
+uint8_t XorChecksum(const uint8_t *data, std::size_t len, uint8_t init)
+{
+    uint8_t x = init;
+    for (std::size_t i = 0; i < len; ++i)
+        x ^= data[i];
+    return x;
+}
+
 } // namespace mcu
