@@ -582,9 +582,27 @@ KMainCtrlThread::Init) никогда не линковалась. Первая 
   Скриншот подтвердил тикающие часы «ГГГГ-ММ-ДД\nчч:мм:сс» в левом-верхнем углу видео.
 - ⛔ ОСТАЁТСЯ в `KMainCtrlThread::Init` заглушками (TODO, все — device/IPC): сервис-потоки
   Start{RealTime,NormalTime,Print}Thread (heartbeat к X2000Monitor, печать), KNetWorkSet::
-  InitLocalNet (сетевой конфиг), ProductCheck (лицензия). Дальше — кросс-сборка aarch64
-  (Тир 1, нужен PetaLinux/Vitis SDK) и оживление device-подсистем (Тир 2, нужен прибор).
-  **Off-device-работа, не требующая железа/SDK, на этом исчерпана.**
+  InitLocalNet (сетевой конфиг), ProductCheck (лицензия). Проверено дизасмом реального
+  `KMainCtrlThread::Init` @0x6ccfa0: наш бутстрап структурно совпадает с ним, а `ProductCheck`
+  @0x6c6438 внутри зовёт `HmiMcu::SendCommandWithoutData` (МК-плата) + `KPlControl::
+  ReadValueFromPL` (FPGA) → device целиком. Т.е. остаток Init неотделим от железа.
+
+**🎯 ВЕХА-3: `endostation` КРОСС-КОМПИЛИРУЕТСЯ ПОД aarch64 И ЗАПУСКАЕТСЯ (Тир 1, 2026-07-24).**
+Xilinx-SDK нет, но собрано под aarch64 через **Debian multiarch** (crossbuild-essential-arm64 +
+arm64-Qt5/GStreamer/SQLite) — та же архитектура, что у целевого Zynq UltraScale+.
+- Добавлен `app/cmake/toolchain-aarch64-debian-multiarch.cmake` (воспроизводимый рецепт;
+  грабля Qt-кросса — нативный x86 moc для AUTOMOC, решена). Образ `a2600-arm64:bookworm`.
+- `cmake --build … --target endostation` → **`[310/310] Linking CXX executable endostation`**,
+  только deprecation-warning'и Qt5 (QRegExp/SkipEmptyParts/pageRect), НИ ОДНОЙ ошибки.
+- Бинарник — настоящий `ELF64 ARM aarch64` (5 МБ Release). Под `qemu-aarch64-static` **стартует,
+  строит GStreamer-пайплайн и рендерит ТОТ ЖЕ главный экран** (бренд/навигация/OSD/видео/часы),
+  EXIT=0. Скриншот сверен — идентичен x86-сборке.
+- ВЫВОД: код архитектурно-портируем на aarch64, отличие от прибора = подмена sysroot
+  (Debian arm64 → Xilinx PetaLinux) + физическое железо, а НЕ изменения кода.
+- ⛔ ОСТАЁТСЯ (Тир 2, нужен ПРИБОР): device-подсистемы — камера/FPGA (`KPlControl`), МК-плата
+  (`HmiMcu`/`ColdLight`), HAL (`libhal`), DICOM-сеть. Их протоколы не реверсятся off-device
+  (методология запрещает выдумывать поведение железа). **Вся работа без физического прибора
+  исчерпана: логика (127 тестов) + сборка/линковка/старт/рендер главного экрана на x86 И aarch64.**
 
 **✅ ПОЛНЫЙ nm-СРЕЗ X2000 (не только Q_OBJECT) — off-device логика ИСЧЕРПАНА (2026-07-23).**
 ⭐ **ПРИЁМ:** `nm bin/X2000 | grep ' [Tt] _Z' | c++filt` → вырезать `Class::` → сравнить с
