@@ -4,6 +4,8 @@
 #include <QImage>
 #include <QString>
 
+class QLabel;
+
 // Вьювер живого видео гибкого эндоскопа. Имя и методы — из оригинального
 // KViewSoftEndo (реф. X-2600): InitVideoParam, InitStatus, FreezeAck,
 // ImageSaveAck, ClickColorBMode/CMode/RMode (ENH/COLOR/RBC).
@@ -26,6 +28,10 @@ public:
     void DisplayMsg(const QString &msg);
     QString LastMsg() const { return m_lastMsg; }
 
+    // Реф. KViewSoftEndo::UpdateSystemtime(QString) @0x4672e0 — тело ровно
+    // `m_ui->label_Systemtime->setText(text)`. Оверлей часов поверх кадра.
+    void UpdateSystemtime(const QString &text);
+
 public slots:
     void OnVideoFrameReady(const QImage &frame); // приём кадра от KVideoProxy
 
@@ -35,4 +41,7 @@ protected:
 private:
     QImage  frame_;
     QString m_lastMsg;
+    // Реф. Ui_KViewSoftEndo::setupUi @0x46f148: label_Systemtime, geometry
+    // QRect(10, 9, 171, 51) в координатах фрейма (поле ui+0x18).
+    QLabel *systemTimeLabel_ = nullptr;
 };

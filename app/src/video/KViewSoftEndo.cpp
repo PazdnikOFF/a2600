@@ -1,5 +1,6 @@
 #include "video/KViewSoftEndo.h"
 
+#include <QLabel>
 #include <QPainter>
 
 KViewSoftEndo::KViewSoftEndo(QWidget *parent) : QWidget(parent)
@@ -9,6 +10,17 @@ KViewSoftEndo::KViewSoftEndo(QWidget *parent) : QWidget(parent)
     pal.setColor(QPalette::Window, Qt::black);
     setPalette(pal);
     setAutoFillBackground(true);
+
+    // Оверлей системного времени (реф. label_Systemtime, QRect(10,9,171,51)).
+    systemTimeLabel_ = new QLabel(this);
+    systemTimeLabel_->setObjectName(QStringLiteral("label_Systemtime"));
+    systemTimeLabel_->setGeometry(10, 9, 171, 51);
+}
+
+void KViewSoftEndo::UpdateSystemtime(const QString &text)
+{
+    if (systemTimeLabel_)
+        systemTimeLabel_->setText(text);   // реф. @0x4672e0
 }
 
 void KViewSoftEndo::InitVideoParam() { /* инициализация OSD-параметров вида */ }

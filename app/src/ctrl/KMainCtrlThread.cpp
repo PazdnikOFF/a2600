@@ -5,6 +5,8 @@
 #include "video/KVideoProxy.h"
 #include "video/KSaveVideoFile.h"
 #include "sys/KSystem.h"
+#include "sys/KTimeMng.h"
+#include "ui/KUiMsgProxy.h"
 #include "hal/Hal.h"
 
 #include <QFile>
@@ -64,6 +66,12 @@ void KMainCtrlThread::ModelInit()
     if (desktop_ && desktop_->VideoView()) {
         connect(video_, &KVideoProxy::VideoFrameReady,
                 desktop_->VideoView(), &KViewSoftEndo::OnVideoFrameReady);
+        // Часы: KTimeMng тикает раз в секунду → KUiMsgProxy::UpdateSystemtime →
+        // оверлей label_Systemtime вьювера (реф. wiring: тот же сигнал испускает
+        // KTimeMng::Timedisplay, слот — KViewSoftEndo::UpdateSystemtime).
+        connect(GetKUiMsgProxy(), &KUiMsgProxy::UpdateSystemtime,
+                desktop_->VideoView(), &KViewSoftEndo::UpdateSystemtime);
+        GetKTimeMng();   // ленивое создание → заводит 1с/60с/1.5с таймеры
         desktop_->VideoView()->InitVideoParam();
         desktop_->VideoView()->InitStatus();
     }
