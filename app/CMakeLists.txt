@@ -375,7 +375,7 @@ if(GST_FOUND)
     target_include_directories(endostation PRIVATE src)
     target_link_libraries(endostation PRIVATE
         Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Sql Qt5::Xml Qt5::PrintSupport
-        PkgConfig::GST)
+        PkgConfig::GST sqlite3)   # sqlite3 — прямые вызовы C-API в KDbSqlite (как у ui_preview)
     target_compile_definitions(endostation PRIVATE HAVE_GST=1)  # видео-тракт KVideoProxy
 
     if(OpenCV_FOUND)
