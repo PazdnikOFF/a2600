@@ -326,6 +326,7 @@ public:
 #include "sys/KSmallLangTranslate.h"
 #include "sys/KKey2Name.h"
 #include "ctrl/K3ADimming.h"
+#include "ctrl/KMcuUart.h"
 #include "endo/KEndoScope.h"
 #include "endo/KCamera.h"
 #include "ui/KLcdProxy.h"
@@ -3737,6 +3738,35 @@ int main(int argc, char **argv)
 
     // Self-test процедур машинного контроля (KControlProc: крипто поверх yxyDES2 + хелперы).
     // TMP_MODE: SystemDate2MCDate/Cipher2Plain пишут в ENDO_ROOT → временный корень.
+    // Self-test протокола UART МК-платы (реверс update/cmd/hmiupdate).
+    if (screen == "mcuuart") {
+        // crc_8 (poly 0xB8, init 0) — тест-векторы, сверенные с эталонной реализацией.
+        const uint8_t v1[] = {0x01};
+        const uint8_t v2[] = {0xAA};
+        const uint8_t v3[] = {0xAA, 0x55, 0x01, 0x02, 0x03};
+        const uint8_t v4[] = {'1','2','3','4','5','6','7','8','9'};
+        const bool crcOk =
+            mcu::Crc8(v1, sizeof v1) == 0x64 &&
+            mcu::Crc8(v2, sizeof v2) == 0xED &&
+            mcu::Crc8(v3, sizeof v3) == 0xAE &&
+            mcu::Crc8(v4, sizeof v4) == 0x56 &&
+            // Пошаговое обновление эквивалентно свёртке.
+            mcu::Crc8Update(mcu::Crc8Update(0, 0xAA), 0x55) == mcu::Crc8(v3, 2);
+
+        // Параметры порта — из прошивки (hmiupdate.c).
+        const bool cfgOk =
+            std::string(mcu::kUartDevice) == "/dev/ttyPS1" &&
+            mcu::kBaud == 115200 && mcu::kDataBits == 8 &&
+            mcu::kParity == 0 && mcu::kStopBits == 1 &&
+            mcu::kFrameHeader == 0xAA;
+
+        qInfo() << "crc_8(01)=" << Qt::hex << mcu::Crc8(v1, 1)
+                << "crc_8(AA)=" << mcu::Crc8(v2, 1);
+        const bool ok = crcOk && cfgOk;
+        qInfo() << (ok ? "mcuuart: PASS" : "mcuuart: FAIL") << "crc:" << crcOk << "cfg:" << cfgOk;
+        return ok ? 0 : 66;
+    }
+
     if (screen == "kcontrolproc") {
         KControlProc proc;
 

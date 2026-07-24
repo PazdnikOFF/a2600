@@ -52,6 +52,7 @@ set(SOURCES
     src/app/Application.cpp
     src/ctrl/KMainCtrlThread.cpp
     src/ctrl/KPlControl.cpp
+    src/ctrl/KMcuUart.cpp
     src/ctrl/KDccuParam.cpp
     src/ctrl/KColdLightConfig.cpp
     src/ctrl/K3ADimming.cpp
@@ -475,6 +476,7 @@ add_executable(ui_preview
     src/kernel/KControlINI.cpp
     src/alg/AlgParaManager.cpp
     src/ctrl/KPlControl.cpp
+    src/ctrl/KMcuUart.cpp
     src/ctrl/KDccuParam.cpp
     src/ctrl/KColdLightConfig.cpp
     src/ctrl/K3ADimming.cpp
