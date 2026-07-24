@@ -559,9 +559,25 @@ KMainCtrlThread::Init) никогда не линковалась. Первая 
   бутстрап деградирует на отсутствии железа (`StartUIFPGACheck: InitCamera failed`) и
   **входит в цикл событий Qt — не падает** (timeout 8с убил живой процесс, EXIT=124).
 - ВЫВОД: off-device код действительно стыкуется в одно запускаемое приложение, а не только
-  в изолированные тесты. Следующий содержательный этап (Тир 0) — довести десктоп-старт до
-  показа главного экрана (видео от `videotestsrc`), затем кросс-сборка под aarch64-xilinx
-  (Тир 1, нужен PetaLinux/Vitis SDK) и оживление device-подсистем по одной (Тир 2, нужен прибор).
+  в изолированные тесты.
+
+**🎯 ВЕХА-2: ГЛАВНЫЙ ЭКРАН `endostation` ОТРИСОВЫВАЕТСЯ END-TO-END С ЖИВЫМ ВИДЕО (2026-07-24).**
+Тир 0 достигнут в десктоп-режиме:
+- В build-образ добавлены RUNTIME-плагины GStreamer (`gstreamer1.0-plugins-base/-good`) —
+  без них `gst_parse_launch` падал (были только dev-заголовки). После этого
+  `KVideoProxy::InitCamera` строит пайплайн `videotestsrc ! NV12 ! videoconvert ! RGB !
+  appsink` и уходит в PLAYING (`cfg.useTestSource` авто-включается при отсутствии /dev/video0).
+- Добавлен ОТЛАДОЧНЫЙ ШОВ снимка (не для прибора): `ENDO_SHOT=<png>` [+`ENDO_SHOT_DELAY`] —
+  через задержку снимает `desktop_->grab()` и выходит. Так реальный десктоп верифицируется
+  offscreen так же, как `ui_preview` снимает отдельные экраны.
+- Снимок подтвердил ПОЛНУЮ КОМПОЗИЦИЮ главного экрана из портированных кусков: бренд
+  РуСкейн/PyCkeun, лево-навигация пациента (Name/Gender/Age = KMemComboBox), OSD-статус-
+  колонка (IRIS/Zoom/ImgEnh/ColEnh/ColRBC/AGC/LightMode/Contrast — из конфигов) и в центре
+  ЖИВОЕ видео: SMPTE-таблица videotestsrc декодируется → NV12→RGB → appsink → KViewSoftEndo.
+- EXIT=0 (чистый выход после снимка). Приложение стартует, показывает главный экран, живёт.
+- ⛔ ОСТАЁТСЯ в `KMainCtrlThread::Init` заглушками (TODO, часть — device): сервис-потоки
+  Start{RealTime,NormalTime,Print}Thread, KNetWorkSet::InitLocalNet, ProductCheck. Дальше —
+  кросс-сборка aarch64 (Тир 1, нужен SDK) и device-подсистемы (Тир 2, нужен прибор).
 
 **✅ ПОЛНЫЙ nm-СРЕЗ X2000 (не только Q_OBJECT) — off-device логика ИСЧЕРПАНА (2026-07-23).**
 ⭐ **ПРИЁМ:** `nm bin/X2000 | grep ' [Tt] _Z' | c++filt` → вырезать `Class::` → сравнить с
