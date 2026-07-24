@@ -57,4 +57,19 @@ enum FrameCmd : uint16_t {
     kCmdUpdateEndAck = 0x8446,   // ответ на завершение
 };
 
+// --- Рантайм-сообщение МК (реверс X2000 HmiMcu::SendCommandWithoutData @0x6bb1c8) ---
+// Раскладка CommMessage (подтверждена дизасмом): cmd — u16 @0, длина данных — u32 @4.
+// SendCommandWithoutData(cmd): msg.cmd = cmd; msg.dataLen = 0; → KMsgbuffer → comm-поток.
+// ⚠️ Кадрирование на проводе делает comm-поток (device); здесь — только структура.
+struct CommMessage {
+    uint16_t cmd;         // +0x00
+    uint16_t reserved;    // +0x02 (не задаётся в SendCommandWithoutData)
+    uint32_t dataLen;     // +0x04
+};
+
+// Единственный ОДНОЗНАЧНО опознанный рантайм-код (HmiMcu::HealthCheck @0x6bb200 шлёт его):
+constexpr uint16_t kMcuHeartbeat = 0x0400;
+// ⚠️ Прочие рантайм-коды (0x401, 0x841x…) извлекаемы как значения, но их СЕМАНТИКА
+// проверяема только на приборе — здесь НЕ фиксируем, чтобы не выдумывать.
+
 } // namespace mcu

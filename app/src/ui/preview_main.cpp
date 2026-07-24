@@ -3770,7 +3770,11 @@ int main(int argc, char **argv)
             // Коды команд обновления МК/LCD.
             mcu::kCmdUpdateStart == 0x0444 && mcu::kCmdUpdateAck == 0x8444 &&
             mcu::kCmdUpdateBusy == 0x0445 && mcu::kCmdUpdateData == 0x8445 &&
-            mcu::kCmdUpdateEnd == 0x0446;
+            mcu::kCmdUpdateEnd == 0x0446 &&
+            // Рантайм: CommMessage (cmd@0, dataLen@4) + heartbeat 0x400.
+            offsetof(mcu::CommMessage, cmd) == 0 &&
+            offsetof(mcu::CommMessage, dataLen) == 4 &&
+            mcu::kMcuHeartbeat == 0x0400;
 
         qInfo() << "crc_8(01)=" << Qt::hex << mcu::Crc8(v1, 1)
                 << "crc_8(AA)=" << mcu::Crc8(v2, 1)
