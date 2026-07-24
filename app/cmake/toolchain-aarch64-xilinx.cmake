@@ -1,5 +1,14 @@
 # Кросс-компиляция под Zynq UltraScale+ (aarch64-xilinx-linux, PetaLinux/Vitis SDK).
 #
+# ⚠️ ТОЧНЫЙ ЦЕЛЕВОЙ ТУЛЧЕЙН ПРИБОРА (установлено из update/patch/libhal.so, 2026-07-24):
+#   PetaLinux 2019.2 · GCC 8.2.0 · aarch64-xilinx-linux · GLIBCXX_3.4.21 · CXXABI_1.3.8.
+#   (путь сборки libhal: /opt/petalinux/2019.2/sysroots/aarch64-xilinx-linux/…)
+# СЛЕДСТВИЕ: бинарник, собранный Debian-кроссом (GCC 12, новый glibc), НА ПРИБОРЕ НЕ
+# ЗАПУСТИТСЯ — glibc версионируется только вперёд. Для device-runnable сборки нужен
+# ЛИБО этот PetaLinux 2019.2 SDK, ЛИБО sysroot прибора (вытащить /usr/lib,/lib с eMMC
+# через serial-консоль). libhal.so — C-API (749 Hal_*, extern "C"), линкуется независимо
+# от версии GCC; лежит в update/patch/libhal.so (aarch64, не стрипнут, с debug_info).
+#
 # Использование:
 #   1) source /opt/sdk/environment-setup-aarch64-xilinx-linux   # из PetaLinux SDK
 #   2) cmake -B build-arm \
