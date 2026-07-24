@@ -575,9 +575,16 @@ KMainCtrlThread::Init) никогда не линковалась. Первая 
   колонка (IRIS/Zoom/ImgEnh/ColEnh/ColRBC/AGC/LightMode/Contrast — из конфигов) и в центре
   ЖИВОЕ видео: SMPTE-таблица videotestsrc декодируется → NV12→RGB → appsink → KViewSoftEndo.
 - EXIT=0 (чистый выход после снимка). Приложение стартует, показывает главный экран, живёт.
-- ⛔ ОСТАЁТСЯ в `KMainCtrlThread::Init` заглушками (TODO, часть — device): сервис-потоки
-  Start{RealTime,NormalTime,Print}Thread, KNetWorkSet::InitLocalNet, ProductCheck. Дальше —
-  кросс-сборка aarch64 (Тир 1, нужен SDK) и device-подсистемы (Тир 2, нужен прибор).
+- ✅ **ЧАСЫ НА ВИДЕО-ОВЕРЛЕЕ** (2026-07-24): `KTimeMng` (портирован ранее) подключён в
+  `KMainCtrlThread::ModelInit` — 1с-таймер → `KUiMsgProxy::UpdateSystemtime` →
+  `KViewSoftEndo::UpdateSystemtime` @0x4672e0 (= `label_Systemtime->setText`; геометрия
+  метки `QRect(10,9,171,51)` из реверса `Ui_KViewSoftEndo::setupUi` @0x46f148, поле ui+0x18).
+  Скриншот подтвердил тикающие часы «ГГГГ-ММ-ДД\nчч:мм:сс» в левом-верхнем углу видео.
+- ⛔ ОСТАЁТСЯ в `KMainCtrlThread::Init` заглушками (TODO, все — device/IPC): сервис-потоки
+  Start{RealTime,NormalTime,Print}Thread (heartbeat к X2000Monitor, печать), KNetWorkSet::
+  InitLocalNet (сетевой конфиг), ProductCheck (лицензия). Дальше — кросс-сборка aarch64
+  (Тир 1, нужен PetaLinux/Vitis SDK) и оживление device-подсистем (Тир 2, нужен прибор).
+  **Off-device-работа, не требующая железа/SDK, на этом исчерпана.**
 
 **✅ ПОЛНЫЙ nm-СРЕЗ X2000 (не только Q_OBJECT) — off-device логика ИСЧЕРПАНА (2026-07-23).**
 ⭐ **ПРИЁМ:** `nm bin/X2000 | grep ' [Tt] _Z' | c++filt` → вырезать `Class::` → сравнить с
